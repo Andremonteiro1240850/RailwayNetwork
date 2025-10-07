@@ -1,87 +1,133 @@
 # Railway Logistics Management System - Glossary
 
-## Project Overview
-This glossary contains all the key terms, expressions, and acronyms (TEA) used in the Railway Logistics Management System project developed for ISEP.
-
 ## Terms, Expressions and Acronyms (TEA)
 
 | **_TEA_** (EN) | **_TEA_** (PT) | **_Description_** (EN) |
 |:---------------|:---------------|:----------------------|
-| **Acceptance Criteria** | **Critérios de Aceitação** | Conditions that must be met for a user story to be considered complete. |
-| **Agile Development** | **Desenvolvimento Ágil** | A software development methodology based on iterative and incremental progress using Scrum framework. |
-| **Aisle** | **Corredor** | A passageway between rows of storage bays in a warehouse, used for movement and access. |
-| **Allocation** | **Alocação** | The process of assigning specific quantities from inventory boxes to fulfill order lines. |
-| **Audit Log** | **Registo de Auditoria** | A file recording all inspection actions and decisions for returned goods in quarantine. |
-| **Backlog** | **Backlog** | A prioritized list of user stories and tasks to be completed in a Scrum project. |
-| **Bay** | **Área de Armazenamento** | A specific storage location within a warehouse aisle where boxes are placed. |
-| **Best Fit Decreasing (BFD)** | **Melhor Ajuste Decrescente** | A packing heuristic that places items in batches to minimize remaining unused capacity. |
-| **Box** | **Caixa** | The smallest storage unit containing a specific quantity of one SKU, with optional expiry date. |
-| **BoxId** | **Identificador de Caixa** | Unique identifier assigned to each box in the warehouse management system. |
-| **Business Rules** | **Regras de Negócio** | Constraints and guidelines that define how the system should operate according to domain requirements. |
-| **Cargo** | **Carga** | Goods or commodities transported by railway, including raw materials and manufactured products. |
-| **Circulation Lines** | **Linhas de Circulação** | Railway tracks within a terminal where wagons move to reach parking areas or unloading docks. |
-| **Conceptual Data Model** | **Modelo de Dados Conceptual** | A high-level representation of domain entities and their relationships, independent of implementation. |
-| **Data Dictionary** | **Dicionário de Dados** | A comprehensive document describing data elements, their meanings, and relationships. |
-| **Data Persistence** | **Persistência de Dados** | The storage of data so that it remains available between program executions. |
-| **Dispatch** | **Expedição** | The operation of removing products from warehouse storage to fulfill customer orders. |
-| **Distance Function (D)** | **Função de Distância (D)** | Formula calculating movement distance between coordinates: D = b1 + \|a1-a2\|*3 + b2. |
-| **Double Track** | **Via Dupla** | A railway segment with two parallel tracks allowing simultaneous bidirectional movement. |
-| **Electrified Line** | **Linha Eletrificada** | A railway track segment equipped with overhead electrical systems for electric locomotives. |
-| **Eligibility Status** | **Estado de Elegibilidade** | Classification of order lines as ELIGIBLE, PARTIAL, or UNDISPATCHABLE based on inventory availability. |
-| **Expiry Date** | **Data de Validade** | The date after which a perishable product is no longer suitable for sale or consumption. |
-| **FEFO (First-Expired-First-Out)** | **FEFO (Primeiro a Expirar, Primeiro a Sair)** | Inventory management principle where products with nearest expiry dates are dispatched first. |
-| **FIFO (First-In-First-Out)** | **FIFO (Primeiro a Entrar, Primeiro a Sair)** | Inventory management principle where oldest products (by receipt date) are dispatched first. |
-| **First Fit (FF)** | **Primeiro Ajuste** | A packing heuristic that places items in the first available trolley where they fit. |
-| **First Fit Decreasing (FFD)** | **Primeiro Ajuste Decrescente** | A packing heuristic that sorts items by weight and places them in first available trolley. |
-| **Freight** | **Comboio de Carga** | A set of wagons that need to be transported from origin station to destination station. |
-| **Freight Yard** | **Pátio de Carga** | A railway facility for loading, unloading, sorting, and assembling trains. |
-| **Gauge** | **Bitola** | The distance between the inner sides of railway tracks, measured in millimeters. |
-| **GitHub Repository** | **Repositório GitHub** | Cloud-based storage for source code management and version control in the project. |
-| **Intermodal Terminal** | **Terminal Intermodal** | A facility where containers are transferred between trains, trucks, and ships. |
-| **Inventory Replenishment** | **Reabastecimento de Inventário** | The process of unloading wagons and storing products in warehouse bays according to FEFO/FIFO rules. |
-| **JaCoCo** | **JaCoCo** | A tool for measuring code coverage in Java applications. |
-| **Java Applications** | **Aplicações Java** | Software programs developed using the Java programming language. |
-| **JavaDoc** | **JavaDoc** | Documentation automatically generated from Java source code comments. |
-| **JUnit 5** | **JUnit 5** | A framework for writing and running unit tests in Java. |
-| **Line Segment** | **Segmento de Linha** | An individual section of railway track with specific technical characteristics. |
-| **Locomotive** | **Locomotiva** | A powered rail vehicle that provides traction for moving trains, either diesel or electric. |
-| **Logistical Operator** | **Operador Logístico** | A company responsible for managing and executing freight transportation operations. |
-| **MVP (Minimum Viable Product)** | **MVP (Produto Mínimo Viável)** | The simplest version of the system with essential functionalities for initial deployment. |
-| **Nearest Neighbour** | **Vizinho Mais Próximo** | A sequencing strategy that selects the closest next location to minimize travel distance. |
-| **Object-Oriented Programming (OOP)** | **Programação Orientada a Objetos (OOP)** | A programming paradigm based on objects containing data and methods. |
-| **Order** | **Pedido** | A customer request for specific products in determined quantities and delivery dates. |
-| **Order Line** | **Linha de Pedido** | An individual item within an order, specifying SKU and requested quantity. |
-| **Parking Lines** | **Linhas de Estacionamento** | Railway sidings where wagons wait temporarily before being sent to another destination. |
-| **Picking Plan** | **Plano de Picking** | A detailed schedule for collecting products from warehouse locations to fulfill orders. |
-| **Product Owner** | **Proprietário do Produto** | The Scrum role responsible for defining requirements and prioritizing the product backlog. |
-| **Quarantine** | **Quarentena** | A controlled area where returned goods are inspected before restocking or disposal. |
-| **Railway Infrastructure** | **Infraestrutura Ferroviária** | The physical components of railway systems including tracks, stations, and terminals. |
-| **Railway Network** | **Rede Ferroviária** | The complete system of interconnected railway lines, stations, and supporting infrastructure. |
-| **ReceivedAt** | **RecebidoEm** | Timestamp recording when a box was received into the warehouse system. |
-| **Relational Model** | **Modelo Relacional** | The logical structure of the database representing data as tables with relationships. |
-| **Relocation** | **Relocalização** | The operation of moving a box from one storage bay to another within the warehouse. |
-| **Returns** | **Devoluções** | Products sent back to the warehouse that require inspection and quarantine processing. |
-| **Rolling Stock** | **Material Circulante** | All railway vehicles that move on tracks, including locomotives and wagons. |
-| **Route** | **Rota** | The ordered list of stations through which a train passes from origin to destination. |
-| **Scrum Board** | **Quadro Scrum** | A visual tool for tracking task progress through columns like Backlog, ToDo, In Process, Testing, Done. |
-| **Scrum Master** | **Scrum Master** | The team member responsible for facilitating Scrum processes and removing impediments. |
-| **Single Track** | **Via Simples** | A railway segment with only one track, requiring crossing points for bidirectional traffic. |
-| **SKU (Stock Keeping Unit)** | **SKU (Unidade de Manutenção de Stock)** | A unique code identifying a specific product type in the inventory system. |
-| **Sprint** | **Sprint** | A fixed time period (usually 4 weeks) in which a Scrum team completes a set of user stories. |
-| **Station** | **Estação** | A nodal point in the railway network where logistical operations are conducted. |
-| **Tare** | **Tara** | The weight of an empty wagon without any cargo. |
-| **Terminal** | **Terminal** | A major railway facility for cargo handling, storage, and intermodal transfers. |
-| **Test-Driven Development (TDD)** | **Desenvolvimento Orientado por Testes (TDD)** | A development approach where tests are written before implementing functionality. |
-| **Trolley** | **Carrinho** | A mobile cart used by pickers to collect products, with specific weight capacity limits. |
-| **Unloading Dock** | **Doca de Descarga** | Designated areas in terminals where wagons are unloaded and cargo enters warehouse storage. |
-| **User Story** | **História de Utilizador** | A requirement expressed from the user's perspective, following "As a... I want... so that..." format. |
-| **Validation** | **Validação** | The process of checking data integrity and compliance with business rules during import. |
-| **Visual Paradigm** | **Visual Paradigm** | A modeling tool used for creating conceptual and logical data models in the project. |
-| **Wagon** | **Vagão** | A rail vehicle designed for transporting specific types of freight cargo. |
-| **Warehouse** | **Armazém** | A facility organized in aisles and bays for storing products before distribution. |
-| **WMS (Warehouse Management System)** | **WMS (Sistema de Gestão de Armazém)** | Software that tracks all goods movements and storage locations within a warehouse. |
-
-
----
-
-*This glossary is part of the Integrative Project for 3rd Semester at ISEP.*
+| **Acceptance Criteria** | **Critérios de Aceitação** | Conditions that must be met for a user story to be considered complete and acceptable. |
+| **Agile Development** | **Desenvolvimento Ágil** | Software development methodology using iterative sprints and Scrum framework. |
+| **Aisle** | **Corredor** | Passageway between rows of storage bays in warehouse for movement and access. |
+| **Allocation** | **Alocação** | Process of assigning specific quantities from inventory boxes to fulfill order lines. |
+| **ARQCP** | **ARQCP** | Computer Architecture course involved in the integrative project. |
+| **Assembly** | **Montagem** | Process of coupling locomotives and wagons to form complete trains. |
+| **Audit Log** | **Registo de Auditoria** | File recording all inspection actions and decisions for returned goods. |
+| **Backlog** | **Backlog** | Prioritized list of user stories and tasks in Scrum project management. |
+| **Bay** | **Área de Armazenamento** | Specific storage location within warehouse identified by coordinates. |
+| **BDDAD** | **BDDAD** | Databases course responsible for database design and implementation. |
+| **Best Fit Decreasing (BFD)** | **Melhor Ajuste Decrescente** | Packing heuristic minimizing remaining unused capacity in trolleys. |
+| **Bogies** | **Bogies** | Chassis framework carrying wheelset under railway vehicles for weight distribution. |
+| **Box** | **Caixa** | Minimum storage unit containing specific SKU quantity with unique identifier. |
+| **Boxcar** | **Vagão Coberto** | Enclosed wagon type for general goods protection. |
+| **BoxId** | **Identificador de Caixa** | Unique identifier for each box in warehouse management system. |
+| **Bridge** | **Ponte** | Engineering structure crossing obstacles (excluded from project scope). |
+| **Business Rules** | **Regras de Negócio** | Domain-specific constraints defining system operation and validation. |
+| **CamelCase** | **CamelCase** | Coding standard using medial capitals for compound word naming. |
+| **Capacity** | **Capacidade** | Maximum weight limit for trolleys or storage limit for bays. |
+| **Cargo** | **Carga** | Goods transported by railway including raw materials and products. |
+| **Chemical Tank Car** | **Vagão-tanque Químico** | Specialized tank wagon for chemicals with purity specifications. |
+| **Circulation Lines** | **Linhas de Circulação** | Terminal tracks for wagon movement between areas. |
+| **Conceptual Data Model** | **Modelo de Dados Conceptual** | High-level domain representation showing entities and relationships. |
+| **Container** | **Contentor** | Standardized cargo unit (20ft, 40ft, 45ft) for intermodal transport. |
+| **Cycle Count** | **Contagem Cíclica** | Return reason for inventory audit discrepancies requiring inspection. |
+| **Customer Remorse** | **Arrependimento do Cliente** | Return reason where undamaged products can be restocked. |
+| **Damaged** | **Danificado** | Return reason for broken products requiring disposal. |
+| **Data Dictionary** | **Dicionário de Dados** | Comprehensive document describing data elements and relationships. |
+| **Data Integrity** | **Integridade de Dados** | Database requirement ensuring accuracy through constraints. |
+| **Data Persistence** | **Persistência de Dados** | Storage mechanism maintaining data between program executions. |
+| **Data Validation** | **Validação de Dados** | Process checking CSV import data for errors and inconsistencies. |
+| **Deterministic Sweep** | **Varredura Determinística** | Sequencing strategy sorting locations by ascending aisle number. |
+| **Dispatch** | **Expedição** | Operation removing products from storage following FEFO/FIFO rules. |
+| **Distance Function (D)** | **Função de Distância (D)** | Formula: D = b1 + \|a1-a2\|*3 + b2 for warehouse movement. |
+| **Double Track** | **Via Dupla** | Railway segment with parallel tracks allowing bidirectional movement. |
+| **Electrified Line** | **Linha Eletrificada** | Track segment with overhead electrical systems for electric locomotives. |
+| **Eligibility Status** | **Estado de Elegibilidade** | Order line classification: ELIGIBLE, PARTIAL, or UNDISPATCHABLE. |
+| **Endpoint** | **Ponto Final** | Terminal station where railway lines begin or end. |
+| **ESINF** | **ESINF** | Information Structures course focusing on algorithms and data structures. |
+| **Expired** | **Expirado** | Return reason for products past expiry date requiring disposal. |
+| **Expiry Date** | **Data de Validade** | Date after which perishable products become unsuitable. |
+| **FEFO (First-Expired-First-Out)** | **FEFO** | Inventory rule dispatching nearest-expiry products first. |
+| **FIFO (First-In-First-Out)** | **FIFO** | Inventory rule dispatching oldest products by receipt date. |
+| **First Fit (FF)** | **Primeiro Ajuste** | Packing heuristic placing items in first available trolley. |
+| **First Fit Decreasing (FFD)** | **Primeiro Ajuste Decrescente** | Packing heuristic sorting by weight then using first-fit. |
+| **Flatcar** | **Vagão Plataforma** | Open wagon for containers, vehicles, and machinery. |
+| **Freight** | **Comboio de Carga** | Set of wagons requiring transport from origin to destination. |
+| **Freight Manager** | **Gestor de Carga** | User profile overseeing cargo operations and planning. |
+| **Freight Yard** | **Pátio de Carga** | Railway facility for loading, unloading, and train assembly. |
+| **FSIAP** | **FSIAP** | Applied Physics course involved in the integrative project. |
+| **Gauge** | **Bitola** | Distance between inner rail sides affecting vehicle compatibility. |
+| **GitHub Repository** | **Repositório GitHub** | Cloud storage for source code management and version control. |
+| **Hopper Car** | **Vagão Graneleiro** | Wagon for bulk materials like coal and grains with bottom discharge. |
+| **Infrastructure Owner** | **Proprietário de Infraestrutura** | Entity responsible for railway line maintenance. |
+| **Intermodal Terminal** | **Terminal Intermodal** | Facility transferring containers between transport modes. |
+| **Inventory Replenishment** | **Reabastecimento de Inventário** | Unloading wagons and storing products following FEFO/FIFO. |
+| **JaCoCo** | **JaCoCo** | Tool for measuring code coverage in Java applications. |
+| **Java Applications** | **Aplicações Java** | Software programs developed using Java programming language. |
+| **JavaDoc** | **JavaDoc** | Documentation generated from Java source code comments. |
+| **JUnit 5** | **JUnit 5** | Framework for writing and running unit tests in Java. |
+| **LAPR3** | **LAPR3** | Laboratory-Project III course coordinating the integrative project. |
+| **Line Segment** | **Segmento de Linha** | Individual track section with specific technical characteristics. |
+| **Loading Operation** | **Operação de Carregamento** | Process of placing cargo into wagons at terminals. |
+| **Locomotive** | **Locomotiva** | Powered rail vehicle providing traction for trains. |
+| **Logistical Operator** | **Operador Logístico** | Company managing freight transportation operations. |
+| **Logbook** | **Livro de Registos** | Scrum board column for project notes and decisions. |
+| **Main Corridor** | **Corredor Principal** | Central warehouse pathway with entrance at coordinate (0,0). |
+| **Mineral Oil Car** | **Vagão de Óleo Mineral** | Tank wagon for petrochemicals and mineral oils. |
+| **MVP (Minimum Viable Product)** | **MVP** | Simplest system version with essential functionalities. |
+| **Nearest Neighbour** | **Vizinho Mais Próximo** | Sequencing strategy selecting closest next location. |
+| **Object-Oriented Programming (OOP)** | **POO** | Programming paradigm using encapsulation and inheritance. |
+| **Operational Radius** | **Raio Operacional** | Geographic area where station operations influence cargo. |
+| **Order** | **Pedido** | Customer request for products with quantities and dates. |
+| **Order Line** | **Linha de Pedido** | Individual order item specifying SKU and quantity. |
+| **Oracle LiveSQL** | **Oracle LiveSQL** | Cloud database platform for demonstrating DDL implementation. |
+| **Packaging Heuristic** | **Heurística de Empacotamento** | Algorithm for packing allocations into trolleys. |
+| **Parking Lines** | **Linhas de Estacionamento** | Terminal sidings for temporary wagon storage. |
+| **Partial Dispatch** | **Expedição Parcial** | Operation continuing to next bay when current bay runs out. |
+| **Perishable Goods** | **Bens Perecíveis** | Products requiring expiry date tracking and FEFO management. |
+| **Physical Model** | **Modelo Físico** | Database implementation model for specific DBMS. |
+| **Picking Plan** | **Plano de Picking** | Schedule for product collection from warehouse locations. |
+| **Picking Route** | **Rota de Picking** | Optimized path through warehouse minimizing travel distance. |
+| **Planner** | **Planeador** | User profile analyzing and adjusting train schedules. |
+| **Pressure Gas Car** | **Vagão de Gás sob Pressão** | Tank wagon for liquefied gases requiring pressure. |
+| **Product Owner** | **Proprietário do Produto** | Scrum role defining requirements and prioritizing backlog. |
+| **Quarantine** | **Quarentena** | Controlled area inspecting returned goods before processing. |
+| **Railway Infrastructure** | **Infraestrutura Ferroviária** | Physical components including tracks and stations. |
+| **Railway Network** | **Rede Ferroviária** | Complete system of interconnected railway lines. |
+| **ReceivedAt** | **RecebidoEm** | Timestamp recording box receipt into warehouse system. |
+| **Refrigerated Car** | **Vagão Frigorífico** | Temperature-controlled wagon for perishable goods. |
+| **Relational Model** | **Modelo Relacional** | Logical database structure representing data as tables. |
+| **Relocation** | **Relocalização** | Operation moving boxes between bays maintaining FEFO position. |
+| **Returns** | **Devoluções** | Products sent back requiring inspection and quarantine. |
+| **Rolling Stock** | **Material Circulante** | All railway vehicles including locomotives and wagons. |
+| **Route** | **Rota** | Ordered station sequence train passes through. |
+| **Scrum Board** | **Quadro Scrum** | Visual tool with Backlog, ToDo, In Process, Testing, Done columns. |
+| **Scrum Master** | **Scrum Master** | Team member facilitating Scrum processes and removing impediments. |
+| **Siding** | **Desvio** | Designated crossing area on single-track segments. |
+| **Single Track** | **Via Simples** | Railway segment with one track requiring sidings. |
+| **SKU (Stock Keeping Unit)** | **SKU** | Unique code identifying specific product type in inventory. |
+| **Sorting** | **Triagem** | Process organizing wagons in freight yards for efficiency. |
+| **Sprint** | **Sprint** | 4-week development cycle delivering specific user stories. |
+| **Stacking** | **Empilhamento** | Container storage method not supported in Europe. |
+| **Station** | **Estação** | Nodal point in railway network for logistical operations. |
+| **Station Master** | **Chefe de Estação** | User overseeing station operations and coordination. |
+| **Station Storage Manager** | **Gestor de Armazenamento** | User responsible for warehouse operations. |
+| **Strict Mode** | **Modo Restrito** | Allocation where lines only ELIGIBLE if full quantity allocated. |
+| **SVG Format** | **Formato SVG** | Required format for all diagrams and images. |
+| **Tank Car** | **Vagão-tanque** | Wagon for liquids, chemicals, and fuels. |
+| **Tare** | **Tara** | Empty wagon weight used in payload calculations. |
+| **Terminal** | **Terminal** | Major railway facility for cargo handling and storage. |
+| **Test-Driven Development (TDD)** | **TDD** | Development approach writing tests before implementation. |
+| **Text-based Interface** | **Interface Baseada em Texto** | Console interface for cargo handling functionality. |
+| **Train Driver** | **Maquinista** | User operating trains and ensuring safe movement. |
+| **Train Operating Company** | **Empresa Operadora** | Entity owning rolling stock and providing services. |
+| **Trolley** | **Carrinho** | Picking equipment with specific weight capacity. |
+| **Tunnel** | **Túnel** | Underground passage (excluded from project scope). |
+| **Unloading Dock** | **Doca de Descarga** | Warehouse access points where wagons are unloaded. |
+| **Unloading Operation** | **Operação de Descarga** | Process removing cargo from wagons for storage. |
+| **User Story** | **História de Utilizador** | Requirement following "As a... I want... so that..." format. |
+| **Utilization** | **Utilização** | Trolley capacity metric: usedWeight/capacityWeight. |
+| **Validation Rule** | **Regra de Validação** | Business rule checking data integrity during import. |
+| **Visual Paradigm** | **Visual Paradigm** | Modeling tool for conceptual and logical data models. |
+| **Wagon** | **Vagão** | Rail vehicle for freight transport with type-specific characteristics. |
+| **Warehouse** | **Armazém** | Facility organized in aisles and bays for product storage. |
+| **Warehouse Layout** | **Layout do Armazém** | Physical organization using coordinate system for distances. |
+| **WMS (Warehouse Management System)** | **WMS** | Software tracking all goods movements and locations. |
