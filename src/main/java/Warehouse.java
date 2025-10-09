@@ -3,10 +3,7 @@ import java.io.FileReader;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class Warehouse {
     Map<String, Item> items = new HashMap<>();
@@ -111,6 +108,26 @@ public class Warehouse {
             }
         } catch (Exception e) {
             System.out.println("Erro a ler order_lines: " + e.getMessage());
+        }
+    }
+    public void organizarExpiracao() {
+        for (List<Box> boxes : stock.values()) {
+            if (boxes != null && !boxes.isEmpty()) {
+                Collections.sort(boxes, new Comparator<Box>() {
+                    @Override
+                    public int compare(Box o1, Box o2) {
+                        // Ambos têm data de expiração → comparar por expiração (FEFO)
+                        if (o1.getExpiry() != null && o2.getExpiry() != null) {
+                            return o1.getExpiry().compareTo(o2.getExpiry());
+                        }
+                        // Um tem expiração, outro não → o que tem expiração vem primeiro
+                        if (o1.getExpiry() != null) return -1;
+                        if (o2.getExpiry() != null) return 1;
+                        // Ambos não têm expiração → comparar por data de chegada (FIFO)
+                        return o1.getReceivedAt().compareTo(o2.getReceivedAt());
+                    }
+                });
+            }
         }
     }
 }
