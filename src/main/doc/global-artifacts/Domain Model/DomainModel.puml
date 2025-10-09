@@ -49,11 +49,11 @@ package "Infraestrutura Ferroviária" {
 }
 
 ' Relações da Infraestrutura
-RailwayNetwork -- Line : 1 to many
-Line *-- LineSegment : 1 to many (composition)
-Line -- Station : 2 to many (endpoints)
-Line -- Owner : 1 to 1
-LineSegment -- SegmentType : 1 to 1
+RailwayNetwork -- Line : has
+Line *-- LineSegment : has
+Line -- Station : pass trough
+Line -- Owner : has
+LineSegment -- SegmentType : can be
 Station -- NormalStation : can be
 Station -- Terminal : can be
 
@@ -132,21 +132,21 @@ package "Rolling Stock & Operadores" {
 }
 
 ' Relações do Rolling Stock
-Operator -- Locomotive : 1 to many (owns)
-Operator -- Wagon : 1 to many (owns)
-Train -- Locomotive : 1 to many (consists-of)
-Train -- Wagon : 1 to many (pulls)
-Freight -- Station : 1 to 1 (origin)
-Freight -- Station : 1 to 1 (destination)
-Freight -- Path : 1 to 1 (uses)
-Path *-- PathStep : 1 to many (ordered)
-PathStep -- Station : 1 to 1
-Wagon -- Freight : 1 to 1 (carries)
-Wagon -- WagonType : 1 to 1
-Locomotive -- LocoType : 1 to 1
-Freight -- Route
-Path -- Route
-Route -- RouteType
+Operator -- Locomotive : belongs
+Operator -- Wagon : belongs
+Train -- Locomotive : composed of
+Train -- Wagon : composed of
+
+Freight -- Station : transport from A to B
+Freight -- Path : carry on
+Path *-- PathStep : composed of
+PathStep -- Station : has
+Wagon -- Freight : carries
+Wagon -- WagonType : can be
+Locomotive -- LocoType : can be
+Freight -- Route : follows
+Path -- Route : is part of
+Route -- RouteType : can be
 
 ' ======================= TERMINAL & WAREHOUSE =======================
 package "Terminal & Warehouse" {
@@ -207,15 +207,15 @@ package "Terminal & Warehouse" {
 }
 
 ' Relações do Terminal
-Terminal -- CirculationLine : 1 to many
-Terminal -- ParkingLine : 1 to many
-Terminal -- UnloadingDock : 1 to many
-Terminal -- Warehouse : 1 to many
-Warehouse *-- Aisle : 1 to many (composition)
-Aisle *-- Bay : 1 to many (composition)
-Bay -- Box : 1 to many (stores)
-Item -- Box : 1 to many (describes)
-Box -- BoxStatus : 1 to 1
+Terminal -- CirculationLine : has
+Terminal -- ParkingLine : has
+Terminal -- UnloadingDock : has
+Terminal -- Warehouse : connects
+Warehouse *-- Aisle : contains
+Aisle *-- Bay : contains
+Bay -- Box : stores
+Item -- Box : describes
+Box -- BoxStatus : status
 Box -- Wagon : Transport
 
 ' ======================= OPERAÇÕES WMS =======================
@@ -265,8 +265,8 @@ package "WMS / Movimentos" {
 }
 
 ' Relações WMS
-UnloadingOperation -- Box : 1 to many (creates)
-DispatchOperation -- Box : 1 to many (consumes)
+UnloadingOperation -- Box : creates
+DispatchOperation -- Box : consumes)
 Relocation -- Box : 1 to many (moves)
 WMSMovement --> UnloadingOperation : logs
 WMSMovement --> DispatchOperation : logs
