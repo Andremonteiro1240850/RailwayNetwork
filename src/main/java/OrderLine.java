@@ -4,4 +4,7 @@ public class OrderLine {
     OrderLine(String sku, int qty) {
         this.sku = sku; this.qty = qty;
     }
+    public String getSku() { return sku; }
+    public int getQty() { return qty; }
+
 }
