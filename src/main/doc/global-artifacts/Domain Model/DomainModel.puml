@@ -32,16 +32,19 @@ package "Infraestrutura Ferroviária" {
     +speedLimitKmH : int
   }
 
-  class StationType {
-    +station
-    +terminal
+  class NormalStation {
+  +stationId : int
+  +name : String
+  +location : String
+  }
+
+  class Terminal {
+  +terminalId : int
+  +name : String
   }
 
   class Station {
-    +stationId : String
-    +name : String
-    +type : StationType
-    +location : String
+  +stationType : String
   }
 }
 
@@ -50,8 +53,10 @@ RailwayNetwork -- Line : 1 to many
 Line *-- LineSegment : 1 to many (composition)
 Line -- Station : 2 to many (endpoints)
 Line -- Owner : 1 to 1
-Station -- StationType : 1 to 1
 LineSegment -- SegmentType : 1 to 1
+Station -- NormalStation : can be
+Station -- Terminal : can be
+
 
 
 ' ======================= ROLLING STOCK & OPERADORES =======================
@@ -145,10 +150,6 @@ Route -- RouteType
 
 ' ======================= TERMINAL & WAREHOUSE =======================
 package "Terminal & Warehouse" {
-  class Terminal {
-    +terminalId : String
-    +name : String
-  }
 
   class CirculationLine {
     +id : String
@@ -173,10 +174,10 @@ package "Terminal & Warehouse" {
   }
 
   class Bay {
+  warehouseId : int
     +bayNo : int
     +capacityBoxes : int
-    +coordAisle : int
-    +coordBay : int
+    +aisleId : int
   }
 
   class Item {
@@ -198,7 +199,7 @@ package "Terminal & Warehouse" {
   class Box {
     +boxId : String
     +sku : String
-    +qty : int
+    +quantity : int
     +expiryDate : Date
     +receivedAt : DateTime
     +status : BoxStatus
@@ -215,6 +216,7 @@ Aisle *-- Bay : 1 to many (composition)
 Bay -- Box : 1 to many (stores)
 Item -- Box : 1 to many (describes)
 Box -- BoxStatus : 1 to 1
+Box -- Wagon : Transport
 
 ' ======================= OPERAÇÕES WMS =======================
 package "WMS / Movimentos" {
