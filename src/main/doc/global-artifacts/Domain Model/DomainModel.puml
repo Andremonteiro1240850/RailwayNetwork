@@ -368,8 +368,7 @@ package "Devoluções & Quarentena" {
     CYCLE_COUNT
   }
 
-  class Restock {
-  }
+
 
   enum QAAction {
     RESTOCK
@@ -381,8 +380,6 @@ package "Devoluções & Quarentena" {
     +returnId : String
     +inspectedAt : DateTime
     +action : QAAction
-    +qtyRestocked : int
-    +qtyDiscarded : int
   }
 
   class AuditLog {
@@ -391,8 +388,10 @@ package "Devoluções & Quarentena" {
     +returnId : String
     +sku : String
     +action : String
-    +qty : int
     +details : String
+    +qtyRestocked : int
+    +qtyDiscarded : int
+    +qty : int
   }
 
   class QualityOperator {
@@ -402,10 +401,11 @@ package "Devoluções & Quarentena" {
 }
 
 ' Relações de Devoluções
-QuarantineInspection -- Box : zero or one to 1 (on RESTOCK)
-AuditLog -- QuarantineInspection : many to many
-QualityOperator -- QuarantineInspection : 1 to many
-
+QuarantineInspection -- Box : on RESTOCK
+AuditLog -- QuarantineInspection : stores
+QualityOperator -- QuarantineInspection : does
+QuarantineInspection - QAAction : determines
+QAAction -- ReturnReason : depends
 ' ======================= PAPÉIS / UTILIZADORES =======================
 package "Papéis / Utilizadores" {
   class TrainDriver{
