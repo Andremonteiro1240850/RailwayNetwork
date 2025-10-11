@@ -50,7 +50,7 @@ package "Infraestrutura Ferroviária" {
 
 ' Relações da Infraestrutura
 RailwayNetwork -- Line : has
-Line *-- LineSegment : has
+Line -- LineSegment : has
 Line -- Station : pass trough
 Line -- Owner : has
 LineSegment -- SegmentType : can be
@@ -136,10 +136,9 @@ Operator -- Locomotive : belongs
 Operator -- Wagon : belongs
 Train -- Locomotive : composed of
 Train -- Wagon : composed of
-
 Freight -- Station : transport from A to B
 Freight -- Path : carry on
-Path *-- PathStep : composed of
+Path -- PathStep : composed of
 PathStep -- Station : has
 Wagon -- Freight : carries
 Wagon -- WagonType : can be
@@ -211,28 +210,15 @@ Terminal -- CirculationLine : has
 Terminal -- ParkingLine : has
 Terminal -- UnloadingDock : has
 Terminal -- Warehouse : connects
-Warehouse *-- Aisle : contains
-Aisle *-- Bay : contains
+Warehouse -- Aisle : contains
+Aisle -- Bay : contains
 Bay -- Box : stores
 Item -- Box : describes
 Box -- BoxStatus : status
 Box -- Wagon : Transport
 
 ' ======================= OPERAÇÕES WMS =======================
-package "WMS / Movimentos" {
-  class ImportBatch {
-    +batchId : String
-    +sourceFile : String
-    +importedAt : DateTime
-    +invalidCount : int
-    +validCount : int
-  }
-
-  enum MovementType {
-    UNLOAD
-    DISPATCH
-    RELOCATE
-  }
+package "WMS / Movimentos ( Perguntar ao Stor) " {
 
   class WMSMovement {
     +movementId : String
@@ -266,11 +252,11 @@ package "WMS / Movimentos" {
 
 ' Relações WMS
 UnloadingOperation -- Box : creates
-DispatchOperation -- Box : consumes)
-Relocation -- Box : 1 to many (moves)
-WMSMovement --> UnloadingOperation : logs
-WMSMovement --> DispatchOperation : logs
-WMSMovement --> Relocation : logs
+DispatchOperation -- Box : consumes
+Relocation -- Box :  moves
+WMSMovement -- UnloadingOperation : can be
+WMSMovement -- DispatchOperation : can be
+WMSMovement -- Relocation : can be
 
 ' ======================= PEDIDOS & ALOCAÇÃO =======================
 package "Pedidos & Alocação" {
@@ -313,21 +299,22 @@ package "Pedidos & Alocação" {
 }
 
 ' Relações de Pedidos
-Order -- OrderLine : 1 to many
-Allocation -- OrderLine : 1 to 1 (allocates)
-Allocation -- Box : 1 to 1 (from)
-Allocation -- Bay : 1 to 1 (at)
-Allocation -- AllocationStatus : 1 to 1
-Allocation -- AllocationMode : 1 to 1
+Order -- OrderLine : composed of
+Allocation -- OrderLine : allocates
+Allocation -- Box : from
+Allocation -- Bay : at
+Allocation -- AllocationStatus : has
+Allocation -- AllocationMode : has
 
 ' ======================= PICKING =======================
 package "Picking" {
   class PickingTrolley {
     +trolleyId : String
     +capacityWeightKg : int
+    +usedWeightKg : int
   }
 
-  enum PackingHeuristic {
+  enum PackingHeuristic_PerguntaraoStor {
     FF
     FFD
     BFD
@@ -364,11 +351,13 @@ package "Picking" {
 }
 
 ' Relações de Picking
-PickingPlan -- PickingBatch : 1 to many
-PickingBatch -- PickingTrolley : 1 to 1
-PickingBatch -- Allocation : 1 to many
-PickPath -- PickStop : 1 to many
-PickStop -- Bay : 1 to 1
+PickingPlan -- PickingBatch : determines
+PickingBatch -- PickingTrolley : carried by
+PickingBatch -- Allocation : has
+PackingHeuristic_PerguntaraoStor -- PickingBatch : organizes
+PickPath -- PickStop : stops at
+PickStop -- Bay : matches
+PickPath -- PathStrategy : defined by
 
 ' ======================= DEVOLUÇÕES & QUARENTENA =======================
 package "Devoluções & Quarentena" {
@@ -379,13 +368,7 @@ package "Devoluções & Quarentena" {
     CYCLE_COUNT
   }
 
-  class Return {
-    +returnId : String
-    +sku : String
-    +qty : int
-    +reason : ReturnReason
-    +timestamp : DateTime
-    +expiryDate : Date
+  class Restock {
   }
 
   enum QAAction {
@@ -419,8 +402,6 @@ package "Devoluções & Quarentena" {
 }
 
 ' Relações de Devoluções
-Return -- Station : 1 to 1
-QuarantineInspection -- Return : 1 to 1
 QuarantineInspection -- Box : zero or one to 1 (on RESTOCK)
 AuditLog -- QuarantineInspection : many to many
 QualityOperator -- QuarantineInspection : 1 to many
@@ -439,6 +420,11 @@ package "Papéis / Utilizadores" {
   +stationId : int
   }
 
+  class WarehousePlanner {
+  +warehouseId : int
+  +name : String
+  }
+
   class StationStorageManager {
   +stationStorageManegerId: int
   +stationId : int
@@ -454,15 +440,25 @@ package "Papéis / Utilizadores" {
   +plannerId : int
   +name : String
   }
+
+  class Picker {
+  +pickerId ; int
+  +name : String
+  }
 }
 
 ' Relações de Utilizadores
-TrainDriver --> Train : Drive
-StationMaster --> Station : Supervision
-StationStorageManager --> Station : Operates in
-StationStorageManager --> Freight : Manages
-FreightManager --> Freight : Manages
-Planner --> Train : Schedules
+TrainDriver -- Train : Drive
+StationMaster -- Station : Supervision
+StationStorageManager -- Station : Operates in
+StationStorageManager -- Freight : Manages
+FreightManager -- Freight : Manages
+Planner -- Train : Schedules
+WarehousePlanner -- Warehouse : Manages
+WarehousePlanner -- Allocation : atributes
+WarehousePlanner -- Order : Fulfill
+Picker -- PickPath: planes
+Planner -- Allocation : pack
 
 
 @enduml
