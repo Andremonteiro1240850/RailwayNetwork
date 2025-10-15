@@ -18,9 +18,9 @@ package "Infraestrutura Ferroviária" {
     +ownerId: String
   }
 
-  class SegmentType {
-    +single
-    +double
+  enum SegmentType {
+    SINGLE
+    DOUBLE
   }
 
   class LineSegment {
@@ -66,9 +66,9 @@ package "Rolling Stock & Operadores" {
     +name : String
   }
 
-  class LocoType {
-    +diesel
-    +eletric
+  enum LocoType {
+    DIESEL
+    ELETRIC
   }
 
   class Locomotive {
@@ -87,11 +87,11 @@ package "Rolling Stock & Operadores" {
   }
 
   enum WagonType {
-    +BOX
-    +FLAT
-    +TANK
-    +HOPPER
-    +REFRIG
+    BOX
+    FLAT
+    TANK
+    HOPPER
+    REFRIG
   }
 
   class Wagon {
@@ -125,9 +125,9 @@ package "Rolling Stock & Operadores" {
   +routeType : String
   }
 
-  ENUM RouteType {
-  +COMPLEX
-  +SIMPLE
+  enum RouteType {
+  COMPLEX
+  SIMPLE
   }
 }
 
@@ -215,7 +215,7 @@ Aisle -- Bay : contains
 Bay -- Box : stores
 Item -- Box : describes
 Box -- BoxStatus : status
-Box -- Wagon : Transport
+Box -- Wagon : transport
 
 ' ======================= OPERAÇÕES WMS =======================
 package "WMS / Movimentos ( Perguntar ao Stor) " {
@@ -448,15 +448,15 @@ package "Papéis / Utilizadores" {
 }
 
 ' Relações de Utilizadores
-TrainDriver -- Train : Drive
-StationMaster -- Station : Supervision
-StationStorageManager -- Station : Operates in
-StationStorageManager -- Freight : Manages
-FreightManager -- Freight : Manages
-Planner -- Train : Schedules
-WarehousePlanner -- Warehouse : Manages
+TrainDriver -- Train : drive
+StationMaster -- Station : supervision
+StationStorageManager -- Station : operates in
+StationStorageManager -- Freight : manages
+FreightManager -- Freight : manages
+Planner -- Train : schedules
+WarehousePlanner -- Warehouse : manages
 WarehousePlanner -- Allocation : atributes
-WarehousePlanner -- Order : Fulfill
+WarehousePlanner -- Order : fulfill
 Picker -- PickPath: planes
 Planner -- Allocation : pack
 
