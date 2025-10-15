@@ -125,9 +125,9 @@ package "Rolling Stock & Operadores" {
   +routeType : String
   }
 
-  class RouteType {
-  +complex
-  +simple
+  ENUM RouteType {
+  +COMPLEX
+  +SIMPLE
   }
 }
 
