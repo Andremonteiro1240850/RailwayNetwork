@@ -86,12 +86,12 @@ package "Rolling Stock & Operadores" {
     +gauge_mm : int
   }
 
-  class WagonType {
-    +box
-    +flat
-    +tank
-    +hopper
-    +refrig
+  enum WagonType {
+    +BOX
+    +FLAT
+    +TANK
+    +HOPPER
+    +REFRIG
   }
 
   class Wagon {
