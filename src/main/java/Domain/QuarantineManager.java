@@ -1,9 +1,11 @@
+package Domain;
+
 public class QuarantineManager {
     Warehouse warehouse;
     QuarantineInspection quarantineInspection;
     int id;
 
-    public QuarantineManager(Warehouse warehouse,  QuarantineInspection quarantineInspection, int id) {
+    public QuarantineManager(Warehouse warehouse, QuarantineInspection quarantineInspection, int id) {
         this.warehouse = warehouse;
         this.quarantineInspection = quarantineInspection;
         this.id = id;

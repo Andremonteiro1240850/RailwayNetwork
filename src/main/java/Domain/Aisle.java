@@ -1,3 +1,5 @@
+package Domain;
+
 public class Aisle {
     int id;
     Warehouse warehouse;

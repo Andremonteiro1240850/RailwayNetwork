@@ -1,3 +1,5 @@
+package Domain;
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
@@ -38,8 +40,8 @@ public class Box {
 
     @Override
     public String toString() {
-        return "Box{" +
-                "Box Id: " + boxId + '\'' +
+        return "Domain.Box{" +
+                "Domain.Box Id: " + boxId + '\'' +
                 ", SKU: " + sku + '\'' +
                 ", Quantity: " + qty +
                 ", Expiry Date: " + expiryDate +

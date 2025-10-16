@@ -1,3 +1,7 @@
+package Domain;
+
+import Domain.ENUM.QAAction;
+
 public class QuarantineInspection {
     int id;
     int inspectedAt;
@@ -20,7 +24,7 @@ public class QuarantineInspection {
 
     @Override
     public String toString() {
-        return "QuarantineInspection{" +
+        return "Domain.QuarantineInspection{" +
                 "Id: " + id +
                 ", Inspected at: " + inspectedAt +
                 ", Return Id: " + returnId +

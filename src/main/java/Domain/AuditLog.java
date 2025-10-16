@@ -1,3 +1,5 @@
+package Domain;
+
 public class AuditLog {
     int id;
     int returnId;
@@ -59,7 +61,7 @@ public class AuditLog {
 
     @Override
     public String toString() {
-        return "AuditLog{" +
+        return "Domain.AuditLog{" +
                 "id=" + id +
                 ", returnId=" + returnId +
                 ", timeStamp=" + timeStamp +

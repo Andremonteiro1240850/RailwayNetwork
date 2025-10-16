@@ -1,3 +1,5 @@
+package Domain;
+
 public class Item {
     String sku, name, category;
     double volume, weight;
@@ -38,7 +40,7 @@ public class Item {
 
     @Override
     public String toString() {
-        return "Item{" +
+        return "Domain.Item{" +
                 "SKU: '" + sku + '\'' +
                 ", Name: " + name + '\'' +
                 ", Category: " + category + '\'' +

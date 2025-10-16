@@ -1,3 +1,5 @@
+package Domain;
+
 public class Bay {
     Warehouse warehouse;
     int id;
@@ -36,11 +38,11 @@ public class Bay {
 
     @Override
     public String toString() {
-        return "Bay{" +
-                "Bay Id: " + id +
-                ", Warehouse: " + warehouse +
-                ", Box Capacity:" + boxCapacity +
-                ", Aisle:" + aisle +
+        return "Domain.Bay{" +
+                "Domain.Bay Id: " + id +
+                ", Domain.Warehouse: " + warehouse +
+                ", Domain.Box Capacity:" + boxCapacity +
+                ", Domain.Aisle:" + aisle +
                 '}';
     }
 }

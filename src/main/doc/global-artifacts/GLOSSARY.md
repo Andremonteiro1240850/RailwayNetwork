@@ -4,14 +4,14 @@
 
 | **_TEA_** (EN) | **_TEA_** (PT) | **_Description_** (EN) |
 |:---------------|:---------------|:----------------------|
-| **Aisle** | **Corredor** | Passageway between rows of storage bays in warehouse for movement and access. |
+| **Domain.Aisle** | **Corredor** | Passageway between rows of storage bays in warehouse for movement and access. |
 | **Allocation** | **Alocação** | Process of assigning specific quantities from inventory boxes to fulfill order lines. |
 | **Assembly** | **Montagem** | Process of coupling locomotives and wagons to form complete trains. |
 | **Audit Log** | **Registo de Auditoria** | File recording all inspection actions and decisions for returned goods. |
-| **Bay** | **Área de Armazenamento** | Specific storage location within warehouse identified by coordinates. |
+| **Domain.Bay** | **Área de Armazenamento** | Specific storage location within warehouse identified by coordinates. |
 | **Best Fit Decreasing (BFD)** | **Melhor Ajuste Decrescente** | Packing heuristic minimizing remaining unused capacity in trolleys. |
 | **Bogies** | **Bogies** | Chassis framework carrying wheelset under railway vehicles for weight distribution. |
-| **Box** | **Caixa** | Minimum storage unit containing specific SKU quantity with unique identifier. |
+| **Domain.Box** | **Caixa** | Minimum storage unit containing specific SKU quantity with unique identifier. |
 | **Boxcar** | **Vagão Coberto** | Enclosed wagon type for general goods protection. |
 | **BoxId** | **Identificador de Caixa** | Unique identifier for each box in warehouse management system. |
 | **Bridge** | **Ponte** | Engineering structure crossing obstacles (excluded from project scope). |
@@ -30,7 +30,7 @@
 | **Distance Function (D)** | **Função de Distância (D)** | Formula: D = b1 + \|a1-a2\|*3 + b2 for warehouse movement. |
 | **Double Track** | **Via Dupla** | Railway segment with parallel tracks allowing bidirectional movement. |
 | **Electrified Line** | **Linha Eletrificada** | Track segment with overhead electrical systems for electric locomotives. |
-| **Eligibility Status** | **Estado de Elegibilidade** | Order line classification: ELIGIBLE, PARTIAL, or UNDISPATCHABLE. |
+| **Eligibility Status** | **Estado de Elegibilidade** | Domain.Order line classification: ELIGIBLE, PARTIAL, or UNDISPATCHABLE. |
 | **Endpoint** | **Ponto Final** | Terminal station where railway lines begin or end. |
 | **Expired** | **Expirado** | Return reason for products past expiry date requiring disposal. |
 | **Expiry Date** | **Data de Validade** | Date after which perishable products become unsuitable. |
@@ -58,8 +58,8 @@
 | **Mineral Oil Car** | **Vagão de Óleo Mineral** | Tank wagon for petrochemicals and mineral oils. |
 | **Nearest Neighbour** | **Vizinho Mais Próximo** | Sequencing strategy selecting closest next location. |
 | **Operational Radius** | **Raio Operacional** | Geographic area where station operations influence cargo. |
-| **Order** | **Pedido** | Customer request for products with quantities and dates. |
-| **Order Line** | **Linha de Pedido** | Individual order item specifying SKU and quantity. |
+| **Domain.Order** | **Pedido** | Customer request for products with quantities and dates. |
+| **Domain.Order Line** | **Linha de Pedido** | Individual order item specifying SKU and quantity. |
 | **Packaging Heuristic** | **Heurística de Empacotamento** | Algorithm for packing allocations into trolleys. |
 | **Parking Lines** | **Linhas de Estacionamento** | Terminal sidings for temporary wagon storage. |
 | **Partial Dispatch** | **Expedição Parcial** | Operation continuing to next bay when current bay runs out. |
@@ -96,12 +96,12 @@
 | **Train Operating Company** | **Empresa Operadora** | Entity owning rolling stock and providing services. |
 | **Trolley** | **Carrinho** | Picking equipment with specific weight capacity. |
 | **Tunnel** | **Túnel** | Underground passage (excluded from project scope). |
-| **Unloading Dock** | **Doca de Descarga** | Warehouse access points where wagons are unloaded. |
+| **Unloading Dock** | **Doca de Descarga** | Domain.Warehouse access points where wagons are unloaded. |
 | **Unloading Operation** | **Operação de Descarga** | Process removing cargo from wagons for storage. |
 | **Utilization** | **Utilização** | Trolley capacity metric: usedWeight/capacityWeight. |
 | **Validation** | **Validação** | Process checking data integrity during import. |
 | **Wagon** | **Vagão** | Rail vehicle for freight transport with type-specific characteristics. |
-| **Warehouse** | **Armazém** | Facility organized in aisles and bays for product storage. |
+| **Domain.Warehouse** | **Armazém** | Facility organized in aisles and bays for product storage. |
 | **Warehousing** | **Armazenagem** | Storage of cargo at freight yards, terminals, and sidings. |
-| **Warehouse Layout** | **Layout do Armazém** | Physical organization using coordinate system for distances. |
-| **WMS (Warehouse Management System)** | **WMS** | Software tracking all goods movements and locations. |
+| **Domain.Warehouse Layout** | **Layout do Armazém** | Physical organization using coordinate system for distances. |
+| **WMS (Domain.Warehouse Management System)** | **WMS** | Software tracking all goods movements and locations. |
