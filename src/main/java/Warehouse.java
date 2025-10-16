@@ -113,4 +113,13 @@ public class Warehouse {
             System.out.println("Erro a ler order_lines: " + e.getMessage());
         }
     }
+    public Map<String, Order> getOrders() {
+        return orders;
+    }
+    public Map<String, List<Box>> getStock() {
+        return stock;
+    }
+    public Map<String, Item> getItems() {
+        return items;
+    }
 }
