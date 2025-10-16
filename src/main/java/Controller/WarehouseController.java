@@ -1,6 +1,7 @@
 package Controller;
 
 import Domain.Box;
+import Domain.Warehouse;
 
 import java.util.ArrayList;
 import java.util.List;

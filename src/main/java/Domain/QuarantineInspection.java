@@ -1,34 +1,45 @@
 package Domain;
 
 import Domain.ENUM.QAAction;
+import java.time.LocalDateTime;
 
 public class QuarantineInspection {
-    int id;
-    int inspectedAt;
-    int returnId;
-    QAAction action;
+    private String inspectionId;
+    private LocalDateTime inspectedAt;
+    private String returnId;
+    private QAAction action;
 
-    public QuarantineInspection(int id, QAAction action, int inspectedAt, int returnId) {
-        this.id = id;
-        this.action = action;
-        this.inspectedAt = inspectedAt;
+    // Construtor
+    public QuarantineInspection(String inspectionId, String returnId, LocalDateTime inspectedAt, QAAction action) {
+        this.inspectionId = inspectionId;
         this.returnId = returnId;
+        this.inspectedAt = inspectedAt;
+        this.action = action;
     }
-    public int getId() {return id;}
-    public int getInspectedAt() {return inspectedAt;}
-    public int getReturnId() {return returnId;}
-    public QAAction getAction() {return action;}
-    public void setId(int id) {this.id = id;}
-    public void setInspectedAt(int inspectedAt) {this.inspectedAt = inspectedAt;}
-    public void setReturnId(int returnId) {this.returnId = returnId;}
+
+    // Construtor vazio
+    public QuarantineInspection() {}
+
+    // Getters e Setters
+    public String getInspectionId() { return inspectionId; }
+    public void setInspectionId(String inspectionId) { this.inspectionId = inspectionId; }
+
+    public LocalDateTime getInspectedAt() { return inspectedAt; }
+    public void setInspectedAt(LocalDateTime inspectedAt) { this.inspectedAt = inspectedAt; }
+
+    public String getReturnId() { return returnId; }
+    public void setReturnId(String returnId) { this.returnId = returnId; }
+
+    public QAAction getAction() { return action; }
+    public void setAction(QAAction action) { this.action = action; }
 
     @Override
     public String toString() {
         return "Domain.QuarantineInspection{" +
-                "Id: " + id +
-                ", Inspected at: " + inspectedAt +
-                ", Return Id: " + returnId +
-                ", Action: " + action +
+                "inspectionId='" + inspectionId + '\'' +
+                ", inspectedAt=" + inspectedAt +
+                ", returnId='" + returnId + '\'' +
+                ", action=" + action +
                 '}';
     }
 }
