@@ -35,4 +35,15 @@ public class Item {
     public void setWeight(double weight) {
         this.weight = weight;
     }
+
+    @Override
+    public String toString() {
+        return "Item{" +
+                "SKU: '" + sku + '\'' +
+                ", Name: " + name + '\'' +
+                ", Category: " + category + '\'' +
+                ", Volume: " + volume +
+                ", Weight: " + weight +
+                '}';
+    }
 }

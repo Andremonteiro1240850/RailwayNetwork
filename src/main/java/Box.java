@@ -6,12 +6,14 @@ public class Box {
     int qty;
     LocalDate expiryDate;
     LocalDateTime receivedAt;
-    Aisle aisle;
-    Bay bay;
-    Box(String boxId, String sku, int qty, LocalDate expiryDate, LocalDateTime receivedAt) {
+    int aisle;
+    int bay;
+
+        Box(String boxId, String sku, int qty, LocalDate expiryDate, LocalDateTime receivedAt) {
         this.boxId = boxId; this.sku = sku; this.qty = qty;
         this.expiryDate = expiryDate; this.receivedAt = receivedAt;
-        this.aisle = aisle; this.bay = bay;
+        this.aisle = -1;
+        this.bay = -1;
     }
     public String getBoxId() {
         return boxId;
@@ -28,12 +30,20 @@ public class Box {
     public LocalDateTime getReceivedAt() {
         return receivedAt;
     }
-    public int getAisleId() { return aisle.getId(); }
-    public int getBayId() { return bay.getId(); }
     public void setBoxId(String boxId) { this.boxId = boxId; }
     public void setSku(String sku) { this.sku = sku; }
     public void setQty(int qty) { this.qty = qty; }
     public void setExpiryDate(LocalDate expiryDate) { this.expiryDate = expiryDate; }
     public void setReceivedAt(LocalDateTime receivedAt) { this.receivedAt = receivedAt; }
 
+    @Override
+    public String toString() {
+        return "Box{" +
+                "Box Id: " + boxId + '\'' +
+                ", SKU: " + sku + '\'' +
+                ", Quantity: " + qty +
+                ", Expiry Date: " + expiryDate +
+                ", Received At: " + receivedAt +
+                '}';
+    }
 }

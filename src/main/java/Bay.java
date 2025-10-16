@@ -33,4 +33,14 @@ public class Bay {
     public void setAisle(Aisle aisle){
         this.aisle = aisle;
     }
+
+    @Override
+    public String toString() {
+        return "Bay{" +
+                "Bay Id: " + id +
+                ", Warehouse: " + warehouse +
+                ", Box Capacity:" + boxCapacity +
+                ", Aisle:" + aisle +
+                '}';
+    }
 }
