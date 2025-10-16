@@ -1,3 +1,5 @@
+package Domain;
+
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.time.LocalDate;
@@ -112,5 +114,14 @@ public class Warehouse {
         } catch (Exception e) {
             System.out.println("Erro a ler order_lines: " + e.getMessage());
         }
+    }
+    public Map<String, Order> getOrders() {
+        return orders;
+    }
+    public Map<String, List<Box>> getStock() {
+        return stock;
+    }
+    public Map<String, Item> getItems() {
+        return items;
     }
 }

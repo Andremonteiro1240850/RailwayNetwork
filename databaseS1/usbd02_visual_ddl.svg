@@ -1618,7 +1618,7 @@ AElFTkSuQmCC" font-style="italic" height="18" preserveAspectRatio="none"
     /></g
     ><g font-size="11px" transform="translate(723,47)" fill-opacity="1" fill="black" text-rendering="geometricPrecision" image-rendering="optimizeQuality" font-family="sans-serif" stroke="black" stroke-opacity="1"
     ><text x="71" xml:space="preserve" y="12" clip-path="url(#clipPath71)" stroke="none"
-      >Warehouse</text
+      >Domain.Warehouse</text
     ></g
     ><g font-size="11px" transform="translate(473,30)" fill-opacity="1" fill="rgb(245,182,122)" text-rendering="geometricPrecision" image-rendering="optimizeQuality" font-family="sans-serif" stroke="rgb(245,182,122)" stroke-opacity="1"
     ><rect x="0" y="0" clip-path="url(#clipPath72)" width="195" rx="10" ry="10" height="76" stroke="none"
@@ -1688,7 +1688,7 @@ AFCjNFCjPNClMqC8BRTnYCDgEooBAMVf0aJncShdAAAAAElFTkSuQmCC" height="18" preserveAs
     /></g
     ><g font-size="11px" transform="translate(473,30)" fill-opacity="1" fill="black" text-rendering="geometricPrecision" image-rendering="optimizeQuality" font-family="sans-serif" stroke="black" stroke-opacity="1"
     ><text x="88" xml:space="preserve" y="12" clip-path="url(#clipPath58)" stroke="none"
-      >Bay</text
+      >Domain.Bay</text
     ></g
     ><g font-size="11px" transform="translate(235,2)" fill-opacity="1" fill="rgb(245,182,122)" text-rendering="geometricPrecision" image-rendering="optimizeQuality" font-family="sans-serif" stroke="rgb(245,182,122)" stroke-opacity="1"
     ><rect x="0" y="0" clip-path="url(#clipPath77)" width="186" rx="10" ry="10" height="185" stroke="none"
@@ -1831,7 +1831,7 @@ AElFTkSuQmCC" font-style="italic" height="18" preserveAspectRatio="none"
     /></g
     ><g font-size="11px" transform="translate(235,2)" fill-opacity="1" fill="black" text-rendering="geometricPrecision" image-rendering="optimizeQuality" font-family="sans-serif" stroke="black" stroke-opacity="1"
     ><text x="81" xml:space="preserve" y="12" clip-path="url(#clipPath87)" stroke="none"
-      >Item</text
+      >Domain.Item</text
     ></g
     ><g font-size="11px" transform="translate(2,59)" fill-opacity="1" fill="rgb(245,182,122)" text-rendering="geometricPrecision" image-rendering="optimizeQuality" font-family="sans-serif" stroke="rgb(245,182,122)" stroke-opacity="1"
     ><rect x="0" y="0" clip-path="url(#clipPath88)" width="178" rx="10" ry="10" height="76" stroke="none"
@@ -1896,7 +1896,7 @@ IqoZhA/gNUjCKeeXtGveX2IwSC26fqoAAJ39TRmoGdqcAAAAAElFTkSuQmCC" height="18" preser
     /></g
     ><g font-size="11px" transform="translate(2,59)" fill-opacity="1" fill="black" text-rendering="geometricPrecision" image-rendering="optimizeQuality" font-family="sans-serif" stroke="black" stroke-opacity="1"
     ><text x="74" xml:space="preserve" y="12" clip-path="url(#clipPath93)" stroke="none"
-      >Order</text
+      >Domain.Order</text
     ></g
     ><g font-size="11px" transform="translate(799,742)" fill-opacity="1" fill="rgb(245,182,122)" text-rendering="geometricPrecision" image-rendering="optimizeQuality" font-family="sans-serif" stroke="rgb(245,182,122)" stroke-opacity="1"
     ><rect x="0" y="0" clip-path="url(#clipPath94)" width="190" rx="10" ry="10" height="76" stroke="none"
@@ -2037,7 +2037,7 @@ AElFTkSuQmCC" height="18" preserveAspectRatio="none"
     /></g
     ><g font-size="11px" transform="translate(1003,37)" fill-opacity="1" fill="black" text-rendering="geometricPrecision" image-rendering="optimizeQuality" font-family="sans-serif" stroke="black" stroke-opacity="1"
     ><text x="97" xml:space="preserve" y="12" clip-path="url(#clipPath105)" stroke="none"
-      >Box</text
+      >Domain.Box</text
     ></g
     ><g font-size="11px" transform="translate(1347,177)" fill-opacity="1" fill="rgb(245,182,122)" text-rendering="geometricPrecision" image-rendering="optimizeQuality" font-family="sans-serif" stroke="rgb(245,182,122)" stroke-opacity="1"
     ><rect x="0" y="0" clip-path="url(#clipPath106)" width="216" rx="10" ry="10" height="58" stroke="none"

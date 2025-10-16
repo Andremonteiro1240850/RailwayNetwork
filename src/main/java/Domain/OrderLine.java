@@ -1,3 +1,5 @@
+package Domain;
+
 public class OrderLine {
     String sku;
     int qty;
