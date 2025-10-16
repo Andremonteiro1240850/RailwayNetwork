@@ -1,0 +1,3 @@
+public enum BoxStatus {
+    AVAILLABLE, ALLOCATED, DISPATCHED, REMOVED;
+}
