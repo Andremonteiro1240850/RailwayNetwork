@@ -1,69 +1,81 @@
+package Controller;
+
 import Domain.QuarantineInspection;
 import Domain.ENUM.QAAction;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
-import Controller.ItemController;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 
 public class InspectionController {
 
     private List<QuarantineInspection> quarantineInspections = new ArrayList<>();
-    private List<String> auditLogs = new ArrayList<>();
+    private final Path auditLogPath = Paths.get("logs", "audit.log");
+    private final DateTimeFormatter auditFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
     /**
-     * US05 - Processa quarentena
+     * US05 - Process inspection
      */
     public String processQuarantine(String sku, int quantity, String returnReason, LocalDate expiryDate) {
+        return processQuarantine(sku, quantity, returnReason, expiryDate, null, null);
+    }
+
+    /**
+     * US05 - Process inspection with partial restock support
+     */
+    public String processQuarantine(String sku, int quantity, String returnReason, LocalDate expiryDate, 
+                                   Integer qtyRestocked, Integer qtyDiscarded) {
         try {
-            // 1. Cria inspeção de quarentena
+            // 1. Created inspection
             QuarantineInspection inspection = createQuarantineInspection();
 
-            // 2. Determina ação baseada no motivo
+            // 2. Determines action based on motive
             QAAction action = determineAction(returnReason);
             inspection.setAction(action);
 
-            // 3. Processa conforme a ação
+            // 3. Process according to the action
             if (action == QAAction.RESTOCK) {
-                processRestock(inspection, sku, quantity, expiryDate);
+                int restockQty = (qtyRestocked != null) ? qtyRestocked : quantity;
+                processRestock(inspection, sku, restockQty, expiryDate);
             } else {
-                processDiscard(inspection, sku, quantity);
+                int discardQty = (qtyDiscarded != null) ? qtyDiscarded : quantity;
+                processDiscard(inspection, sku, discardQty);
             }
 
-            // 4. Adiciona à lista de inspeções (ordem inversa - mais recente primeiro)
+            // 4. Add to inspection list (reverse order - most recent first)
             quarantineInspections.add(0, inspection);
 
-            // 5. Cria audit log
-            createAuditLog(inspection, sku, quantity, action, returnReason);
+            // 5. Creates audit log
+            createAuditLog(inspection, sku, quantity, action, returnReason, qtyRestocked, qtyDiscarded);
 
             return String.format(
-                    "✅ QUARENTENA PROCESSADA\n" +
-                            "📋 Inspection ID: %s\n" +
-                            "📦 SKU: %s\n" +
-                            "🔢 Quantidade: %d\n" +
-                            "⚡ Ação: %s\n" +
-                            "📝 Motivo: %s\n" +
-                            "📅 Data: %s",
+                    "✅ Inspection Processed\n📋 Inspection ID: %s\n📦 SKU: %s\n🔢 Quantity: %d\n⚡ Action: %s\n📝 Motive: %s\n📅 Date: %s",
                     inspection.getInspectionId(), sku, quantity, action, returnReason, LocalDateTime.now()
             );
 
         } catch (Exception e) {
-            return "❌ ERRO na quarentena: " + e.getMessage();
+            return String.format("❌ ERROR: Inspection error. %s", e.getMessage());
         }
     }
 
     /**
-     * Cria nova inspeção de quarentena
+     * Creates new inspection
      */
     private QuarantineInspection createQuarantineInspection() {
         QuarantineInspection inspection = new QuarantineInspection();
         inspection.setInspectionId(generateId("INSP"));
-        inspection.setReturnId(generateId("RET"));
+        inspection.setReturnId(generateId("R"));
         inspection.setInspectedAt(LocalDateTime.now());
         return inspection;
     }
 
     /**
-     * Determina ação baseada no motivo (conforme US05)
+     * Determines action based on reason
      */
     private QAAction determineAction(String returnReason) {
         switch (returnReason.toUpperCase()) {
@@ -79,54 +91,87 @@ public class InspectionController {
     }
 
     /**
-     * Processa restock - cria nova box para inventory
+     * Process restock - create new box for inventory
      */
     private void processRestock(QuarantineInspection inspection, String sku, int quantity, LocalDate expiryDate) {
-        // Aqui criarias uma nova Domain.Box para o inventory
-        // seguindo as regras FEFO/FIFO da US01
-        System.out.println("📥 RESTOCK: Criando box para SKU " + sku + ", quantidade: " + quantity);
+        // BoxId conforme imagem: "RET-" + returnId
+        String boxId = String.format("RET-%s", inspection.getReturnId());
+        // Integração FEFO/FIFO será tratada noutra US; aqui apenas sinalizamos
+        System.out.println(String.format("📥 RESTOCK: Creating box %s for SKU %s, quantity: %d", boxId, sku, quantity));
     }
 
     /**
-     * Processa discard
+     * Process discard
      */
     private void processDiscard(QuarantineInspection inspection, String sku, int quantity) {
-        System.out.println("🗑️ DISCARD: Descartando SKU " + sku + ", quantidade: " + quantity);
+        System.out.println(String.format("🗑️ DISCARD: Discarding SKU %s, quantity: %d", sku, quantity));
     }
 
     /**
-     * Cria log de auditoria (formato da US05)
+     * Create audit log
      */
     private void createAuditLog(QuarantineInspection inspection, String sku, int quantity,
-                                QAAction action, String returnReason) {
-        String timestamp = LocalDateTime.now().toString();
-        String logEntry = String.format("%s | returnId=%s | sku=%s | action=%s | qty=%d",
-                timestamp, inspection.getReturnId(), sku, action, quantity);
+                                QAAction action, String returnReason, Integer qtyRestocked, Integer qtyDiscarded) {
+        LocalDateTime ts = LocalDateTime.now();
+        String actionLabel = (action == QAAction.RESTOCK) ? "Restocked" : "Discarded";
 
-        auditLogs.add(logEntry);
-        System.out.println("📋 AUDIT LOG: " + logEntry);
+        StringBuilder line = new StringBuilder();
+        line.append(auditFormatter.format(ts))
+                .append(" | ReturnId=").append(inspection.getReturnId())
+                .append(" | SKU=").append(sku)
+                .append(" | Action=").append(actionLabel)
+                .append(" | Quantity=").append(quantity);
+
+        // Add partial quantities if provided
+        if (qtyRestocked != null) {
+            line.append(" | Quantity Restocked=").append(qtyRestocked);
+        }
+        if (qtyDiscarded != null) {
+            line.append(" | Quantity Discarded=").append(qtyDiscarded);
+        }
+
+        appendAuditLine(line.append(System.lineSeparator()).toString());
     }
 
     /**
-     * Gera ID único
+     * Generates unique ID
      */
     private String generateId(String prefix) {
-        return prefix + "-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+        return String.format("%s-%s", prefix, UUID.randomUUID().toString().substring(0, 8).toUpperCase());
     }
 
     /**
-     * Obtém inspeções por SKU
+     * Get inspections by SKU
      */
     public List<QuarantineInspection> getInspectionsBySku(String sku) {
-        // Para simplificar, retorna todas
-        // Na implementação real, filtraria por SKU
         return new ArrayList<>(quarantineInspections);
     }
 
     /**
-     * Obtém logs de auditoria
+     * Get audit log
      */
     public List<String> getAuditLogs() {
-        return new ArrayList<>(auditLogs);
+        return Domain.AuditLog.readAll();
+    }
+
+    private void appendAuditLine(String content) {
+        ensureAuditFile();
+        try {
+            Files.write(auditLogPath, content.getBytes(StandardCharsets.UTF_8), StandardOpenOption.APPEND);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to write audit log entry", e);
+        }
+    }
+
+    private void ensureAuditFile() {
+        try {
+            if (!Files.exists(auditLogPath)) {
+                Path parent = auditLogPath.toAbsolutePath().getParent();
+                if (parent != null) Files.createDirectories(parent);
+                Files.write(auditLogPath, new byte[0], StandardOpenOption.CREATE);
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to initialize audit log file", e);
+        }
     }
 }

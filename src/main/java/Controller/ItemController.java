@@ -2,9 +2,7 @@ package Controller;
 
 import Domain.QuarantineInspection;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.*;
-import Controller.
 
 
 public class ItemController {
@@ -16,41 +14,49 @@ public class ItemController {
     }
 
     /**
-     * US05 - Processa uma devolução e encaminha para quarentena
+     * US05 - Process a return and forward it to quarantine
      */
     public String processReturn(String sku, int quantity, String returnReason, LocalDate expiryDate) {
+        return processReturn(sku, quantity, returnReason, expiryDate, null, null);
+    }
+
+    /**
+     * US05 - Process a return with partial restock support
+     */
+    public String processReturn(String sku, int quantity, String returnReason, LocalDate expiryDate, 
+                               Integer qtyRestocked, Integer qtyDiscarded) {
         try {
-            // Validações
+            // Validation
             if (sku == null || sku.trim().isEmpty()) {
-                return "ERRO: SKU não pode estar vazio";
+                return "ERROR: SKU can't be null or empty";
             }
 
             if (quantity <= 0) {
-                return "ERRO: Quantidade deve ser maior que zero";
+                return "ERROR: Quantity must be greater than 0";
             }
 
             if (returnReason == null || returnReason.trim().isEmpty()) {
-                return "ERRO: Motivo da devolução não pode estar vazio";
+                return "ERROR: Return reason can't be null or empty";
             }
 
-            // Valida motivos permitidos
-            List<String> validReasons = Arrays.asList("REMORSE", "DAMAGED", "EXPIRED", "CYCLE_COUNT");
+            // Validates permitted motives
+            List<String> validReasons = Arrays.asList("REMORSE", "DAMAGED", "EXPIRED", "CYCLE COUNT");
             if (!validReasons.contains(returnReason.toUpperCase())) {
-                return "ERRO: Motivo inválido. Use: REMORSE, DAMAGED, EXPIRED ou CYCLE_COUNT";
+                return "ERROR: Invalid Motive. Use: REMORSE, DAMAGED, EXPIRED ou CYCLE COUNT";
             }
 
-            // Encaminha para quarentena
-            String result = inspectionController.processQuarantine(sku, quantity, returnReason, expiryDate);
+            // Forwards to quarantine
+            String result = inspectionController.processQuarantine(sku, quantity, returnReason, expiryDate, qtyRestocked, qtyDiscarded);
 
             return result;
 
         } catch (Exception e) {
-            return "ERRO ao processar devolução: " + e.getMessage();
+            return String.format("ERROR processing return: %s", e.getMessage());
         }
     }
 
     /**
-     * Lista devoluções por SKU
+     * List returns by SKU
      */
     public List<QuarantineInspection> getReturnsBySku(String sku) {
         return inspectionController.getInspectionsBySku(sku);

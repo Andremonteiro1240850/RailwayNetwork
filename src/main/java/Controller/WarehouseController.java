@@ -11,14 +11,14 @@ public class WarehouseController {
     public WarehouseController(Warehouse warehouse) {
         this.warehouse = warehouse;
     }
-    public List modoLinha (){
-        List<Box> boxes = new ArrayList<>();
-        for (List<Box> boxList : warehouse.getStock().values()) {
-            boxes.addAll(boxList);
-        }
-        if()
+    //public List modoLinha (){
+      //  List<Box> boxes = new ArrayList<>();
+        //for (List<Box> boxList : warehouse.getStock().values()) {
+          //  boxes.addAll(boxList);
+        //}
+        //if()
 
     }
 
 
-}
+
