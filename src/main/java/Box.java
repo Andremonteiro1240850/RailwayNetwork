@@ -4,11 +4,14 @@ import java.time.LocalDateTime;
 public class Box {
     String boxId, sku;
     int qty;
-    LocalDate expiry;
+    LocalDate expiryDate;
     LocalDateTime receivedAt;
-    Box(String boxId, String sku, int qty, LocalDate expiry, LocalDateTime receivedAt) {
+    Aisle aisle;
+    Bay bay;
+    Box(String boxId, String sku, int qty, LocalDate expiryDate, LocalDateTime receivedAt) {
         this.boxId = boxId; this.sku = sku; this.qty = qty;
-        this.expiry = expiry; this.receivedAt = receivedAt;
+        this.expiryDate = expiryDate; this.receivedAt = receivedAt;
+        this.aisle = aisle; this.bay = bay;
     }
     public String getBoxId() {
         return boxId;
@@ -19,16 +22,18 @@ public class Box {
     public int getQty() {
         return qty;
     }
-    public LocalDate getExpiry() {
-        return expiry;
+    public LocalDate getExpiryDate() {
+        return expiryDate;
     }
     public LocalDateTime getReceivedAt() {
         return receivedAt;
     }
+    public int getAisleId() { return aisle.getId(); }
+    public int getBayId() { return bay.getId(); }
     public void setBoxId(String boxId) { this.boxId = boxId; }
     public void setSku(String sku) { this.sku = sku; }
     public void setQty(int qty) { this.qty = qty; }
-    public void setExpiry(LocalDate expiry) { this.expiry = expiry; }
+    public void setExpiryDate(LocalDate expiryDate) { this.expiryDate = expiryDate; }
     public void setReceivedAt(LocalDateTime receivedAt) { this.receivedAt = receivedAt; }
 
 }
