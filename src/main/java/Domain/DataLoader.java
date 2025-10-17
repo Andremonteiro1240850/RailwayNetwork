@@ -16,6 +16,7 @@ public class DataLoader {
     Map<String, Order> orders = new HashMap<>();
     List<Bay> bays = new ArrayList<>();
     List<Return> returns = new ArrayList<>();
+    // Contadores não necessários quando ficheiro já fornece lineNo
 
     // Indexes auxiliares para construir Bays
     private final Map<String, Warehouse> warehouseById = new HashMap<>();
@@ -179,6 +180,7 @@ public class DataLoader {
                 if (p.length < 4) continue;
 
                 String orderId = safeGet(p, 0);
+                Integer lineNo = parseInteger(safeGet(p, 1));
                 String sku = safeGet(p, 2);
                 Integer qty = parseInteger(safeGet(p, 3));
 
@@ -190,6 +192,10 @@ public class DataLoader {
                     System.out.println("⚠️ Linha de encomenda com orderId inválido (ignorado)");
                     continue;
                 }
+                if (lineNo == null || lineNo <= 0) {
+                    System.out.println("⚠️ Linha de encomenda " + orderId + " com lineNo inválido (ignorado)");
+                    continue;
+                }
                 if (qty == null || qty <= 0) {
                     System.out.println("⚠️ Linha de encomenda " + orderId + " com quantidade inválida (ignorado)");
                     continue;
@@ -197,7 +203,7 @@ public class DataLoader {
 
                 Order order = orders.get(orderId);
                 if (order != null) {
-                    order.addLine(new OrderLine(sku, qty));
+                    order.addLine(new OrderLine(lineNo, sku, qty));
                 }
             }
         } catch (Exception e) {
@@ -211,7 +217,8 @@ public class DataLoader {
             br.readLine(); // header
             String line;
             while ((line = br.readLine()) != null) {
-                String[] p = line.split(",");
+                // ficheiro separado por ';'
+                String[] p = line.split(";");
                 if (p.length < 4) continue;
 
                 String warehouseId = safeGet(p, 0);

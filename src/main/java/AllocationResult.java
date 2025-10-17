@@ -1,3 +1,5 @@
+import Domain.EligibilityResult;
+
 import java.util.List;
 
 public class AllocationResult {

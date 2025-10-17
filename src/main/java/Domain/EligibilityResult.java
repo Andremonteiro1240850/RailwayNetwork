@@ -1,3 +1,7 @@
+package Domain;
+
+import Domain.ENUM.AllocationStatus;
+
 public class EligibilityResult {
     private String orderId;
     private int lineNo;
