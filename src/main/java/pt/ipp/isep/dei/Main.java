@@ -63,7 +63,7 @@ public class Main {
             System.out.println(l);
         }
     }
-// HUGO TENS QUE MUDAR ISTO E POR ENUM!!!
+
     private static String mapReason(String csvReason) {
         String r = csvReason.toLowerCase();
         switch (r) {
