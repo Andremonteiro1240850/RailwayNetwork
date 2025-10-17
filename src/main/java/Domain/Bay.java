@@ -1,3 +1,5 @@
+package Domain;
+
 public class Bay {
     Warehouse warehouse;
     int id;
@@ -32,5 +34,15 @@ public class Bay {
     }
     public void setAisle(Aisle aisle){
         this.aisle = aisle;
+    }
+
+    @Override
+    public String toString() {
+        return "Domain.Bay{" +
+                "Domain.Bay Id: " + id +
+                ", Domain.Warehouse: " + warehouse +
+                ", Domain.Box Capacity:" + boxCapacity +
+                ", Domain.Aisle:" + aisle +
+                '}';
     }
 }

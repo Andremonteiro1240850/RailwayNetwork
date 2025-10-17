@@ -388,7 +388,6 @@ package "Devoluções & Quarentena" {
     +returnId : String
     +sku : String
     +action : String
-    +details : String
     +qtyRestocked : int
     +qtyDiscarded : int
     +qty : int
