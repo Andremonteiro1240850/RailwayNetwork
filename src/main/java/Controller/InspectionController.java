@@ -28,8 +28,8 @@ public class InspectionController {
     /**
      * US05 - Process inspection with partial restock support
      */
-    public String processQuarantine(String sku, int quantity, String returnReason, LocalDate expiryDate, 
-                                   Integer qtyRestocked, Integer qtyDiscarded) {
+    public String processQuarantine(String sku, int quantity, String returnReason, LocalDate expiryDate,
+                                    Integer qtyRestocked, Integer qtyDiscarded) {
         try {
             // 1. Created inspection
             QuarantineInspection inspection = createQuarantineInspection();
@@ -54,7 +54,7 @@ public class InspectionController {
             createAuditLog(inspection, sku, quantity, action, returnReason, qtyRestocked, qtyDiscarded);
 
             return String.format(
-                    "✅ Inspection Processed\n📋 Inspection ID: %s\n📦 SKU: %s\n🔢 Quantity: %d\n⚡ Action: %s\n📝 Motive: %s\n📅 Date: %s",
+                    "Inspection Processed\nInspection ID: %s\nSKU: %s\nQuantity: %d\nAction: %s\nMotive: %s\nDate: %s",
                     inspection.getInspectionId(), sku, quantity, action, returnReason, LocalDateTime.now()
             );
 
@@ -97,14 +97,14 @@ public class InspectionController {
         // BoxId conforme imagem: "RET-" + returnId
         String boxId = String.format("RET-%s", inspection.getReturnId());
         // Integração FEFO/FIFO será tratada noutra US; aqui apenas sinalizamos
-        System.out.println(String.format("📥 RESTOCK: Creating box %s for SKU %s, quantity: %d", boxId, sku, quantity));
+        System.out.println(String.format("RESTOCK: Creating box %s for SKU %s, quantity: %d", boxId, sku, quantity));
     }
 
     /**
      * Process discard
      */
     private void processDiscard(QuarantineInspection inspection, String sku, int quantity) {
-        System.out.println(String.format("🗑️ DISCARD: Discarding SKU %s, quantity: %d", sku, quantity));
+        System.out.println(String.format("DISCARD: Discarding SKU %s, quantity: %d", sku, quantity));
     }
 
     /**

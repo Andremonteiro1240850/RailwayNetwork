@@ -1,4 +1,4 @@
-package pt.ipp.isep.dei;
+package Domain.ENUM;
 
 public enum PathStrategy {
     ASC_SWEEP,

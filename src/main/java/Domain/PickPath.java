@@ -1,4 +1,6 @@
-package pt.ipp.isep.dei;
+package Domain;
+import Domain.ENUM.PathStrategy;
+
 import java.util.List;
 
 
