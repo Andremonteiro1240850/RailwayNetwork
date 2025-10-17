@@ -1,3 +1,5 @@
+package Domain;
+
 public class Item {
     String sku, name, category;
     double volume, weight;
@@ -34,5 +36,16 @@ public class Item {
     }
     public void setWeight(double weight) {
         this.weight = weight;
+    }
+
+    @Override
+    public String toString() {
+        return "Domain.Item{" +
+                "SKU: '" + sku + '\'' +
+                ", Name: " + name + '\'' +
+                ", Category: " + category + '\'' +
+                ", Volume: " + volume +
+                ", Weight: " + weight +
+                '}';
     }
 }
