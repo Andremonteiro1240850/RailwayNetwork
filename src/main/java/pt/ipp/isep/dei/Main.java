@@ -2,8 +2,6 @@ package pt.ipp.isep.dei;
 
 import Controller.InspectionController;
 import Controller.ItemController;
-import UI.ReturnsUI;
-import Domain.ENUM.ReturnReason;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -43,36 +41,44 @@ public class Main {
                 // timestamp from CSV not used in this flow
                 String expiryRaw = parts.length > 5 ? parts[5].trim() : "";
 
-                ReturnReason mappedReason = mapReason(reasonRaw);
+                String mappedReason = mapReason(reasonRaw);
                 LocalDate expiryDate = expiryRaw.isEmpty() ? null : LocalDate.parse(expiryRaw);
 
-                String result = itemController.processReturn(sku, qty, mappedReason.name(), expiryDate);
+                String result = itemController.processReturn(sku, qty, mappedReason, expiryDate);
                 results.add(result);
             }
         } catch (IOException e) {
             System.out.println(String.format("Failed to read CSV: %s", e.getMessage()));
         }
 
-        // Pretty UI output
-        ReturnsUI ui = new ReturnsUI(inspectionController);
-        ui.showDashboard();
+        // Print processing results
+        for (String r : results) {
+            System.out.println(r);
+        }
+
+        // Print audit log entries collected
+        List<String> logs = inspectionController.getAuditLogs();
+        System.out.println(String.format("\n=== Audit Log Entries (%d) ===", logs.size()));
+        for (String l : logs) {
+            System.out.println(l);
+        }
     }
 
-    private static ReturnReason mapReason(String csvReason) {
+    private static String mapReason(String csvReason) {
         String r = csvReason.toLowerCase();
         switch (r) {
             case "customer-remorse":
-                return ReturnReason.REMORSE;
+                return "REMORSE";
             case "expired":
-                return ReturnReason.EXPIRED;
+                return "EXPIRED";
             case "damaged":
-                return ReturnReason.DAMAGED;
+                return "DAMAGED";
             case "package-opened":
             case "wrong-item":
                 // treat as remorse for restock per typical flows
-                return ReturnReason.REMORSE;
+                return "REMORSE";
             default:
-                return ReturnReason.REMORSE;
+                return "REMORSE";
         }
     }
 }
