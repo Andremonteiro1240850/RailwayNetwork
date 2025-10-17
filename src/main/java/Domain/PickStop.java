@@ -1,4 +1,4 @@
-package pt.ipp.isep.dei;
+package Domain;
 
 public class PickStop {
     private int seq;
