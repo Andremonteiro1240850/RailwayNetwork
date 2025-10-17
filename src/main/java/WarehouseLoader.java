@@ -11,5 +11,9 @@ public class WarehouseLoader {
         System.out.println("\n✅ Catalogo: " + warehouse.items.size() + " itens");
         System.out.println("✅ Stock: " + warehouse.stock.values().stream().mapToInt(List::size).sum() + " caixas");
         System.out.println("✅ Encomendas: " + warehouse.orders.size() + " orders");
+
+        WarehouseController warehouseController = new WarehouseController(warehouse);
+
+
     }
 }

@@ -35,5 +35,10 @@ public class Box {
     public void setQty(int qty) { this.qty = qty; }
     public void setExpiryDate(LocalDate expiryDate) { this.expiryDate = expiryDate; }
     public void setReceivedAt(LocalDateTime receivedAt) { this.receivedAt = receivedAt; }
+    public void reduceQty(int amount) {
+        this.qty -= amount;
+        if (this.qty < 0) this.qty = 0;
+    }
+
 
 }
