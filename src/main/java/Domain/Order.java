@@ -4,7 +4,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Order {
+public class Order implements Comparable<Order> {
     String id;
     LocalDateTime dueDate;
     int priority;
@@ -29,5 +29,17 @@ public class Order {
     }
     public void addLine(OrderLine line) {
         lines.add(line);
+    }
+    
+    @Override
+    public int compareTo(Order other) {
+        // Priority ASC, dueDate ASC, orderId ASC
+        int priorityCmp = Integer.compare(this.priority, other.priority);
+        if (priorityCmp != 0) return priorityCmp;
+        
+        int dateCmp = this.dueDate.compareTo(other.dueDate);
+        if (dateCmp != 0) return dateCmp;
+        
+        return this.id.compareTo(other.id);
     }
 }

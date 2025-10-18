@@ -3,7 +3,10 @@ package pt.ipp.isep.dei;
 import Controller.InspectionController;
 import Controller.ItemController;
 import Controller.QualityOperatorController;
+import Controller.WagonsUnloadingController;
 import UI.ReturnsUI;
+import UI.WagonsUnloadingUI;
+import Domain.DataLoader;
 import Domain.ENUM.ReturnReason;
 import Domain.PickPath;
 import Domain.PickStop;
@@ -26,6 +29,31 @@ import java.util.Scanner;
 public class Main {
     
     private static Scanner scanner = new Scanner(System.in);
+    private static DataLoader dataLoader;
+    private static boolean dataLoaded = false;
+    
+    /**
+     * Load all data from CSV files once at startup
+     */
+    private static void loadAllData() {
+        System.out.println("Loading data from CSV files...");
+        dataLoader = new DataLoader();
+        
+        try {
+            // Load all required data
+            dataLoader.loadItems("train_station_dataset/items.csv");
+            dataLoader.loadBays("train_station_dataset/bays.csv");
+            dataLoader.loadWagons("train_station_dataset/wagons.csv");
+            dataLoader.loadOrders("train_station_dataset/orders.csv", "train_station_dataset/order_lines.csv");
+            dataLoader.loadReturns("train_station_dataset/returns.csv");
+            
+            dataLoaded = true;
+            System.out.println("✓ All data loaded successfully!");
+        } catch (Exception e) {
+            System.out.println("❌ Error loading data: " + e.getMessage());
+            dataLoaded = false;
+        }
+    }
     
     public static void main(String[] args) {
         while (true) {
@@ -88,10 +116,9 @@ public class Main {
      * Wagons Unloading
      */
     private static void wagonsUnloading() {
-        System.out.println("\n=== WAGONS UNLOADING ===");
-        System.out.println("This feature is not yet implemented.");
-        System.out.println("Press Enter to return to main menu...");
-        scanner.nextLine();
+        WagonsUnloadingController controller = new WagonsUnloadingController();
+        WagonsUnloadingUI ui = new WagonsUnloadingUI(controller);
+        ui.showMainMenu();
     }
     
     /**

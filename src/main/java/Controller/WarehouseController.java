@@ -107,14 +107,15 @@ public class WarehouseController {
                         int allocatedFromBox = Math.min(remaining, availableInBox);
 
                         // Criar linha de alocação
+                        // Para compatibilidade, usar valores padrão já que getAisle() e getBay() retornam null
                         allocationRows.add(new AllocationRow(
                                 order.getId(),
                                 line.getLineNo(),
                                 sku,
                                 allocatedFromBox,
                                 box.getBoxId(),
-                                box.getAisle().getId(),
-                                box.getBay().getId()
+                                0, // aisleID - valor padrão para compatibilidade
+                                0  // bayID - valor padrão para compatibilidade
                         ));
 
                         // Atualizar stock da box (consumir)

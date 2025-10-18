@@ -11,11 +11,11 @@ import java.util.List;
 import java.util.Map;
 
 public class DataLoader {
-    Map<String, Item> items = new HashMap<>();
-    Map<String, List<Box>> stock = new HashMap<>();
-    Map<String, Order> orders = new HashMap<>();
-    List<Bay> bays = new ArrayList<>();
-    List<Return> returns = new ArrayList<>();
+    public Map<String, Item> items = new HashMap<>();
+    public Map<String, List<Box>> stock = new HashMap<>();
+    public Map<String, Order> orders = new HashMap<>();
+    public List<Bay> bays = new ArrayList<>();
+    public List<Return> returns = new ArrayList<>();
     // Contadores não necessários quando ficheiro já fornece lineNo
 
     // Indexes auxiliares para construir Bays
@@ -79,6 +79,7 @@ public class DataLoader {
                 String sku = safeGet(p, 0);
                 String name = safeGet(p, 1);
                 String category = safeGet(p, 2);
+                String unit=safeGet(p, 3);
                 Double volume = parseDoubleValue(safeGet(p, 4));
                 Double weight = parseDoubleValue(safeGet(p, 5));
 
@@ -91,7 +92,7 @@ public class DataLoader {
                     continue;
                 }
 
-                items.put(sku, new Item(sku, name, category, volume, weight));
+                items.put(sku, new Item(sku, name, category,unit, volume, weight));
             }
         } catch (Exception e) {
             System.out.println("Erro a ler items: " + e.getMessage());
@@ -107,6 +108,7 @@ public class DataLoader {
                 String[] p = line.split(",");
                 if (p.length < 6) continue;
 
+                String wagonId = safeGet(p, 0);
                 String boxId = safeGet(p, 1);
                 String sku = safeGet(p, 2);
                 Integer qty = parseInteger(safeGet(p, 3));
@@ -130,8 +132,7 @@ public class DataLoader {
                     continue;
                 }
 
-                //Pombinha tens de definir quais as aisle e o bay das box por FEFO
-
+                // Create box without location initially
                 Box box = new Box(boxId, sku, qty, expiry, receivedAt);
                 stock.computeIfAbsent(sku, k -> new ArrayList<>()).add(box);
             }
@@ -237,11 +238,8 @@ public class DataLoader {
                     continue;
                 }
 
-                Warehouse w = warehouseById.computeIfAbsent(warehouseId, k -> new Warehouse());
-                Map<Integer, Aisle> byAisle = aislesByWarehouse.computeIfAbsent(warehouseId, k -> new HashMap<>());
-                Aisle aisle = byAisle.computeIfAbsent(aisleNo, k -> new Aisle(aisleNo, w));
-
-                Bay b = new Bay(w, bayId, capacity, aisle);
+                BayId bayIdObj = new BayId(warehouseId, aisleNo, bayId);
+                Bay b = new Bay(bayIdObj, capacity);
                 bays.add(b);
             }
         } catch (Exception e) {
