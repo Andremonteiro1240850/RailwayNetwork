@@ -1,21 +1,23 @@
+package Domain;
+
 public class AllocationRow {
     private String orderId;
     private int lineNo;
     private String sku;
     private int qty;
     private String boxId;
-    private int aisle;
-    private int bay;
+    private int aisleID;
+    private int bayID;
 
     public AllocationRow(String orderId, int lineNo, String sku, int qty,
-                         String boxId, int aisle, int bay) {
+                         String boxId, int aisleID, int bayID) {
         this.orderId = orderId;
         this.lineNo = lineNo;
         this.sku = sku;
         this.qty = qty;
         this.boxId = boxId;
-        this.aisle = aisle;
-        this.bay = bay;
+        this.aisleID = aisleID;
+        this.bayID = bayID;
     }
 
     // Getters
@@ -24,6 +26,6 @@ public class AllocationRow {
     public String getSku() { return sku; }
     public int getQty() { return qty; }
     public String getBoxId() { return boxId; }
-    public int getAisle() { return aisle; }
-    public int getBay() { return bay; }
+    public int getAisle() { return aisleID; }
+    public int getBay() { return bayID; }
 }

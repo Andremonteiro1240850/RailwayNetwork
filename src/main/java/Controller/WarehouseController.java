@@ -8,9 +8,11 @@ import java.util.List;
 
 public class WarehouseController {
     Warehouse warehouse;
+
     public WarehouseController(Warehouse warehouse) {
         this.warehouse = warehouse;
     }
+
     public List<EligibilityResult> estadoEncomenda (){
         List<EligibilityResult> estados = new ArrayList<>();
         java.util.Map<String, java.util.List<Box>> stock = warehouse.getStock();
@@ -67,6 +69,63 @@ public class WarehouseController {
         }
 
         return estados;
+    }
+    public List<AllocationRow> createAllocationRows(){
+        List<AllocationRow> allocationRows = new ArrayList<>();
+        java.util.Map<String, java.util.List<Box>> stock = warehouse.getStock();
+
+        // Ordenar encomendas: priority ASC, dueDate ASC, orderId ASC
+        java.util.List<Order> sortedOrders = new java.util.ArrayList<>(warehouse.getOrders().values());
+        java.util.Collections.sort(sortedOrders);
+
+        for (Order order : sortedOrders) {
+            // Ordenar linhas por lineNo ASC
+            java.util.List<OrderLine> lines = new java.util.ArrayList<>(order.getLines());
+            lines.sort(java.util.Comparator.comparingInt(OrderLine::getLineNo));
+
+            for (OrderLine line : lines) {
+                String sku = line.getSku();
+                int requested = line.getRequestedQty();
+                int remaining = requested;
+
+                // Obter boxes deste SKU ordenadas por FEFO/FIFO
+                java.util.List<Box> boxes = stock.get(sku);
+                if (boxes != null) {
+                    // Ordenar por: ExpiryDate (menor primeiro, nulos no fim), ReceivedAt (mais antigo primeiro), BoxId (ascendente)
+                    boxes.sort(java.util.Comparator
+                            .comparing(Box::getExpiryDate, java.util.Comparator.nullsLast(java.util.Comparator.naturalOrder()))
+                            .thenComparing(Box::getReceivedAt)
+                            .thenComparing(Box::getBoxId)
+                    );
+
+                    for (Box box : boxes) {
+                        if (remaining <= 0) break;
+
+                        int availableInBox = box.getQty();
+                        if (availableInBox <= 0) continue;
+
+                        int allocatedFromBox = Math.min(remaining, availableInBox);
+
+                        // Criar linha de alocação
+                        allocationRows.add(new AllocationRow(
+                                order.getId(),
+                                line.getLineNo(),
+                                sku,
+                                allocatedFromBox,
+                                box.getBoxId(),
+                                box.getAisle().getId(),
+                                box.getBay().getId()
+                        ));
+
+                        // Atualizar stock da box (consumir)
+                        box.setQty(availableInBox - allocatedFromBox);
+                        remaining -= allocatedFromBox;
+                    }
+                }
+            }
+        }
+
+        return allocationRows;
     }
 
 

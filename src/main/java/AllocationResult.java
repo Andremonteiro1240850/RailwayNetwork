@@ -1,3 +1,4 @@
+import Domain.AllocationRow;
 import Domain.EligibilityResult;
 
 import java.util.List;

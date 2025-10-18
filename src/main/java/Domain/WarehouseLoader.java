@@ -53,8 +53,18 @@ public class WarehouseLoader {
                     ", status=" + er.getStatus()
             );
         }
-
-
+        List<AllocationRow> resultados = warehouseController.createAllocationRows();
+        for (AllocationRow r : resultados) {
+            System.out.println(
+                    "ALLOC order=" + r.getOrderId() +
+                    ", lineNo=" + r.getLineNo() +
+                    ", sku=" + r.getSku() +
+                    ", qty=" + r.getQty() +
+                    ", boxId=" + r.getBoxId() +
+                    ", aisle=" + r.getAisle() +
+                    ", bay=" + r.getBay()
+            );
+        }
 
     }
 }

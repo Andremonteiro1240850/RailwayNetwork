@@ -8,17 +8,19 @@ public class Box {
     private int qty;
     private LocalDate expiryDate;
     private LocalDateTime receivedAt;
-    private int aisle;
-    private int bay;
 
-    Box(String boxId, String sku, int qty, LocalDate expiryDate, LocalDateTime receivedAt) {
+    //Pombinha tens de definir quais as aisle e o bay das box por FEFO
+    private Aisle aisle;
+    private Bay bay;
+
+    public Box(String boxId, String sku, int qty, LocalDate expiryDate, LocalDateTime receivedAt,Aisle aisle,Bay bay) {
         this.boxId = boxId;
         this.sku = sku;
         this.qty = qty;
         this.expiryDate = expiryDate;
         this.receivedAt = receivedAt;
-        this.aisle = -1;
-        this.bay = -1;
+        this.aisle = aisle;
+        this.bay = bay;
     }
 
     public String getBoxId() {
@@ -59,6 +61,22 @@ public class Box {
 
     public void setReceivedAt(LocalDateTime receivedAt) {
         this.receivedAt = receivedAt;
+    }
+
+    public Aisle getAisle() {
+        return aisle;
+    }
+
+    public Bay getBay() {
+        return bay;
+    }
+
+    public void setAisle(Aisle aisle) {
+        this.aisle = aisle;
+    }
+
+    public void setBay(Bay bay) {
+        this.bay = bay;
     }
 
 

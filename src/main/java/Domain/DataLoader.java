@@ -130,6 +130,8 @@ public class DataLoader {
                     continue;
                 }
 
+                //Pombinha tens de definir quais as aisle e o bay das box por FEFO
+
                 Box box = new Box(boxId, sku, qty, expiry, receivedAt);
                 stock.computeIfAbsent(sku, k -> new ArrayList<>()).add(box);
             }
