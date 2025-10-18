@@ -28,8 +28,8 @@ public class InspectionController {
     /**
      * US05 - Process inspection with partial restock support
      */
-    public String processQuarantine(String sku, int quantity, String returnReason, LocalDate expiryDate, 
-                                   Integer qtyRestocked, Integer qtyDiscarded) {
+    public String processQuarantine(String sku, int quantity, String returnReason, LocalDate expiryDate,
+                                    Integer qtyRestocked, Integer qtyDiscarded) {
         try {
             // 1. Created inspection
             QuarantineInspection inspection = createQuarantineInspection();
