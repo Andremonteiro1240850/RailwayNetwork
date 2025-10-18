@@ -1,5 +1,7 @@
 package Domain;
 
+import java.util.Objects;
+
 public class PickStop {
     private int seq;
     private int aisle;
@@ -56,7 +58,7 @@ public class PickStop {
 
     @Override
     public int hashCode() {
-        return 31 * aisle + bay;
+        return Objects.hash(aisle, bay);
     }
 
     @Override
