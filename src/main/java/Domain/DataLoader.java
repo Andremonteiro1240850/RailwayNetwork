@@ -290,6 +290,9 @@ public class DataLoader {
             System.out.println("Erro a ler returns: " + e.getMessage());
         }
     }
+    public List<Bay> getBays() {
+        return bays;
+    }
 }
 
 
