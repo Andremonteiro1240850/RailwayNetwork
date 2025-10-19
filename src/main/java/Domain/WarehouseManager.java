@@ -42,29 +42,24 @@ public class WarehouseManager {
     }
 
     /**
-     * Assign a box to the first available bay for its SKU
+     * Assign a box to the first non-full bay in ascending order (aisle/bay)
+     * This enforces the example distribution policy for USEI01: start at aisle 1, bay 1.
      */
     private void assignBoxToBay(Box box) {
         String sku = box.getSku();
-        
-        // Find bays that have this SKU or are empty
+
+        // Choose the first non-full bay by ascending BayId
         List<Bay> candidateBays = bays.stream()
                 .filter(bay -> !bay.isFull())
-                .filter(bay -> !bay.hasSku(sku) || bay.hasSku(sku))
                 .sorted(Comparator.comparing(Bay::getId))
                 .collect(Collectors.toList());
-        
+
         if (candidateBays.isEmpty()) {
             System.out.println("⚠️ No available bays for SKU: " + sku + " (Box: " + box.getBoxId() + ")");
             return;
         }
-        
-        // Try to find a bay that already has this SKU
-        Bay targetBay = candidateBays.stream()
-                .filter(bay -> bay.hasSku(sku))
-                .findFirst()
-                .orElse(candidateBays.get(0)); // Use first available bay
-        
+
+        Bay targetBay = candidateBays.get(0);
         targetBay.insertBox(box);
         System.out.println("✓ Assigned box " + box.getBoxId() + " to " + targetBay.getId());
     }

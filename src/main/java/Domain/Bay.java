@@ -2,7 +2,9 @@ package Domain;
 
 import java.util.*;
 
-public class Bay {
+public class
+
+Bay {
     private final BayId id;
     private final int capacityBoxes;
     private final Map<String, TreeSet<Box>> bySku;
