@@ -56,6 +56,9 @@ public class Main {
     }
     
     public static void main(String[] args) {
+        // Load data at startup
+        loadAllData();
+        
         while (true) {
             System.out.println("\n=== WAREHOUSE MANAGEMENT SYSTEM ===");
             System.out.println("1. Wagons Unloading");
@@ -116,7 +119,14 @@ public class Main {
      * Wagons Unloading
      */
     private static void wagonsUnloading() {
-        WagonsUnloadingController controller = new WagonsUnloadingController();
+        if (!dataLoaded) {
+            System.out.println("❌ Data not loaded. Cannot proceed with wagons unloading.");
+            System.out.println("Press Enter to return to main menu...");
+            scanner.nextLine();
+            return;
+        }
+        
+        WagonsUnloadingController controller = new WagonsUnloadingController(dataLoader);
         WagonsUnloadingUI ui = new WagonsUnloadingUI(controller);
         ui.showMainMenu();
     }
