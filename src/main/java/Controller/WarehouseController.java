@@ -3,13 +3,17 @@ package Controller;
 import Domain.*;
 
 import Domain.ENUM.AllocationStatus;
+import Repository.WarehouseRepository;
+
 import java.util.ArrayList;
 import java.util.List;
 
 public class WarehouseController {
     Warehouse warehouse;
+    WarehouseRepository warehouseRepository;
 
-    public WarehouseController(Warehouse warehouse) {
+    public WarehouseController(Warehouse warehouse, WarehouseRepository warehouseRepository) {
+        this.warehouseRepository = warehouseRepository;
         this.warehouse = warehouse;
     }
 
@@ -94,7 +98,7 @@ public class WarehouseController {
                 ));
             }
         }
-
+        warehouseRepository.saveEligibilityResults(estados);
         return estados;
     }
     public List<AllocationRow> createAllocationRows(){
@@ -141,8 +145,8 @@ public class WarehouseController {
                                 sku,
                                 allocatedFromBox,
                                 box.getBoxId(),
-                                box.getLocation().getAisle(), // aisleID - valor padrão para compatibilidade
-                                box.getLocation().getBay()  // bayID - valor padrão para compatibilidade
+                                box.getLocation().getAisle(),
+                                box.getLocation().getBay()
                         ));
 
                         // Atualizar stock da box (consumir)
@@ -152,12 +156,10 @@ public class WarehouseController {
                 }
             }
         }
-
+        warehouseRepository.saveAllocationRows(allocationRows);
         return allocationRows;
     }
-
-
-    }
+}
 
 
 

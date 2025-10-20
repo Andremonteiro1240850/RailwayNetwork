@@ -1,11 +1,15 @@
 package Domain;
 
 import Controller.WarehouseController;
+import UI.TrolleyUI;
 
 import java.util.List;
 
 public class WarehouseLoader {
     public static void main(String[] args) {
+
+        TrolleyUI trolleyUI = new TrolleyUI();
+        trolleyUI.run();
         Warehouse warehouse = new Warehouse();
 
         warehouse.loadItems("train_station_dataset/items.csv");
