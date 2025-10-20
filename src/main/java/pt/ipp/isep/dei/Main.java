@@ -50,7 +50,7 @@ public class Main {
             dataLoaded = true;
             System.out.println("✓ All data loaded successfully!");
         } catch (Exception e) {
-            System.out.println("❌ Error loading data: " + e.getMessage());
+            System.out.println("Error loading data: " + e.getMessage());
             dataLoaded = false;
         }
     }
@@ -271,8 +271,14 @@ public class Main {
      * Quality Operator Login System
      */
     private static void qualityOperatorLogin() {
-        QualityOperatorController controller = new QualityOperatorController();
-        
+        // Build a WarehouseManager from the already loaded data so inspections can restock
+        Domain.WarehouseManager wm = new Domain.WarehouseManager(
+                dataLoader.items,
+                dataLoader.stock,
+                dataLoader.bays
+        );
+
+        QualityOperatorController controller = new QualityOperatorController(wm);
         if (controller.showLogin()) {
             controller.showMainMenu();
         }
