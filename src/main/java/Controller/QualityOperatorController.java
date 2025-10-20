@@ -24,6 +24,11 @@ public class QualityOperatorController {
         this.inspectionController = new InspectionController();
         this.scanner = new Scanner(System.in);
     }
+
+    public QualityOperatorController(Domain.WarehouseManager warehouseManager) {
+        this.inspectionController = new InspectionController(warehouseManager);
+        this.scanner = new Scanner(System.in);
+    }
     
     /**
      * Show login screen
@@ -59,7 +64,7 @@ public class QualityOperatorController {
             System.out.println("\n=== QUALITY OPERATOR MENU ===");
             System.out.println("1. View Quarantine Queue");
             System.out.println("2. Add Item to Quarantine");
-            System.out.println("3. Process Next Inspection");
+            System.out.println("3. Process All Inspections");
             System.out.println("4. View Processed Inspections");
             System.out.println("5. View Audit Log");
             System.out.println("6. Logout");
@@ -151,63 +156,51 @@ public class QualityOperatorController {
     }
     
     /**
-     * Process next inspection
+     * Process all inspections currently in the queue
      */
     private void processNextInspection() {
-        System.out.println("\n=== PROCESS INSPECTION ===");
+        System.out.println("\n=== PROCESS INSPECTIONS ===");
         
         if (quarantineItems.isEmpty()) {
             System.out.println("No items in quarantine queue.");
             return;
         }
         
-        Return nextItem = quarantineItems.get(0);
-        System.out.println("Next item to inspect:");
-        System.out.println("Return ID: " + nextItem.getReturnId());
-        System.out.println("SKU: " + nextItem.getSku());
-        System.out.println("Quantity: " + nextItem.getQty());
-        System.out.println("Reason: " + nextItem.getReason());
-        System.out.println("Timestamp: " + nextItem.getTimestamp().format(dateFormatter));
-        System.out.println("Expiry Date: " + (nextItem.getExpiryDate() != null ? nextItem.getExpiryDate().toString() : "N/A"));
+        int totalToProcess = quarantineItems.size();
+        System.out.println("Items to process: " + totalToProcess);
         
-        // Check if product is expired - if so, auto-discard
-        if (nextItem.getExpiryDate() != null && nextItem.getExpiryDate().isBefore(LocalDate.now())) {
-            System.out.println("\n*** PRODUCT EXPIRED - AUTO-DISCARDING ***");
-            System.out.println("Product expired on " + nextItem.getExpiryDate() + " (auto-discarded)");
+        while (!quarantineItems.isEmpty()) {
+            Return item = quarantineItems.get(0);
+            System.out.println("\nProcessing Return ID: " + item.getReturnId());
+            System.out.println("SKU: " + item.getSku());
+            System.out.println("Quantity: " + item.getQty());
+            System.out.println("Reason: " + item.getReason());
+            System.out.println("Timestamp: " + item.getTimestamp().format(dateFormatter));
+            System.out.println("Expiry Date: " + (item.getExpiryDate() != null ? item.getExpiryDate().toString() : "N/A"));
             
-            // Process the inspection automatically
+            // If expired, force EXPIRED to ensure DISCARD path in controller
+            String reasonToUse = (item.getExpiryDate() != null && item.getExpiryDate().isBefore(LocalDate.now()))
+                    ? "EXPIRED"
+                    : item.getReason();
+            
+            if ("EXPIRED".equals(reasonToUse)) {
+                System.out.println("\n*** PRODUCT EXPIRED - AUTO-DISCARDING ***");
+                System.out.println("Product expired on " + item.getExpiryDate() + " (auto-discarded)");
+            }
+            
             String result = inspectionController.processQuarantine(
-                    nextItem.getSku(),
-                    nextItem.getQty(),
-                    nextItem.getReason(),
-                    nextItem.getExpiryDate()
+                    item.getSku(),
+                    item.getQty(),
+                    reasonToUse,
+                    item.getExpiryDate()
             );
+            System.out.println(result);
             
-            System.out.println("\n" + result);
-        } else {
-            // Product not expired - ask user for action
-            System.out.println("\nWhat action should be taken?");
-            System.out.println("1. RESTOCK");
-            System.out.println("2. DISCARD");
-            
-            System.out.print("Select action (1-2): ");
-            scanner.nextLine().trim();
-            
-            // Process the inspection
-            String result = inspectionController.processQuarantine(
-                    nextItem.getSku(),
-                    nextItem.getQty(),
-                    nextItem.getReason(),
-                    nextItem.getExpiryDate()
-            );
-            
-            System.out.println("\n" + result);
+            // Remove processed item
+            quarantineItems.remove(0);
         }
         
-        // Remove from quarantine queue
-        quarantineItems.remove(0);
-        
-        System.out.println("Inspection processed and item removed from quarantine queue.");
+        System.out.println("\nAll inspections processed. Quarantine queue is now empty.");
     }
     
     /**

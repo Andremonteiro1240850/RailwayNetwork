@@ -69,9 +69,9 @@ public class QualityOperator {
     private boolean login() {
         System.out.println("\n QUALITY OPERATOR LOGIN");
         System.out.println("Available operators:");
-        System.out.println("  - qop001 (João Silva)");
-        System.out.println("  - qop002 (Maria Santos)");
-        System.out.println("  - qop003 (Carlos Oliveira)");
+        System.out.println("  - qop001");
+        System.out.println("  - qop002");
+        System.out.println("  - qop003");
         
         System.out.print("\nEnter User ID: ");
         String userId = scanner.nextLine().trim();
@@ -103,7 +103,7 @@ public class QualityOperator {
             System.out.println("\n=== QUALITY OPERATOR MENU ===");
             System.out.println("1. View Quarantine Queue");
             System.out.println("2. Add Item to Quarantine");
-            System.out.println("3. Process Next Inspection");
+            System.out.println("3. Process All Inspections");
             System.out.println("4. View Processed Inspections");
             System.out.println("5. View Audit Log");
             System.out.println("6. Logout");
@@ -195,46 +195,42 @@ public class QualityOperator {
     }
     
     /**
-     * Process next inspection
+     * Process all inspections currently in the queue
      */
     private void processNextInspection() {
-        System.out.println("\n=== PROCESS INSPECTION ===");
+        System.out.println("\n=== PROCESS INSPECTIONS ===");
         
         if (quarantineItems.isEmpty()) {
             System.out.println("📦 No items in quarantine queue.");
             return;
         }
         
-        Return nextItem = quarantineItems.get(0);
-        System.out.println("Next item to inspect:");
-        System.out.println("Return ID: " + nextItem.getReturnId());
-        System.out.println("SKU: " + nextItem.getSku());
-        System.out.println("Quantity: " + nextItem.getQty());
-        System.out.println("Reason: " + nextItem.getReason());
-        System.out.println("Timestamp: " + nextItem.getTimestamp().format(dateFormatter));
-        System.out.println("Expiry Date: " + (nextItem.getExpiryDate() != null ? nextItem.getExpiryDate().toString() : "N/A"));
+        int totalToProcess = quarantineItems.size();
+        System.out.println("Items to process: " + totalToProcess);
         
-        System.out.println("\nWhat action should be taken?");
-        System.out.println("1. RESTOCK");
-        System.out.println("2. DISCARD");
+        while (!quarantineItems.isEmpty()) {
+            Return item = quarantineItems.get(0);
+            System.out.println("\nProcessing Return ID: " + item.getReturnId());
+            System.out.println("SKU: " + item.getSku());
+            System.out.println("Quantity: " + item.getQty());
+            System.out.println("Reason: " + item.getReason());
+            System.out.println("Timestamp: " + item.getTimestamp().format(dateFormatter));
+            System.out.println("Expiry Date: " + (item.getExpiryDate() != null ? item.getExpiryDate().toString() : "N/A"));
+            
+            String result = inspectionController.processQuarantine(
+                    item.getSku(),
+                    item.getQty(),
+                    item.getReason(),
+                    item.getExpiryDate()
+            );
+            
+            System.out.println(result);
+            
+            // Remove from quarantine queue
+            quarantineItems.remove(0);
+        }
         
-        System.out.print("Select action (1-2): ");
-        scanner.nextLine().trim();
-        
-        // Process the inspection
-        String result = inspectionController.processQuarantine(
-                nextItem.getSku(),
-                nextItem.getQty(),
-                nextItem.getReason(),
-                nextItem.getExpiryDate()
-        );
-        
-        System.out.println("\n" + result);
-        
-        // Remove from quarantine queue
-        quarantineItems.remove(0);
-        
-        System.out.println("Inspection processed and item removed from quarantine queue.");
+        System.out.println("\nAll inspections processed. Quarantine queue is now empty.");
     }
     
     /**

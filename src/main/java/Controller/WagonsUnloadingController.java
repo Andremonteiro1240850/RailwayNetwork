@@ -26,7 +26,7 @@ public class WagonsUnloadingController {
      */
     public void unloadWagons() {
         if (!dataLoaded) {
-            System.out.println("❌ Data not loaded. Please load data first.");
+            System.out.println("Data not loaded. Please load data first.");
             return;
         }
         
@@ -38,7 +38,7 @@ public class WagonsUnloadingController {
      */
     public List<Box> dispatchStock(String sku, int quantity) {
         if (!dataLoaded) {
-            System.out.println("❌ Data not loaded. Please load data first.");
+            System.out.println("Data not loaded. Please load data first.");
             return new ArrayList<>();
         }
         
