@@ -1,15 +1,15 @@
 package Domain;
 
 public class PickingItems {
-    int orderId;
+    String orderId;
     int lineNo;
     int aisleId;
     int bayId;
-    int boxId;
+    String boxId;
     String sku;
     int qty;
 
-    public PickingItems(int orderId, int lineNo, int aisleId, int bayId, int boxId, String sku, int qty) {
+    public PickingItems(String orderId, int lineNo, int aisleId, int bayId, String boxId, String sku, int qty) {
         this.orderId = orderId;
         this.lineNo = lineNo;
         this.aisleId = aisleId;
@@ -18,7 +18,7 @@ public class PickingItems {
         this.sku = sku;
         this.qty = qty;
     }
-    public int getOrderId() {
+    public String getOrderId() {
         return orderId;
     }
     public int getLineNo() {
@@ -30,7 +30,7 @@ public class PickingItems {
     public int getBayId() {
         return bayId;
     }
-    public int getBoxId() {
+    public String getBoxId() {
         return boxId;
     }
     public String getSku() {
@@ -39,7 +39,7 @@ public class PickingItems {
     public int getQty() {
         return qty;
     }
-    public void  setOrderId(int orderId) {
+    public void  setOrderId(String orderId) {
         this.orderId = orderId;
     }
     public void setLineNo(int lineNo) {
@@ -51,7 +51,7 @@ public class PickingItems {
     public void setBayId(int bayId) {
         this.bayId = bayId;
     }
-    public void setBoxId(int boxId) {
+    public void setBoxId(String boxId) {
         this.boxId = boxId;
     }
     public void setSku(String sku) {
