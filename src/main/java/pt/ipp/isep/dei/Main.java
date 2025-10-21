@@ -5,11 +5,9 @@ import Domain.Warehouse;
 import Repository.WarehouseRepository;
 import UI.ReturnsUI;
 import UI.WagonsUnloadingUI;
+import UI.PickPathUI;
 import Domain.DataLoader;
 import Domain.ENUM.ReturnReason;
-import Domain.PickPath;
-import Domain.PickStop;
-import Domain.ENUM.PathStrategy;
 import UI.orderEligibilityAllocationUI;
 
 import java.io.BufferedReader;
@@ -21,9 +19,6 @@ import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Arrays;
-import java.util.Map;
-import java.util.HashMap;
 import java.util.Scanner;
 
 public class Main {
@@ -163,38 +158,12 @@ public class Main {
     private static void pickPathSequencing() {
         System.out.println("\n=== PICK PATH SEQUENCING (US04) ===");
         
-        // Dados de exemplo (simulando output da USEI03)
-        // NOTA: Estes dados JÁ DEVEM ESTAR CONSOLIDADOS (sem duplicados)
-        List<PickStop> consolidatedStops = Arrays.asList(
-                new PickStop(1, 1, 8, 5),
-                new PickStop(2, 2, 2, 5),  // Já consolidado: (2,2) tem qty 5
-                new PickStop(3, 3, 4, 7)
-        );
-
-        System.out.println("Stops consolidados: " + consolidatedStops);
-
-        // Gerar ambos os paths usando o teu PickPath
-        Map<PathStrategy, PickPath> results = new HashMap<>();
-
-        // Estratégia A - ASC_SWEEP
-        PickPath pathA = new PickPath(PathStrategy.ASC_SWEEP, consolidatedStops);
-        results.put(PathStrategy.ASC_SWEEP, pathA);
-
-        // Estratégia B - NEAREST_NEIGHBOUR
-        PickPath pathB = new PickPath(PathStrategy.NEAREST_NEIGHBOUR, consolidatedStops);
-        results.put(PathStrategy.NEAREST_NEIGHBOUR, pathB);
-
-        // Mostrar resultados
-        System.out.println("\n--- ESTRATÉGIA A - ASC SWEEP ---");
-        System.out.println("Distância Total: " + pathA.getTotalDistance());
-        System.out.println("Caminho: " + pathA.getStops());
-
-        System.out.println("\n--- ESTRATÉGIA B - NEAREST NEIGHBOUR ---");
-        System.out.println("Distância Total: " + pathB.getTotalDistance());
-        System.out.println("Caminho: " + pathB.getStops());
-
-        System.out.println("\nPress Enter to return to main menu...");
-        scanner.nextLine();
+        // Criar controller e UI
+        PickPathController controller = new PickPathController();
+        PickPathUI ui = new PickPathUI(controller);
+        
+        // Mostrar menu da UI
+        ui.showMainMenu();
     }
     
     /**
