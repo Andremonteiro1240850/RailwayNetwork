@@ -8,7 +8,7 @@ public class WarehouseManager {
     private final Map<String, List<Box>> stock; // Keep for backward compatibility
     private final List<Bay> bays;
     private final Map<BayId, Bay> bayMap;
-    private final BoxRepository boxRepository; // New repository for boxes
+    private final Repository.BoxRepository boxRepository; // New repository for boxes
 
     public WarehouseManager(Map<String, Item> items, Map<String, List<Box>> stock, List<Bay> bays) {
         this.items = items;
@@ -18,7 +18,7 @@ public class WarehouseManager {
         this.boxRepository = null; // Will be set by setBoxRepository method
     }
     
-    public WarehouseManager(Map<String, Item> items, Map<String, List<Box>> stock, List<Bay> bays, BoxRepository boxRepository) {
+    public WarehouseManager(Map<String, Item> items, Map<String, List<Box>> stock, List<Bay> bays, Repository.BoxRepository boxRepository) {
         this.items = items;
         this.stock = stock;
         this.bays = bays;

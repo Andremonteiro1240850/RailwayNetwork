@@ -1,7 +1,8 @@
-package Domain;
+package Repository;
 
+import Domain.BayId;
+import Domain.Box;
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * Repository for managing boxes in different states:
@@ -253,3 +254,5 @@ public class BoxRepository {
         }
     }
 }
+
+

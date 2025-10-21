@@ -97,7 +97,7 @@ public class WagonsUnloadingController {
     /**
      * Get box repository (for box management operations)
      */
-    public BoxRepository getBoxRepository() {
+    public Repository.BoxRepository getBoxRepository() {
         return dataLoader.boxRepository;
     }
 }

@@ -16,7 +16,7 @@ public class DataLoader {
     public Map<String, Order> orders = new HashMap<>();
     public List<Bay> bays = new ArrayList<>();
     public List<Return> returns = new ArrayList<>();
-    public BoxRepository boxRepository = new BoxRepository(); // New repository for boxes
+    public Repository.BoxRepository boxRepository = new Repository.BoxRepository(); // New repository for boxes
     // Contadores não necessários quando ficheiro já fornece lineNo
 
     // Indexes auxiliares para construir Bays
@@ -296,7 +296,7 @@ public class DataLoader {
         return bays;
     }
     
-    public BoxRepository getBoxRepository() {
+    public Repository.BoxRepository getBoxRepository() {
         return boxRepository;
     }
 }
