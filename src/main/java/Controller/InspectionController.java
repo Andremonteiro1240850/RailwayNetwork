@@ -15,6 +15,18 @@ import java.nio.file.StandardOpenOption;
 public class InspectionController {
 
     private List<QuarantineInspection> quarantineInspections = new ArrayList<>();
+    private Domain.WarehouseManager warehouseManager; // for FEFO/FIFO insertion
+
+    public InspectionController() {
+    }
+
+    public InspectionController(Domain.WarehouseManager warehouseManager) {
+        this.warehouseManager = warehouseManager;
+    }
+
+    public void setWarehouseManager(Domain.WarehouseManager warehouseManager) {
+        this.warehouseManager = warehouseManager;
+    }
     private final Path auditLogPath = Paths.get("logs", "audit.log");
     private final DateTimeFormatter auditFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
@@ -55,7 +67,8 @@ public class InspectionController {
 
             return String.format(
                     "Inspection Processed\nInspection ID: %s\nSKU: %s\nQuantity: %d\nAction: %s\nMotive: %s\nDate: %s",
-                    inspection.getInspectionId(), sku, quantity, action, returnReason, LocalDateTime.now()
+                    inspection.getInspectionId(), sku, quantity, action, returnReason, 
+                    LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
             );
 
         } catch (Exception e) {
@@ -96,8 +109,11 @@ public class InspectionController {
     private void processRestock(QuarantineInspection inspection, String sku, int quantity, LocalDate expiryDate) {
         // BoxId conforme imagem: "RET-" + returnId
         String boxId = String.format("RET-%s", inspection.getReturnId());
-        // Integração FEFO/FIFO será tratada noutra US; aqui apenas sinalizamos
         System.out.println(String.format("RESTOCK: Creating box %s for SKU %s, quantity: %d", boxId, sku, quantity));
+        // Insert the box into inventory following FEFO/FIFO placement rules
+        if (warehouseManager != null) {
+            warehouseManager.insertReturnedBox(boxId, sku, quantity, expiryDate, LocalDateTime.now());
+        }
     }
 
     /**

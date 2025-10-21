@@ -1,9 +1,8 @@
 package pt.ipp.isep.dei;
 
-import Controller.InspectionController;
-import Controller.ItemController;
-import Controller.QualityOperatorController;
-import Controller.WagonsUnloadingController;
+import Controller.*;
+import Domain.Warehouse;
+import Repository.WarehouseRepository;
 import UI.ReturnsUI;
 import UI.WagonsUnloadingUI;
 import Domain.DataLoader;
@@ -11,6 +10,7 @@ import Domain.ENUM.ReturnReason;
 import Domain.PickPath;
 import Domain.PickStop;
 import Domain.ENUM.PathStrategy;
+import UI.orderEligibilityAllocationUI;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -50,7 +50,7 @@ public class Main {
             dataLoaded = true;
             System.out.println("✓ All data loaded successfully!");
         } catch (Exception e) {
-            System.out.println("❌ Error loading data: " + e.getMessage());
+            System.out.println("Error loading data: " + e.getMessage());
             dataLoaded = false;
         }
     }
@@ -135,9 +135,15 @@ public class Main {
      * Order Eligibility & Allocation
      */
     private static void orderEligibilityAllocation() {
+        WarehouseRepository warehouseRepository = new WarehouseRepository();
+        Warehouse warehouse = new Warehouse(warehouseRepository);
+        warehouse.loadItems("train_station_dataset/items.csv");
+        warehouse.loadWagons("train_station_dataset\\wagons.csv");
+        warehouse.loadOrders("train_station_dataset\\orders.csv", "train_station_dataset\\order_lines.csv");
+        WarehouseController controller = new WarehouseController(warehouse, warehouseRepository);
+        orderEligibilityAllocationUI ui = new orderEligibilityAllocationUI(controller);
         System.out.println("\n=== ORDER ELIGIBILITY & ALLOCATION ===");
-        System.out.println("This feature is not yet implemented.");
-        System.out.println("Press Enter to return to main menu...");
+        ui.run();
         scanner.nextLine();
     }
     
@@ -271,8 +277,14 @@ public class Main {
      * Quality Operator Login System
      */
     private static void qualityOperatorLogin() {
-        QualityOperatorController controller = new QualityOperatorController();
-        
+        // Build a WarehouseManager from the already loaded data so inspections can restock
+        Domain.WarehouseManager wm = new Domain.WarehouseManager(
+                dataLoader.items,
+                dataLoader.stock,
+                dataLoader.bays
+        );
+
+        QualityOperatorController controller = new QualityOperatorController(wm);
         if (controller.showLogin()) {
             controller.showMainMenu();
         }

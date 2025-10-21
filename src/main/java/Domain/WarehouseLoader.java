@@ -1,10 +1,11 @@
 package Domain;
 
 import Controller.WarehouseController;
+import UI.TrolleyUI;
 
 import java.util.List;
 
-public class WarehouseLoader {
+/**public class WarehouseLoader {
     public static void main(String[] args) {
         Warehouse warehouse = new Warehouse();
 
@@ -41,7 +42,7 @@ public class WarehouseLoader {
             Order o = e.getValue();
             System.out.println("orderId=" + e.getKey() + ", priority=" + o.getPriority() + ", dueDate=" + o.getDueDate() + ", numLines=" + o.getLines().size());
         }
-        WarehouseController warehouseController = new WarehouseController(warehouse);
+        /**WarehouseController warehouseController = new WarehouseController(warehouse);
         List<EligibilityResult> estados = warehouseController.estadoEncomenda();
         for (EligibilityResult er : estados) {
             System.out.println(
@@ -68,3 +69,5 @@ public class WarehouseLoader {
 
     }
 }
+}
+}*/

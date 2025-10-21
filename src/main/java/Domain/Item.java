@@ -1,5 +1,6 @@
 package Domain;
 
+import java.util.Collection;
 import java.util.Objects;
 
 public class Item {

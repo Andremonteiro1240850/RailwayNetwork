@@ -82,6 +82,18 @@ public class WarehouseManager {
     }
 
     /**
+     * Insert a returned box into inventory and place it according to FEFO/FIFO (USEI01 rules).
+     */
+    public void insertReturnedBox(String boxId, String sku, int qty,
+                                  java.time.LocalDate expiryDate,
+                                  java.time.LocalDateTime receivedAt) {
+        Box box = new Box(boxId, sku, qty, expiryDate, receivedAt);
+        stock.computeIfAbsent(sku, k -> new ArrayList<>()).add(box);
+        // Place the new box in a bay following the same policy used for wagon unloading
+        assignBoxToBay(box);
+    }
+
+    /**
      * Dispatch stock for a specific SKU and quantity
      */
     public List<Box> dispatchStock(String sku, int requestedQty) {
