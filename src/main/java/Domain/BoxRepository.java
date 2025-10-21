@@ -1,0 +1,255 @@
+package Domain;
+
+import java.util.*;
+import java.util.stream.Collectors;
+
+/**
+ * Repository for managing boxes in different states:
+ * - Unassigned boxes (from wagons, without bay location)
+ * - Assigned boxes (with bay location)
+ */
+public class BoxRepository {
+    
+    // Boxes without bay assignment (from wagons)
+    private final Map<String, List<Box>> unassignedBoxes;
+    
+    // Boxes with bay assignment
+    private final Map<String, List<Box>> assignedBoxes;
+    
+    // All boxes by boxId for quick lookup
+    private final Map<String, Box> allBoxes;
+    
+    public BoxRepository() {
+        this.unassignedBoxes = new HashMap<>();
+        this.assignedBoxes = new HashMap<>();
+        this.allBoxes = new HashMap<>();
+    }
+    
+    /**
+     * Add a box from wagon (without bay assignment)
+     */
+    public void addUnassignedBox(Box box) {
+        if (box.getLocation() != null) {
+            throw new IllegalArgumentException("Box " + box.getBoxId() + " already has a location");
+        }
+        
+        String sku = box.getSku();
+        unassignedBoxes.computeIfAbsent(sku, k -> new ArrayList<>()).add(box);
+        allBoxes.put(box.getBoxId(), box);
+        
+        System.out.println("📦 Added unassigned box " + box.getBoxId() + " for SKU " + sku);
+    }
+    
+    /**
+     * Move a box from unassigned to assigned state
+     */
+    public void assignBoxToBay(Box box, BayId bayId) {
+        if (box.getLocation() != null) {
+            throw new IllegalArgumentException("Box " + box.getBoxId() + " is already assigned to " + box.getLocation());
+        }
+        
+        // Set the location
+        box.setLocation(bayId);
+        
+        // Move from unassigned to assigned
+        String sku = box.getSku();
+        List<Box> unassignedList = unassignedBoxes.get(sku);
+        if (unassignedList != null) {
+            unassignedList.remove(box);
+            if (unassignedList.isEmpty()) {
+                unassignedBoxes.remove(sku);
+            }
+        }
+        
+        assignedBoxes.computeIfAbsent(sku, k -> new ArrayList<>()).add(box);
+        
+        System.out.println("✅ Assigned box " + box.getBoxId() + " to " + bayId);
+    }
+    
+    /**
+     * Remove a box from assigned state (when dispatched)
+     */
+    public void removeAssignedBox(Box box) {
+        if (box.getLocation() == null) {
+            throw new IllegalArgumentException("Box " + box.getBoxId() + " is not assigned to any bay");
+        }
+        
+        String sku = box.getSku();
+        List<Box> assignedList = assignedBoxes.get(sku);
+        if (assignedList != null) {
+            assignedList.remove(box);
+            if (assignedList.isEmpty()) {
+                assignedBoxes.remove(sku);
+            }
+        }
+        
+        allBoxes.remove(box.getBoxId());
+        
+        System.out.println("📤 Removed assigned box " + box.getBoxId() + " from " + box.getLocation());
+    }
+    
+    /**
+     * Get all unassigned boxes for a specific SKU
+     */
+    public List<Box> getUnassignedBoxes(String sku) {
+        return unassignedBoxes.getOrDefault(sku, new ArrayList<>());
+    }
+    
+    /**
+     * Get all assigned boxes for a specific SKU
+     */
+    public List<Box> getAssignedBoxes(String sku) {
+        return assignedBoxes.getOrDefault(sku, new ArrayList<>());
+    }
+    
+    /**
+     * Get all unassigned boxes (all SKUs)
+     */
+    public Map<String, List<Box>> getAllUnassignedBoxes() {
+        return new HashMap<>(unassignedBoxes);
+    }
+    
+    /**
+     * Get all assigned boxes (all SKUs)
+     */
+    public Map<String, List<Box>> getAllAssignedBoxes() {
+        return new HashMap<>(assignedBoxes);
+    }
+    
+    /**
+     * Get a box by its ID
+     */
+    public Box getBoxById(String boxId) {
+        return allBoxes.get(boxId);
+    }
+    
+    /**
+     * Get all boxes (assigned and unassigned) for a SKU
+     */
+    public List<Box> getAllBoxesForSku(String sku) {
+        List<Box> allBoxesForSku = new ArrayList<>();
+        allBoxesForSku.addAll(getUnassignedBoxes(sku));
+        allBoxesForSku.addAll(getAssignedBoxes(sku));
+        return allBoxesForSku;
+    }
+    
+    /**
+     * Get all unassigned boxes sorted by FEFO/FIFO
+     */
+    public List<Box> getUnassignedBoxesSorted(String sku) {
+        List<Box> boxes = getUnassignedBoxes(sku);
+        boxes.sort(Box.FEFO_COMPARATOR);
+        return boxes;
+    }
+    
+    /**
+     * Get all assigned boxes sorted by FEFO/FIFO
+     */
+    public List<Box> getAssignedBoxesSorted(String sku) {
+        List<Box> boxes = getAssignedBoxes(sku);
+        boxes.sort(Box.FEFO_COMPARATOR);
+        return boxes;
+    }
+    
+    /**
+     * Get statistics about the repository
+     */
+    public RepositoryStats getStats() {
+        int totalUnassigned = unassignedBoxes.values().stream()
+                .mapToInt(List::size).sum();
+        int totalAssigned = assignedBoxes.values().stream()
+                .mapToInt(List::size).sum();
+        
+        return new RepositoryStats(
+            totalUnassigned,
+            totalAssigned,
+            unassignedBoxes.size(),
+            assignedBoxes.size()
+        );
+    }
+    
+    /**
+     * Get all SKUs that have unassigned boxes
+     */
+    public Set<String> getUnassignedSkus() {
+        return unassignedBoxes.keySet();
+    }
+    
+    /**
+     * Get all SKUs that have assigned boxes
+     */
+    public Set<String> getAssignedSkus() {
+        return assignedBoxes.keySet();
+    }
+    
+    /**
+     * Check if there are any unassigned boxes
+     */
+    public boolean hasUnassignedBoxes() {
+        return !unassignedBoxes.isEmpty();
+    }
+    
+    /**
+     * Check if there are any unassigned boxes for a specific SKU
+     */
+    public boolean hasUnassignedBoxes(String sku) {
+        List<Box> boxes = unassignedBoxes.get(sku);
+        return boxes != null && !boxes.isEmpty();
+    }
+    
+    /**
+     * Get all boxes in the repository
+     */
+    public Collection<Box> getAllBoxes() {
+        return allBoxes.values();
+    }
+    
+    /**
+     * Clear all data
+     */
+    public void clear() {
+        unassignedBoxes.clear();
+        assignedBoxes.clear();
+        allBoxes.clear();
+    }
+    
+    /**
+     * Print repository status
+     */
+    public void printStatus() {
+        System.out.println("\n=== BOX REPOSITORY STATUS ===");
+        RepositoryStats stats = getStats();
+        System.out.println("📦 Unassigned boxes: " + stats.totalUnassigned + " (SKUs: " + stats.unassignedSkus + ")");
+        System.out.println("✅ Assigned boxes: " + stats.totalAssigned + " (SKUs: " + stats.assignedSkus + ")");
+        System.out.println("📊 Total boxes: " + (stats.totalUnassigned + stats.totalAssigned));
+        
+        if (!unassignedBoxes.isEmpty()) {
+            System.out.println("\nUnassigned boxes by SKU:");
+            unassignedBoxes.forEach((sku, boxes) -> 
+                System.out.println("  " + sku + ": " + boxes.size() + " boxes"));
+        }
+        
+        if (!assignedBoxes.isEmpty()) {
+            System.out.println("\nAssigned boxes by SKU:");
+            assignedBoxes.forEach((sku, boxes) -> 
+                System.out.println("  " + sku + ": " + boxes.size() + " boxes"));
+        }
+    }
+    
+    /**
+     * Statistics class for repository
+     */
+    public static class RepositoryStats {
+        public final int totalUnassigned;
+        public final int totalAssigned;
+        public final int unassignedSkus;
+        public final int assignedSkus;
+        
+        public RepositoryStats(int totalUnassigned, int totalAssigned, int unassignedSkus, int assignedSkus) {
+            this.totalUnassigned = totalUnassigned;
+            this.totalAssigned = totalAssigned;
+            this.unassignedSkus = unassignedSkus;
+            this.assignedSkus = assignedSkus;
+        }
+    }
+}
