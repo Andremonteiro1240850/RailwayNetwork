@@ -42,26 +42,43 @@ public class WarehouseManager {
     }
 
     /**
-     * Assign a box to the first non-full bay in ascending order (aisle/bay)
-     * This enforces the example distribution policy for USEI01: start at aisle 1, bay 1.
+     * Assign a box to a bay following SKU dedication policy:
+     * 1. First try to find a bay already dedicated to this SKU
+     * 2. If none found, find the first empty bay
+     * 3. If no empty bays, find the first bay that can accept this SKU (should not happen with dedication)
      */
     private void assignBoxToBay(Box box) {
         String sku = box.getSku();
 
-        // Choose the first non-full bay by ascending BayId
-        List<Bay> candidateBays = bays.stream()
-                .filter(bay -> !bay.isFull())
+        // 1. First priority: Find bays already dedicated to this SKU that are not full
+        List<Bay> dedicatedBays = bays.stream()
+                .filter(bay -> bay.isDedicatedToSku(sku) && !bay.isFull())
                 .sorted(Comparator.comparing(Bay::getId))
                 .collect(Collectors.toList());
 
-        if (candidateBays.isEmpty()) {
-            System.out.println("⚠️ No available bays for SKU: " + sku + " (Box: " + box.getBoxId() + ")");
+        if (!dedicatedBays.isEmpty()) {
+            Bay targetBay = dedicatedBays.get(0);
+            targetBay.insertBox(box);
+            System.out.println("✓ Assigned box " + box.getBoxId() + " to dedicated bay " + targetBay.getId());
             return;
         }
 
-        Bay targetBay = candidateBays.get(0);
-        targetBay.insertBox(box);
-        System.out.println("✓ Assigned box " + box.getBoxId() + " to " + targetBay.getId());
+        // 2. Second priority: Find empty bays (no dedicated SKU)
+        List<Bay> emptyBays = bays.stream()
+                .filter(bay -> bay.isEmpty())
+                .sorted(Comparator.comparing(Bay::getId))
+                .collect(Collectors.toList());
+
+        if (!emptyBays.isEmpty()) {
+            Bay targetBay = emptyBays.get(0);
+            targetBay.insertBox(box);
+            System.out.println("✓ Assigned box " + box.getBoxId() + " to new dedicated bay " + targetBay.getId() + " for SKU " + sku);
+            return;
+        }
+
+        // 3. No available bays
+        System.out.println("⚠️ No available bays for SKU: " + sku + " (Box: " + box.getBoxId() + ")");
+        System.out.println("   All bays are either full or dedicated to other SKUs");
     }
 
     /**
@@ -71,9 +88,9 @@ public class WarehouseManager {
         List<Box> dispatchedBoxes = new ArrayList<>();
         int remainingQty = requestedQty;
         
-        // Get all bays that have this SKU, sorted by bay ID
+        // Get all bays dedicated to this SKU, sorted by bay ID
         List<Bay> baysWithSku = bays.stream()
-                .filter(bay -> bay.hasSku(sku))
+                .filter(bay -> bay.isDedicatedToSku(sku) && bay.hasSku(sku))
                 .sorted(Comparator.comparing(Bay::getId))
                 .collect(Collectors.toList());
         
@@ -150,6 +167,13 @@ public class WarehouseManager {
         
         if (targetBay.isFull()) {
             System.out.println("⚠️ Target bay " + newBayId + " is full");
+            return false;
+        }
+        
+        // Check if target bay can accept this SKU (must be empty or dedicated to same SKU)
+        if (!targetBay.canAcceptSku(boxToMove.getSku())) {
+            System.out.println("⚠️ Target bay " + newBayId + " is dedicated to SKU " + targetBay.getDedicatedSku() + 
+                             ", cannot accept SKU " + boxToMove.getSku());
             return false;
         }
         

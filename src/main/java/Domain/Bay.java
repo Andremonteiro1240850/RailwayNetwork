@@ -2,23 +2,34 @@ package Domain;
 
 import java.util.*;
 
-public class
-
-Bay {
+public class Bay {
     private final BayId id;
     private final int capacityBoxes;
     private final Map<String, TreeSet<Box>> bySku;
+    private String dedicatedSku; // SKU dedicado a este bay (null se vazio)
 
     public Bay(BayId id, int capacityBoxes) {
         this.id = id;
         this.capacityBoxes = capacityBoxes;
         this.bySku = new HashMap<>();
+        this.dedicatedSku = null; // Inicialmente vazio
     }
 
     public BayId getId() { return id; }
     public int getCapacityBoxes() { return capacityBoxes; }
 
     public void insertBox(Box box) {
+        // Verificar se o bay está vazio ou se o SKU é compatível
+        if (dedicatedSku != null && !dedicatedSku.equals(box.getSku())) {
+            throw new IllegalArgumentException("Bay " + id + " is dedicated to SKU " + dedicatedSku + 
+                                               ", cannot store SKU " + box.getSku());
+        }
+        
+        // Se o bay está vazio, definir o SKU dedicado
+        if (dedicatedSku == null) {
+            dedicatedSku = box.getSku();
+        }
+        
         // Set the box location to this bay
         box.setLocation(this.id);
         bySku.computeIfAbsent(box.getSku(), k -> new TreeSet<>(Box.FEFO_COMPARATOR))
@@ -37,7 +48,18 @@ Bay {
 
     public void removeBox(Box box) {
         TreeSet<Box> boxes = bySku.get(box.getSku());
-        if (boxes != null) boxes.remove(box);
+        if (boxes != null) {
+            boxes.remove(box);
+            // Se não há mais boxes deste SKU, remover a entrada
+            if (boxes.isEmpty()) {
+                bySku.remove(box.getSku());
+            }
+        }
+        
+        // Se o bay ficou completamente vazio, limpar o SKU dedicado
+        if (totalBoxes() == 0) {
+            dedicatedSku = null;
+        }
     }
 
     public boolean isFull() {
@@ -73,9 +95,26 @@ Bay {
     public List<String> getAvailableSkus() {
         return new ArrayList<>(bySku.keySet());
     }
+    
+    // Métodos para gerenciar SKU dedicado
+    public String getDedicatedSku() {
+        return dedicatedSku;
+    }
+    
+    public boolean isEmpty() {
+        return totalBoxes() == 0;
+    }
+    
+    public boolean canAcceptSku(String sku) {
+        return dedicatedSku == null || dedicatedSku.equals(sku);
+    }
+    
+    public boolean isDedicatedToSku(String sku) {
+        return dedicatedSku != null && dedicatedSku.equals(sku);
+    }
 
     @Override
     public String toString() {
-        return "Bay{" + id + ", boxes=" + totalBoxes() + "}";
+        return "Bay{" + id + ", boxes=" + totalBoxes() + ", dedicatedSku=" + dedicatedSku + "}";
     }
 }
