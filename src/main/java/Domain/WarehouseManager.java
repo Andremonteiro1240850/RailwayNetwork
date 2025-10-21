@@ -5,15 +5,25 @@ import java.util.stream.Collectors;
 
 public class WarehouseManager {
     private final Map<String, Item> items;
-    private final Map<String, List<Box>> stock;
+    private final Map<String, List<Box>> stock; // Keep for backward compatibility
     private final List<Bay> bays;
     private final Map<BayId, Bay> bayMap;
+    private final BoxRepository boxRepository; // New repository for boxes
 
     public WarehouseManager(Map<String, Item> items, Map<String, List<Box>> stock, List<Bay> bays) {
         this.items = items;
         this.stock = stock;
         this.bays = bays;
         this.bayMap = bays.stream().collect(Collectors.toMap(Bay::getId, bay -> bay));
+        this.boxRepository = null; // Will be set by setBoxRepository method
+    }
+    
+    public WarehouseManager(Map<String, Item> items, Map<String, List<Box>> stock, List<Bay> bays, BoxRepository boxRepository) {
+        this.items = items;
+        this.stock = stock;
+        this.bays = bays;
+        this.bayMap = bays.stream().collect(Collectors.toMap(Bay::getId, bay -> bay));
+        this.boxRepository = boxRepository;
     }
 
     /**
@@ -21,6 +31,50 @@ public class WarehouseManager {
      */
     public void unloadWagons() {
         System.out.println("=== UNLOADING WAGONS ===");
+        
+        if (boxRepository != null) {
+            // Use new repository-based approach
+            unloadWagonsWithRepository();
+        } else {
+            // Use old stock-based approach for backward compatibility
+            unloadWagonsWithStock();
+        }
+        
+        System.out.println("Wagon unloading completed!");
+    }
+    
+    /**
+     * Unload wagons using BoxRepository
+     */
+    private void unloadWagonsWithRepository() {
+        System.out.println("Using BoxRepository for unloading...");
+        
+        // Get all unassigned boxes by SKU
+        Map<String, List<Box>> unassignedBoxes = boxRepository.getAllUnassignedBoxes();
+        
+        for (Map.Entry<String, List<Box>> entry : unassignedBoxes.entrySet()) {
+            String sku = entry.getKey();
+            List<Box> boxes = entry.getValue();
+            
+            // Sort boxes by FEFO/FIFO before assigning to bays
+            boxes.sort(Box.FEFO_COMPARATOR);
+            
+            System.out.println("Processing " + boxes.size() + " unassigned boxes for SKU: " + sku);
+            
+            for (Box box : boxes) {
+                assignBoxToBayWithRepository(box);
+            }
+        }
+        
+        // Print repository status after unloading
+        boxRepository.printStatus();
+    }
+    
+    /**
+     * Unload wagons using old stock approach (backward compatibility)
+     */
+    private void unloadWagonsWithStock() {
+        System.out.println("Using legacy stock approach for unloading...");
         
         for (Map.Entry<String, List<Box>> entry : stock.entrySet()) {
             String sku = entry.getKey();
@@ -37,8 +91,6 @@ public class WarehouseManager {
                 }
             }
         }
-        
-        System.out.println("Wagon unloading completed!");
     }
 
     /**
@@ -73,6 +125,43 @@ public class WarehouseManager {
             Bay targetBay = emptyBays.get(0);
             targetBay.insertBox(box);
             System.out.println("✓ Assigned box " + box.getBoxId() + " to new dedicated bay " + targetBay.getId() + " for SKU " + sku);
+            return;
+        }
+
+        // 3. No available bays
+        System.out.println("⚠️ No available bays for SKU: " + sku + " (Box: " + box.getBoxId() + ")");
+        System.out.println("   All bays are either full or dedicated to other SKUs");
+    }
+    
+    /**
+     * Assign a box to a bay using BoxRepository
+     */
+    private void assignBoxToBayWithRepository(Box box) {
+        String sku = box.getSku();
+
+        // 1. First priority: Find bays already dedicated to this SKU that are not full
+        List<Bay> dedicatedBays = bays.stream()
+                .filter(bay -> bay.isDedicatedToSku(sku) && !bay.isFull())
+                .sorted(Comparator.comparing(Bay::getId))
+                .collect(Collectors.toList());
+
+        if (!dedicatedBays.isEmpty()) {
+            Bay targetBay = dedicatedBays.get(0);
+            targetBay.insertBox(box);
+            boxRepository.assignBoxToBay(box, targetBay.getId());
+            return;
+        }
+
+        // 2. Second priority: Find empty bays (no dedicated SKU)
+        List<Bay> emptyBays = bays.stream()
+                .filter(bay -> bay.isEmpty())
+                .sorted(Comparator.comparing(Bay::getId))
+                .collect(Collectors.toList());
+
+        if (!emptyBays.isEmpty()) {
+            Bay targetBay = emptyBays.get(0);
+            targetBay.insertBox(box);
+            boxRepository.assignBoxToBay(box, targetBay.getId());
             return;
         }
 

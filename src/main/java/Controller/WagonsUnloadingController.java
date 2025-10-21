@@ -12,11 +12,12 @@ public class WagonsUnloadingController {
         this.dataLoader = dataLoader;
         this.dataLoaded = true;
         
-        // Initialize warehouse manager with loaded data
+        // Initialize warehouse manager with loaded data and BoxRepository
         this.warehouseManager = new WarehouseManager(
             dataLoader.items,
             dataLoader.stock,
-            dataLoader.bays
+            dataLoader.bays,
+            dataLoader.boxRepository
         );
     }
 
@@ -91,5 +92,12 @@ public class WagonsUnloadingController {
      */
     public WarehouseManager getWarehouseManager() {
         return warehouseManager;
+    }
+    
+    /**
+     * Get box repository (for box management operations)
+     */
+    public BoxRepository getBoxRepository() {
+        return dataLoader.boxRepository;
     }
 }

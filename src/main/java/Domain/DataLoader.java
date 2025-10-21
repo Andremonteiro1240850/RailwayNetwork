@@ -12,10 +12,11 @@ import java.util.Map;
 
 public class DataLoader {
     public Map<String, Item> items = new HashMap<>();
-    public Map<String, List<Box>> stock = new HashMap<>();
+    public Map<String, List<Box>> stock = new HashMap<>(); // Keep for backward compatibility
     public Map<String, Order> orders = new HashMap<>();
     public List<Bay> bays = new ArrayList<>();
     public List<Return> returns = new ArrayList<>();
+    public BoxRepository boxRepository = new BoxRepository(); // New repository for boxes
     // Contadores não necessários quando ficheiro já fornece lineNo
 
     // Indexes auxiliares para construir Bays
@@ -134,7 +135,10 @@ public class DataLoader {
 
                 // Create box without location initially
                 Box box = new Box(boxId, sku, qty, expiry, receivedAt);
+                
+                // Add to both old structure (for backward compatibility) and new repository
                 stock.computeIfAbsent(sku, k -> new ArrayList<>()).add(box);
+                boxRepository.addUnassignedBox(box);
             }
         } catch (Exception e) {
             System.out.println("Erro a ler wagons: " + e.getMessage());
@@ -290,6 +294,10 @@ public class DataLoader {
     }
     public List<Bay> getBays() {
         return bays;
+    }
+    
+    public BoxRepository getBoxRepository() {
+        return boxRepository;
     }
 }
 
