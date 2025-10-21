@@ -135,11 +135,11 @@ public class Main {
      * Order Eligibility & Allocation
      */
     private static void orderEligibilityAllocation() {
-        Warehouse warehouse = new Warehouse();
+        WarehouseRepository warehouseRepository = new WarehouseRepository();
+        Warehouse warehouse = new Warehouse(warehouseRepository);
         warehouse.loadItems("train_station_dataset/items.csv");
         warehouse.loadWagons("train_station_dataset\\wagons.csv");
         warehouse.loadOrders("train_station_dataset\\orders.csv", "train_station_dataset\\order_lines.csv");
-        WarehouseRepository warehouseRepository = new WarehouseRepository();
         WarehouseController controller = new WarehouseController(warehouse, warehouseRepository);
         orderEligibilityAllocationUI ui = new orderEligibilityAllocationUI(controller);
         System.out.println("\n=== ORDER ELIGIBILITY & ALLOCATION ===");

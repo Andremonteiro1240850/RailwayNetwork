@@ -5,7 +5,7 @@ import UI.TrolleyUI;
 
 import java.util.List;
 
-public class WarehouseLoader {
+/**public class WarehouseLoader {
     public static void main(String[] args) {
         Warehouse warehouse = new Warehouse();
 
@@ -69,5 +69,5 @@ public class WarehouseLoader {
 
     }
 }
-*/}
 }
+}*/
