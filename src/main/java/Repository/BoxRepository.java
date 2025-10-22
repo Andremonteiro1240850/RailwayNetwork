@@ -38,7 +38,7 @@ public class BoxRepository {
         unassignedBoxes.computeIfAbsent(sku, k -> new ArrayList<>()).add(box);
         allBoxes.put(box.getBoxId(), box);
         
-        System.out.println("📦 Added unassigned box " + box.getBoxId() + " for SKU " + sku);
+        System.out.println("Added unassigned box " + box.getBoxId() + " for SKU " + sku);
     }
     
     /**
@@ -64,7 +64,7 @@ public class BoxRepository {
         
         assignedBoxes.computeIfAbsent(sku, k -> new ArrayList<>()).add(box);
         
-        System.out.println("✅ Assigned box " + box.getBoxId() + " to " + bayId);
+        System.out.println("Assigned box " + box.getBoxId() + " to " + bayId);
     }
     
     /**
@@ -86,7 +86,7 @@ public class BoxRepository {
         
         allBoxes.remove(box.getBoxId());
         
-        System.out.println("📤 Removed assigned box " + box.getBoxId() + " from " + box.getLocation());
+        System.out.println("Removed assigned box " + box.getBoxId() + " from " + box.getLocation());
     }
     
     /**
@@ -220,9 +220,9 @@ public class BoxRepository {
     public void printStatus() {
         System.out.println("\n=== BOX REPOSITORY STATUS ===");
         RepositoryStats stats = getStats();
-        System.out.println("📦 Unassigned boxes: " + stats.totalUnassigned + " (SKUs: " + stats.unassignedSkus + ")");
-        System.out.println("✅ Assigned boxes: " + stats.totalAssigned + " (SKUs: " + stats.assignedSkus + ")");
-        System.out.println("📊 Total boxes: " + (stats.totalUnassigned + stats.totalAssigned));
+        System.out.println("- Unassigned boxes: " + stats.totalUnassigned + " (SKUs: " + stats.unassignedSkus + ")");
+        System.out.println("- Assigned boxes: " + stats.totalAssigned + " (SKUs: " + stats.assignedSkus + ")");
+        System.out.println("- Total boxes: " + (stats.totalUnassigned + stats.totalAssigned));
         
         if (!unassignedBoxes.isEmpty()) {
             System.out.println("\nUnassigned boxes by SKU:");

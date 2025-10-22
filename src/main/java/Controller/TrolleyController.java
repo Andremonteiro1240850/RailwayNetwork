@@ -94,7 +94,7 @@ public class TrolleyController {
                 percTrol.put(ultimo.getId(), percent);
             }
 
-            System.out.println("Heurística FF executada. Total de trolleys: " + trolleyList.size());
+            System.out.println("Heuristic FF executed. Trolleys total: " + trolleyList.size());
         }
 
         // --- FIRST FIT DECREASING (FFD) ---
@@ -142,7 +142,7 @@ public class TrolleyController {
                 percTrol.put(ultimo.getId(), percent);
             }
 
-            System.out.println("Heurística FFD executada. Total de trolleys: " + trolleyList.size());
+            System.out.println("Heuristic FFD executed. Trolleys total: " + trolleyList.size());
         }
 
         // --- BEST FIT DECREASING (BFD) ---
@@ -190,7 +190,7 @@ public class TrolleyController {
                 percTrol.put(t.getId(), percent);
             }
 
-            System.out.println("Heurística BFD executada. Total de trolleys: " + trolleyList.size());
+            System.out.println("Heuristic BFD executed. Trolleys total: " + trolleyList.size());
         }
     }
 

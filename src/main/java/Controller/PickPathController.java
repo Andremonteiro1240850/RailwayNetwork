@@ -22,7 +22,7 @@ public class PickPathController {
     public Map<PathStrategy, PickPath> processPickPathSequencing(List<PickStop> inputStops) {
         // Validação básica
         if (inputStops == null || inputStops.isEmpty()) {
-            throw new IllegalArgumentException("Lista de stops não pode ser nula ou vazia");
+            throw new IllegalArgumentException("Stop list cannot be null or empty");
         }
         
         // Usar o PickPathService que já criaste
@@ -36,7 +36,7 @@ public class PickPathController {
      */
     public List<PickStop> consolidateStops(List<PickStop> originalStops) {
         if (originalStops == null || originalStops.isEmpty()) {
-            throw new IllegalArgumentException("Lista de stops não pode ser nula ou vazia");
+            throw new IllegalArgumentException("Stop list cannot be null or empty");
         }
         
         return PickPathService.consolidateStops(originalStops);
@@ -49,7 +49,7 @@ public class PickPathController {
      */
     public Map<PathStrategy, PickPath> generateBothPaths(List<PickStop> consolidatedStops) {
         if (consolidatedStops == null || consolidatedStops.isEmpty()) {
-            throw new IllegalArgumentException("Lista de stops não pode ser nula ou vazia");
+            throw new IllegalArgumentException("Stop list cannot be null or empty");
         }
         
         return PickPathService.generateBothPaths(consolidatedStops);

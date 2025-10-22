@@ -72,7 +72,7 @@ public class InspectionController {
             );
 
         } catch (Exception e) {
-            return String.format("❌ ERROR: Inspection error. %s", e.getMessage());
+            return String.format("RROR: Inspection error. %s", e.getMessage());
         }
     }
 
