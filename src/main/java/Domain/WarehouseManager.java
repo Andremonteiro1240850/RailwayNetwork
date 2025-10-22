@@ -60,15 +60,10 @@ public class WarehouseManager {
             boxes.sort(Box.FEFO_COMPARATOR);
             
             System.out.println("Processing " + boxes.size() + " unassigned boxes for SKU: " + sku);
-
+            
             for (Box box : boxes) {
-                if (box.getLocation() == null) {
-                    assignBoxToBayWithRepository(box);
-                } else {
-                    System.out.println("Box " + box.getBoxId() + " já atribuída a " + box.getLocation() + ", ignorando...");
-                }
+                assignBoxToBayWithRepository(box);
             }
-
         }
         
         // Print repository status after unloading
@@ -116,7 +111,7 @@ public class WarehouseManager {
         if (!dedicatedBays.isEmpty()) {
             Bay targetBay = dedicatedBays.get(0);
             targetBay.insertBox(box);
-            System.out.println("✓ Assigned box " + box.getBoxId() + " to dedicated bay " + targetBay.getId());
+            System.out.println("Assigned box " + box.getBoxId() + " to dedicated bay " + targetBay.getId());
             return;
         }
 
@@ -129,28 +124,22 @@ public class WarehouseManager {
         if (!emptyBays.isEmpty()) {
             Bay targetBay = emptyBays.get(0);
             targetBay.insertBox(box);
-            System.out.println("✓ Assigned box " + box.getBoxId() + " to new dedicated bay " + targetBay.getId() + " for SKU " + sku);
+            System.out.println("Assigned box " + box.getBoxId() + " to new dedicated bay " + targetBay.getId() + " for SKU " + sku);
             return;
         }
 
         // 3. No available bays
-        System.out.println("⚠️ No available bays for SKU: " + sku + " (Box: " + box.getBoxId() + ")");
-        System.out.println("   All bays are either full or dedicated to other SKUs");
+        System.out.println("⚠No available bays for SKU: " + sku + " (Box: " + box.getBoxId() + ")");
+        System.out.println("All bays are either full or dedicated to other SKUs");
     }
     
     /**
      * Assign a box to a bay using BoxRepository
      */
     private void assignBoxToBayWithRepository(Box box) {
-        // Ignorar boxes já atribuídas
-        if (box.getLocation() != null) {
-            System.out.println("⚠️ Box " + box.getBoxId() + " já atribuída a " + box.getLocation() + ", ignorada.");
-            return;
-        }
-
         String sku = box.getSku();
 
-        // 1. Procurar bays dedicadas
+        // 1. First priority: Find bays already dedicated to this SKU that are not full
         List<Bay> dedicatedBays = bays.stream()
                 .filter(bay -> bay.isDedicatedToSku(sku) && !bay.isFull())
                 .sorted(Comparator.comparing(Bay::getId))
@@ -163,9 +152,9 @@ public class WarehouseManager {
             return;
         }
 
-        // 2. Procurar bays vazias
+        // 2. Second priority: Find empty bays (no dedicated SKU)
         List<Bay> emptyBays = bays.stream()
-                .filter(Bay::isEmpty)
+                .filter(bay -> bay.isEmpty())
                 .sorted(Comparator.comparing(Bay::getId))
                 .collect(Collectors.toList());
 
@@ -176,8 +165,9 @@ public class WarehouseManager {
             return;
         }
 
-        // 3. Nenhuma disponível
-        System.out.println("⚠️ Sem bays disponíveis para SKU " + sku + " (Box " + box.getBoxId() + ")");
+        // 3. No available bays
+        System.out.println("No available bays for SKU: " + sku + " (Box: " + box.getBoxId() + ")");
+        System.out.println("All bays are either full or dedicated to other SKUs");
     }
 
     /**
@@ -232,14 +222,14 @@ public class WarehouseManager {
                     // Reduce the original box quantity
                     frontBox.reduceQty(remainingQty);
                     remainingQty = 0;
-                    System.out.println("✓ Dispatched partial box " + partialBox.getBoxId() + 
+                    System.out.println("Dispatched partial box " + partialBox.getBoxId() +
                                      " (qty: " + partialBox.getQty() + ") from " + bay.getId());
                 }
             }
         }
         
         if (remainingQty > 0) {
-            System.out.println("⚠️ Insufficient stock for SKU: " + sku + 
+            System.out.println("Insufficient stock for SKU: " + sku +
                              " (requested: " + requestedQty + ", dispatched: " + (requestedQty - remainingQty) + ")");
         }
         
@@ -266,24 +256,24 @@ public class WarehouseManager {
         }
         
         if (boxToMove == null) {
-            System.out.println("⚠️ Box " + boxId + " not found");
+            System.out.println("Box " + boxId + " not found");
             return false;
         }
         
         Bay targetBay = bayMap.get(newBayId);
         if (targetBay == null) {
-            System.out.println("⚠️ Target bay " + newBayId + " not found");
+            System.out.println("Target bay " + newBayId + " not found");
             return false;
         }
         
         if (targetBay.isFull()) {
-            System.out.println("⚠️ Target bay " + newBayId + " is full");
+            System.out.println("Target bay " + newBayId + " is full");
             return false;
         }
         
         // Check if target bay can accept this SKU (must be empty or dedicated to same SKU)
         if (!targetBay.canAcceptSku(boxToMove.getSku())) {
-            System.out.println("⚠️ Target bay " + newBayId + " is dedicated to SKU " + targetBay.getDedicatedSku() + 
+            System.out.println("Target bay " + newBayId + " is dedicated to SKU " + targetBay.getDedicatedSku() +
                              ", cannot accept SKU " + boxToMove.getSku());
             return false;
         }
@@ -292,7 +282,7 @@ public class WarehouseManager {
         currentBay.removeBox(boxToMove);
         targetBay.insertBox(boxToMove);
         
-        System.out.println("✓ Relocated box " + boxId + " from " + currentBay.getId() + " to " + newBayId);
+        System.out.println("Relocated box " + boxId + " from " + currentBay.getId() + " to " + newBayId);
         return true;
     }
 

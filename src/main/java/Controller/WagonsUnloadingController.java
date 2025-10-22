@@ -44,12 +44,12 @@ public class WagonsUnloadingController {
         }
         
         if (!warehouseManager.getItems().containsKey(sku)) {
-            System.out.println("❌ SKU " + sku + " not found in catalog.");
+            System.out.println("SKU " + sku + " not found in catalog.");
             return new ArrayList<>();
         }
         
         if (quantity <= 0) {
-            System.out.println("❌ Quantity must be positive.");
+            System.out.println("Quantity must be positive.");
             return new ArrayList<>();
         }
         
@@ -61,7 +61,7 @@ public class WagonsUnloadingController {
      */
     public boolean relocateBox(String boxId, String warehouseId, int aisle, int bay) {
         if (!dataLoaded) {
-            System.out.println("❌ Data not loaded. Please load data first.");
+            System.out.println("Data not loaded. Please load data first.");
             return false;
         }
         
