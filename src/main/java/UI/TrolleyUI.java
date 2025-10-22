@@ -7,10 +7,18 @@ import java.util.InputMismatchException;
 import java.util.List;
 import java.util.Scanner;
 
+/**
+ * The type Trolley ui.
+ */
 public class TrolleyUI implements Runnable {
     private final TrolleyController trolleyController;
     private final Scanner sc = new Scanner(System.in);
 
+    /**
+     * Instantiates a new Trolley ui.
+     *
+     * @param trolleyController the trolley controller
+     */
     public TrolleyUI(TrolleyController trolleyController) {
         this.trolleyController = trolleyController;
     }

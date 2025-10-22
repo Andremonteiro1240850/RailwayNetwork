@@ -6,19 +6,31 @@ import java.util.List;
 
 import java.util.*;
 
+/**
+ * The type Pick path.
+ */
 public class PickPath {
     private PathStrategy strategy;
     private int totalDistance;
     private List<PickStop> stops;
 
-    // Construtor
+    /**
+     * Instantiates a new Pick path.
+     *
+     * @param strategy the strategy
+     * @param stops    the stops
+     */
+// Construtor
     public PickPath(PathStrategy strategy, List<PickStop> stops) {
         this.strategy = strategy;
         this.stops = new ArrayList<>(stops);
         calculatePath(); // Calcula automaticamente ao criar
     }
 
-    // Método principal que calcula o percurso baseado na estratégia
+    /**
+     * Calculate path.
+     */
+// Método principal que calcula o percurso baseado na estratégia
     public void calculatePath() {
         List<PickStop> calculatedPath;
 
@@ -84,7 +96,16 @@ public class PickPath {
         return nearest;
     }
 
-    // Fórmula de distância conforme especificado no enunciado
+    /**
+     * Calculate distance int.
+     *
+     * @param a1 the a 1
+     * @param b1 the b 1
+     * @param a2 the a 2
+     * @param b2 the b 2
+     * @return the int
+     */
+// Fórmula de distância conforme especificado no enunciado
     public static int calculateDistance(int a1, int b1, int a2, int b2) {
         if (a1 == a2) {
             // Mesmo corredor
@@ -113,19 +134,46 @@ public class PickPath {
         return total;
     }
 
-    // Getters e Setters (os que você já tinha)
+    /**
+     * Sets strategy.
+     *
+     * @param strategy the strategy
+     */
+// Getters e Setters (os que você já tinha)
     public void setStrategy(PathStrategy strategy) {
         this.strategy = strategy;
         calculatePath(); // Recalcula quando muda a estratégia
     }
 
+    /**
+     * Sets stops.
+     *
+     * @param stops the stops
+     */
     public void setStops(List<PickStop> stops) {
         this.stops = stops;
         calculatePath(); // Recalcula quando mudam os stops
     }
 
+    /**
+     * Gets strategy.
+     *
+     * @return the strategy
+     */
     public PathStrategy getStrategy() { return strategy; }
+
+    /**
+     * Gets total distance.
+     *
+     * @return the total distance
+     */
     public int getTotalDistance() { return totalDistance; }
+
+    /**
+     * Gets stops.
+     *
+     * @return the stops
+     */
     public List<PickStop> getStops() { return stops; }
 
     @Override

@@ -7,15 +7,29 @@ import Repository.WarehouseRepository;
 
 import java.util.*;
 
+/**
+ * The type Warehouse controller.
+ */
 public class WarehouseController {
     private final Warehouse warehouse;
     private final WarehouseRepository warehouseRepository;
 
+    /**
+     * Instantiates a new Warehouse controller.
+     *
+     * @param warehouse           the warehouse
+     * @param warehouseRepository the warehouse repository
+     */
     public WarehouseController(Warehouse warehouse, WarehouseRepository warehouseRepository) {
         this.warehouse = warehouse;
         this.warehouseRepository = warehouseRepository;
     }
 
+    /**
+     * Estado encomenda list.
+     *
+     * @return the list
+     */
     public List<EligibilityResult> estadoEncomenda() {
         List<EligibilityResult> estados = new ArrayList<>();
 
@@ -115,6 +129,12 @@ public class WarehouseController {
         return estados;
     }
 
+    /**
+     * Create allocation rows list.
+     *
+     * @param boxRepository the box repository
+     * @return the list
+     */
     public List<AllocationRow> createAllocationRows(BoxRepository boxRepository) {
         List<AllocationRow> allocationRows = new ArrayList<>();
 

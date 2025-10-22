@@ -12,6 +12,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * The type Trolley controller.
+ */
 public class TrolleyController {
 
     private Trolley trolley;
@@ -21,6 +24,12 @@ public class TrolleyController {
     private TrolleyRepository trolleyRepository;
 
 
+    /**
+     * Instantiates a new Trolley controller.
+     *
+     * @param warehouseRepository the warehouse repository
+     * @param trolleyRepository   the trolley repository
+     */
     public TrolleyController(WarehouseRepository warehouseRepository, TrolleyRepository trolleyRepository) {
         if (warehouseRepository == null || trolleyRepository == null) {
             throw new IllegalArgumentException("Repositórios não podem ser nulos.");
@@ -32,6 +41,13 @@ public class TrolleyController {
     }
 
 
+    /**
+     * Create trolley trolley.
+     *
+     * @param maxCapacity     the max capacity
+     * @param optionHeuristic the option heuristic
+     * @return the trolley
+     */
     public Trolley createTrolley(int maxCapacity, String optionHeuristic) {
         Trolley trolley = new Trolley(maxCapacity, 0.0,
                 (int)(Math.random()*10000)+1, new ArrayList<>(), optionHeuristic);
@@ -40,6 +56,12 @@ public class TrolleyController {
         return trolley;
     }
 
+    /**
+     * Reduce load double.
+     *
+     * @param weight the weight
+     * @return the double
+     */
     public double reduceLoad(double weight) {
         if (weight <= 0) {
             throw new IllegalArgumentException("Weight to reduce must be greater than zero.");
@@ -53,6 +75,9 @@ public class TrolleyController {
         return newLoad;
     }
 
+    /**
+     * Packing.
+     */
     public void packing() {
         List<AllocationRow> alocacoes = warehouseRepository.getAllocationRows();
         List<PickingItems> itensASeremPegos = new ArrayList<>();
@@ -201,14 +226,29 @@ public class TrolleyController {
         }
     }
 
+    /**
+     * Gets trolley.
+     *
+     * @return the trolley
+     */
     public Trolley getTrolley() {
         return trolley;
     }
 
+    /**
+     * Sets trolley.
+     *
+     * @param trolley the trolley
+     */
     public void setTrolley(Trolley trolley) {
         this.trolley = trolley;
     }
 
+    /**
+     * Gets trolley list.
+     *
+     * @return the trolley list
+     */
     public List<Trolley> getTrolleyList() {
         return trolleyList;
     }

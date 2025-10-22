@@ -19,19 +19,29 @@ public class QualityOperatorController {
     private Scanner scanner;
     private DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
     private List<Return> quarantineItems = new ArrayList<>();
-    
+
+    /**
+     * Instantiates a new Quality operator controller.
+     */
     public QualityOperatorController() {
         this.inspectionController = new InspectionController();
         this.scanner = new Scanner(System.in);
     }
 
+    /**
+     * Instantiates a new Quality operator controller.
+     *
+     * @param warehouseManager the warehouse manager
+     */
     public QualityOperatorController(Domain.WarehouseManager warehouseManager) {
         this.inspectionController = new InspectionController(warehouseManager);
         this.scanner = new Scanner(System.in);
     }
-    
+
     /**
      * Show login screen
+     *
+     * @return the boolean
      */
     public boolean showLogin() {
         System.out.println("\nQUALITY OPERATOR LOGIN");
@@ -55,7 +65,7 @@ public class QualityOperatorController {
             return false;
         }
     }
-    
+
     /**
      * Show main menu
      */

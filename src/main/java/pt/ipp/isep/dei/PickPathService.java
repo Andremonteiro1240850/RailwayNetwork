@@ -10,13 +10,19 @@ import java.util.HashMap;
 import Domain.ENUM.PathStrategy;
 import java.util.*;
 
-    public class PickPathService {
+/**
+ * The type Pick path service.
+ */
+public class PickPathService {
 
-        /**
-         * Gera paths para ambas as estratégias a partir de uma lista de PickStops
-         * NOTA: Assume que os stops já foram consolidados (merged)!
-         */
-        public static Map<PathStrategy, PickPath> generateBothPaths(List<PickStop> stops) {
+    /**
+     * Gera paths para ambas as estratégias a partir de uma lista de PickStops
+     * NOTA: Assume que os stops já foram consolidados (merged)!
+     *
+     * @param stops the stops
+     * @return the map
+     */
+    public static Map<PathStrategy, PickPath> generateBothPaths(List<PickStop> stops) {
             Map<PathStrategy, PickPath> results = new HashMap<>();
 
             // Estratégia A - ASC_SWEEP
@@ -30,11 +36,14 @@ import java.util.*;
             return results;
         }
 
-        /**
-         * Consolida stops duplicados (mesmo aisle/bay) somando as quantidades
-         * CRÍTICO: Faz o merge antes de calcular os paths!
-         */
-        public static List<PickStop> consolidateStops(List<PickStop> originalStops) {
+    /**
+     * Consolida stops duplicados (mesmo aisle/bay) somando as quantidades
+     * CRÍTICO: Faz o merge antes de calcular os paths!
+     *
+     * @param originalStops the original stops
+     * @return the list
+     */
+    public static List<PickStop> consolidateStops(List<PickStop> originalStops) {
             Map<String, PickStop> consolidatedMap = new HashMap<>();
 
             for (PickStop stop : originalStops) {
@@ -58,10 +67,13 @@ import java.util.*;
             return new ArrayList<>(consolidatedMap.values());
         }
 
-        /**
-         * Método principal para USEI04 - Processa completo
-         */
-        public static Map<PathStrategy, PickPath> processPickPathSequencing(List<PickStop> inputStops) {
+    /**
+     * Método principal para USEI04 - Processa completo
+     *
+     * @param inputStops the input stops
+     * @return the map
+     */
+    public static Map<PathStrategy, PickPath> processPickPathSequencing(List<PickStop> inputStops) {
             // 1. Consolidar stops duplicados
             List<PickStop> consolidatedStops = consolidateStops(inputStops);
 

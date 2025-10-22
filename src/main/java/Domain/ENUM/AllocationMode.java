@@ -1,5 +1,15 @@
 package Domain.ENUM;
 
+/**
+ * The enum Allocation mode.
+ */
 public enum AllocationMode {
-    PARTIAL, STRICT;
+    /**
+     * Partial allocation mode.
+     */
+    PARTIAL,
+    /**
+     * Strict allocation mode.
+     */
+    STRICT;
 }

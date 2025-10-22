@@ -17,12 +17,17 @@ import java.util.Arrays;
 public class PickPathUI {
     private final PickPathController controller;
     private final Scanner scanner;
-    
+
+    /**
+     * Instantiates a new Pick path ui.
+     *
+     * @param controller the controller
+     */
     public PickPathUI(PickPathController controller) {
         this.controller = controller;
         this.scanner = new Scanner(System.in);
     }
-    
+
     /**
      * Main menu for USEI04
      */

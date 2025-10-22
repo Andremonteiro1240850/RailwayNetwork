@@ -6,10 +6,18 @@ import Domain.Box;
 import java.util.List;
 import java.util.Scanner;
 
+/**
+ * The type Wagons unloading ui.
+ */
 public class WagonsUnloadingUI {
     private final WagonsUnloadingController controller;
     private final Scanner scanner;
 
+    /**
+     * Instantiates a new Wagons unloading ui.
+     *
+     * @param controller the controller
+     */
     public WagonsUnloadingUI(WagonsUnloadingController controller) {
         this.controller = controller;
         this.scanner = new Scanner(System.in);

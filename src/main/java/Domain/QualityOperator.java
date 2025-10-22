@@ -39,7 +39,14 @@ public class QualityOperator {
         operators.put("qop002", new QualityOperator("qop002", "Quality Operator 2", "quality456"));
         operators.put("qop003", new QualityOperator("qop003", "Quality Operator 3", "quality789"));
     }
-    
+
+    /**
+     * Instantiates a new Quality operator.
+     *
+     * @param userId   the user id
+     * @param name     the name
+     * @param password the password
+     */
     public QualityOperator(String userId, String name, String password) {
         this.userId = userId;
         this.name = name;
@@ -49,8 +56,8 @@ public class QualityOperator {
         this.inspectionController = new InspectionController();
         this.scanner = new Scanner(System.in);
     }
-    
-    
+
+
     /**
      * Start the quality operator interface
      */
@@ -301,10 +308,33 @@ public class QualityOperator {
         this.isAuthenticated = false;
         System.out.println("Logged out successfully!");
     }
-    
-    // Getters
+
+    /**
+     * Gets user id.
+     *
+     * @return the user id
+     */
+// Getters
     public String getUserId() { return userId; }
+
+    /**
+     * Gets name.
+     *
+     * @return the name
+     */
     public String getName() { return name; }
+
+    /**
+     * Is authenticated boolean.
+     *
+     * @return the boolean
+     */
     public boolean isAuthenticated() { return isAuthenticated; }
+
+    /**
+     * Gets last login.
+     *
+     * @return the last login
+     */
     public LocalDateTime getLastLogin() { return lastLogin; }
 }

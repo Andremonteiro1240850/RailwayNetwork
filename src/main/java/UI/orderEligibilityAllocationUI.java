@@ -8,9 +8,22 @@ import Repository.BoxRepository;
 
 import java.util.List;
 
+/**
+ * The type Order eligibility allocation ui.
+ */
 public class orderEligibilityAllocationUI implements Runnable {
+    /**
+     * The Warehouse controller.
+     */
     WarehouseController warehouseController;
     private final BoxRepository boxRepository;
+
+    /**
+     * Instantiates a new Order eligibility allocation ui.
+     *
+     * @param warehouseController the warehouse controller
+     * @param boxRepository       the box repository
+     */
     public  orderEligibilityAllocationUI(WarehouseController warehouseController, BoxRepository boxRepository) {
         this.warehouseController = warehouseController;
         this.boxRepository = boxRepository;

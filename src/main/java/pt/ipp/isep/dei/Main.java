@@ -22,6 +22,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 
+/**
+ * The type Main.
+ */
 public class Main {
     
     private static Scanner scanner = new Scanner(System.in);
@@ -55,7 +58,12 @@ public class Main {
             dataLoaded = false;
         }
     }
-    
+
+    /**
+     * The entry point of application.
+     *
+     * @param args the input arguments
+     */
     public static void main(String[] args) {
         // Load data at startup
         loadAllData();

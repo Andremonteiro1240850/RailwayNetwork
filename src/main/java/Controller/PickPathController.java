@@ -13,9 +13,10 @@ import java.util.Map;
  * Responsável por orquestrar as operações de sequenciação de picking
  */
 public class PickPathController {
-    
+
     /**
      * Processa a sequenciação de picking para uma lista de stops
+     *
      * @param inputStops Lista de PickStops (pode ter duplicados)
      * @return Map com ambas as estratégias e seus resultados
      */
@@ -28,9 +29,10 @@ public class PickPathController {
         // Usar o PickPathService que já criaste
         return PickPathService.processPickPathSequencing(inputStops);
     }
-    
+
     /**
      * Consolida stops duplicados (mesmo aisle/bay)
+     *
      * @param originalStops Lista original com possíveis duplicados
      * @return Lista consolidada
      */
@@ -41,9 +43,10 @@ public class PickPathController {
         
         return PickPathService.consolidateStops(originalStops);
     }
-    
+
     /**
      * Gera paths para ambas as estratégias (assume stops já consolidados)
+     *
      * @param consolidatedStops Lista de stops já consolidados
      * @return Map com ambas as estratégias
      */

@@ -1,5 +1,23 @@
 package Domain.ENUM;
 
+/**
+ * The enum Box status.
+ */
 public enum BoxStatus {
-    AVAILLABLE, ALLOCATED, DISPATCHED, REMOVED;
+    /**
+     * Availlable box status.
+     */
+    AVAILLABLE,
+    /**
+     * Allocated box status.
+     */
+    ALLOCATED,
+    /**
+     * Dispatched box status.
+     */
+    DISPATCHED,
+    /**
+     * Removed box status.
+     */
+    REMOVED;
 }
