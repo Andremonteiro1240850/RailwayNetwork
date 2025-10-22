@@ -225,7 +225,7 @@ public class Main {
 
         warehouseRepository.saveStock(boxRepository.getAllAssignedBoxes());
 
-        // Agora criar controller e UI
+        // Agora cria controller e UI
         WarehouseController controller = new WarehouseController(warehouse, warehouseRepository);
         orderEligibilityAllocationUI ui = new orderEligibilityAllocationUI(controller, boxRepository);
         System.out.println("\n=== ORDER ELIGIBILITY & ALLOCATION ===");
