@@ -248,11 +248,11 @@ public class Main {
     private static void pickPathSequencing() {
         System.out.println("\n=== PICK PATH SEQUENCING (US04) ===");
         
-        // Criar controller e UI
+        //Criar controller e UI
         PickPathController controller = new PickPathController();
         PickPathUI ui = new PickPathUI(controller);
         
-        // Mostrar menu da UI
+        //  menu da UI
         ui.showMainMenu();
     }
     
