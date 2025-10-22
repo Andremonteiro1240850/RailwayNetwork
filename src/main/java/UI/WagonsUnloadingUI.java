@@ -3,13 +3,21 @@ package UI;
 import Controller.WagonsUnloadingController;
 import Domain.Bay;
 import Domain.Box;
-import java.util.List;
-import java.util.Scanner;
+import java.util.*;
+import java.util.stream.Collectors;
 
+/**
+ * The type Wagons unloading ui.
+ */
 public class WagonsUnloadingUI {
     private final WagonsUnloadingController controller;
     private final Scanner scanner;
 
+    /**
+     * Instantiates a new Wagons unloading ui.
+     *
+     * @param controller the controller
+     */
     public WagonsUnloadingUI(WagonsUnloadingController controller) {
         this.controller = controller;
         this.scanner = new Scanner(System.in);
@@ -62,7 +70,19 @@ public class WagonsUnloadingUI {
         }
         
         System.out.println("Starting wagon unloading process...");
+        
+        // Show debug information before unloading
+        Repository.BoxRepository boxRepo = controller.getBoxRepository();
+        Repository.BoxRepository.RepositoryStats stats = boxRepo.getStats();
+        System.out.println("Current repository status:");
+        System.out.println("  Unassigned boxes: " + stats.totalUnassigned + " (SKUs: " + stats.unassignedSkus + ")");
+        System.out.println("  Assigned boxes: " + stats.totalAssigned + " (SKUs: " + stats.assignedSkus + ")");
+        
         controller.unloadWagons();
+        
+        // Show detailed assignment information after unloading
+        System.out.println("\nDETAILED BOX ASSIGNMENTS:");
+        showDetailedAssignments(boxRepo);
         
         System.out.println("\nPress Enter to continue...");
         scanner.nextLine();
@@ -175,6 +195,83 @@ public class WagonsUnloadingUI {
         
         System.out.println("\nPress Enter to continue...");
         scanner.nextLine();
+    }
+
+    /**
+     * Show detailed box assignments by warehouse/aisle/bay
+     */
+    private void showDetailedAssignments(Repository.BoxRepository boxRepo) {
+        Map<String, List<Box>> assignedBoxes = boxRepo.getAllAssignedBoxes();
+        
+        if (assignedBoxes.isEmpty()) {
+            System.out.println("No boxes assigned yet.");
+            return;
+        }
+        
+        // Group boxes by location for better display
+        Map<String, List<Box>> boxesByLocation = new HashMap<>();
+        
+        for (Map.Entry<String, List<Box>> entry : assignedBoxes.entrySet()) {
+            String sku = entry.getKey();
+            List<Box> boxes = entry.getValue();
+            
+            for (Box box : boxes) {
+                if (box.getLocation() != null) {
+                    String location = box.getLocation().toString();
+                    boxesByLocation.computeIfAbsent(location, k -> new ArrayList<>()).add(box);
+                }
+            }
+        }
+        
+        // Sort locations for consistent display (W1/A1/B1, W1/A1/B2, etc.)
+        List<String> sortedLocations = new ArrayList<>(boxesByLocation.keySet());
+        sortedLocations.sort((loc1, loc2) -> {
+            // Parse location format: W1/A1/B1
+            String[] parts1 = loc1.split("/");
+            String[] parts2 = loc2.split("/");
+            
+            if (parts1.length != 3 || parts2.length != 3) {
+                return loc1.compareTo(loc2); // fallback to string comparison
+            }
+            
+            // Compare warehouse
+            int warehouseCompare = parts1[0].compareTo(parts2[0]);
+            if (warehouseCompare != 0) return warehouseCompare;
+            
+            // Compare aisle
+            int aisleCompare = Integer.compare(
+                Integer.parseInt(parts1[1].substring(1)), // A1 -> 1
+                Integer.parseInt(parts2[1].substring(1))  // A1 -> 1
+            );
+            if (aisleCompare != 0) return aisleCompare;
+            
+            // Compare bay
+            return Integer.compare(
+                Integer.parseInt(parts1[2].substring(1)), // B1 -> 1
+                Integer.parseInt(parts2[2].substring(1))  // B1 -> 1
+            );
+        });
+        
+        for (String location : sortedLocations) {
+            List<Box> boxes = boxesByLocation.get(location);
+            System.out.println("\n" + location + ":");
+            
+            // Group by SKU within this location
+            Map<String, List<Box>> boxesBySku = boxes.stream()
+                .collect(Collectors.groupingBy(Box::getSku));
+            
+            for (Map.Entry<String, List<Box>> skuEntry : boxesBySku.entrySet()) {
+                String sku = skuEntry.getKey();
+                List<Box> skuBoxes = skuEntry.getValue();
+                
+                System.out.println("  SKU " + sku + " (" + skuBoxes.size() + " boxes):");
+                for (Box box : skuBoxes) {
+                    String expiryInfo = box.getExpiryDate() != null ? 
+                        " (expires: " + box.getExpiryDate() + ")" : " (non-perishable)";
+                    System.out.println("    - " + box.getBoxId() + " (qty: " + box.getQty() + ")" + expiryInfo);
+                }
+            }
+        }
     }
 
 }

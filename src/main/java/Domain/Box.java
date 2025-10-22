@@ -5,6 +5,9 @@ import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.Objects;
 
+/**
+ * The type Box.
+ */
 public class Box {
     private final String boxId;            // identificador único
     private final String sku;              // produto
@@ -13,6 +16,16 @@ public class Box {
     private final LocalDateTime receivedAt;// data de receção
     private BayId location;                // localização atual
 
+    /**
+     * Instantiates a new Box.
+     *
+     * @param boxId      the box id
+     * @param sku        the sku
+     * @param qty        the qty
+     * @param expiryDate the expiry date
+     * @param receivedAt the received at
+     * @param location   the location
+     */
     public Box(String boxId, String sku, int qty,
                LocalDate expiryDate, LocalDateTime receivedAt, BayId location) {
         this.boxId = boxId;
@@ -22,8 +35,17 @@ public class Box {
         this.receivedAt = receivedAt;
         this.location = location;
     }
-    
-    // Constructor without location (for initial creation)
+
+    /**
+     * Instantiates a new Box.
+     *
+     * @param boxId      the box id
+     * @param sku        the sku
+     * @param qty        the qty
+     * @param expiryDate the expiry date
+     * @param receivedAt the received at
+     */
+// Constructor without location (for initial creation)
     public Box(String boxId, String sku, int qty,
                LocalDate expiryDate, LocalDateTime receivedAt) {
         this.boxId = boxId;
@@ -34,29 +56,94 @@ public class Box {
         this.location = null;
     }
 
+    /**
+     * Gets box id.
+     *
+     * @return the box id
+     */
     public String getBoxId() { return boxId; }
+
+    /**
+     * Gets sku.
+     *
+     * @return the sku
+     */
     public String getSku() { return sku; }
+
+    /**
+     * Gets qty.
+     *
+     * @return the qty
+     */
     public int getQty() { return qty; }
+
+    /**
+     * Gets expiry date.
+     *
+     * @return the expiry date
+     */
     public LocalDate getExpiryDate() { return expiryDate; }
+
+    /**
+     * Gets received at.
+     *
+     * @return the received at
+     */
     public LocalDateTime getReceivedAt() { return receivedAt; }
+
+    /**
+     * Gets location.
+     *
+     * @return the location
+     */
     public BayId getLocation() { return location; }
 
+    /**
+     * Sets location.
+     *
+     * @param newLoc the new loc
+     */
     public void setLocation(BayId newLoc) { this.location = newLoc; }
+
+    /**
+     * Reduce qty.
+     *
+     * @param amount the amount
+     */
     public void reduceQty(int amount) { this.qty -= amount; }
+
+    /**
+     * Sets qty.
+     *
+     * @param qty the qty
+     */
     public void setQty(int qty) { this.qty = qty; }
-    
-    // Methods needed for WarehouseController compatibility
+
+    /**
+     * Gets aisle.
+     *
+     * @return the aisle
+     */
+// Methods needed for WarehouseController compatibility
     public Aisle getAisle() {
         // Return null for now - this is for compatibility with existing code
         return null;
     }
-    
+
+    /**
+     * Gets bay.
+     *
+     * @return the bay
+     */
     public Bay getBay() {
         // Return null for now - this is for compatibility with existing code  
         return null;
     }
 
-    // FEFO/FIFO comparator
+    /**
+     * The constant FEFO_COMPARATOR.
+     */
+// FEFO/FIFO comparator
     public static final Comparator<Box> FEFO_COMPARATOR = (a, b) -> {
         LocalDate ea = a.getExpiryDate();
         LocalDate eb = b.getExpiryDate();

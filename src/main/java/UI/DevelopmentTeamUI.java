@@ -1,7 +1,13 @@
 package UI;
 
+/**
+ * The type Development team ui.
+ */
 public class DevelopmentTeamUI {
 
+    /**
+     * Show.
+     */
     public static void show() {
         System.out.println("\n=== DEVELOPMENT TEAM ===");
         System.out.println("Team G044 - 2025/26");

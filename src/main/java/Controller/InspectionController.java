@@ -12,18 +12,34 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 
+/**
+ * The type Inspection controller.
+ */
 public class InspectionController {
 
     private List<QuarantineInspection> quarantineInspections = new ArrayList<>();
     private Domain.WarehouseManager warehouseManager; // for FEFO/FIFO insertion
 
+    /**
+     * Instantiates a new Inspection controller.
+     */
     public InspectionController() {
     }
 
+    /**
+     * Instantiates a new Inspection controller.
+     *
+     * @param warehouseManager the warehouse manager
+     */
     public InspectionController(Domain.WarehouseManager warehouseManager) {
         this.warehouseManager = warehouseManager;
     }
 
+    /**
+     * Sets warehouse manager.
+     *
+     * @param warehouseManager the warehouse manager
+     */
     public void setWarehouseManager(Domain.WarehouseManager warehouseManager) {
         this.warehouseManager = warehouseManager;
     }
@@ -32,6 +48,12 @@ public class InspectionController {
 
     /**
      * US05 - Process inspection
+     *
+     * @param sku          the sku
+     * @param quantity     the quantity
+     * @param returnReason the return reason
+     * @param expiryDate   the expiry date
+     * @return the string
      */
     public String processQuarantine(String sku, int quantity, String returnReason, LocalDate expiryDate) {
         return processQuarantine(sku, quantity, returnReason, expiryDate, null, null);
@@ -39,6 +61,14 @@ public class InspectionController {
 
     /**
      * US05 - Process inspection with partial restock support
+     *
+     * @param sku          the sku
+     * @param quantity     the quantity
+     * @param returnReason the return reason
+     * @param expiryDate   the expiry date
+     * @param qtyRestocked the qty restocked
+     * @param qtyDiscarded the qty discarded
+     * @return the string
      */
     public String processQuarantine(String sku, int quantity, String returnReason, LocalDate expiryDate,
                                     Integer qtyRestocked, Integer qtyDiscarded) {
@@ -158,6 +188,9 @@ public class InspectionController {
 
     /**
      * Get inspections by SKU
+     *
+     * @param sku the sku
+     * @return the inspections by sku
      */
     public List<QuarantineInspection> getInspectionsBySku(String sku) {
         return new ArrayList<>(quarantineInspections);
@@ -165,6 +198,8 @@ public class InspectionController {
 
     /**
      * Get audit log
+     *
+     * @return the audit logs
      */
     public List<String> getAuditLogs() {
         return Domain.AuditLog.readAll();

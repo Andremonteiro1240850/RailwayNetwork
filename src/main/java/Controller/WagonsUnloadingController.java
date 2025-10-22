@@ -3,11 +3,19 @@ package Controller;
 import Domain.*;
 import java.util.*;
 
+/**
+ * The type Wagons unloading controller.
+ */
 public class WagonsUnloadingController {
     private WarehouseManager warehouseManager;
     private DataLoader dataLoader;
     private boolean dataLoaded = false;
 
+    /**
+     * Instantiates a new Wagons unloading controller.
+     *
+     * @param dataLoader the data loader
+     */
     public WagonsUnloadingController(DataLoader dataLoader) {
         this.dataLoader = dataLoader;
         this.dataLoaded = true;
@@ -36,6 +44,10 @@ public class WagonsUnloadingController {
 
     /**
      * Dispatch stock for a specific SKU
+     *
+     * @param sku      the sku
+     * @param quantity the quantity
+     * @return the list
      */
     public List<Box> dispatchStock(String sku, int quantity) {
         if (!dataLoaded) {
@@ -58,6 +70,12 @@ public class WagonsUnloadingController {
 
     /**
      * Relocate a box to a different bay
+     *
+     * @param boxId       the box id
+     * @param warehouseId the warehouse id
+     * @param aisle       the aisle
+     * @param bay         the bay
+     * @return the boolean
      */
     public boolean relocateBox(String boxId, String warehouseId, int aisle, int bay) {
         if (!dataLoaded) {
@@ -71,6 +89,8 @@ public class WagonsUnloadingController {
 
     /**
      * Get available SKUs
+     *
+     * @return the available skus
      */
     public List<String> getAvailableSkus() {
         if (!dataLoaded) {
@@ -82,6 +102,8 @@ public class WagonsUnloadingController {
 
     /**
      * Check if data is loaded
+     *
+     * @return the boolean
      */
     public boolean isDataLoaded() {
         return dataLoaded;
@@ -89,13 +111,17 @@ public class WagonsUnloadingController {
 
     /**
      * Get warehouse manager (for advanced operations)
+     *
+     * @return the warehouse manager
      */
     public WarehouseManager getWarehouseManager() {
         return warehouseManager;
     }
-    
+
     /**
      * Get box repository (for box management operations)
+     *
+     * @return the box repository
      */
     public Repository.BoxRepository getBoxRepository() {
         return dataLoader.boxRepository;

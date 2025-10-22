@@ -2,6 +2,9 @@ package Domain;
 
 import java.util.Objects;
 
+/**
+ * The type Bay id.
+ */
 public class BayId  implements Comparable<BayId> {
 
     private final String warehouseId;
@@ -9,14 +12,38 @@ public class BayId  implements Comparable<BayId> {
     private final int bay;
 
 
+    /**
+     * Instantiates a new Bay id.
+     *
+     * @param warehouseId the warehouse id
+     * @param aisle       the aisle
+     * @param bay         the bay
+     */
     public BayId(String warehouseId, int aisle, int bay) {
         this.warehouseId = warehouseId;
         this.aisle = aisle;
         this.bay = bay;
     }
 
+    /**
+     * Gets warehouse id.
+     *
+     * @return the warehouse id
+     */
     public String getWarehouseId() { return warehouseId; }
+
+    /**
+     * Gets aisle.
+     *
+     * @return the aisle
+     */
     public int getAisle() { return aisle; }
+
+    /**
+     * Gets bay.
+     *
+     * @return the bay
+     */
     public int getBay() { return bay; }
 
     @Override

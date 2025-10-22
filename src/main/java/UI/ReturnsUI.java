@@ -5,14 +5,25 @@ import Domain.QuarantineInspection;
 
 import java.util.List;
 
+/**
+ * The type Returns ui.
+ */
 public class ReturnsUI {
 
     private final InspectionController inspectionController;
 
+    /**
+     * Instantiates a new Returns ui.
+     *
+     * @param inspectionController the inspection controller
+     */
     public ReturnsUI(InspectionController inspectionController) {
         this.inspectionController = inspectionController;
     }
 
+    /**
+     * Show dashboard.
+     */
     public void showDashboard() {
         println();
         println(center("Returns Dashboard", 86));

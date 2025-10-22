@@ -1,15 +1,15 @@
 package pt.ipp.isep.dei;
 
 import Controller.*;
+import Domain.Trolley;
 import Domain.Warehouse;
+import Domain.WarehouseManager;
+import Repository.BoxRepository;
+import Repository.TrolleyRepository;
 import Repository.WarehouseRepository;
-import UI.ReturnsUI;
-import UI.WagonsUnloadingUI;
-import UI.PickPathUI;
+import UI.*;
 import Domain.DataLoader;
 import Domain.ENUM.ReturnReason;
-import UI.orderEligibilityAllocationUI;
-import UI.DevelopmentTeamUI;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -22,11 +22,17 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 
+/**
+ * The type Main.
+ */
 public class Main {
     
     private static Scanner scanner = new Scanner(System.in);
     private static DataLoader dataLoader;
     private static boolean dataLoaded = false;
+    private static WarehouseRepository warehouseRepository = new WarehouseRepository();
+    private static TrolleyRepository trolleyRepository = new TrolleyRepository();
+    private static BoxRepository boxRepository;
     
     /**
      * Load all data from CSV files once at startup
@@ -42,6 +48,8 @@ public class Main {
             dataLoader.loadWagons("train_station_dataset/wagons.csv");
             dataLoader.loadOrders("train_station_dataset/orders.csv", "train_station_dataset/order_lines.csv");
             dataLoader.loadReturns("train_station_dataset/returns.csv");
+
+            boxRepository = dataLoader.getBoxRepository();
             
             dataLoaded = true;
             System.out.println("✓ All data loaded successfully!");
@@ -50,7 +58,12 @@ public class Main {
             dataLoaded = false;
         }
     }
-    
+
+    /**
+     * The entry point of application.
+     *
+     * @param args the input arguments
+     */
     public static void main(String[] args) {
         // Load data at startup
         loadAllData();
@@ -206,16 +219,25 @@ public class Main {
      * Order Eligibility & Allocation
      */
     private static void orderEligibilityAllocation() {
-        WarehouseRepository warehouseRepository = new WarehouseRepository();
         Warehouse warehouse = new Warehouse(warehouseRepository);
         warehouse.loadItems("train_station_dataset/items.csv");
-        warehouse.loadWagons("train_station_dataset\\wagons.csv");
-        warehouse.loadOrders("train_station_dataset\\orders.csv", "train_station_dataset\\order_lines.csv");
+        warehouse.loadWagons("train_station_dataset/wagons.csv");
+        warehouse.loadOrders("train_station_dataset/orders.csv", "train_station_dataset/order_lines.csv");
+
+        // Criar WarehouseManager com boxRepository
+        WarehouseManager wm = new WarehouseManager(dataLoader.items, dataLoader.stock, dataLoader.bays, boxRepository);
+
+        // Note: Boxes are already loaded and unassigned in DataLoader
+        // They will be assigned to bays when the user explicitly chooses to unload wagons in the UI
+
+
+        warehouseRepository.saveStock(boxRepository.getAllAssignedBoxes());
+
+        // Agora cria controller e UI
         WarehouseController controller = new WarehouseController(warehouse, warehouseRepository);
-        orderEligibilityAllocationUI ui = new orderEligibilityAllocationUI(controller);
+        orderEligibilityAllocationUI ui = new orderEligibilityAllocationUI(controller, boxRepository);
         System.out.println("\n=== ORDER ELIGIBILITY & ALLOCATION ===");
         ui.run();
-        scanner.nextLine();
     }
     
     /**
@@ -223,9 +245,9 @@ public class Main {
      */
     private static void pickingPlans() {
         System.out.println("\n=== PICKING PLANS ===");
-        System.out.println("This feature is not yet implemented.");
-        System.out.println("Press Enter to return to main menu...");
-        scanner.nextLine();
+        TrolleyController controller = new TrolleyController(warehouseRepository, trolleyRepository);
+        TrolleyUI ui = new TrolleyUI(controller);
+        ui.run();
     }
     
     /**
@@ -234,11 +256,11 @@ public class Main {
     private static void pickPathSequencing() {
         System.out.println("\n=== PICK PATH SEQUENCING (US04) ===");
         
-        // Criar controller e UI
-        PickPathController controller = new PickPathController();
+        //Criar controller e UI com acesso aos trolleys da US03
+        PickPathController controller = new PickPathController(trolleyRepository);
         PickPathUI ui = new PickPathUI(controller);
         
-        // Mostrar menu da UI
+        //  menu da UI
         ui.showMainMenu();
     }
     

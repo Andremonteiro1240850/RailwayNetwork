@@ -3,6 +3,9 @@ package Domain;
 import java.util.*;
 import java.util.stream.Collectors;
 
+/**
+ * The type Warehouse manager.
+ */
 public class WarehouseManager {
     private final Map<String, Item> items;
     private final Map<String, List<Box>> stock; // Keep for backward compatibility
@@ -10,6 +13,13 @@ public class WarehouseManager {
     private final Map<BayId, Bay> bayMap;
     private final Repository.BoxRepository boxRepository; // New repository for boxes
 
+    /**
+     * Instantiates a new Warehouse manager.
+     *
+     * @param items the items
+     * @param stock the stock
+     * @param bays  the bays
+     */
     public WarehouseManager(Map<String, Item> items, Map<String, List<Box>> stock, List<Bay> bays) {
         this.items = items;
         this.stock = stock;
@@ -17,7 +27,15 @@ public class WarehouseManager {
         this.bayMap = bays.stream().collect(Collectors.toMap(Bay::getId, bay -> bay));
         this.boxRepository = null; // Will be set by setBoxRepository method
     }
-    
+
+    /**
+     * Instantiates a new Warehouse manager.
+     *
+     * @param items         the items
+     * @param stock         the stock
+     * @param bays          the bays
+     * @param boxRepository the box repository
+     */
     public WarehouseManager(Map<String, Item> items, Map<String, List<Box>> stock, List<Bay> bays, Repository.BoxRepository boxRepository) {
         this.items = items;
         this.stock = stock;
@@ -147,8 +165,9 @@ public class WarehouseManager {
 
         if (!dedicatedBays.isEmpty()) {
             Bay targetBay = dedicatedBays.get(0);
-            targetBay.insertBox(box);
             boxRepository.assignBoxToBay(box, targetBay.getId());
+            targetBay.insertBox(box);
+            System.out.println("✅ Assigned box " + box.getBoxId() + " to " + targetBay.getId());
             return;
         }
 
@@ -160,18 +179,25 @@ public class WarehouseManager {
 
         if (!emptyBays.isEmpty()) {
             Bay targetBay = emptyBays.get(0);
-            targetBay.insertBox(box);
             boxRepository.assignBoxToBay(box, targetBay.getId());
+            targetBay.insertBox(box);
+            System.out.println("✅ Assigned box " + box.getBoxId() + " to new dedicated bay " + targetBay.getId() + " for SKU " + sku);
             return;
         }
 
         // 3. No available bays
-        System.out.println("No available bays for SKU: " + sku + " (Box: " + box.getBoxId() + ")");
+        System.out.println("⚠️ No available bays for SKU: " + sku + " (Box: " + box.getBoxId() + ")");
         System.out.println("All bays are either full or dedicated to other SKUs");
     }
 
     /**
      * Insert a returned box into inventory and place it according to FEFO/FIFO (USEI01 rules).
+     *
+     * @param boxId      the box id
+     * @param sku        the sku
+     * @param qty        the qty
+     * @param expiryDate the expiry date
+     * @param receivedAt the received at
      */
     public void insertReturnedBox(String boxId, String sku, int qty,
                                   java.time.LocalDate expiryDate,
@@ -184,6 +210,10 @@ public class WarehouseManager {
 
     /**
      * Dispatch stock for a specific SKU and quantity
+     *
+     * @param sku          the sku
+     * @param requestedQty the requested qty
+     * @return the list
      */
     public List<Box> dispatchStock(String sku, int requestedQty) {
         List<Box> dispatchedBoxes = new ArrayList<>();
@@ -238,6 +268,10 @@ public class WarehouseManager {
 
     /**
      * Relocate a box to a different bay
+     *
+     * @param boxId    the box id
+     * @param newBayId the new bay id
+     * @return the boolean
      */
     public boolean relocateBox(String boxId, BayId newBayId) {
         // Find the box
@@ -287,8 +321,31 @@ public class WarehouseManager {
     }
 
 
+    /**
+     * Gets items.
+     *
+     * @return the items
+     */
     public Map<String, Item> getItems() { return items; }
+
+    /**
+     * Gets stock.
+     *
+     * @return the stock
+     */
     public Map<String, List<Box>> getStock() { return stock; }
+
+    /**
+     * Gets bays.
+     *
+     * @return the bays
+     */
     public List<Bay> getBays() { return bays; }
+
+    /**
+     * Gets bay map.
+     *
+     * @return the bay map
+     */
     public Map<BayId, Bay> getBayMap() { return bayMap; }
 }

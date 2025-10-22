@@ -5,16 +5,33 @@ import java.time.LocalDate;
 import java.util.*;
 
 
+/**
+ * The type Item controller.
+ */
 public class ItemController {
 
+    /**
+     * The Inspection controller.
+     */
     InspectionController inspectionController;
 
+    /**
+     * Instantiates a new Item controller.
+     *
+     * @param inspectionController the inspection controller
+     */
     public ItemController(InspectionController inspectionController) {
         this.inspectionController = inspectionController;
     }
 
     /**
      * US05 - Process a return and forward it to quarantine
+     *
+     * @param sku          the sku
+     * @param quantity     the quantity
+     * @param returnReason the return reason
+     * @param expiryDate   the expiry date
+     * @return the string
      */
     public String processReturn(String sku, int quantity, String returnReason, LocalDate expiryDate) {
         return processReturn(sku, quantity, returnReason, expiryDate, null, null);
@@ -22,8 +39,16 @@ public class ItemController {
 
     /**
      * US05 - Process a return with partial restock support
+     *
+     * @param sku          the sku
+     * @param quantity     the quantity
+     * @param returnReason the return reason
+     * @param expiryDate   the expiry date
+     * @param qtyRestocked the qty restocked
+     * @param qtyDiscarded the qty discarded
+     * @return the string
      */
-    public String processReturn(String sku, int quantity, String returnReason, LocalDate expiryDate, 
+    public String processReturn(String sku, int quantity, String returnReason, LocalDate expiryDate,
                                Integer qtyRestocked, Integer qtyDiscarded) {
         try {
             // Validation
@@ -57,6 +82,9 @@ public class ItemController {
 
     /**
      * List returns by SKU
+     *
+     * @param sku the sku
+     * @return the returns by sku
      */
     public List<QuarantineInspection> getReturnsBySku(String sku) {
         return inspectionController.getInspectionsBySku(sku);

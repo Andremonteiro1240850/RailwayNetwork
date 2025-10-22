@@ -4,13 +4,29 @@ import Controller.WarehouseController;
 import Domain.AllocationRow;
 import Domain.EligibilityResult;
 import Domain.Warehouse;
+import Repository.BoxRepository;
 
 import java.util.List;
 
+/**
+ * The type Order eligibility allocation ui.
+ */
 public class orderEligibilityAllocationUI implements Runnable {
+    /**
+     * The Warehouse controller.
+     */
     WarehouseController warehouseController;
-    public  orderEligibilityAllocationUI(WarehouseController warehouseController) {
+    private final BoxRepository boxRepository;
+
+    /**
+     * Instantiates a new Order eligibility allocation ui.
+     *
+     * @param warehouseController the warehouse controller
+     * @param boxRepository       the box repository
+     */
+    public  orderEligibilityAllocationUI(WarehouseController warehouseController, BoxRepository boxRepository) {
         this.warehouseController = warehouseController;
+        this.boxRepository = boxRepository;
     }
     @Override
     public void run() {
@@ -25,7 +41,8 @@ public class orderEligibilityAllocationUI implements Runnable {
                             ", status=" + er.getStatus()
             );
         }
-        List<AllocationRow> resultados = warehouseController.createAllocationRows();
+        System.out.println();
+        List<AllocationRow> resultados = warehouseController.createAllocationRows(boxRepository);
         for (AllocationRow r : resultados) {
             System.out.println(
                     "ALLOC order=" + r.getOrderId() +

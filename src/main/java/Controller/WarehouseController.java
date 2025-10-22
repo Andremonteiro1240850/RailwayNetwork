@@ -2,19 +2,34 @@ package Controller;
 
 import Domain.*;
 import Domain.ENUM.AllocationStatus;
+import Repository.BoxRepository;
 import Repository.WarehouseRepository;
 
 import java.util.*;
 
+/**
+ * The type Warehouse controller.
+ */
 public class WarehouseController {
     private final Warehouse warehouse;
     private final WarehouseRepository warehouseRepository;
 
+    /**
+     * Instantiates a new Warehouse controller.
+     *
+     * @param warehouse           the warehouse
+     * @param warehouseRepository the warehouse repository
+     */
     public WarehouseController(Warehouse warehouse, WarehouseRepository warehouseRepository) {
         this.warehouse = warehouse;
         this.warehouseRepository = warehouseRepository;
     }
 
+    /**
+     * Estado encomenda list.
+     *
+     * @return the list
+     */
     public List<EligibilityResult> estadoEncomenda() {
         List<EligibilityResult> estados = new ArrayList<>();
 
@@ -114,13 +129,19 @@ public class WarehouseController {
         return estados;
     }
 
-    public List<AllocationRow> createAllocationRows() {
+    /**
+     * Create allocation rows list.
+     *
+     * @param boxRepository the box repository
+     * @return the list
+     */
+    public List<AllocationRow> createAllocationRows(BoxRepository boxRepository) {
         List<AllocationRow> allocationRows = new ArrayList<>();
 
+        // Buscar apenas as boxes já atribuídas a bays (ou seja, disponíveis para picking)
+        Map<String, List<Box>> assignedBoxes = boxRepository.getAllAssignedBoxes();
 
-        Map<String, List<Box>> stock = warehouseRepository.getAllStock();
-
-
+        // Obter todas as encomendas do warehouse
         List<Order> allOrders = warehouseRepository.getOrders();
         Map<String, Order> ordersMap = new HashMap<>();
         for (Order order : allOrders) {
@@ -131,11 +152,11 @@ public class WarehouseController {
         List<Order> sortedOrders = new ArrayList<>(ordersMap.values());
         Collections.sort(sortedOrders);
 
-
-        Map<String, List<Box>> workingStock = deepCopyStock(stock);
+        // Criar uma cópia independente do stock atribuído (para simular o consumo)
+        Map<String, List<Box>> workingStock = deepCopyStock(assignedBoxes);
 
         for (Order order : sortedOrders) {
-            // Ordenar linhas por lineNo ASC
+            // Ordenar linhas da encomenda (lineNo ASC)
             List<OrderLine> lines = new ArrayList<>(order.getLines());
             lines.sort(Comparator.comparingInt(OrderLine::getLineNo));
 
@@ -144,10 +165,10 @@ public class WarehouseController {
                 int requested = line.getRequestedQty();
                 int remaining = requested;
 
-                // Obter boxes deste SKU ordenadas por FEFO/FIFO
+                // Obter todas as boxes atribuídas com este SKU
                 List<Box> boxes = workingStock.get(sku);
                 if (boxes != null) {
-                    // Ordenar por: ExpiryDate (menor primeiro, nulos no fim), ReceivedAt (mais antigo primeiro), BoxId (ascendente)
+                    // Ordenar por FEFO/FIFO
                     boxes.sort(Comparator
                             .comparing(Box::getExpiryDate, Comparator.nullsLast(Comparator.naturalOrder()))
                             .thenComparing(Box::getReceivedAt)
@@ -162,7 +183,7 @@ public class WarehouseController {
 
                         int allocatedFromBox = Math.min(remaining, availableInBox);
 
-                        // Criar linha de alocação
+                        // Criar a linha de alocação
                         allocationRows.add(new AllocationRow(
                                 order.getId(),
                                 line.getLineNo(),
@@ -173,7 +194,7 @@ public class WarehouseController {
                                 box.getLocation().getBay()
                         ));
 
-                        // Atualizar stock da box (consumir) - na cópia de trabalho
+                        // Atualizar a quantidade restante dessa box
                         box.setQty(availableInBox - allocatedFromBox);
                         remaining -= allocatedFromBox;
                     }
@@ -181,10 +202,11 @@ public class WarehouseController {
             }
         }
 
-
+        // Guardar as linhas criadas no repositório do warehouse (mantendo compatibilidade)
         warehouseRepository.saveAllocationRows(allocationRows);
         return allocationRows;
     }
+
 
 
     private Map<String, List<Box>> deepCopyStock(Map<String, List<Box>> originalStock) {

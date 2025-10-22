@@ -10,12 +10,33 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * The type Data loader.
+ */
 public class DataLoader {
+    /**
+     * The Items.
+     */
     public Map<String, Item> items = new HashMap<>();
+    /**
+     * The Stock.
+     */
     public Map<String, List<Box>> stock = new HashMap<>(); // Keep for backward compatibility
+    /**
+     * The Orders.
+     */
     public Map<String, Order> orders = new HashMap<>();
+    /**
+     * The Bays.
+     */
     public List<Bay> bays = new ArrayList<>();
+    /**
+     * The Returns.
+     */
     public List<Return> returns = new ArrayList<>();
+    /**
+     * The Box repository.
+     */
     public Repository.BoxRepository boxRepository = new Repository.BoxRepository(); // New repository for boxes
     // Contadores não necessários quando ficheiro já fornece lineNo
 
@@ -69,7 +90,12 @@ public class DataLoader {
         return null;
     }
 
-    // ---------- ITEMS ----------
+    /**
+     * Load items.
+     *
+     * @param filePath the file path
+     */
+// ---------- ITEMS ----------
     public void loadItems(String filePath) {
         try (BufferedReader br = new BufferedReader(new FileReader(filePath))) {
             String line = br.readLine(); // header
@@ -100,7 +126,12 @@ public class DataLoader {
         }
     }
 
-    // ---------- WAGONS ----------
+    /**
+     * Load wagons.
+     *
+     * @param filePath the file path
+     */
+// ---------- WAGONS ----------
     public void loadWagons(String filePath) {
         try (BufferedReader br = new BufferedReader(new FileReader(filePath))) {
             br.readLine(); // header
@@ -145,7 +176,13 @@ public class DataLoader {
         }
     }
 
-    // ---------- ORDERS ----------
+    /**
+     * Load orders.
+     *
+     * @param ordersFile the orders file
+     * @param linesFile  the lines file
+     */
+// ---------- ORDERS ----------
     public void loadOrders(String ordersFile, String linesFile) {
         // Ler orders
         try (BufferedReader br = new BufferedReader(new FileReader(ordersFile))) {
@@ -218,7 +255,12 @@ public class DataLoader {
         }
     }
 
-    // ---------- BAYS ----------
+    /**
+     * Load bays.
+     *
+     * @param filePath the file path
+     */
+// ---------- BAYS ----------
     public void loadBays(String filePath) {
         try (BufferedReader br = new BufferedReader(new FileReader(filePath))) {
             br.readLine(); // header
@@ -251,7 +293,12 @@ public class DataLoader {
         }
     }
 
-    // ---------- RETURNS ----------
+    /**
+     * Load returns.
+     *
+     * @param filePath the file path
+     */
+// ---------- RETURNS ----------
     public void loadReturns(String filePath) {
         try (BufferedReader br = new BufferedReader(new FileReader(filePath))) {
             br.readLine(); // header
@@ -292,10 +339,21 @@ public class DataLoader {
             System.out.println("Erro a ler returns: " + e.getMessage());
         }
     }
+
+    /**
+     * Gets bays.
+     *
+     * @return the bays
+     */
     public List<Bay> getBays() {
         return bays;
     }
-    
+
+    /**
+     * Gets box repository.
+     *
+     * @return the box repository
+     */
     public Repository.BoxRepository getBoxRepository() {
         return boxRepository;
     }

@@ -4,6 +4,7 @@ import Domain.AllocationRow;
 import Domain.Item;
 import Domain.PickingItems;
 import Domain.Trolley;
+import Repository.TrolleyRepository;
 import Repository.WarehouseRepository;
 
 import java.util.ArrayList;
@@ -11,21 +12,42 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * The type Trolley controller.
+ */
 public class TrolleyController {
 
     private Trolley trolley;
     private WarehouseRepository warehouseRepository;
     private Item item;
     private List<Trolley> trolleyList;
+    private TrolleyRepository trolleyRepository;
 
 
-    public TrolleyController(Trolley trolley, WarehouseRepository warehouseRepository) {
-        this.trolley = trolley;
+    /**
+     * Instantiates a new Trolley controller.
+     *
+     * @param warehouseRepository the warehouse repository
+     * @param trolleyRepository   the trolley repository
+     */
+    public TrolleyController(WarehouseRepository warehouseRepository, TrolleyRepository trolleyRepository) {
+        if (warehouseRepository == null || trolleyRepository == null) {
+            throw new IllegalArgumentException("Repositórios não podem ser nulos.");
+        }
         this.warehouseRepository = warehouseRepository;
+        this.trolleyRepository = trolleyRepository;
         this.trolleyList = new ArrayList<>();
+        this.trolley = null; // só será criado mais tarde via createTrolley()
     }
 
 
+    /**
+     * Create trolley trolley.
+     *
+     * @param maxCapacity     the max capacity
+     * @param optionHeuristic the option heuristic
+     * @return the trolley
+     */
     public Trolley createTrolley(int maxCapacity, String optionHeuristic) {
         Trolley trolley = new Trolley(maxCapacity, 0.0,
                 (int)(Math.random()*10000)+1, new ArrayList<>(), optionHeuristic);
@@ -34,6 +56,12 @@ public class TrolleyController {
         return trolley;
     }
 
+    /**
+     * Reduce load double.
+     *
+     * @param weight the weight
+     * @return the double
+     */
     public double reduceLoad(double weight) {
         if (weight <= 0) {
             throw new IllegalArgumentException("Weight to reduce must be greater than zero.");
@@ -47,12 +75,14 @@ public class TrolleyController {
         return newLoad;
     }
 
+    /**
+     * Packing.
+     */
     public void packing() {
         List<AllocationRow> alocacoes = warehouseRepository.getAllocationRows();
         List<PickingItems> itensASeremPegos = new ArrayList<>();
         Map<Integer, Double> percTrol = new HashMap<>();
 
-        trolleyList.clear(); // limpa lista de trolleys anteriores
         trolley.setCurrentLoad(0.0);
 
         // --- FIRST FIT (FF) ---
@@ -93,8 +123,8 @@ public class TrolleyController {
                 double percent = (ultimo.getCurrentLoad() / ultimo.getMaxCapacity()) * 100;
                 percTrol.put(ultimo.getId(), percent);
             }
-
-            System.out.println("Heuristic FF executed. Trolleys total: " + trolleyList.size());
+            trolleyRepository.saveTrolley(trolleyList);
+            System.out.println("Heurística FF executada. Total de trolleys: " + trolleyList.size());
         }
 
         // --- FIRST FIT DECREASING (FFD) ---
@@ -141,8 +171,9 @@ public class TrolleyController {
                 double percent = (ultimo.getCurrentLoad() / ultimo.getMaxCapacity()) * 100;
                 percTrol.put(ultimo.getId(), percent);
             }
+            trolleyRepository.saveTrolley(trolleyList);
 
-            System.out.println("Heuristic FFD executed. Trolleys total: " + trolleyList.size());
+            System.out.println("Heurística FFD executada. Total de trolleys: " + trolleyList.size());
         }
 
         // --- BEST FIT DECREASING (BFD) ---
@@ -189,19 +220,35 @@ public class TrolleyController {
                 double percent = (t.getCurrentLoad() / t.getMaxCapacity()) * 100;
                 percTrol.put(t.getId(), percent);
             }
+            trolleyRepository.saveTrolley(trolleyList);
 
-            System.out.println("Heuristic BFD executed. Trolleys total: " + trolleyList.size());
+            System.out.println("Heurística BFD executada. Total de trolleys: " + trolleyList.size());
         }
     }
 
+    /**
+     * Gets trolley.
+     *
+     * @return the trolley
+     */
     public Trolley getTrolley() {
         return trolley;
     }
 
+    /**
+     * Sets trolley.
+     *
+     * @param trolley the trolley
+     */
     public void setTrolley(Trolley trolley) {
         this.trolley = trolley;
     }
 
+    /**
+     * Gets trolley list.
+     *
+     * @return the trolley list
+     */
     public List<Trolley> getTrolleyList() {
         return trolleyList;
     }
