@@ -227,8 +227,8 @@ public class Main {
         // Criar WarehouseManager com boxRepository
         WarehouseManager wm = new WarehouseManager(dataLoader.items, dataLoader.stock, dataLoader.bays, boxRepository);
 
-        // Atribuir boxes aos bays (isso vai preencher a location das boxes no boxRepository)
-        wm.unloadWagons();
+        // Note: Boxes are already loaded and unassigned in DataLoader
+        // They will be assigned to bays when the user explicitly chooses to unload wagons in the UI
 
 
         warehouseRepository.saveStock(boxRepository.getAllAssignedBoxes());

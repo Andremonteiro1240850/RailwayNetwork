@@ -165,8 +165,9 @@ public class WarehouseManager {
 
         if (!dedicatedBays.isEmpty()) {
             Bay targetBay = dedicatedBays.get(0);
-            targetBay.insertBox(box);
             boxRepository.assignBoxToBay(box, targetBay.getId());
+            targetBay.insertBox(box);
+            System.out.println("✅ Assigned box " + box.getBoxId() + " to " + targetBay.getId());
             return;
         }
 
@@ -178,13 +179,14 @@ public class WarehouseManager {
 
         if (!emptyBays.isEmpty()) {
             Bay targetBay = emptyBays.get(0);
-            targetBay.insertBox(box);
             boxRepository.assignBoxToBay(box, targetBay.getId());
+            targetBay.insertBox(box);
+            System.out.println("✅ Assigned box " + box.getBoxId() + " to new dedicated bay " + targetBay.getId() + " for SKU " + sku);
             return;
         }
 
         // 3. No available bays
-        System.out.println("No available bays for SKU: " + sku + " (Box: " + box.getBoxId() + ")");
+        System.out.println("⚠️ No available bays for SKU: " + sku + " (Box: " + box.getBoxId() + ")");
         System.out.println("All bays are either full or dedicated to other SKUs");
     }
 
