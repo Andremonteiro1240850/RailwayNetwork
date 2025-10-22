@@ -2,8 +2,10 @@ package Controller;
 
 import Domain.PickPath;
 import Domain.PickStop;
+import Domain.Trolley;
 import Domain.ENUM.PathStrategy;
 import pt.ipp.isep.dei.PickPathService;
+import Repository.TrolleyRepository;
 
 import java.util.List;
 import java.util.Map;
@@ -13,6 +15,24 @@ import java.util.Map;
  * Responsável por orquestrar as operações de sequenciação de picking
  */
 public class PickPathController {
+    
+    private TrolleyRepository trolleyRepository;
+
+    /**
+     * Instantiates a new Pick path controller.
+     *
+     * @param trolleyRepository the trolley repository
+     */
+    public PickPathController(TrolleyRepository trolleyRepository) {
+        this.trolleyRepository = trolleyRepository;
+    }
+    
+    /**
+     * Instantiates a new Pick path controller (default constructor for backward compatibility).
+     */
+    public PickPathController() {
+        this.trolleyRepository = null;
+    }
 
     /**
      * Processa a sequenciação de picking para uma lista de stops
@@ -56,5 +76,18 @@ public class PickPathController {
         }
         
         return PickPathService.generateBothPaths(consolidatedStops);
+    }
+    
+    /**
+     * Gets trolleys from US03 (Picking Plans)
+     *
+     * @return List of trolleys from US03
+     */
+    public List<Trolley> getTrolleysFromUS03() {
+        if (trolleyRepository == null) {
+            throw new IllegalStateException("TrolleyRepository not initialized. Cannot access trolley data from US03.");
+        }
+        
+        return trolleyRepository.getAllTrolleys();
     }
 }

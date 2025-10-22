@@ -256,8 +256,8 @@ public class Main {
     private static void pickPathSequencing() {
         System.out.println("\n=== PICK PATH SEQUENCING (US04) ===");
         
-        //Criar controller e UI
-        PickPathController controller = new PickPathController();
+        //Criar controller e UI com acesso aos trolleys da US03
+        PickPathController controller = new PickPathController(trolleyRepository);
         PickPathUI ui = new PickPathUI(controller);
         
         //  menu da UI
