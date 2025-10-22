@@ -42,7 +42,7 @@ public class WagonsUnloadingUI {
                 case "4":
                     return;
                 default:
-                    System.out.println("❌ Invalid option! Please try again.");
+            System.out.println("Invalid option! Please try again.");
             }
         }
     }
@@ -55,7 +55,7 @@ public class WagonsUnloadingUI {
         System.out.println("\n=== UNLOADING WAGONS ===");
         
         if (!controller.isDataLoaded()) {
-            System.out.println("❌ Data not loaded. Please load data first.");
+            System.out.println("Data not loaded. Please load data first.");
             System.out.println("\nPress Enter to continue...");
             scanner.nextLine();
             return;
@@ -75,7 +75,7 @@ public class WagonsUnloadingUI {
         System.out.println("\n=== DISPATCH STOCK ===");
         
         if (!controller.isDataLoaded()) {
-            System.out.println("❌ Data not loaded. Please load data first.");
+            System.out.println("Data not loaded. Please load data first.");
             System.out.println("\nPress Enter to continue...");
             scanner.nextLine();
             return;
@@ -84,7 +84,7 @@ public class WagonsUnloadingUI {
         // Show available SKUs
         List<String> skus = controller.getAvailableSkus();
         if (skus.isEmpty()) {
-            System.out.println("❌ No SKUs available.");
+            System.out.println("No SKUs available.");
             System.out.println("\nPress Enter to continue...");
             scanner.nextLine();
             return;
@@ -99,7 +99,7 @@ public class WagonsUnloadingUI {
         String sku = scanner.nextLine().trim();
         
         if (!skus.contains(sku)) {
-            System.out.println("❌ Invalid SKU.");
+            System.out.println("Invalid SKU.");
             System.out.println("\nPress Enter to continue...");
             scanner.nextLine();
             return;
@@ -110,7 +110,7 @@ public class WagonsUnloadingUI {
             int quantity = Integer.parseInt(scanner.nextLine().trim());
             
             if (quantity <= 0) {
-                System.out.println("❌ Quantity must be positive.");
+                System.out.println("Quantity must be positive.");
                 System.out.println("\nPress Enter to continue...");
                 scanner.nextLine();
                 return;
@@ -119,16 +119,16 @@ public class WagonsUnloadingUI {
             List<Box> dispatchedBoxes = controller.dispatchStock(sku, quantity);
             
             if (dispatchedBoxes.isEmpty()) {
-                System.out.println("❌ No boxes were dispatched.");
+                System.out.println("No boxes were dispatched.");
             } else {
-                System.out.println("✅ Dispatched " + dispatchedBoxes.size() + " boxes:");
+                System.out.println("Dispatched " + dispatchedBoxes.size() + " boxes:");
                 for (Box box : dispatchedBoxes) {
                     System.out.println("  - " + box.getBoxId() + " (qty: " + box.getQty() + ")");
                 }
             }
             
         } catch (NumberFormatException e) {
-            System.out.println("❌ Invalid quantity format.");
+            System.out.println("Invalid quantity format.");
         }
         
         System.out.println("\nPress Enter to continue...");
@@ -142,7 +142,7 @@ public class WagonsUnloadingUI {
         System.out.println("\n=== RELOCATE BOX ===");
         
         if (!controller.isDataLoaded()) {
-            System.out.println("❌ Data not loaded. Please load data first.");
+            System.out.println("Data not loaded. Please load data first.");
             System.out.println("\nPress Enter to continue...");
             scanner.nextLine();
             return;
@@ -164,13 +164,13 @@ public class WagonsUnloadingUI {
             boolean success = controller.relocateBox(boxId, warehouseId, aisle, bay);
             
             if (success) {
-                System.out.println("✅ Box relocated successfully!");
+                System.out.println("Box relocated successfully!");
             } else {
-                System.out.println("❌ Failed to relocate box. Check if box exists and target bay is available.");
+                System.out.println("Failed to relocate box. Check if box exists and target bay is available.");
             }
             
         } catch (NumberFormatException e) {
-            System.out.println("❌ Invalid aisle or bay number.");
+            System.out.println("Invalid aisle or bay number.");
         }
         
         System.out.println("\nPress Enter to continue...");

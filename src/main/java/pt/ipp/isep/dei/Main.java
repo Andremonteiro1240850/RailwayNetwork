@@ -9,6 +9,7 @@ import UI.PickPathUI;
 import Domain.DataLoader;
 import Domain.ENUM.ReturnReason;
 import UI.orderEligibilityAllocationUI;
+import UI.DevelopmentTeamUI;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -54,13 +55,17 @@ public class Main {
         // Load data at startup
         loadAllData();
         
+        if (!showPreMenu()) {
+            return;
+        }
+
         while (true) {
             System.out.println("\n=== WAREHOUSE MANAGEMENT SYSTEM ===");
-            System.out.println("1. Wagons Unloading");
-            System.out.println("2. Order Eligibility & Allocation");
-            System.out.println("3. Picking Plans");
-            System.out.println("4. Pick Path Sequencing");
-            System.out.println("5. Returns & Quarantine");
+            System.out.println("1. Wagons Unloading (Terminal Operator)");
+            System.out.println("2. Order Eligibility & Allocation (Warehouse Planner)");
+            System.out.println("3. Picking Plans (Picker)");
+            System.out.println("4. Pick Path Sequencing (Picker)");
+            System.out.println("5. Quality Operator");
             System.out.println("6. Exit");
             
             System.out.print("Select option: ");
@@ -80,11 +85,82 @@ public class Main {
                     pickPathSequencing();
                     break;
                 case "5":
-                    returnsAndQuarantine();
+                    qualityOperatorMain();
                     break;
                 case "6":
                     System.out.println("Goodbye!");
                     return;
+                default:
+                    System.out.println("Invalid option!");
+            }
+        }
+    }
+
+
+    private static void showRoleLoginMenu() {
+        while (true) {
+            System.out.println("\n=== LOGIN ===");
+            System.out.println("1. Login as a Terminal Operator");
+            System.out.println("2. Login as a Warehouse Planner");
+            System.out.println("3. Login as a Planner");
+            System.out.println("4. Login as a Picker");
+            System.out.println("5. Login as a Quality Operator");
+            System.out.println("6. Back");
+
+            System.out.print("Select option: ");
+            String choice = scanner.nextLine().trim();
+
+            switch (choice) {
+                case "1":
+                    // Terminal Operator -> Wagons Unloading UI
+                    wagonsUnloading();
+                    break;
+                case "2":
+                    // Warehouse Planner -> Order Eligibility & Allocation
+                    orderEligibilityAllocation();
+                    break;
+                case "3":
+                    // Planner -> Picking Plans
+                    pickingPlans();
+                    break;
+                case "4":
+                    // Picker -> Pick Path Sequencing
+                    pickPathSequencing();
+                    break;
+                case "5":
+                    // Quality Operator -> show main menu directly
+                    qualityOperatorMain();
+                    break;
+                case "6":
+                    return;
+                default:
+                    System.out.println("Invalid option!");
+            }
+        }
+    }
+
+    private static boolean showPreMenu() {
+        while (true) {
+            System.out.println("\n=== START ===");
+            System.out.println("1. Know the development team");
+            System.out.println("2. Login");
+            System.out.println("3. Cancel");
+
+            System.out.print("Select option: ");
+            String choice = scanner.nextLine().trim();
+
+            switch (choice) {
+                case "1":
+                    DevelopmentTeamUI.show();
+                    System.out.println("\nPress Enter to continue...");
+                    scanner.nextLine();
+                    break;
+                case "2":
+                    showRoleLoginMenu();
+                    return true;
+                case "3":
+                    System.out.println("Goodbye!");
+                    return false;
                 default:
                     System.out.println("Invalid option!");
             }
@@ -173,8 +249,8 @@ public class Main {
         while (true) {
             System.out.println("\n=== RETURNS & QUARANTINE ===");
             System.out.println("1. Process Returns (CSV)");
-            System.out.println("2. Quality Operator Login");
-            System.out.println("3. Back to Main Menu");
+            System.out.println("2. Back to Main Menu");
+            System.out.println("3. ");
             
             System.out.print("Select option: ");
             String choice = scanner.nextLine().trim();
@@ -184,9 +260,6 @@ public class Main {
                     processReturnsFromCSV();
                     break;
                 case "2":
-                    qualityOperatorLogin();
-                    break;
-                case "3":
                     return;
                 default:
                     System.out.println("Invalid option!");
@@ -245,8 +318,7 @@ public class Main {
     /**
      * Quality Operator Login System
      */
-    private static void qualityOperatorLogin() {
-        // Build a WarehouseManager from the already loaded data so inspections can restock
+    private static void qualityOperatorMain() {
         Domain.WarehouseManager wm = new Domain.WarehouseManager(
                 dataLoader.items,
                 dataLoader.stock,
@@ -254,8 +326,6 @@ public class Main {
         );
 
         QualityOperatorController controller = new QualityOperatorController(wm);
-        if (controller.showLogin()) {
-            controller.showMainMenu();
-        }
+        controller.showMainMenu();
     }
 }

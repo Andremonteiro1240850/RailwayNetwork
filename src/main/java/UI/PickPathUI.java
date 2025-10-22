@@ -8,6 +8,7 @@ import Domain.ENUM.PathStrategy;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
+import java.util.Arrays;
 
 /**
  * UI para Pick Path Sequencing (USEI04)
@@ -23,16 +24,16 @@ public class PickPathUI {
     }
     
     /**
-     * Menu principal da USEI04
+     * Main menu for USEI04
      */
     public void showMainMenu() {
         while (true) {
             System.out.println("\n=== PICK PATH SEQUENCING (USEI04) ===");
-            System.out.println("1. Processar Sequenciação (dados simulados)");
-            System.out.println("2. Processar Sequenciação (dados customizados)");
-            System.out.println("3. Voltar ao Menu Principal");
+            System.out.println("1. Process (simulated data)");
+            System.out.println("2. Process (custom data)");
+            System.out.println("3. Back to Main Menu");
             
-            System.out.print("Escolha uma opção: ");
+            System.out.print("Select option: ");
             String choice = scanner.nextLine().trim();
             
             switch (choice) {
@@ -45,76 +46,76 @@ public class PickPathUI {
                 case "3":
                     return;
                 default:
-                    System.out.println("❌ Opção inválida! Tente novamente.");
+                    System.out.println("Invalid option! Please try again.");
             }
         }
     }
     
     /**
-     * Processa com dados simulados (como estava no Main)
+     * Process with simulated data (as it was in Main)
      */
     private void processWithSimulatedData() {
-        System.out.println("\n=== PROCESSAMENTO COM DADOS SIMULADOS ===");
+        System.out.println("\n=== PROCESSING WITH SIMULATED DATA ===");
         
-        // Simular dados de entrada (quando USEI03 estiver pronta, virá de trolley packing)
+        // Simulate input data (when USEI03 is ready, it will come from trolley packing)
         List<PickStop> inputStops = simulateTrolleyPackingOutput();
         
-        System.out.println("Stops de entrada (antes da consolidação):");
+        System.out.println("Input stops (before consolidation):");
         displayStops(inputStops);
         
         try {
-            // Processar usando o controller
+            // Process using the controller
             Map<PathStrategy, PickPath> results = controller.processPickPathSequencing(inputStops);
             
-            // Mostrar resultados
+            // Show results
             displayPathResults(results);
             
         } catch (Exception e) {
-            System.out.println("❌ Erro ao processar: " + e.getMessage());
+            System.out.println("Error while processing: " + e.getMessage());
         }
         
-        System.out.println("\nPressione Enter para continuar...");
+        System.out.println("\nPress Enter to continue...");
         scanner.nextLine();
     }
     
     /**
-     * Processa com dados customizados pelo utilizador
+     * Process with user-provided custom data
      */
     private void processWithCustomData() {
-        System.out.println("\n=== PROCESSAMENTO COM DADOS CUSTOMIZADOS ===");
+        System.out.println("\n=== PROCESSING WITH CUSTOM DATA ===");
         
         try {
             List<PickStop> inputStops = readCustomStops();
             
             if (inputStops.isEmpty()) {
-                System.out.println("❌ Nenhum stop foi inserido.");
+                System.out.println("No stops were entered.");
                 return;
             }
             
-            System.out.println("\nStops inseridos:");
+            System.out.println("\nInserted stops:");
             displayStops(inputStops);
             
-            // Processar usando o controller
+            // Process using the controller
             Map<PathStrategy, PickPath> results = controller.processPickPathSequencing(inputStops);
             
-            // Mostrar resultados
+            // Show results
             displayPathResults(results);
             
         } catch (Exception e) {
-            System.out.println("❌ Erro ao processar: " + e.getMessage());
+            System.out.println("Error while processing: " + e.getMessage());
         }
         
-        System.out.println("\nPressione Enter para continuar...");
+        System.out.println("\nPress Enter to continue...");
         scanner.nextLine();
     }
     
     /**
-     * Lê stops customizados do utilizador
+     * Read custom stops from user input
      */
     private List<PickStop> readCustomStops() {
-        System.out.println("Insira os stops (formato: aisle,bay,quantidade)");
-        System.out.println("Exemplo: 1,8,5");
-        System.out.println("Digite 'fim' para terminar");
+        System.out.println("Enter stops (format: aisle,bay,quantity)");
+        System.out.println("Example: 1,8,5");
+        System.out.println("Type 'end' to finish");
         
         List<PickStop> stops = new java.util.ArrayList<>();
         int seq = 1;
@@ -123,14 +124,14 @@ public class PickPathUI {
             System.out.print("Stop " + seq + ": ");
             String input = scanner.nextLine().trim();
             
-            if (input.equalsIgnoreCase("fim")) {
+            if (input.equalsIgnoreCase("end")) {
                 break;
             }
             
             try {
                 String[] parts = input.split(",");
                 if (parts.length != 3) {
-                    System.out.println("❌ Formato inválido. Use: aisle,bay,quantidade");
+                    System.out.println("Invalid format. Use: aisle,bay,quantity");
                     continue;
                 }
                 
@@ -139,15 +140,15 @@ public class PickPathUI {
                 int qty = Integer.parseInt(parts[2].trim());
                 
                 if (aisle < 0 || bay < 0 || qty <= 0) {
-                    System.out.println("❌ Valores inválidos. Aisle e bay >= 0, quantidade > 0");
+                    System.out.println("Invalid values. Aisle and bay >= 0, quantity > 0");
                     continue;
                 }
                 
                 stops.add(new PickStop(seq++, aisle, bay, qty));
-                System.out.println("✓ Stop adicionado: (" + aisle + "," + bay + ") qty=" + qty);
+                System.out.println("Stop added: (" + aisle + "," + bay + ") qty=" + qty);
                 
             } catch (NumberFormatException e) {
-                System.out.println("❌ Erro de formato numérico. Tente novamente.");
+                System.out.println("Invalid number format. Try again.");
             }
         }
         
@@ -155,21 +156,21 @@ public class PickPathUI {
     }
     
     /**
-     * Simula dados de trolley packing (como estava no Main)
+     * Simulate trolley packing data (as it was in Main)
      */
     private List<PickStop> simulateTrolleyPackingOutput() {
-        return List.of(
+        return Arrays.asList(
                 new PickStop(1, 1, 8, 5),   // Trolley 1
                 new PickStop(2, 2, 2, 3),   // Trolley 1
-                new PickStop(3, 2, 2, 2),   // Trolley 2 - DUPLICADO! Mesmo aisle/bay
+                new PickStop(3, 2, 2, 2),   // Trolley 2 - DUPLICATE (same aisle/bay)
                 new PickStop(4, 3, 4, 7),   // Trolley 2
                 new PickStop(5, 1, 1, 4),   // Trolley 3
-                new PickStop(6, 2, 2, 1)    // Trolley 3 - OUTRO DUPLICADO!
+                new PickStop(6, 2, 2, 1)    // Trolley 3 - ANOTHER DUPLICATE
         );
     }
     
     /**
-     * Exibe uma lista de stops
+     * Display a list of stops
      */
     private void displayStops(List<PickStop> stops) {
         for (int i = 0; i < stops.size(); i++) {
@@ -179,29 +180,29 @@ public class PickPathUI {
     }
     
     /**
-     * Exibe os resultados das estratégias de sequenciação
+     * Display the results of sequencing strategies
      */
     private void displayPathResults(Map<PathStrategy, PickPath> results) {
-        System.out.println("\n--- ESTRATÉGIA A - ASC SWEEP ---");
+        System.out.println("\n--- STRATEGY A - ASC SWEEP ---");
         PickPath ascSweep = results.get(PathStrategy.ASC_SWEEP);
-        System.out.println("Distância Total: " + ascSweep.getTotalDistance());
-        System.out.println("Caminho:");
+        System.out.println("Total Distance: " + ascSweep.getTotalDistance());
+        System.out.println("Path:");
         displayStops(ascSweep.getStops());
         
-        System.out.println("\n--- ESTRATÉGIA B - NEAREST NEIGHBOUR ---");
+        System.out.println("\n--- STRATEGY B - NEAREST NEIGHBOUR ---");
         PickPath nearestNeighbour = results.get(PathStrategy.NEAREST_NEIGHBOUR);
-        System.out.println("Distância Total: " + nearestNeighbour.getTotalDistance());
-        System.out.println("Caminho:");
+        System.out.println("Total Distance: " + nearestNeighbour.getTotalDistance());
+        System.out.println("Path:");
         displayStops(nearestNeighbour.getStops());
         
-        // Comparação das estratégias
-        System.out.println("\n--- COMPARAÇÃO ---");
+        // Compare strategies
+        System.out.println("\n--- COMPARISON ---");
         if (ascSweep.getTotalDistance() < nearestNeighbour.getTotalDistance()) {
-            System.out.println("✓ ASC_SWEEP é mais eficiente (" + ascSweep.getTotalDistance() + " vs " + nearestNeighbour.getTotalDistance() + ")");
+            System.out.println("ASC_SWEEP is more efficient (" + ascSweep.getTotalDistance() + " vs " + nearestNeighbour.getTotalDistance() + ")");
         } else if (nearestNeighbour.getTotalDistance() < ascSweep.getTotalDistance()) {
-            System.out.println("✓ NEAREST_NEIGHBOUR é mais eficiente (" + nearestNeighbour.getTotalDistance() + " vs " + ascSweep.getTotalDistance() + ")");
+            System.out.println("NEAREST_NEIGHBOUR is more efficient (" + nearestNeighbour.getTotalDistance() + " vs " + ascSweep.getTotalDistance() + ")");
         } else {
-            System.out.println("= Ambas as estratégias têm a mesma distância total");
+            System.out.println("Both strategies have the same total distance");
         }
     }
 }
