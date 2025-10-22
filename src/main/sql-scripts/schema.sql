@@ -120,14 +120,14 @@ CREATE TABLE SegmentType (
                              track_type_code number(10) GENERATED AS IDENTITY,
                              description     varchar2(10) NOT NULL UNIQUE,
                              PRIMARY KEY (track_type_code));
-CREATE TABLE Station (
-                         station_id   number(10) GENERATED AS IDENTITY,
-                         name         varchar2(120) NOT NULL UNIQUE,
-                         station_type varchar2(10) NOT NULL UNIQUE,
-                         CONSTRAINT pk_station
-                             PRIMARY KEY (station_id),
-                         CONSTRAINT ck_station_type
-                             CHECK (station_type IN ('TERMINAL','REGULAR')));
+CREATE TABLE Facility (
+                          facility_id   number(10) GENERATED AS IDENTITY,
+                          name         varchar2(120) NOT NULL UNIQUE,
+                          facility_type varchar2(10) NOT NULL UNIQUE,
+                          CONSTRAINT pk_station
+                              PRIMARY KEY (facility_id),
+                          CONSTRAINT ck_facility_type
+                              CHECK (facility_type IN ('TERMINAL','REGULAR')));
 CREATE TABLE Wagon (
                        wagon_id               number(10) GENERATED AS IDENTITY,
                        operator_id            number(10) NOT NULL UNIQUE,
@@ -160,7 +160,7 @@ CREATE TABLE WagonType (
                                CHECK (max_volume_m3 > 0));
 CREATE TABLE Warehouse (
                            warehouse_id number(10) GENERATED AS IDENTITY,
-                           station_id   number(10) NOT NULL,
+                           facility_id   number(10) NOT NULL,
                            PRIMARY KEY (warehouse_id));
 ALTER TABLE Locomotive ADD CONSTRAINT FKLocomotive501990 FOREIGN KEY (operator_id) REFERENCES Operator (operator_id);
 ALTER TABLE Segment ADD CONSTRAINT FKSegment294611 FOREIGN KEY (segment_type_code) REFERENCES SegmentType (track_type_code);
