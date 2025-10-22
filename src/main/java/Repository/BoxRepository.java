@@ -3,6 +3,7 @@ package Repository;
 import Domain.BayId;
 import Domain.Box;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Repository for managing boxes in different states:
@@ -19,7 +20,7 @@ public class BoxRepository {
     
     // All boxes by boxId for quick lookup
     private final Map<String, Box> allBoxes;
-    
+
     public BoxRepository() {
         this.unassignedBoxes = new HashMap<>();
         this.assignedBoxes = new HashMap<>();
@@ -48,10 +49,10 @@ public class BoxRepository {
         if (box.getLocation() != null) {
             throw new IllegalArgumentException("Box " + box.getBoxId() + " is already assigned to " + box.getLocation());
         }
-        
+
         // Set the location
         box.setLocation(bayId);
-        
+
         // Move from unassigned to assigned
         String sku = box.getSku();
         List<Box> unassignedList = unassignedBoxes.get(sku);
@@ -61,9 +62,9 @@ public class BoxRepository {
                 unassignedBoxes.remove(sku);
             }
         }
-        
+
         assignedBoxes.computeIfAbsent(sku, k -> new ArrayList<>()).add(box);
-        
+
         System.out.println("✅ Assigned box " + box.getBoxId() + " to " + bayId);
     }
     
@@ -107,9 +108,24 @@ public class BoxRepository {
      * Get all unassigned boxes (all SKUs)
      */
     public Map<String, List<Box>> getAllUnassignedBoxes() {
-        return new HashMap<>(unassignedBoxes);
+        Map<String, List<Box>> result = new HashMap<>();
+
+        for (Map.Entry<String, List<Box>> entry : unassignedBoxes.entrySet()) {
+            String sku = entry.getKey();
+            List<Box> boxes = entry.getValue().stream()
+                    .filter(b -> b.getLocation() == null) // apenas boxes sem localização
+                    .collect(Collectors.toList());
+
+            if (!boxes.isEmpty()) {
+                result.put(sku, boxes);
+            }
+        }
+
+        return result;
     }
-    
+
+
+
     /**
      * Get all assigned boxes (all SKUs)
      */

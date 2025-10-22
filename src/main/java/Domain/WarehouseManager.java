@@ -60,10 +60,15 @@ public class WarehouseManager {
             boxes.sort(Box.FEFO_COMPARATOR);
             
             System.out.println("Processing " + boxes.size() + " unassigned boxes for SKU: " + sku);
-            
+
             for (Box box : boxes) {
-                assignBoxToBayWithRepository(box);
+                if (box.getLocation() == null) {
+                    assignBoxToBayWithRepository(box);
+                } else {
+                    System.out.println("Box " + box.getBoxId() + " já atribuída a " + box.getLocation() + ", ignorando...");
+                }
             }
+
         }
         
         // Print repository status after unloading
@@ -137,9 +142,15 @@ public class WarehouseManager {
      * Assign a box to a bay using BoxRepository
      */
     private void assignBoxToBayWithRepository(Box box) {
+        // Ignorar boxes já atribuídas
+        if (box.getLocation() != null) {
+            System.out.println("⚠️ Box " + box.getBoxId() + " já atribuída a " + box.getLocation() + ", ignorada.");
+            return;
+        }
+
         String sku = box.getSku();
 
-        // 1. First priority: Find bays already dedicated to this SKU that are not full
+        // 1. Procurar bays dedicadas
         List<Bay> dedicatedBays = bays.stream()
                 .filter(bay -> bay.isDedicatedToSku(sku) && !bay.isFull())
                 .sorted(Comparator.comparing(Bay::getId))
@@ -152,9 +163,9 @@ public class WarehouseManager {
             return;
         }
 
-        // 2. Second priority: Find empty bays (no dedicated SKU)
+        // 2. Procurar bays vazias
         List<Bay> emptyBays = bays.stream()
-                .filter(bay -> bay.isEmpty())
+                .filter(Bay::isEmpty)
                 .sorted(Comparator.comparing(Bay::getId))
                 .collect(Collectors.toList());
 
@@ -165,9 +176,8 @@ public class WarehouseManager {
             return;
         }
 
-        // 3. No available bays
-        System.out.println("⚠️ No available bays for SKU: " + sku + " (Box: " + box.getBoxId() + ")");
-        System.out.println("   All bays are either full or dedicated to other SKUs");
+        // 3. Nenhuma disponível
+        System.out.println("⚠️ Sem bays disponíveis para SKU " + sku + " (Box " + box.getBoxId() + ")");
     }
 
     /**

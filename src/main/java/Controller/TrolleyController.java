@@ -4,6 +4,7 @@ import Domain.AllocationRow;
 import Domain.Item;
 import Domain.PickingItems;
 import Domain.Trolley;
+import Repository.TrolleyRepository;
 import Repository.WarehouseRepository;
 
 import java.util.ArrayList;
@@ -17,12 +18,17 @@ public class TrolleyController {
     private WarehouseRepository warehouseRepository;
     private Item item;
     private List<Trolley> trolleyList;
+    private TrolleyRepository trolleyRepository;
 
 
-    public TrolleyController(Trolley trolley, WarehouseRepository warehouseRepository) {
-        this.trolley = trolley;
+    public TrolleyController(WarehouseRepository warehouseRepository, TrolleyRepository trolleyRepository) {
+        if (warehouseRepository == null || trolleyRepository == null) {
+            throw new IllegalArgumentException("Repositórios não podem ser nulos.");
+        }
         this.warehouseRepository = warehouseRepository;
+        this.trolleyRepository = trolleyRepository;
         this.trolleyList = new ArrayList<>();
+        this.trolley = null; // só será criado mais tarde via createTrolley()
     }
 
 
@@ -52,7 +58,6 @@ public class TrolleyController {
         List<PickingItems> itensASeremPegos = new ArrayList<>();
         Map<Integer, Double> percTrol = new HashMap<>();
 
-        trolleyList.clear(); // limpa lista de trolleys anteriores
         trolley.setCurrentLoad(0.0);
 
         // --- FIRST FIT (FF) ---
@@ -93,7 +98,7 @@ public class TrolleyController {
                 double percent = (ultimo.getCurrentLoad() / ultimo.getMaxCapacity()) * 100;
                 percTrol.put(ultimo.getId(), percent);
             }
-
+            trolleyRepository.saveTrolley(trolleyList);
             System.out.println("Heurística FF executada. Total de trolleys: " + trolleyList.size());
         }
 
@@ -141,6 +146,7 @@ public class TrolleyController {
                 double percent = (ultimo.getCurrentLoad() / ultimo.getMaxCapacity()) * 100;
                 percTrol.put(ultimo.getId(), percent);
             }
+            trolleyRepository.saveTrolley(trolleyList);
 
             System.out.println("Heurística FFD executada. Total de trolleys: " + trolleyList.size());
         }
@@ -189,6 +195,7 @@ public class TrolleyController {
                 double percent = (t.getCurrentLoad() / t.getMaxCapacity()) * 100;
                 percTrol.put(t.getId(), percent);
             }
+            trolleyRepository.saveTrolley(trolleyList);
 
             System.out.println("Heurística BFD executada. Total de trolleys: " + trolleyList.size());
         }

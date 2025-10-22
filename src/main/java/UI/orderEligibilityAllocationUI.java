@@ -4,13 +4,16 @@ import Controller.WarehouseController;
 import Domain.AllocationRow;
 import Domain.EligibilityResult;
 import Domain.Warehouse;
+import Repository.BoxRepository;
 
 import java.util.List;
 
 public class orderEligibilityAllocationUI implements Runnable {
     WarehouseController warehouseController;
-    public  orderEligibilityAllocationUI(WarehouseController warehouseController) {
+    private final BoxRepository boxRepository;
+    public  orderEligibilityAllocationUI(WarehouseController warehouseController, BoxRepository boxRepository) {
         this.warehouseController = warehouseController;
+        this.boxRepository = boxRepository;
     }
     @Override
     public void run() {
@@ -25,7 +28,8 @@ public class orderEligibilityAllocationUI implements Runnable {
                             ", status=" + er.getStatus()
             );
         }
-        List<AllocationRow> resultados = warehouseController.createAllocationRows();
+        System.out.println();
+        List<AllocationRow> resultados = warehouseController.createAllocationRows(boxRepository);
         for (AllocationRow r : resultados) {
             System.out.println(
                     "ALLOC order=" + r.getOrderId() +
