@@ -1,6 +1,5 @@
 package Repository;
 
-import Domain.Item;
 import Domain.Trolley;
 
 import java.util.ArrayList;
@@ -19,7 +18,6 @@ public class TrolleyRepository {
      * @param trolleyList the trolley list
      */
     public void saveTrolley(List<Trolley> trolleyList) {
-        this.trolleyList.clear();
         this.trolleyList.addAll(trolleyList);
     }
 
@@ -29,6 +27,15 @@ public class TrolleyRepository {
      * @return the trolley
      */
     public List<Trolley> getTrolley() {
+        return new ArrayList<>(trolleyList);
+    }
+    
+    /**
+     * Gets all trolleys.
+     *
+     * @return the all trolleys
+     */
+    public List<Trolley> getAllTrolleys() {
         return new ArrayList<>(trolleyList);
     }
 

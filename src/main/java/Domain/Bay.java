@@ -55,10 +55,11 @@ public class Bay {
             dedicatedSku = box.getSku();
         }
         
-        // Set the box location to this bay
-        box.setLocation(this.id);
+        // Add box to the bay's internal structure
         bySku.computeIfAbsent(box.getSku(), k -> new TreeSet<>(Box.FEFO_COMPARATOR))
                 .add(box);
+        
+        // Note: box location is set by the repository before calling this method
     }
 
     /**

@@ -236,8 +236,8 @@ public class Main {
         // Criar WarehouseManager com boxRepository
         WarehouseManager wm = new WarehouseManager(dataLoader.items, dataLoader.stock, dataLoader.bays, boxRepository);
 
-        // Atribuir boxes aos bays (isso vai preencher a location das boxes no boxRepository)
-        wm.unloadWagons();
+        // Note: Boxes are already loaded and unassigned in DataLoader
+        // They will be assigned to bays when the user explicitly chooses to unload wagons in the UI
 
 
         warehouseRepository.saveStock(boxRepository.getAllAssignedBoxes());
@@ -265,8 +265,8 @@ public class Main {
     private static void pickPathSequencing() {
         System.out.println("\n=== PICK PATH SEQUENCING (US04) ===");
         
-        //Criar controller e UI
-        PickPathController controller = new PickPathController();
+        //Criar controller e UI com acesso aos trolleys da US03
+        PickPathController controller = new PickPathController(trolleyRepository);
         PickPathUI ui = new PickPathUI(controller);
         
         //  menu da UI

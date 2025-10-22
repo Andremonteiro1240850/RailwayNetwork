@@ -44,7 +44,7 @@ public class BoxRepository {
         unassignedBoxes.computeIfAbsent(sku, k -> new ArrayList<>()).add(box);
         allBoxes.put(box.getBoxId(), box);
         
-        System.out.println("📦 Added unassigned box " + box.getBoxId() + " for SKU " + sku);
+        // Box added silently - debug messages only in UI
     }
 
     /**
@@ -73,7 +73,7 @@ public class BoxRepository {
 
         assignedBoxes.computeIfAbsent(sku, k -> new ArrayList<>()).add(box);
 
-        System.out.println("✅ Assigned box " + box.getBoxId() + " to " + bayId);
+        // Box assigned silently - debug messages only in UI
     }
 
     /**
@@ -97,7 +97,7 @@ public class BoxRepository {
         
         allBoxes.remove(box.getBoxId());
         
-        System.out.println("📤 Removed assigned box " + box.getBoxId() + " from " + box.getLocation());
+        // Box removed silently - debug messages only in UI
     }
 
     /**
