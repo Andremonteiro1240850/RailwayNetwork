@@ -1,6 +1,7 @@
 package UI;
 
 import Domain.*;
+import Controller.TravelTimeController;
 import java.util.*;
 
 /**
@@ -16,18 +17,21 @@ public class TravelTimeUI {
     private final Scanner scanner;
     private final List<Station> stations;
     private final List<Locomotive> locomotives;
+    private final TravelTimeController controller;
     
     /**
-     * Constructs a new TravelTimeUI with the specified service and mock data.
+     * Constructs a new TravelTimeUI with the specified controller.
      * 
-     * @param service the travel calculation service
+     * @param controller the travel time controller
      */
-    public TravelTimeUI(TravelCalculationService service) {
-        this.service = service;
+    public TravelTimeUI(TravelTimeController controller) {
+        this.controller = controller;
+        this.service = controller.getService();
         this.scanner = new Scanner(System.in);
-        this.stations = createMockStations();
+        this.stations = controller.getStations();
         this.locomotives = createMockLocomotives();
     }
+    
     
     /**
      * Shows the main menu for travel time calculation.
@@ -190,8 +194,13 @@ public class TravelTimeUI {
         // Additional information
         LineSegment segment = service.findConnectingSegment(startStation, endStation);
         if (segment != null) {
-            System.out.printf("Line Segment: %s (%.2f km)%n", 
-                             segment.getId(), segment.getLengthKm());
+            if (!segment.getName().isEmpty()) {
+                System.out.printf("Line Segment: %s (%s)%n", 
+                                 segment.getId(), segment.getName());
+            } else {
+                System.out.printf("Line Segment: %s%n", segment.getId());
+            }
+            System.out.printf("Distance: %.2f km%n", segment.getLengthKm());
             System.out.printf("Track Gauge: %.0fmm%n", segment.getGauge());
             System.out.printf("Electrified: %s%n", segment.isElectrified() ? "Yes" : "No");
         }
@@ -201,16 +210,19 @@ public class TravelTimeUI {
      * Shows all available stations.
      */
     private void showAvailableStations() {
-        System.out.println("\n" + "-".repeat(50));
-        System.out.println("Available Stations");
-        System.out.println("-".repeat(50));
+        System.out.println("\n" + "-".repeat(60));
+        System.out.println("Available Stations (from CSV data)");
+        System.out.println("-".repeat(60));
         
-        for (Station station : stations) {
-            System.out.printf("ID: %s | Name: %s", station.getId(), station.getName());
-            if (station.hasLocation()) {
-                System.out.printf(" | Location: %s", station.getLocation());
+        if (stations.isEmpty()) {
+            System.out.println("No stations loaded from CSV files.");
+        } else {
+            System.out.printf("Total stations: %d%n%n", stations.size());
+            
+            for (Station station : stations) {
+                System.out.printf("ID: %-3s | Name: %s%n", 
+                                 station.getId(), station.getName());
             }
-            System.out.println();
         }
         
     }
@@ -238,6 +250,10 @@ public class TravelTimeUI {
      * @return the station or null if not found
      */
     private Station findStationById(String id) {
+        if (controller != null) {
+            return controller.getStationById(id);
+        }
+        
         return stations.stream()
                 .filter(station -> station.getId().equalsIgnoreCase(id))
                 .findFirst()
@@ -257,23 +273,6 @@ public class TravelTimeUI {
                 .orElse(null);
     }
     
-    /**
-     * Creates mock station data for testing and demonstration.
-     * 
-     * @return list of mock stations
-     */
-    private List<Station> createMockStations() {
-        return Arrays.asList(
-            new Station("ST001", "Lisbon Terminal", "Lisbon"),
-            new Station("ST002", "Porto Cargo Hub", "Porto"),
-            new Station("ST003", "Coimbra Station", "Coimbra"),
-            new Station("ST004", "Aveiro Central", "Aveiro"),
-            new Station("ST005", "Braga Station", "Braga"),
-            new Station("ST006", "Faro Terminal", "Faro"),
-            new Station("ST007", "Évora Station", "Évora"),
-            new Station("ST008", "Leiria Hub", "Leiria")
-        );
-    }
     
     /**
      * Creates mock locomotive data for testing and demonstration.

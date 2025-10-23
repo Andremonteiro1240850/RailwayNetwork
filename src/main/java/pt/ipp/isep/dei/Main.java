@@ -267,7 +267,7 @@ public class Main {
         System.out.println("\n=== TRAVEL TIME CALCULATION (USLP03) ===");
         
         TravelTimeController controller = new TravelTimeController();
-        TravelTimeUI ui = new TravelTimeUI(controller.getService());
+        TravelTimeUI ui = new TravelTimeUI(controller);
         ui.showMainMenu();
     }
 }

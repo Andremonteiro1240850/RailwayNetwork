@@ -346,5 +346,4 @@ class WarehouseControllerTest {
         assertEquals(2, results.get(1).getLineNo());
         verify(warehouseRepository).saveAllocationRows(results);
     }
-}
- */
+}*/
