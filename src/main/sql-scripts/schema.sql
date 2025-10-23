@@ -1,8 +1,4 @@
-CREATE TABLE Bay (
-                     bay_id       number(10) GENERATED AS IDENTITY,
-                     warehouse_id number(10) NOT NULL,
-                     capacity_n   number(10) NOT NULL,
-                     PRIMARY KEY (bay_id));
+
 CREATE TABLE Diesel_Locomotive (
                                    locomotive_id number(10) GENERATED AS IDENTITY,
                                    lcomotive_id  number(10) NOT NULL,
@@ -148,7 +144,6 @@ CREATE TABLE Warehouse (
                            facility_id  number(10) NOT NULL,
                            PRIMARY KEY (warehouse_id));
 ALTER TABLE Locomotive ADD CONSTRAINT FKLocomotive501990 FOREIGN KEY (operator_id) REFERENCES Operator (operator_id);
-ALTER TABLE Bay ADD CONSTRAINT FKBay653780 FOREIGN KEY (warehouse_id) REFERENCES Warehouse (warehouse_id);
 ALTER TABLE Warehouse ADD CONSTRAINT FKWarehouse302124 FOREIGN KEY (facility_id) REFERENCES Facility (facility_id);
 ALTER TABLE Locomotive ADD CONSTRAINT FKLocomotive985555 FOREIGN KEY (gauge_code) REFERENCES Gauge (gauge_code);
 ALTER TABLE Diesel_Locomotive ADD CONSTRAINT FKDiesel_Loc906374 FOREIGN KEY (lcomotive_id) REFERENCES Locomotive (locomotive_id);
