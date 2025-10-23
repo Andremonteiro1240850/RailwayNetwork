@@ -79,7 +79,8 @@ public class Main {
             System.out.println("3. Picking Plans (Picker)");
             System.out.println("4. Pick Path Sequencing (Picker)");
             System.out.println("5. Quality Operator");
-            System.out.println("6. Exit");
+            System.out.println("6. Travel Time Calculation (Traffic Dispatcher)");
+            System.out.println("7. Exit");
             
             System.out.print("Select option: ");
             String choice = scanner.nextLine().trim();
@@ -101,6 +102,9 @@ public class Main {
                     qualityOperatorMain();
                     break;
                 case "6":
+                    travelTimeCalculation();
+                    break;
+                case "7":
                     System.out.println("Goodbye!");
                     return;
                 default:
@@ -118,7 +122,8 @@ public class Main {
             System.out.println("3. Login as a Planner");
             System.out.println("4. Login as a Picker");
             System.out.println("5. Login as a Quality Operator");
-            System.out.println("6. Back");
+            System.out.println("6. Login as a Traffic Dispatcher");
+            System.out.println("7. Back");
 
             System.out.print("Select option: ");
             String choice = scanner.nextLine().trim();
@@ -145,6 +150,10 @@ public class Main {
                     qualityOperatorMain();
                     break;
                 case "6":
+                    // Traffic Dispatcher -> Travel Time Calculation
+                    travelTimeCalculation();
+                    break;
+                case "7":
                     return;
                 default:
                     System.out.println("Invalid option!");
@@ -349,5 +358,16 @@ public class Main {
 
         QualityOperatorController controller = new QualityOperatorController(wm);
         controller.showMainMenu();
+    }
+    
+    /**
+     * Travel Time Calculation (USLP03)
+     */
+    private static void travelTimeCalculation() {
+        System.out.println("\n=== TRAVEL TIME CALCULATION (USLP03) ===");
+        
+        TravelTimeController controller = new TravelTimeController();
+        TravelTimeUI ui = new TravelTimeUI(controller.getService());
+        ui.showMainMenu();
     }
 }
