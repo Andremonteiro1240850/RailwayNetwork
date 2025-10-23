@@ -6,11 +6,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
 
 /**
  * The type Inspection controller.
@@ -35,15 +30,6 @@ public class InspectionController {
         this.warehouseManager = warehouseManager;
     }
 
-    /**
-     * Sets warehouse manager.
-     *
-     * @param warehouseManager the warehouse manager
-     */
-    public void setWarehouseManager(Domain.WarehouseManager warehouseManager) {
-        this.warehouseManager = warehouseManager;
-    }
-    private final Path auditLogPath = Paths.get("logs", "audit.log");
     private final DateTimeFormatter auditFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
     /**
@@ -176,7 +162,8 @@ public class InspectionController {
             line.append(" | Quantity Discarded=").append(qtyDiscarded);
         }
 
-        appendAuditLine(line.append(System.lineSeparator()).toString());
+        // Use AuditLog to write the entry
+        Domain.AuditLog.appendLine(line.toString());
     }
 
     /**
@@ -205,24 +192,4 @@ public class InspectionController {
         return Domain.AuditLog.readAll();
     }
 
-    private void appendAuditLine(String content) {
-        ensureAuditFile();
-        try {
-            Files.write(auditLogPath, content.getBytes(StandardCharsets.UTF_8), StandardOpenOption.APPEND);
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to write audit log entry", e);
-        }
-    }
-
-    private void ensureAuditFile() {
-        try {
-            if (!Files.exists(auditLogPath)) {
-                Path parent = auditLogPath.toAbsolutePath().getParent();
-                if (parent != null) Files.createDirectories(parent);
-                Files.write(auditLogPath, new byte[0], StandardOpenOption.CREATE);
-            }
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to initialize audit log file", e);
-        }
-    }
 }
