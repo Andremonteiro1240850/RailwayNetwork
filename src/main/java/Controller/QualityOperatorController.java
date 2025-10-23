@@ -65,11 +65,12 @@ public class QualityOperatorController {
         while (true) {
             System.out.println("\n=== QUALITY OPERATOR MENU (USEI05) ===");
             System.out.println("1. View Quarantine Queue");
-            System.out.println("2. Process All Inspections");
-            System.out.println("3. View Processed Inspections");
-            System.out.println("4. View Audit Log");
-            System.out.println("5. Reload Returns from CSV");
-            System.out.println("6. Exit");
+            System.out.println("2. Process Next Inspection");
+            System.out.println("3. Process All Inspections");
+            System.out.println("4. View Processed Inspections");
+            System.out.println("5. View Audit Log");
+            System.out.println("6. Reload Returns from CSV");
+            System.out.println("7. Exit");
             
             System.out.print("\nSelect option: ");
             String choice = scanner.nextLine().trim();
@@ -79,18 +80,21 @@ public class QualityOperatorController {
                     viewQuarantineQueue();
                     break;
                 case "2":
-                    processNextInspection();
+                    processSingleInspection();
                     break;
                 case "3":
-                    viewProcessedInspections();
+                    processNextInspection();
                     break;
                 case "4":
-                    viewAuditLog();
+                    viewProcessedInspections();
                     break;
                 case "5":
-                    loadReturnsFromCSV(true);
+                    viewAuditLog();
                     break;
                 case "6":
+                    loadReturnsFromCSV(true);
+                    break;
+                case "7":
                     System.out.println("Exiting Quality Operator system...");
                     return;
                 default:
@@ -209,8 +213,6 @@ public class QualityOperatorController {
                     }
                 }
                 
-                System.out.println("\nPress Enter to continue...");
-                scanner.nextLine();
             } else {
                 // Silent loading - just show a brief message
                 System.out.println("Returns automatically loaded from CSV (" + loadedReturns.size() + " items)");
@@ -285,8 +287,80 @@ public class QualityOperatorController {
         System.out.println("Total items in queue: " + quarantineItems.size());
         System.out.println("Use option 2 to process inspections and determine actions");
         
-        System.out.println("\nPress Enter to continue...");
-        scanner.nextLine();
+    }
+    
+    /**
+     * Process single inspection from quarantine queue
+     */
+    private void processSingleInspection() {
+        System.out.println("\n=== PROCESS NEXT INSPECTION (USEI05) ===");
+        
+        if (quarantineItems.isEmpty()) {
+            System.out.println("No items in quarantine queue.");
+            System.out.println("Returns are automatically loaded from CSV when you enter the menu.");
+            System.out.println("If the queue is empty, try option 6 to reload from CSV.");
+            return;
+        }
+        
+        Return item = quarantineItems.get(0);
+        int remainingItems = quarantineItems.size();
+        
+        System.out.println("Processing 1 item from quarantine queue");
+        System.out.println("Remaining items in queue: " + (remainingItems - 1));
+        System.out.println("Following USEI05 logic: Last to arrive, first to process");
+        
+        System.out.println("\n" + "=".repeat(60));
+        System.out.println("PROCESSING SINGLE ITEM");
+        System.out.println("=".repeat(60));
+        System.out.println("Return ID: " + item.getReturnId());
+        System.out.println("SKU: " + item.getSku());
+        System.out.println("Quantity: " + item.getQty());
+        System.out.println("Original Reason: " + item.getReason());
+        System.out.println("Timestamp: " + item.getTimestamp().format(dateFormatter));
+        System.out.println("Expiry Date: " + (item.getExpiryDate() != null ? item.getExpiryDate().toString() : "N/A"));
+        
+        // Determine action based on USEI05 logic
+        String reasonToUse = determineProcessingReason(item);
+        String action = determineActionFromReason(reasonToUse);
+        
+        System.out.println("\nUSEI05 Processing Logic:");
+        System.out.println("  Final Reason: " + reasonToUse);
+        System.out.println("  Action: " + action);
+        
+        if ("DISCARD".equals(action)) {
+            System.out.println("\nDISCARDING PRODUCT");
+            if ("EXPIRED".equals(reasonToUse)) {
+                System.out.println("   Reason: Product expired on " + item.getExpiryDate());
+            } else {
+                System.out.println("   Reason: " + reasonToUse);
+            }
+        } else {
+            System.out.println("\nRESTOCKING PRODUCT");
+            System.out.println("   Reason: " + reasonToUse);
+            System.out.println("   Following FEFO/FIFO placement rules");
+        }
+        
+        // Process the inspection
+        String result = inspectionController.processQuarantine(
+                item.getSku(),
+                item.getQty(),
+                reasonToUse,
+                item.getExpiryDate()
+        );
+        
+        System.out.println("\nProcessing Result:");
+        System.out.println(result);
+        
+        // Remove processed item
+        quarantineItems.remove(0);
+        
+        System.out.println("\n" + "=".repeat(60));
+        System.out.println("INSPECTION COMPLETED");
+        System.out.println("=".repeat(60));
+        System.out.println("Action: " + action);
+        System.out.println("Remaining items in queue: " + quarantineItems.size());
+        System.out.println("\nAudit log has been updated with this action.");
+        
     }
     
     /**
@@ -371,8 +445,6 @@ public class QualityOperatorController {
         System.out.println("Quarantine queue is now empty.");
         System.out.println("\nAudit log has been updated with all actions.");
         
-        System.out.println("\nPress Enter to return to main menu...");
-        scanner.nextLine();
     }
     
     /**

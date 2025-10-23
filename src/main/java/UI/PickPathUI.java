@@ -102,8 +102,6 @@ public class PickPathUI {
             System.out.println("Error while processing: " + e.getMessage());
         }
         
-        System.out.println("\nPress Enter to continue...");
-        scanner.nextLine();
     }
     
     /**
@@ -118,8 +116,6 @@ public class PickPathUI {
             
             if (trolleys.isEmpty()) {
                 System.out.println("No trolleys found from US03. Please run trolley packing first.");
-                System.out.println("\nPress Enter to continue...");
-                scanner.nextLine();
                 return;
             }
             
@@ -171,8 +167,6 @@ public class PickPathUI {
             System.out.println("Error while processing trolley data: " + e.getMessage());
         }
         
-        System.out.println("\nPress Enter to continue...");
-        scanner.nextLine();
     }
     
     /**
@@ -395,8 +389,6 @@ public class PickPathUI {
         System.out.println("  Strategy: " + result.getStrategy());
         System.out.println("  Total Distance: " + result.getTotalDistance());
         
-        System.out.println("\nPress Enter to continue...");
-        scanner.nextLine();
     }
 
     /**
@@ -473,8 +465,6 @@ public class PickPathUI {
         System.out.println("  Strategy: " + result.getStrategy());
         System.out.println("  Total Distance: " + result.getTotalDistance());
         
-        System.out.println("\nPress Enter to continue...");
-        scanner.nextLine();
     }
 
     /**

@@ -203,4 +203,31 @@ public class AuditLog {
             throw new RuntimeException("Failed to initialize audit log file", e);
         }
     }
+
+    /**
+     * Clear all audit log entries
+     * This method clears the audit log file, removing all previous entries
+     */
+    public static void clearAll() {
+        try {
+            ensureFile();
+            java.nio.file.Files.write(AUDIT_LOG_PATH, new byte[0], java.nio.file.StandardOpenOption.TRUNCATE_EXISTING);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to clear audit log file", e);
+        }
+    }
+
+    /**
+     * Append a line to the audit log
+     * This method appends a new line to the audit log file
+     */
+    public static void appendLine(String line) {
+        try {
+            ensureFile();
+            java.nio.file.Files.write(AUDIT_LOG_PATH, (line + System.lineSeparator()).getBytes(java.nio.charset.StandardCharsets.UTF_8), 
+                                    java.nio.file.StandardOpenOption.APPEND);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to append audit log entry", e);
+        }
+    }
 }
