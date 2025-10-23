@@ -40,7 +40,9 @@ public class PickPathUI {
             System.out.println("1. Process (simulated data)");
             System.out.println("2. Process (custom data)");
             System.out.println("3. Process (from US03 trolleys)");
-            System.out.println("4. Back to Main Menu");
+            System.out.println("4. Demo: ASC_SWEEP Strategy");
+            System.out.println("5. Demo: NEAREST_NEIGHBOUR Strategy");
+            System.out.println("6. Back to Main Menu");
             
             System.out.print("Select option: ");
             String choice = scanner.nextLine().trim();
@@ -56,6 +58,12 @@ public class PickPathUI {
                     processWithTrolleyData();
                     break;
                 case "4":
+                    demonstrateAscSweepStrategy();
+                    break;
+                case "5":
+                    demonstrateNearestNeighbourStrategy();
+                    break;
+                case "6":
                     return;
                 default:
                     System.out.println("Invalid option! Please try again.");
@@ -341,5 +349,172 @@ public class PickPathUI {
         } else {
             System.out.println("Both strategies have the same total distance");
         }
+    }
+
+    // ========== MÉTODOS DE DEMONSTRAÇÃO DAS ESTRATÉGIAS ==========
+
+    /**
+     * Demonstra como funciona a estratégia ASC_SWEEP passo a passo
+     */
+    private void demonstrateAscSweepStrategy() {
+        System.out.println("\n=== DEMONSTRAÇÃO: ASC_SWEEP STRATEGY ===");
+        
+        // Usar dados de exemplo
+        List<PickStop> exampleStops = Arrays.asList(
+            new PickStop(1, 3, 4, 5),
+            new PickStop(2, 1, 8, 3),
+            new PickStop(3, 2, 2, 7),
+            new PickStop(4, 1, 1, 4),
+            new PickStop(5, 3, 1, 2)
+        );
+        
+        System.out.println("Stops originais:");
+        displayStops(exampleStops);
+        
+        System.out.println("\n--- PASSO A PASSO ASC_SWEEP ---");
+        System.out.println("1. Ordenar por aisle (corredor) de forma ascendente");
+        System.out.println("2. Para o mesmo aisle, ordenar por bay de forma ascendente");
+        
+        List<PickStop> sorted = controller.calculateAscSweep(exampleStops);
+        
+        System.out.println("\nStops ordenados:");
+        displayStops(sorted);
+        
+        System.out.println("\n--- FÓRMULA DE DISTÂNCIA ---");
+        System.out.println("Se a1 == a2 (mesmo corredor): distância = |b1 - b2|");
+        System.out.println("Se a1 != a2 (corredores diferentes): distância = b1 + (|a1 - a2| * 3) + b2");
+        
+        System.out.println("\n--- CÁLCULO DA DISTÂNCIA TOTAL PASSO A PASSO ---");
+        int currentAisle = 0, currentBay = 0, total = 0;
+        
+        System.out.println("Começando na entrada (0,0):");
+        
+        for (int i = 0; i < sorted.size(); i++) {
+            PickStop stop = sorted.get(i);
+            int distance = PickPathController.calculateDistance(currentAisle, currentBay, 
+                    stop.getAisle(), stop.getBay());
+            total += distance;
+            
+            System.out.println("  " + (i + 1) + ". (" + currentAisle + "," + currentBay + ") → " + 
+                    stop + " = " + distance + " unidades");
+            
+            // Mostrar cálculo detalhado
+            if (currentAisle == stop.getAisle()) {
+                System.out.println("     Mesmo corredor (" + currentAisle + "), distância = |" + currentBay + " - " + stop.getBay() + "| = " + distance);
+            } else {
+                System.out.println("     Corredores diferentes (" + currentAisle + "→" + stop.getAisle() + "), distância = " + 
+                        currentBay + " + (|" + currentAisle + "-" + stop.getAisle() + "| * 3) + " + stop.getBay() + " = " + distance);
+            }
+            
+            currentAisle = stop.getAisle();
+            currentBay = stop.getBay();
+        }
+        
+        System.out.println("\nDistância total: " + total);
+        
+        System.out.println("\n--- RESULTADO FINAL ---");
+        PickPath result = controller.createCalculatedPath(PathStrategy.ASC_SWEEP, exampleStops);
+        System.out.println("PickPath criado:");
+        System.out.println("  Strategy: " + result.getStrategy());
+        System.out.println("  Total Distance: " + result.getTotalDistance());
+        
+        System.out.println("\nPress Enter to continue...");
+        scanner.nextLine();
+    }
+
+    /**
+     * Demonstra como funciona a estratégia NEAREST_NEIGHBOUR passo a passo
+     */
+    private void demonstrateNearestNeighbourStrategy() {
+        System.out.println("\n=== DEMONSTRAÇÃO: NEAREST_NEIGHBOUR STRATEGY ===");
+        
+        // Usar dados de exemplo
+        List<PickStop> exampleStops = Arrays.asList(
+            new PickStop(1, 3, 4, 5),
+            new PickStop(2, 1, 8, 3),
+            new PickStop(3, 2, 2, 7),
+            new PickStop(4, 1, 1, 4),
+            new PickStop(5, 3, 1, 2)
+        );
+        
+        System.out.println("Stops originais:");
+        displayStops(exampleStops);
+        
+        System.out.println("\n--- FÓRMULA DE DISTÂNCIA ---");
+        System.out.println("Se a1 == a2 (mesmo corredor): distância = |b1 - b2|");
+        System.out.println("Se a1 != a2 (corredores diferentes): distância = b1 + (|a1 - a2| * 3) + b2");
+        
+        System.out.println("\n--- PASSO A PASSO NEAREST_NEIGHBOUR ---");
+        System.out.println("1. Começar na entrada (0,0)");
+        System.out.println("2. Encontrar o stop mais próximo da posição atual");
+        System.out.println("3. Mover para esse stop e removê-lo da lista");
+        System.out.println("4. Repetir até não haver mais stops");
+        
+        List<PickStop> unvisited = new ArrayList<>(exampleStops);
+        List<PickStop> path = new ArrayList<>();
+        int currentAisle = 0;
+        int currentBay = 0;
+        int step = 1;
+        int totalDistance = 0;
+        
+        while (!unvisited.isEmpty()) {
+            System.out.println("\n--- PASSO " + step + " ---");
+            System.out.println("Posição atual: (" + currentAisle + "," + currentBay + ")");
+            System.out.println("Stops disponíveis:");
+            displayStops(unvisited);
+            
+            // Encontrar o mais próximo
+            PickStop nearest = findNearestStopDemo(currentAisle, currentBay, unvisited);
+            int distance = PickPathController.calculateDistance(currentAisle, currentBay, 
+                    nearest.getAisle(), nearest.getBay());
+            totalDistance += distance;
+            
+            System.out.println("Stop mais próximo: " + nearest + " (distância: " + distance + ")");
+            
+            // Mostrar cálculo detalhado da distância
+            if (currentAisle == nearest.getAisle()) {
+                System.out.println("  Mesmo corredor (" + currentAisle + "), distância = |" + currentBay + " - " + nearest.getBay() + "| = " + distance);
+            } else {
+                System.out.println("  Corredores diferentes (" + currentAisle + "→" + nearest.getAisle() + "), distância = " + 
+                        currentBay + " + (|" + currentAisle + "-" + nearest.getAisle() + "| * 3) + " + nearest.getBay() + " = " + distance);
+            }
+            
+            path.add(nearest);
+            unvisited.remove(nearest);
+            currentAisle = nearest.getAisle();
+            currentBay = nearest.getBay();
+            step++;
+        }
+        
+        System.out.println("\n--- RESULTADO FINAL ---");
+        System.out.println("Path calculado:");
+        displayStops(path);
+        System.out.println("Distância total: " + totalDistance);
+        
+        PickPath result = controller.createCalculatedPath(PathStrategy.NEAREST_NEIGHBOUR, exampleStops);
+        System.out.println("\nPickPath criado:");
+        System.out.println("  Strategy: " + result.getStrategy());
+        System.out.println("  Total Distance: " + result.getTotalDistance());
+        
+        System.out.println("\nPress Enter to continue...");
+        scanner.nextLine();
+    }
+
+    /**
+     * Método auxiliar para demonstração do nearest neighbour
+     */
+    private PickStop findNearestStopDemo(int currentAisle, int currentBay, List<PickStop> stops) {
+        PickStop nearest = null;
+        int minDistance = Integer.MAX_VALUE;
+
+        for (PickStop stop : stops) {
+            int distance = PickPathController.calculateDistance(currentAisle, currentBay,
+                    stop.getAisle(), stop.getBay());
+            if (distance < minDistance) {
+                minDistance = distance;
+                nearest = stop;
+            }
+        }
+        return nearest;
     }
 }
