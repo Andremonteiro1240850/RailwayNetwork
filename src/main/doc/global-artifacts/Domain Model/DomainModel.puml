@@ -1,8 +1,7 @@
 @startuml
 skinparam style strictuml
 
-' ======================= INFRAESTRUTURA FERROVIÁRIA =======================
-package "Infraestrutura Ferroviária" {
+
   class RailwayNetwork {
     +name : String
   }
@@ -33,34 +32,32 @@ package "Infraestrutura Ferroviária" {
   }
 
   class NormalStation {
-  +stationId : int
-  +name : String
-  +location : String
+    +stationId : int
+    +name : String
+    +location : String
   }
 
   class Terminal {
-  +terminalId : int
-  +name : String
+    +terminalId : int
+    +name : String
   }
 
   class Station {
-  +stationType : String
+    +stationType : String
   }
-}
-
-' Relações da Infraestrutura
-RailwayNetwork -- Line : has
-Line -- LineSegment : has
-Line -- Station : pass trough
-Line -- Owner : has
-LineSegment -- SegmentType : can be
-Station -- NormalStation : can be
-Station -- Terminal : can be
 
 
+RailwayNetwork "1" -- "1..*" Line : has
+Line "1" -- "1..*" LineSegment : has
+Line "1..*" -- "*" Station : pass trough
+Line "1" -- "1" Owner : has
+LineSegment "1" -- "1" SegmentType : can be
+Station "1" -- "0..1" NormalStation : can be
+Station "1" -- "0..1" Terminal : can be
 
-' ======================= ROLLING STOCK & OPERADORES =======================
-package "Rolling Stock & Operadores" {
+
+
+
   class Operator {
     +operatorId : int
     +name : String
@@ -121,34 +118,29 @@ package "Rolling Stock & Operadores" {
   }
 
   class Route {
-  +routeID : String
-  +routeType : String
+    +routeID : String
+    +routeType : String
   }
 
   enum RouteType {
-  COMPLEX
-  SIMPLE
+    COMPLEX
+    SIMPLE
   }
-}
 
-' Relações do Rolling Stock
-Operator -- Locomotive : belongs
-Operator -- Wagon : belongs
-Train -- Locomotive : composed of
-Train -- Wagon : composed of
-Freight -- Station : transport from A to B
-Freight -- Path : carry on
-Path -- PathStep : composed of
-PathStep -- Station : has
-Wagon -- Freight : carries
-Wagon -- WagonType : can be
-Locomotive -- LocoType : can be
-Freight -- Route : follows
-Path -- Route : is part of
-Route -- RouteType : can be
+Operator "1" -- "0..*" Locomotive : belongs
+Operator "1" -- "0..*" Wagon : belongs
+Train "1" -- "1..*" Locomotive : composed of
+Train "1" -- "0..*" Wagon : composed of
+Freight "1" -- "1" Path : carry on
+Freight "1" -- "1" Route : follows
+Path "1" -- "1..*" PathStep : composed of
+PathStep "1" -- "1..1" Station : has
+Wagon "0..*" -- "0..1" Freight : carries
+Wagon "1" -- "1" WagonType : can be
+Locomotive "1" -- "1" LocoType : can be
+Path "1..*" -- "1" Route : is part of
+Route "1" -- "1" RouteType : can be
 
-' ======================= TERMINAL & WAREHOUSE =======================
-package "Terminal & Warehouse" {
 
   class CirculationLine {
     +id : String
@@ -173,7 +165,7 @@ package "Terminal & Warehouse" {
   }
 
   class Bay {
-  warehouseId : int
+    warehouseId : int
     +bayNo : int
     +capacityBoxes : int
     +aisleId : int
@@ -203,21 +195,21 @@ package "Terminal & Warehouse" {
     +receivedAt : DateTime
     +status : BoxStatus
   }
-}
 
-' Relações do Terminal
-Terminal -- CirculationLine : has
-Terminal -- ParkingLine : has
-Terminal -- UnloadingDock : has
-Terminal -- Warehouse : connects
-Warehouse -- Aisle : contains
-Aisle -- Bay : contains
-Bay -- Box : stores
-Item -- Box : describes
-Box -- BoxStatus : status
-Box -- Wagon : transport
 
-' ======================= OPERAÇÕES WMS =======================
+Terminal "1" -- "0..*" CirculationLine : has
+Terminal "1" -- "0..*" ParkingLine : has
+Terminal "1" -- "0..*" UnloadingDock : has
+Terminal "1" -- "0..*" Warehouse : connects
+Warehouse "1" -- "1..*" Aisle : contains
+Aisle "1" -- "1..*" Bay : contains
+Bay "1" -- "0..*" Box : stores
+Item "1" -- "1..*" Box : describes
+Box "1" -- "1" BoxStatus : status
+Box "0..*" -- "1" Wagon : transport
+
+
+
 package "WMS / Movimentos ( Perguntar ao Stor) " {
 
   class WMSMovement {
@@ -250,16 +242,15 @@ package "WMS / Movimentos ( Perguntar ao Stor) " {
   }
 }
 
-' Relações WMS
-UnloadingOperation -- Box : creates
-DispatchOperation -- Box : consumes
-Relocation -- Box :  moves
-WMSMovement -- UnloadingOperation : can be
-WMSMovement -- DispatchOperation : can be
-WMSMovement -- Relocation : can be
+UnloadingOperation "1" -- "1..*" Box : creates
+DispatchOperation "1" -- "1..*" Box : consumes
+Relocation "1" -- "1..*" Box : moves
+WMSMovement "1" -- "0..1" UnloadingOperation : can be
+WMSMovement "1" -- "0..1" DispatchOperation : can be
+WMSMovement "1" -- "0..1" Relocation : can be
 
-' ======================= PEDIDOS & ALOCAÇÃO =======================
-package "Pedidos & Alocação" {
+
+
   class Order {
     +orderId : String
     +dueDate : Date
@@ -296,18 +287,15 @@ package "Pedidos & Alocação" {
     +mode : AllocationMode
     +status : AllocationStatus
   }
-}
 
-' Relações de Pedidos
-Order -- OrderLine : composed of
-Allocation -- OrderLine : allocates
-Allocation -- Box : from
-Allocation -- Bay : at
-Allocation -- AllocationStatus : has
-Allocation -- AllocationMode : has
+Order "1" -- "1..*" OrderLine : composed of
+Allocation "1..*" -- "1" OrderLine : allocates
+Allocation "1..*" -- "1" Box : from
+Allocation "1..*" -- "1" Bay : at
+Allocation "1" -- "1" AllocationStatus : has
+Allocation "1" -- "1" AllocationMode : has
 
-' ======================= PICKING =======================
-package "Picking" {
+
   class PickingTrolley {
     +trolleyId : String
     +capacityWeightKg : int
@@ -348,27 +336,23 @@ package "Picking" {
     +bay : int
     +totalQty : int
   }
-}
 
-' Relações de Picking
-PickingPlan -- PickingBatch : determines
-PickingBatch -- PickingTrolley : carried by
-PickingBatch -- Allocation : has
-PackingHeuristic_PerguntaraoStor -- PickingBatch : organizes
-PickPath -- PickStop : stops at
-PickStop -- Bay : matches
-PickPath -- PathStrategy : defined by
 
-' ======================= DEVOLUÇÕES & QUARENTENA =======================
-package "Devoluções & Quarentena" {
+PickingPlan "1" -- "1..*" PickingBatch : determines
+PickingBatch "1" -- "1" PickingTrolley : carried by
+PickingBatch "1" -- "1..*" Allocation : has
+PackingHeuristic_PerguntaraoStor "1" -- "1..*" PickingBatch : organizes
+PickPath "1" -- "1..*" PickStop : stops at
+PickStop "1" -- "1" Bay : matches
+PickPath "1" -- "1" PathStrategy : defined by
+
+
   enum ReturnReason {
     REMORSE
     DAMAGED
     EXPIRED
     CYCLE_COUNT
   }
-
-
 
   enum QAAction {
     RESTOCK
@@ -397,67 +381,63 @@ package "Devoluções & Quarentena" {
     +userId : String
     +name : String
   }
-}
 
-' Relações de Devoluções
-QuarantineInspection -- Box : on RESTOCK
-AuditLog -- QuarantineInspection : stores
-QualityOperator -- QuarantineInspection : does
-QuarantineInspection - QAAction : determines
-QAAction -- ReturnReason : depends
-' ======================= PAPÉIS / UTILIZADORES =======================
-package "Papéis / Utilizadores" {
+
+QuarantineInspection "1" -- "1" Box : on RESTOCK
+AuditLog "1..*" -- "1" QuarantineInspection : stores
+QualityOperator "1" -- "0..*" QuarantineInspection : does
+QuarantineInspection "1" -- "1" QAAction : determines
+QAAction "1" -- "0..*" ReturnReason : depends
+
   class TrainDriver{
-  +trainId : String
-  +driverId : int
-  +name : String
+    +trainId : String
+    +driverId : int
+    +name : String
   }
 
   class StationMaster {
-  +stationMasterId : int
-  +name: String
-  +stationId : int
+    +stationMasterId : int
+    +name: String
+    +stationId : int
   }
 
   class WarehousePlanner {
-  +warehouseId : int
-  +name : String
+    +warehouseId : int
+    +name : String
   }
 
   class StationStorageManager {
-  +stationStorageManegerId: int
-  +stationId : int
-  +name : String
+    +stationStorageManegerId: int
+    +stationId : int
+    +name : String
   }
 
   class FreightManager {
-  +freightManagerId : int
-  +name : String
+    +freightManagerId : int
+    +name : String
   }
 
   class Planner {
-  +plannerId : int
-  +name : String
+    +plannerId : int
+    +name : String
   }
 
   class Picker {
-  +pickerId ; int
-  +name : String
+    +pickerId ; int
+    +name : String
   }
-}
 
-' Relações de Utilizadores
-TrainDriver -- Train : drive
-StationMaster -- Station : supervision
-StationStorageManager -- Station : operates in
-StationStorageManager -- Freight : manages
-FreightManager -- Freight : manages
-Planner -- Train : schedules
-WarehousePlanner -- Warehouse : manages
-WarehousePlanner -- Allocation : atributes
-WarehousePlanner -- Order : fulfill
-Picker -- PickPath: planes
-Planner -- Allocation : pack
 
+TrainDriver "1" -- "1..*" Train : drive
+StationMaster "1" -- "1" Station : supervision
+StationStorageManager "1" -- "1..*" Station : operates in
+StationStorageManager "1" -- "0..*" Freight : manages
+FreightManager "1" -- "0..*" Freight : manages
+Planner "1" -- "0..*" Train : schedules
+WarehousePlanner "1" -- "1..*" Warehouse : manages
+WarehousePlanner "1" -- "0..*" Allocation : atributes
+WarehousePlanner "1" -- "0..*" Order : fulfill
+Picker "1" -- "0..*" PickPath: planes
+Planner "1" -- "0..*" Allocation : pack
 
 @enduml
