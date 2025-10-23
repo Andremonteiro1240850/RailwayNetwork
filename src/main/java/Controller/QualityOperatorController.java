@@ -2,6 +2,12 @@ package Controller;
 
 import Domain.Return;
 import Domain.QuarantineInspection;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -39,45 +45,31 @@ public class QualityOperatorController {
     }
 
     /**
-     * Show login screen
+     * Show login screen - now just shows welcome message
      *
      * @return the boolean
      */
     public boolean showLogin() {
-        System.out.println("\nQUALITY OPERATOR LOGIN");
-        System.out.println("Available operators:");
-        System.out.println("  - qop001");
-        System.out.println("  - qop002");
-        System.out.println("  - qop003");
-        
-        System.out.print("\nEnter User ID: ");
-        String userId = scanner.nextLine().trim();
-        
-        System.out.print("Enter Password: ");
-        String password = scanner.nextLine().trim();
-        
-        // Simple authentication
-        if (authenticateOperator(userId, password)) {
-            System.out.println("Login successful! Welcome, " + getOperatorName(userId));
-            return true;
-        } else {
-            System.out.println("Invalid credentials!");
-            return false;
-        }
+        System.out.println("\nQUALITY OPERATOR SYSTEM");
+        System.out.println("Welcome to the Quality Operator interface");
+        return true;
     }
 
     /**
      * Show main menu
      */
     public void showMainMenu() {
+        // Automatically load returns from CSV when entering the menu
+        loadReturnsFromCSV();
+        
         while (true) {
-            System.out.println("\n=== QUALITY OPERATOR MENU ===");
+            System.out.println("\n=== QUALITY OPERATOR MENU (USEI05) ===");
             System.out.println("1. View Quarantine Queue");
-            System.out.println("2. Add Item to Quarantine");
-            System.out.println("3. Process All Inspections");
-            System.out.println("4. View Processed Inspections");
-            System.out.println("5. View Audit Log");
-            System.out.println("6. Logout");
+            System.out.println("2. Process All Inspections");
+            System.out.println("3. View Processed Inspections");
+            System.out.println("4. View Audit Log");
+            System.out.println("5. Reload Returns from CSV");
+            System.out.println("6. Exit");
             
             System.out.print("\nSelect option: ");
             String choice = scanner.nextLine().trim();
@@ -87,19 +79,19 @@ public class QualityOperatorController {
                     viewQuarantineQueue();
                     break;
                 case "2":
-                    addItemToQuarantine();
-                    break;
-                case "3":
                     processNextInspection();
                     break;
-                case "4":
+                case "3":
                     viewProcessedInspections();
                     break;
-                case "5":
+                case "4":
                     viewAuditLog();
                     break;
+                case "5":
+                    loadReturnsFromCSV(true);
+                    break;
                 case "6":
-                    System.out.println("Logged out successfully!");
+                    System.out.println("Exiting Quality Operator system...");
                     return;
                 default:
                     System.out.println("Invalid option!");
@@ -108,51 +100,178 @@ public class QualityOperatorController {
     }
     
     /**
-     * Add item to quarantine queue
+     * Load returns from CSV file according to USEI05 requirements
      */
-    private void addItemToQuarantine() {
-        System.out.println("\n=== ADD ITEM TO QUARANTINE ===");
-        
-        System.out.print("Enter Return ID: ");
-        String returnId = scanner.nextLine().trim();
-        
-        System.out.print("Enter SKU: ");
-        String sku = scanner.nextLine().trim();
-        
-        System.out.print("Enter Quantity: ");
-        int quantity = Integer.parseInt(scanner.nextLine().trim());
-        
-        System.out.print("Enter Reason (REMORSE/DAMAGED/EXPIRED/CYCLE_COUNT): ");
-        String reason = scanner.nextLine().trim();
-        
-        System.out.print("Enter Expiry Date (yyyy-mm-dd) or press Enter for none: ");
-        String expiryStr = scanner.nextLine().trim();
-        LocalDate expiryDate = expiryStr.isEmpty() ? null : LocalDate.parse(expiryStr);
-        
-        Return returnItem = new Return(returnId, sku, quantity, reason, LocalDateTime.now(), expiryDate);
-        quarantineItems.add(returnItem);
-        sortQuarantineQueue();
-        
-        System.out.println("Item added to quarantine queue.");
+    private void loadReturnsFromCSV() {
+        loadReturnsFromCSV(false);
     }
     
     /**
-     * View quarantine queue (sorted by timestamp DESC, returnId ASC)
+     * Load returns from CSV file according to USEI05 requirements
+     * @param showDetails whether to show detailed output
      */
-    private void viewQuarantineQueue() {
-        System.out.println("\n=== QUARANTINE QUEUE ===");
+    private void loadReturnsFromCSV(boolean showDetails) {
+        if (showDetails) {
+            System.out.println("\n=== LOAD RETURNS FROM CSV (USEI05) ===");
+        }
         
-        if (quarantineItems.isEmpty()) {
-            System.out.println("No items in quarantine queue.");
+        Path csvPath = Paths.get("train_station_dataset", "returns.csv");
+        
+        if (!Files.exists(csvPath)) {
+            if (showDetails) {
+                System.out.println("ERROR: Returns CSV file not found at: " + csvPath);
+                System.out.println("Please ensure the file exists and try again.");
+            }
             return;
         }
         
-        System.out.printf("%-15s %-10s %-8s %-15s %-20s %-12s%n", 
+        if (showDetails) {
+            System.out.println("Loading returns from: " + csvPath);
+        }
+        
+        List<Return> loadedReturns = new ArrayList<>();
+        
+        try (BufferedReader br = Files.newBufferedReader(csvPath, StandardCharsets.UTF_8)) {
+            String line;
+            boolean first = true;
+            int lineNumber = 0;
+            
+            while ((line = br.readLine()) != null) {
+                lineNumber++;
+                
+                if (first) { // skip header
+                    first = false;
+                    continue;
+                }
+                
+                if (line.trim().isEmpty()) continue;
+                
+                String[] parts = line.split(",");
+                if (parts.length < 6) {
+                    if (showDetails) {
+                        System.out.println("WARNING: Line " + lineNumber + " has insufficient columns, skipping...");
+                    }
+                    continue;
+                }
+                
+                try {
+                    String returnId = parts[0].trim();
+                    String sku = parts[1].trim();
+                    int qty = Integer.parseInt(parts[2].trim());
+                    String reason = parts[3].trim();
+                    String timestampStr = parts[4].trim();
+                    String expiryStr = parts.length > 5 ? parts[5].trim() : "";
+                    
+                    // Parse timestamp
+                    LocalDateTime timestamp = LocalDateTime.parse(timestampStr);
+                    
+                    // Parse expiry date (optional)
+                    LocalDate expiryDate = null;
+                    if (!expiryStr.isEmpty()) {
+                        expiryDate = LocalDate.parse(expiryStr);
+                    }
+                    
+                    // Map CSV reasons to system reasons
+                    String mappedReason = mapReturnReason(reason);
+                    
+                    Return returnItem = new Return(returnId, sku, qty, mappedReason, timestamp, expiryDate);
+                    loadedReturns.add(returnItem);
+                    
+                } catch (Exception e) {
+                    if (showDetails) {
+                        System.out.println("WARNING: Error parsing line " + lineNumber + ": " + e.getMessage());
+                    }
+                }
+            }
+            
+            // Clear existing quarantine items and add loaded returns
+            quarantineItems.clear();
+            quarantineItems.addAll(loadedReturns);
+            
+            // Sort according to USEI05 requirements: timestamp DESC, returnId ASC
+            sortQuarantineQueue();
+            
+            if (showDetails) {
+                System.out.println("SUCCESS: Successfully loaded " + loadedReturns.size() + " returns from CSV");
+                System.out.println("Returns added to quarantine queue and sorted by timestamp DESC, returnId ASC");
+                
+                if (!loadedReturns.isEmpty()) {
+                    System.out.println("\nFirst few returns loaded:");
+                    int displayCount = Math.min(5, loadedReturns.size());
+                    for (int i = 0; i < displayCount; i++) {
+                        Return r = loadedReturns.get(i);
+                        System.out.printf("  %s - %s (Qty: %d, Reason: %s, Time: %s)%n",
+                                r.getReturnId(), r.getSku(), r.getQty(), r.getReason(),
+                                r.getTimestamp().format(dateFormatter));
+                    }
+                    if (loadedReturns.size() > 5) {
+                        System.out.println("  ... and " + (loadedReturns.size() - 5) + " more");
+                    }
+                }
+                
+                System.out.println("\nPress Enter to continue...");
+                scanner.nextLine();
+            } else {
+                // Silent loading - just show a brief message
+                System.out.println("Returns automatically loaded from CSV (" + loadedReturns.size() + " items)");
+            }
+            
+        } catch (IOException e) {
+            if (showDetails) {
+                System.out.println("ERROR: Error reading CSV file: " + e.getMessage());
+            }
+        }
+    }
+    
+    /**
+     * Map CSV return reasons to system reasons according to USEI05 logic
+     */
+    private String mapReturnReason(String csvReason) {
+        String reason = csvReason.toLowerCase().trim();
+        
+        switch (reason) {
+            case "customer-remorse":
+                return "REMORSE";
+            case "cycle-count":
+                return "CYCLE_COUNT";
+            case "damaged":
+                return "DAMAGED";
+            case "expired":
+                return "EXPIRED";
+            case "package-opened":
+            case "wrong-item":
+                // These are typically customer remorse cases
+                return "REMORSE";
+            default:
+                // Default to REMORSE for unknown reasons
+                return "REMORSE";
+        }
+    }
+    
+    
+    /**
+     * View quarantine queue (sorted by timestamp DESC, returnId ASC) according to USEI05
+     */
+    private void viewQuarantineQueue() {
+        System.out.println("\n=== QUARANTINE QUEUE (USEI05) ===");
+        
+        if (quarantineItems.isEmpty()) {
+            System.out.println("No items in quarantine queue.");
+            System.out.println("Returns are automatically loaded from CSV when you enter the menu.");
+            System.out.println("Use option 5 to reload from CSV if needed.");
+            return;
+        }
+        
+        System.out.println("Queue sorted by: Timestamp DESC, ReturnId ASC (Last to arrive, first to process)");
+        System.out.println("WARNING: Action (Restock/Discard) will be determined during inspection processing");
+        System.out.println();
+        
+        System.out.printf("%-12s %-10s %-6s %-15s %-20s %-12s%n", 
                 "Return ID", "SKU", "Qty", "Reason", "Timestamp", "Expiry Date");
-        System.out.println("==========================================================================================");
+        System.out.println("=".repeat(85));
         
         for (Return item : quarantineItems) {
-            System.out.printf("%-15s %-10s %-8d %-15s %-20s %-12s%n",
+            System.out.printf("%-12s %-10s %-6d %-15s %-20s %-12s%n",
                     item.getReturnId(),
                     item.getSku(),
                     item.getQty(),
@@ -162,55 +281,127 @@ public class QualityOperatorController {
             );
         }
         
-        System.out.println("\nTotal items in queue: " + quarantineItems.size());
+        System.out.println("=".repeat(85));
+        System.out.println("Total items in queue: " + quarantineItems.size());
+        System.out.println("Use option 2 to process inspections and determine actions");
+        
+        System.out.println("\nPress Enter to continue...");
+        scanner.nextLine();
     }
     
     /**
-     * Process all inspections currently in the queue
+     * Process all inspections currently in the queue according to USEI05 requirements
      */
     private void processNextInspection() {
-        System.out.println("\n=== PROCESS INSPECTIONS ===");
+        System.out.println("\n=== PROCESS INSPECTIONS (USEI05) ===");
         
         if (quarantineItems.isEmpty()) {
             System.out.println("No items in quarantine queue.");
+            System.out.println("Returns are automatically loaded from CSV when you enter the menu.");
+            System.out.println("If the queue is empty, try option 5 to reload from CSV.");
             return;
         }
         
         int totalToProcess = quarantineItems.size();
-        System.out.println("Items to process: " + totalToProcess);
+        System.out.println("Processing " + totalToProcess + " items from quarantine queue");
+        System.out.println("Following USEI05 logic: Last to arrive, first to process");
+        
+        int processedCount = 0;
+        int discardedCount = 0;
+        int restockedCount = 0;
         
         while (!quarantineItems.isEmpty()) {
             Return item = quarantineItems.get(0);
-            System.out.println("\nProcessing Return ID: " + item.getReturnId());
+            processedCount++;
+            
+            System.out.println("\n" + "=".repeat(60));
+            System.out.println("Processing Item " + processedCount + "/" + totalToProcess);
+            System.out.println("=".repeat(60));
+            System.out.println("Return ID: " + item.getReturnId());
             System.out.println("SKU: " + item.getSku());
             System.out.println("Quantity: " + item.getQty());
-            System.out.println("Reason: " + item.getReason());
+            System.out.println("Original Reason: " + item.getReason());
             System.out.println("Timestamp: " + item.getTimestamp().format(dateFormatter));
             System.out.println("Expiry Date: " + (item.getExpiryDate() != null ? item.getExpiryDate().toString() : "N/A"));
             
-            // If expired, force EXPIRED to ensure DISCARD path in controller
-            String reasonToUse = (item.getExpiryDate() != null && item.getExpiryDate().isBefore(LocalDate.now()))
-                    ? "EXPIRED"
-                    : item.getReason();
+            // Determine action based on USEI05 logic
+            String reasonToUse = determineProcessingReason(item);
+            String action = determineActionFromReason(reasonToUse);
             
-            if ("EXPIRED".equals(reasonToUse)) {
-                System.out.println("\n*** PRODUCT EXPIRED - AUTO-DISCARDING ***");
-                System.out.println("Product expired on " + item.getExpiryDate() + " (auto-discarded)");
+            System.out.println("\nUSEI05 Processing Logic:");
+            System.out.println("  Final Reason: " + reasonToUse);
+            System.out.println("  Action: " + action);
+            
+            if ("DISCARD".equals(action)) {
+                discardedCount++;
+                System.out.println("\nDISCARDING PRODUCT");
+                if ("EXPIRED".equals(reasonToUse)) {
+                    System.out.println("   Reason: Product expired on " + item.getExpiryDate());
+                } else {
+                    System.out.println("   Reason: " + reasonToUse);
+                }
+            } else {
+                restockedCount++;
+                System.out.println("\nRESTOCKING PRODUCT");
+                System.out.println("   Reason: " + reasonToUse);
+                System.out.println("   Following FEFO/FIFO placement rules");
             }
             
+            // Process the inspection
             String result = inspectionController.processQuarantine(
                     item.getSku(),
                     item.getQty(),
                     reasonToUse,
                     item.getExpiryDate()
             );
+            
+            System.out.println("\nProcessing Result:");
             System.out.println(result);
             
             // Remove processed item
             quarantineItems.remove(0);
         }
         
-        System.out.println("\nAll inspections processed. Quarantine queue is now empty.");
+        System.out.println("\n" + "=".repeat(60));
+        System.out.println("ALL INSPECTIONS COMPLETED");
+        System.out.println("=".repeat(60));
+        System.out.println("Total Processed: " + processedCount);
+        System.out.println("Discarded: " + discardedCount);
+        System.out.println("Restocked: " + restockedCount);
+        System.out.println("Quarantine queue is now empty.");
+        System.out.println("\nAudit log has been updated with all actions.");
+        
+        System.out.println("\nPress Enter to return to main menu...");
+        scanner.nextLine();
+    }
+    
+    /**
+     * Determine the final processing reason for a return item
+     */
+    private String determineProcessingReason(Return item) {
+        // Check if product is expired first
+        if (item.getExpiryDate() != null && item.getExpiryDate().isBefore(LocalDate.now())) {
+            return "EXPIRED";
+        }
+        
+        // Use original reason if not expired
+        return item.getReason();
+    }
+    
+    /**
+     * Determine action based on reason according to USEI05 logic
+     */
+    private String determineActionFromReason(String reason) {
+        switch (reason.toUpperCase()) {
+            case "REMORSE":
+            case "CYCLE_COUNT":
+                return "RESTOCK";
+            case "DAMAGED":
+            case "EXPIRED":
+                return "DISCARD";
+            default:
+                return "DISCARD"; // Default to discard for safety
+        }
     }
     
     /**
@@ -274,24 +465,4 @@ public class QualityOperatorController {
         );
     }
     
-    /**
-     * Simple authentication check
-     */
-    private boolean authenticateOperator(String userId, String password) {
-        return (userId.equals("qop001") && password.equals("quality123")) ||
-               (userId.equals("qop002") && password.equals("quality456")) ||
-               (userId.equals("qop003") && password.equals("quality789"));
-    }
-    
-    /**
-     * Get operator name
-     */
-    private String getOperatorName(String userId) {
-        switch (userId) {
-            case "qop001": return "qop001";
-            case "qop002": return "qop002";
-            case "qop003": return "qop003";
-            default: return "Unknown";
-        }
-    }
 }

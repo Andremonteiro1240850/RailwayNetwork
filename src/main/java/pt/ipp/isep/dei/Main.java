@@ -347,9 +347,18 @@ public class Main {
     }
     
     /**
-     * Quality Operator Login System
+     * Quality Operator Login System (USEI05)
      */
     private static void qualityOperatorMain() {
+        if (!dataLoaded) {
+            System.out.println("❌ Data not loaded. Cannot proceed with quality operator functions.");
+            System.out.println("Press Enter to return to main menu...");
+            scanner.nextLine();
+            return;
+        }
+        
+        System.out.println("\n=== QUALITY OPERATOR LOGIN (USEI05) ===");
+        
         Domain.WarehouseManager wm = new Domain.WarehouseManager(
                 dataLoader.items,
                 dataLoader.stock,
@@ -357,6 +366,9 @@ public class Main {
         );
 
         QualityOperatorController controller = new QualityOperatorController(wm);
+        
+        // Show welcome message and go directly to menu
+        controller.showLogin();
         controller.showMainMenu();
     }
     
