@@ -114,7 +114,7 @@ public class Main {
     }
 
 
-    private static void showRoleLoginMenu() {
+    private static boolean showRoleLoginMenu() {
         while (true) {
             System.out.println("\n=== LOGIN ===");
             System.out.println("1. Login as a Terminal Operator");
@@ -132,29 +132,29 @@ public class Main {
                 case "1":
                     // Terminal Operator -> Wagons Unloading UI
                     wagonsUnloading();
-                    break;
+                    return true; // Login bem-sucedido
                 case "2":
                     // Warehouse Planner -> Order Eligibility & Allocation
                     orderEligibilityAllocation();
-                    break;
+                    return true; // Login bem-sucedido
                 case "3":
                     // Planner -> Picking Plans
                     pickingPlans();
-                    break;
+                    return true; // Login bem-sucedido
                 case "4":
                     // Picker -> Pick Path Sequencing
                     pickPathSequencing();
-                    break;
+                    return true; // Login bem-sucedido
                 case "5":
                     // Quality Operator -> show main menu directly
                     qualityOperatorMain();
-                    break;
+                    return true; // Login bem-sucedido
                 case "6":
                     // Traffic Dispatcher -> Travel Time Calculation
                     travelTimeCalculation();
-                    break;
+                    return true; // Login bem-sucedido
                 case "7":
-                    return;
+                    return false; // Back selecionado
                 default:
                     System.out.println("Invalid option!");
             }
@@ -178,8 +178,11 @@ public class Main {
                     scanner.nextLine();
                     break;
                 case "2":
-                    showRoleLoginMenu();
-                    return true;
+                    if (showRoleLoginMenu()) {
+                        return true;
+                    }
+                    // Se showRoleLoginMenu retornar false (Back foi selecionado), continua o loop
+                    break;
                 case "3":
                     System.out.println("Goodbye!");
                     return false;
