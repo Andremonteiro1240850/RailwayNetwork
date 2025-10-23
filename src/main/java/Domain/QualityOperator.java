@@ -19,8 +19,6 @@ public class QualityOperator {
     private String userId;
     private String name;
     private String password;
-    private boolean isAuthenticated;
-    private LocalDateTime lastLogin;
     
     // Quarantine management
     private List<Return> quarantineItems;
@@ -51,7 +49,6 @@ public class QualityOperator {
         this.userId = userId;
         this.name = name;
         this.password = password;
-        this.isAuthenticated = false;
         this.quarantineItems = new ArrayList<>();
         this.inspectionController = new InspectionController();
         this.scanner = new Scanner(System.in);
@@ -92,8 +89,6 @@ public class QualityOperator {
             this.userId = operator.userId;
             this.name = operator.name;
             this.password = operator.password;
-            this.isAuthenticated = true;
-            this.lastLogin = LocalDateTime.now();
             System.out.println("Login successful! Welcome, " + this.name);
             return true;
         } else {
@@ -305,36 +300,7 @@ public class QualityOperator {
      * Logout
      */
     private void logout() {
-        this.isAuthenticated = false;
         System.out.println("Logged out successfully!");
     }
 
-    /**
-     * Gets user id.
-     *
-     * @return the user id
-     */
-// Getters
-    public String getUserId() { return userId; }
-
-    /**
-     * Gets name.
-     *
-     * @return the name
-     */
-    public String getName() { return name; }
-
-    /**
-     * Is authenticated boolean.
-     *
-     * @return the boolean
-     */
-    public boolean isAuthenticated() { return isAuthenticated; }
-
-    /**
-     * Gets last login.
-     *
-     * @return the last login
-     */
-    public LocalDateTime getLastLogin() { return lastLogin; }
 }

@@ -1,25 +1,14 @@
 package pt.ipp.isep.dei;
 
 import Controller.*;
-import Domain.Trolley;
 import Domain.Warehouse;
-import Domain.WarehouseManager;
+import Domain.ENUM.ReturnReason;
 import Repository.BoxRepository;
 import Repository.TrolleyRepository;
 import Repository.WarehouseRepository;
 import UI.*;
 import Domain.DataLoader;
-import Domain.ENUM.ReturnReason;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Scanner;
 
 /**
@@ -65,6 +54,9 @@ public class Main {
      * @param args the input arguments
      */
     public static void main(String[] args) {
+        // Clear audit log at startup to only show inspections from this session
+        Domain.AuditLog.clearAll();
+        
         // Load data at startup
         loadAllData();
         
@@ -72,49 +64,19 @@ public class Main {
             return;
         }
 
+        // After pre-menu, go directly to login menu
         while (true) {
-            System.out.println("\n=== WAREHOUSE MANAGEMENT SYSTEM ===");
-            System.out.println("1. Wagons Unloading (Terminal Operator)");
-            System.out.println("2. Order Eligibility & Allocation (Warehouse Planner)");
-            System.out.println("3. Picking Plans (Picker)");
-            System.out.println("4. Pick Path Sequencing (Picker)");
-            System.out.println("5. Quality Operator");
-            System.out.println("6. Travel Time Calculation (Traffic Dispatcher)");
-            System.out.println("7. Exit");
-            
-            System.out.print("Select option: ");
-            String choice = scanner.nextLine().trim();
-            
-            switch (choice) {
-                case "1":
-                    wagonsUnloading();
-                    break;
-                case "2":
-                    orderEligibilityAllocation();
-                    break;
-                case "3":
-                    pickingPlans();
-                    break;
-                case "4":
-                    pickPathSequencing();
-                    break;
-                case "5":
-                    qualityOperatorMain();
-                    break;
-                case "6":
-                    travelTimeCalculation();
-                    break;
-                case "7":
-                    System.out.println("Goodbye!");
+            if (!showRoleLoginMenu()) {
+                // If user selects "Back" from login menu, return to pre-menu
+                if (!showPreMenu()) {
                     return;
-                default:
-                    System.out.println("Invalid option!");
+                }
             }
         }
     }
 
 
-    private static void showRoleLoginMenu() {
+    private static boolean showRoleLoginMenu() {
         while (true) {
             System.out.println("\n=== LOGIN ===");
             System.out.println("1. Login as a Terminal Operator");
@@ -132,29 +94,35 @@ public class Main {
                 case "1":
                     // Terminal Operator -> Wagons Unloading UI
                     wagonsUnloading();
+                    // After wagons unloading, return to login menu (continue loop)
                     break;
                 case "2":
                     // Warehouse Planner -> Order Eligibility & Allocation
                     orderEligibilityAllocation();
+                    // After order eligibility, return to login menu (continue loop)
                     break;
                 case "3":
                     // Planner -> Picking Plans
                     pickingPlans();
+                    // After picking plans, return to login menu (continue loop)
                     break;
                 case "4":
                     // Picker -> Pick Path Sequencing
                     pickPathSequencing();
+                    // After pick path sequencing, return to login menu (continue loop)
                     break;
                 case "5":
                     // Quality Operator -> show main menu directly
                     qualityOperatorMain();
+                    // After quality operator, return to login menu (continue loop)
                     break;
                 case "6":
                     // Traffic Dispatcher -> Travel Time Calculation
                     travelTimeCalculation();
+                    // After travel time calculation, return to login menu (continue loop)
                     break;
                 case "7":
-                    return;
+                    return false; // Back selecionado
                 default:
                     System.out.println("Invalid option!");
             }
@@ -163,7 +131,7 @@ public class Main {
 
     private static boolean showPreMenu() {
         while (true) {
-            System.out.println("\n=== START ===");
+            System.out.println("\n=== MAIN MENU ===");
             System.out.println("1. Know the development team");
             System.out.println("2. Login");
             System.out.println("3. Cancel");
@@ -174,12 +142,13 @@ public class Main {
             switch (choice) {
                 case "1":
                     DevelopmentTeamUI.show();
-                    System.out.println("\nPress Enter to continue...");
-                    scanner.nextLine();
                     break;
                 case "2":
-                    showRoleLoginMenu();
-                    return true;
+                    if (showRoleLoginMenu()) {
+                        return true;
+                    }
+                    // Se showRoleLoginMenu retornar false (Back foi selecionado), continua o loop
+                    break;
                 case "3":
                     System.out.println("Goodbye!");
                     return false;
@@ -188,7 +157,6 @@ public class Main {
             }
         }
     }
-
 
     private static ReturnReason mapReason(String csvReason) {
         String r = csvReason.toLowerCase();
@@ -213,9 +181,7 @@ public class Main {
      */
     private static void wagonsUnloading() {
         if (!dataLoaded) {
-            System.out.println("❌ Data not loaded. Cannot proceed with wagons unloading.");
-            System.out.println("Press Enter to return to main menu...");
-            scanner.nextLine();
+            System.out.println("Data not loaded. Cannot proceed with wagons unloading.");
             return;
         }
         
@@ -233,12 +199,8 @@ public class Main {
         warehouse.loadWagons("train_station_dataset/wagons.csv");
         warehouse.loadOrders("train_station_dataset/orders.csv", "train_station_dataset/order_lines.csv");
 
-        // Criar WarehouseManager com boxRepository
-        WarehouseManager wm = new WarehouseManager(dataLoader.items, dataLoader.stock, dataLoader.bays, boxRepository);
-
         // Note: Boxes are already loaded and unassigned in DataLoader
         // They will be assigned to bays when the user explicitly chooses to unload wagons in the UI
-
 
         warehouseRepository.saveStock(boxRepository.getAllAssignedBoxes());
 
@@ -263,7 +225,7 @@ public class Main {
      * Pick Path Sequencing (US04)
      */
     private static void pickPathSequencing() {
-        System.out.println("\n=== PICK PATH SEQUENCING (US04) ===");
+        System.out.println("\n=== PICK PATH SEQUENCING ===");
         
         //Criar controller e UI com acesso aos trolleys da US03
         PickPathController controller = new PickPathController(trolleyRepository);
@@ -273,83 +235,18 @@ public class Main {
         ui.showMainMenu();
     }
     
-    /**
-     * Returns & Quarantine
-     */
-    private static void returnsAndQuarantine() {
-        while (true) {
-            System.out.println("\n=== RETURNS & QUARANTINE ===");
-            System.out.println("1. Process Returns (CSV)");
-            System.out.println("2. Back to Main Menu");
-            System.out.println("3. ");
-            
-            System.out.print("Select option: ");
-            String choice = scanner.nextLine().trim();
-            
-            switch (choice) {
-                case "1":
-                    processReturnsFromCSV();
-                    break;
-                case "2":
-                    return;
-                default:
-                    System.out.println("Invalid option!");
-            }
-        }
-    }
     
     /**
-     * Process returns from CSV file
-     */
-    private static void processReturnsFromCSV() {
-        InspectionController inspectionController = new InspectionController();
-        ItemController itemController = new ItemController(inspectionController);
-
-        Path csvPath = Paths.get("train_station_dataset", "returns.csv");
-        List<String> results = new ArrayList<>();
-
-        try (BufferedReader br = Files.newBufferedReader(csvPath, StandardCharsets.UTF_8)) {
-            String line;
-            boolean first = true;
-            while ((line = br.readLine()) != null) {
-                if (first) { // skip header
-                    first = false;
-                    continue;
-                }
-                if (line.trim().isEmpty()) continue;
-
-                String[] parts = line.split(",");
-                if (parts.length < 5) continue;
-
-                // returnId from CSV not used in this flow
-                String sku = parts[1].trim();
-                int qty = Integer.parseInt(parts[2].trim());
-                String reasonRaw = parts[3].trim();
-                // timestamp from CSV not used in this flow
-                String expiryRaw = parts.length > 5 ? parts[5].trim() : "";
-
-                ReturnReason mappedReason = mapReason(reasonRaw);
-                LocalDate expiryDate = expiryRaw.isEmpty() ? null : LocalDate.parse(expiryRaw);
-
-                String result = itemController.processReturn(sku, qty, mappedReason.name(), expiryDate);
-                results.add(result);
-            }
-        } catch (IOException e) {
-            System.out.println(String.format("Failed to read CSV: %s", e.getMessage()));
-        }
-
-        // Pretty UI output with tables
-        ReturnsUI ui = new ReturnsUI(inspectionController);
-        ui.showDashboard();
-        
-        System.out.println("\nPress Enter to return to main menu...");
-        scanner.nextLine();
-    }
-    
-    /**
-     * Quality Operator Login System
+     * Quality Operator Login System (USEI05)
      */
     private static void qualityOperatorMain() {
+        if (!dataLoaded) {
+            System.out.println("Data not loaded. Cannot proceed with quality operator functions.");
+            return;
+        }
+        
+        System.out.println("\n=== QUALITY OPERATOR LOGIN ===");
+        
         Domain.WarehouseManager wm = new Domain.WarehouseManager(
                 dataLoader.items,
                 dataLoader.stock,
@@ -357,6 +254,9 @@ public class Main {
         );
 
         QualityOperatorController controller = new QualityOperatorController(wm);
+        
+        // Show welcome message and go directly to menu
+        controller.showLogin();
         controller.showMainMenu();
     }
     

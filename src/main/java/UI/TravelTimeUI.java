@@ -108,8 +108,6 @@ public class TravelTimeUI {
             System.out.println("❌ An unexpected error occurred: " + e.getMessage());
         }
         
-        System.out.println("\nPress Enter to continue...");
-        scanner.nextLine();
     }
     
     /**
@@ -227,8 +225,6 @@ public class TravelTimeUI {
             }
         }
         
-        System.out.println("\nPress Enter to continue...");
-        scanner.nextLine();
     }
     
     /**
@@ -245,8 +241,6 @@ public class TravelTimeUI {
                              locomotive.getMaxSpeedKmH(), locomotive.getGauge());
         }
         
-        System.out.println("\nPress Enter to continue...");
-        scanner.nextLine();
     }
     
     /**

@@ -64,8 +64,6 @@ public class WagonsUnloadingUI {
         
         if (!controller.isDataLoaded()) {
             System.out.println("Data not loaded. Please load data first.");
-            System.out.println("\nPress Enter to continue...");
-            scanner.nextLine();
             return;
         }
         
@@ -84,8 +82,6 @@ public class WagonsUnloadingUI {
         System.out.println("\nDETAILED BOX ASSIGNMENTS:");
         showDetailedAssignments(boxRepo);
         
-        System.out.println("\nPress Enter to continue...");
-        scanner.nextLine();
     }
 
     /**
@@ -96,8 +92,6 @@ public class WagonsUnloadingUI {
         
         if (!controller.isDataLoaded()) {
             System.out.println("Data not loaded. Please load data first.");
-            System.out.println("\nPress Enter to continue...");
-            scanner.nextLine();
             return;
         }
         
@@ -105,8 +99,6 @@ public class WagonsUnloadingUI {
         List<String> skus = controller.getAvailableSkus();
         if (skus.isEmpty()) {
             System.out.println("No SKUs available.");
-            System.out.println("\nPress Enter to continue...");
-            scanner.nextLine();
             return;
         }
         
@@ -120,8 +112,6 @@ public class WagonsUnloadingUI {
         
         if (!skus.contains(sku)) {
             System.out.println("Invalid SKU.");
-            System.out.println("\nPress Enter to continue...");
-            scanner.nextLine();
             return;
         }
         
@@ -131,8 +121,6 @@ public class WagonsUnloadingUI {
             
             if (quantity <= 0) {
                 System.out.println("Quantity must be positive.");
-                System.out.println("\nPress Enter to continue...");
-                scanner.nextLine();
                 return;
             }
             
@@ -151,8 +139,6 @@ public class WagonsUnloadingUI {
             System.out.println("Invalid quantity format.");
         }
         
-        System.out.println("\nPress Enter to continue...");
-        scanner.nextLine();
     }
 
     /**
@@ -163,8 +149,6 @@ public class WagonsUnloadingUI {
         
         if (!controller.isDataLoaded()) {
             System.out.println("Data not loaded. Please load data first.");
-            System.out.println("\nPress Enter to continue...");
-            scanner.nextLine();
             return;
         }
         
@@ -193,8 +177,6 @@ public class WagonsUnloadingUI {
             System.out.println("Invalid aisle or bay number.");
         }
         
-        System.out.println("\nPress Enter to continue...");
-        scanner.nextLine();
     }
 
     /**

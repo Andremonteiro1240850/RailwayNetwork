@@ -115,6 +115,7 @@ CREATE TABLE SegmentType (
 CREATE TABLE Wagon (
                        wagon_id        number(10) GENERATED AS IDENTITY,
                        operator_id     number(10) NOT NULL UNIQUE,
+
                        wagon_type_code number(10) NOT NULL,
                        serial_code     varchar2(255) NOT NULL UNIQUE,
                        locomotive_id   number(10) NOT NULL,

@@ -2,12 +2,11 @@ package Domain;
 import Domain.ENUM.PathStrategy;
 
 import java.util.List;
-
-
-import java.util.*;
+import java.util.ArrayList;
 
 /**
- * The type Pick path.
+ * Entidade de domínio PickPath - representa um percurso de picking
+ * Contém apenas estado e regras de negócio básicas
  */
 public class PickPath {
     private PathStrategy strategy;
@@ -15,144 +14,16 @@ public class PickPath {
     private List<PickStop> stops;
 
     /**
-     * Instantiates a new Pick path.
+     * Construtor para criar um PickPath
      *
-     * @param strategy the strategy
-     * @param stops    the stops
+     * @param strategy a estratégia utilizada
+     * @param stops a lista de stops ordenados
+     * @param totalDistance a distância total calculada
      */
-// Construtor
-    public PickPath(PathStrategy strategy, List<PickStop> stops) {
+    public PickPath(PathStrategy strategy, List<PickStop> stops, int totalDistance) {
         this.strategy = strategy;
         this.stops = new ArrayList<>(stops);
-        calculatePath(); // Calcula automaticamente ao criar
-    }
-
-    /**
-     * Calculate path.
-     */
-// Método principal que calcula o percurso baseado na estratégia
-    public void calculatePath() {
-        List<PickStop> calculatedPath;
-
-        switch (strategy) {
-            case ASC_SWEEP:
-                calculatedPath = calculateAscSweep();
-                break;
-            case NEAREST_NEIGHBOUR:
-                calculatedPath = calculateNearestNeighbour();
-                break;
-            default:
-                calculatedPath = new ArrayList<>(stops);
-        }
-
-        this.stops = calculatedPath;
-        this.totalDistance = calculateTotalDistance();
-    }
-
-    // Estratégia A: Ordenação ascendente por aisle e bay
-    private List<PickStop> calculateAscSweep() {
-        List<PickStop> sorted = new ArrayList<>(stops);
-        sorted.sort(Comparator
-                .comparing(PickStop::getAisle)
-                .thenComparing(PickStop::getBay));
-        return sorted;
-    }
-
-    // Estratégia B: Vizinho mais próximo
-    private List<PickStop> calculateNearestNeighbour() {
-        List<PickStop> unvisited = new ArrayList<>(stops);
-        List<PickStop> path = new ArrayList<>();
-
-        // Começa na entrada (0,0)
-        int currentAisle = 0;
-        int currentBay = 0;
-
-        while (!unvisited.isEmpty()) {
-            PickStop nearest = findNearestStop(currentAisle, currentBay, unvisited);
-            path.add(nearest);
-            unvisited.remove(nearest);
-
-            // Atualiza posição atual
-            currentAisle = nearest.getAisle();
-            currentBay = nearest.getBay();
-        }
-
-        return path;
-    }
-
-    // Encontra o stop mais próximo da posição atual
-    private PickStop findNearestStop(int currentAisle, int currentBay, List<PickStop> stops) {
-        PickStop nearest = null;
-        int minDistance = Integer.MAX_VALUE;
-
-        for (PickStop stop : stops) {
-            int distance = calculateDistance(currentAisle, currentBay,
-                    stop.getAisle(), stop.getBay());
-            if (distance < minDistance) {
-                minDistance = distance;
-                nearest = stop;
-            }
-        }
-        return nearest;
-    }
-
-    /**
-     * Calculate distance int.
-     *
-     * @param a1 the a 1
-     * @param b1 the b 1
-     * @param a2 the a 2
-     * @param b2 the b 2
-     * @return the int
-     */
-// Fórmula de distância conforme especificado no enunciado
-    public static int calculateDistance(int a1, int b1, int a2, int b2) {
-        if (a1 == a2) {
-            // Mesmo corredor
-            return Math.abs(b1 - b2);
-        } else {
-            // Corredores diferentes: b1 + distância horizontal + b2
-            return b1 + (Math.abs(a1 - a2) * 3) + b2;
-        }
-    }
-
-    // Calcula distância total do percurso
-    private int calculateTotalDistance() {
-        if (stops.isEmpty()) return 0;
-
-        int total = 0;
-        int currentAisle = 0;
-        int currentBay = 0;
-
-        for (PickStop stop : stops) {
-            total += calculateDistance(currentAisle, currentBay,
-                    stop.getAisle(), stop.getBay());
-            currentAisle = stop.getAisle();
-            currentBay = stop.getBay();
-        }
-
-        return total;
-    }
-
-    /**
-     * Sets strategy.
-     *
-     * @param strategy the strategy
-     */
-// Getters e Setters (os que você já tinha)
-    public void setStrategy(PathStrategy strategy) {
-        this.strategy = strategy;
-        calculatePath(); // Recalcula quando muda a estratégia
-    }
-
-    /**
-     * Sets stops.
-     *
-     * @param stops the stops
-     */
-    public void setStops(List<PickStop> stops) {
-        this.stops = stops;
-        calculatePath(); // Recalcula quando mudam os stops
+        this.totalDistance = totalDistance;
     }
 
     /**
@@ -160,21 +31,27 @@ public class PickPath {
      *
      * @return the strategy
      */
-    public PathStrategy getStrategy() { return strategy; }
+    public PathStrategy getStrategy() { 
+        return strategy; 
+    }
 
     /**
      * Gets total distance.
      *
      * @return the total distance
      */
-    public int getTotalDistance() { return totalDistance; }
+    public int getTotalDistance() { 
+        return totalDistance; 
+    }
 
     /**
      * Gets stops.
      *
      * @return the stops
      */
-    public List<PickStop> getStops() { return stops; }
+    public List<PickStop> getStops() { 
+        return new ArrayList<>(stops); 
+    }
 
     @Override
     public String toString() {
