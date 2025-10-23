@@ -1,4 +1,3 @@
-
 CREATE TABLE Diesel_Locomotive (
                                    locomotive_id number(10) GENERATED AS IDENTITY,
                                    lcomotive_id  number(10) NOT NULL,
@@ -96,8 +95,8 @@ CREATE TABLE Segment (
                          segment_id        number(10) GENERATED AS IDENTITY,
                          line_id           number(10) NOT NULL,
                          segment_type_code varchar2(20) NOT NULL,
-                         length_m          number(10) NOT NULL UNIQUE,
-                         gauge_code        varchar2(20) NOT NULL,
+                         length_m          number(10) NOT NULL
+    gauge_code        varchar2(20) NOT NULL,
                          order_code        number(10),
                          electrified_flag  varchar(1) NOT NULL,
                          Linefacility_id   number(10) NOT NULL,
@@ -162,4 +161,4 @@ ALTER TABLE Line ADD CONSTRAINT FKLine382156 FOREIGN KEY (gauge_code) REFERENCES
 ALTER TABLE Segment ADD CONSTRAINT FKSegment294611 FOREIGN KEY (segment_type_code) REFERENCES SegmentType (track_type_code);
 ALTER TABLE Segment ADD CONSTRAINT FKSegment342432 FOREIGN KEY (gauge_code) REFERENCES Gauge (gauge_code);
 ALTER TABLE Segment ADD CONSTRAINT FKSegment231508 FOREIGN KEY (line_id, Linefacility_id) REFERENCES Line (line_id, facility_id);
-ALTER TABLE WagonModel ADD CONSTRAINT FKWagonModel726157 FOREIGN KEY (gauge_code) REFERENCES Gauge (gauge_code);
+ALTER TABLE WagonModel ADD CONSTRAINT FKWagonModel726157 FOREIGN KEY (gauge_code) REFERENCES Gauge (gauge_code);
