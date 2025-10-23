@@ -91,7 +91,7 @@ public class TravelTimeController {
     /**
      * Gets the railway data loader.
      * 
-     * @return the data loader
+     * @return the data loader.
      */
     public RailwayDataLoader getDataLoader() {
         return dataLoader;
