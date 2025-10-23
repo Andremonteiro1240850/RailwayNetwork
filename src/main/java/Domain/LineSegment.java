@@ -10,6 +10,7 @@ package Domain;
 public class LineSegment {
     
     private final String id;
+    private final String name;
     private final Station startStation;
     private final Station endStation;
     private final double lengthKm;
@@ -49,6 +50,49 @@ public class LineSegment {
         }
         
         this.id = id.trim();
+        this.name = ""; // Default empty name for backward compatibility
+        this.startStation = startStation;
+        this.endStation = endStation;
+        this.lengthKm = lengthKm;
+        this.gauge = gauge;
+        this.electrified = electrified;
+    }
+    
+    /**
+     * Constructs a new LineSegment with the specified parameters including name.
+     * 
+     * @param id the unique identifier for the line segment
+     * @param name the name of the line segment
+     * @param startStation the starting station
+     * @param endStation the ending station
+     * @param lengthKm the length of the segment in kilometers
+     * @param gauge the track gauge in millimeters
+     * @param electrified whether the segment is electrified
+     * @throws IllegalArgumentException if parameters are invalid
+     */
+    public LineSegment(String id, String name, Station startStation, Station endStation, 
+                      double lengthKm, double gauge, boolean electrified) {
+        if (id == null || id.trim().isEmpty()) {
+            throw new IllegalArgumentException("Line segment ID cannot be null or empty");
+        }
+        if (startStation == null) {
+            throw new IllegalArgumentException("Start station cannot be null");
+        }
+        if (endStation == null) {
+            throw new IllegalArgumentException("End station cannot be null");
+        }
+        if (startStation.equals(endStation)) {
+            throw new IllegalArgumentException("Start and end stations cannot be the same");
+        }
+        if (lengthKm <= 0) {
+            throw new IllegalArgumentException("Length must be positive");
+        }
+        if (gauge <= 0) {
+            throw new IllegalArgumentException("Gauge must be positive");
+        }
+        
+        this.id = id.trim();
+        this.name = name != null ? name.trim() : "";
         this.startStation = startStation;
         this.endStation = endStation;
         this.lengthKm = lengthKm;
@@ -63,6 +107,15 @@ public class LineSegment {
      */
     public String getId() {
         return id;
+    }
+    
+    /**
+     * Gets the line segment name.
+     * 
+     * @return the line segment name
+     */
+    public String getName() {
+        return name;
     }
     
     /**
@@ -171,8 +224,14 @@ public class LineSegment {
     
     @Override
     public String toString() {
-        return String.format("%s: %s -> %s (%.2f km, %.0fmm gauge, %s)", 
-                           id, startStation.getName(), endStation.getName(), 
-                           lengthKm, gauge, electrified ? "electrified" : "non-electrified");
+        if (!name.isEmpty()) {
+            return String.format("%s (%s): %s -> %s (%.2f km, %.0fmm gauge, %s)", 
+                               id, name, startStation.getName(), endStation.getName(), 
+                               lengthKm, gauge, electrified ? "electrified" : "non-electrified");
+        } else {
+            return String.format("%s: %s -> %s (%.2f km, %.0fmm gauge, %s)", 
+                               id, startStation.getName(), endStation.getName(), 
+                               lengthKm, gauge, electrified ? "electrified" : "non-electrified");
+        }
     }
 }

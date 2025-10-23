@@ -1,10 +1,8 @@
 ID;Name;Owner;Start ID;Start;End ID;End;Gauge
-1;Ramal S„o Bento - Campanh„;IP;7;Porto S„o Bento;5;Porto Campanh„;1668
-2;Ramal Camapanh„ - Nine;IP;5;Porto Campanh„;20;Nine;1668
+1;Ramal S√£o Bento - Campanh√£;IP;7;Porto S√£o Bento;5;Porto Campanh√£;1668
+2;Ramal Campanh√£ - Nine;IP;5;Porto Campanh√£;20;Nine;1668
 3;Ramal Nine - Barcelos;IP;20;Nine;8;Barcelos;1668
 4;Ramal Barcelos - Viana;IP;8;Barcelos;17;Viana do Castelo;1668
-5;Ramal viana - Caminha;IP;17;Viana do Castelo;21;Caminha;1668
-6;Ramal Caminha - Torre;IP;21;Caminha;16;S„o Pedro da Torre;1668
-7;Ramal Torre - ValenÁa;IP;16;S„o Pedro da Torre;11;ValenÁa;1668
-;;;;;;;
-;;;;;;;
+5;Ramal Viana - Caminha;IP;17;Viana do Castelo;21;Caminha;1668
+6;Ramal Caminha - Torre;IP;21;Caminha;16;S√£o Pedro da Torre;1668
+7;Ramal Torre - Valen√ßa;IP;16;S√£o Pedro da Torre;11;Valen√ßa;1668
