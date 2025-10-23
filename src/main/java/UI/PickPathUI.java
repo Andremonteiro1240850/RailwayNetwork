@@ -37,33 +37,31 @@ public class PickPathUI {
     public void showMainMenu() {
         while (true) {
             System.out.println("\n=== PICK PATH SEQUENCING (USEI04) ===");
-            System.out.println("1. Process (simulated data)");
-            System.out.println("2. Process (custom data)");
-            System.out.println("3. Process (from US03 trolleys)");
-            System.out.println("4. Demo: ASC_SWEEP Strategy");
-            System.out.println("5. Demo: NEAREST_NEIGHBOUR Strategy");
-            System.out.println("6. Back to Main Menu");
+            System.out.println("1. Demo: ASC_SWEEP Strategy");
+            System.out.println("2. Demo: NEAREST_NEIGHBOUR Strategy");
+            System.out.println("3. Process (custom data)");
+            System.out.println("4. Process (from US03 trolleys)");
+            System.out.println("5. Back to Main Menu");
             
             System.out.print("Select option: ");
             String choice = scanner.nextLine().trim();
             
             switch (choice) {
                 case "1":
-                    processWithSimulatedData();
+                    demonstrateAscSweepStrategy();
+
                     break;
                 case "2":
-                    processWithCustomData();
-                    break;
-                case "3":
-                    processWithTrolleyData();
-                    break;
-                case "4":
-                    demonstrateAscSweepStrategy();
-                    break;
-                case "5":
                     demonstrateNearestNeighbourStrategy();
                     break;
-                case "6":
+                case "3":
+                    processWithCustomData();
+                    break;
+                case "4":
+                    processWithTrolleyData();
+                    break;
+
+                case "5":
                     return;
                 default:
                     System.out.println("Invalid option! Please try again.");
@@ -74,29 +72,8 @@ public class PickPathUI {
     /**
      * Process with simulated data (as it was in Main)
      */
-    private void processWithSimulatedData() {
-        System.out.println("\n=== PROCESSING WITH SIMULATED DATA ===");
-        
-        // Simulate input data (when USEI03 is ready, it will come from trolley packing)
-        List<PickStop> inputStops = simulateTrolleyPackingOutput();
-        
-        System.out.println("Input stops (before consolidation):");
-        displayStops(inputStops);
-        
-        try {
-            // Process using the controller
-            Map<PathStrategy, PickPath> results = controller.processPickPathSequencing(inputStops);
-            
-            // Show results
-            displayPathResults(results);
-            
-        } catch (Exception e) {
-            System.out.println("Error while processing: " + e.getMessage());
-        }
-        
-        System.out.println("\nPress Enter to continue...");
-        scanner.nextLine();
-    }
+
+
     
     /**
      * Process with user-provided custom data
