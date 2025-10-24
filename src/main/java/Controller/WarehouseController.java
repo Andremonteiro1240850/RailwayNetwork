@@ -138,7 +138,7 @@ public class WarehouseController {
     public List<AllocationRow> createAllocationRows(BoxRepository boxRepository) {
         List<AllocationRow> allocationRows = new ArrayList<>();
 
-        // Buscar apenas as boxes já atribuídas a bays (ou seja, disponíveis para picking)
+        // apenas as boxes já atribuídas a bays (ou seja, disponíveis para picking)
         Map<String, List<Box>> assignedBoxes = boxRepository.getAllAssignedBoxes();
 
         // Obter todas as encomendas do warehouse

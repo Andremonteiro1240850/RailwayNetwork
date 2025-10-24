@@ -2,6 +2,7 @@ package Controller;
 
 import Domain.*;
 import java.util.*;
+import java.io.IOException;
 
 /**
  * Controller for managing travel time calculations.
@@ -14,12 +15,39 @@ public class TravelTimeController {
     
     private final TravelCalculationService service;
     private final List<LineSegment> lineSegments;
+    private final List<Station> stations;
+    private final RailwayDataLoader dataLoader;
     
     /**
-     * Constructs a new TravelTimeController with mock railway data.
+     * Constructs a new TravelTimeController with real railway data from CSV files.
      */
     public TravelTimeController() {
-        this.lineSegments = createMockLineSegments();
+        this.dataLoader = new RailwayDataLoader();
+        this.stations = new ArrayList<>();
+        this.lineSegments = new ArrayList<>();
+        
+        try {
+            System.out.println("=== LOADING RAILWAY DATA FROM CSV ===");
+            dataLoader.loadAllData();
+            this.stations.addAll(dataLoader.getStations());
+            this.lineSegments.addAll(dataLoader.getLineSegments());
+            System.out.println("✅ CSV data loaded successfully!");
+            System.out.println("   Stations: " + this.stations.size());
+            System.out.println("   Line segments: " + this.lineSegments.size());
+        } catch (IOException e) {
+            System.err.println("❌ CRITICAL ERROR: Cannot load railway data from CSV files!");
+            System.err.println("Error details: " + e.getMessage());
+            System.err.println("Please check that the following files exist:");
+            System.err.println("  - train_station_dataset/facility.csv");
+            System.err.println("  - train_station_dataset/line.csv");
+            throw new RuntimeException("Failed to load railway data", e);
+        } catch (Exception e) {
+            System.err.println("❌ CRITICAL ERROR: Unexpected error loading railway data!");
+            System.err.println("Error details: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("Failed to load railway data", e);
+        }
+        
         this.service = new TravelCalculationService(lineSegments);
     }
     
@@ -33,6 +61,15 @@ public class TravelTimeController {
     }
     
     /**
+     * Gets all available stations.
+     * 
+     * @return list of stations
+     */
+    public List<Station> getStations() {
+        return stations;
+    }
+    
+    /**
      * Gets all available line segments.
      * 
      * @return list of line segments
@@ -42,38 +79,22 @@ public class TravelTimeController {
     }
     
     /**
-     * Creates mock line segment data for testing and demonstration.
+     * Gets a station by its ID.
      * 
-     * @return list of mock line segments
+     * @param id the station ID
+     * @return the station or null if not found
      */
-    private List<LineSegment> createMockLineSegments() {
-        // Create stations
-        Station lisbon = new Station("ST001", "Lisbon Terminal", "Lisbon");
-        Station porto = new Station("ST002", "Porto Cargo Hub", "Porto");
-        Station coimbra = new Station("ST003", "Coimbra Station", "Coimbra");
-        Station aveiro = new Station("ST004", "Aveiro Central", "Aveiro");
-        Station braga = new Station("ST005", "Braga Station", "Braga");
-        Station faro = new Station("ST006", "Faro Terminal", "Faro");
-        Station evora = new Station("ST007", "Évora Station", "Évora");
-        Station leiria = new Station("ST008", "Leiria Hub", "Leiria");
-        
-        // Create line segments (standard gauge 1435mm)
-        return Arrays.asList(
-            new LineSegment("LS001", lisbon, porto, 210.0, 1435.0, true),      // Lisbon-Porto (electrified)
-            new LineSegment("LS002", porto, coimbra, 120.0, 1435.0, false),   // Porto-Coimbra (non-electrified)
-            new LineSegment("LS003", coimbra, aveiro, 45.0, 1435.0, true),    // Coimbra-Aveiro (electrified)
-            new LineSegment("LS004", porto, braga, 55.0, 1435.0, false),      // Porto-Braga (non-electrified)
-            new LineSegment("LS005", lisbon, leiria, 140.0, 1435.0, true),   // Lisbon-Leiria (electrified)
-            new LineSegment("LS006", leiria, coimbra, 80.0, 1435.0, false),   // Leiria-Coimbra (non-electrified)
-            new LineSegment("LS007", lisbon, evora, 130.0, 1435.0, true),    // Lisbon-Évora (electrified)
-            new LineSegment("LS008", evora, faro, 180.0, 1435.0, false),      // Évora-Faro (non-electrified)
-            
-            // Narrow gauge segments (1000mm)
-            new LineSegment("LS009", aveiro, braga, 35.0, 1000.0, true),     // Aveiro-Braga (narrow gauge, electrified)
-            new LineSegment("LS010", coimbra, leiria, 25.0, 1000.0, false),  // Coimbra-Leiria (narrow gauge, non-electrified)
-            
-            // Russian gauge segment (1520mm)
-            new LineSegment("LS011", braga, faro, 300.0, 1520.0, false)       // Braga-Faro (Russian gauge, non-electrified)
-        );
+    public Station getStationById(String id) {
+        return dataLoader.getStationById(id);
     }
+    
+    /**
+     * Gets the railway data loader.
+     * 
+     * @return the data loader.
+     */
+    public RailwayDataLoader getDataLoader() {
+        return dataLoader;
+    }
+    
 }
