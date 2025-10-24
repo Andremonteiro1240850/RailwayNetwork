@@ -70,8 +70,8 @@ INSERT INTO LOCOMOTIVE(locomotive_id, operator_id, entry_year, locomotive_model_
 INSERT INTO LOCOMOTIVE(locomotive_id, operator_id, entry_year, locomotive_model_id, Gaugecode) VALUES (1903,'PT509017800', 1981, 'CP 1900',116);
 
 -- ======= LOCOMOTIVE MODEL =======
-INSERT INTO LocomotiveModel (locomotive_model_id, power, acelaration, make, lenght, weight, heigth, bogies_number, max_speed) VALUES ('Eurosprinter', 5600, 70, 'Siemens',19.2,87, 4.375, 2,220)
-    INSERT INTO LocomotiveModel (locomotive_model_id, power, acelaration, make, lenght, weight, heigth, bogies_number, max_speed) VALUES ('CP 1900' , 1623, 70, 'Sorefame - Alsthom', 19.084, 117, 4.310, 2, 100);
+INSERT INTO LocomotiveModel (locomotive_model_id, power, acelaration, make, lenght, weight, heigth, bogies_number, max_speed) VALUES ('Eurosprinter', 5600, 70, 'Siemens',19.2,87, 4.375, 2,220);
+INSERT INTO LocomotiveModel (locomotive_model_id, power, acelaration, make, lenght, weight, heigth, bogies_number, max_speed) VALUES ('CP 1900' , 1623, 70, 'Sorefame - Alsthom', 19.084, 117, 4.310, 2, 100);
 
 -- ======= ELECTRIC_LOCOMOTIVE =======
 INSERT INTO ELECTRIC_LOCOMOTIVE(Locomotivelocomotive_id, Voltage) VALUES (5621, 25);
