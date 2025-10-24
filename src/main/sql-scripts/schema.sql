@@ -93,7 +93,7 @@ CREATE TABLE Segment (
                          line_id                number(10) NOT NULL,
                          length_m               number(10) NOT NULL,
                          gauge_code             number(10) NOT NULL,
-                         "order"                number(10) NOT NULL,
+                         segment_order          number(10) NOT NULL,
                          electrified_flag       char(1) NOT NULL,
                          SegmentTypetrackNumber number(10) NOT NULL,
                          CONSTRAINT pk_segment

@@ -281,14 +281,14 @@ public class TravelTimeUI {
      */
     private List<Locomotive> createMockLocomotives() {
         return Arrays.asList(
-            new Locomotive("L001", "electric", 120.0, 1435.0), // Standard gauge electric
-            new Locomotive("L002", "diesel", 100.0, 1435.0),    // Standard gauge diesel
-            new Locomotive("L003", "electric", 160.0, 1435.0), // High-speed electric
-            new Locomotive("L004", "diesel", 80.0, 1435.0),    // Freight diesel
-            new Locomotive("L005", "electric", 100.0, 1000.0), // Narrow gauge electric
-            new Locomotive("L006", "diesel", 60.0, 1000.0),    // Narrow gauge diesel
-            new Locomotive("L007", "electric", 200.0, 1435.0), // Very high-speed electric
-            new Locomotive("L008", "diesel", 90.0, 1520.0)     // Russian gauge diesel
+            new Locomotive("L001", "electric", 120.0, 1668.0), // Standard gauge electric
+            new Locomotive("L002", "diesel", 100.0, 1668.0),    // Standard gauge diesel
+            new Locomotive("L003", "electric", 160.0, 1668.0), // High-speed electric
+            new Locomotive("L004", "diesel", 80.0, 1668.0),    // Freight diesel
+            new Locomotive("L005", "electric", 100.0, 1668.0), // Narrow gauge electric
+            new Locomotive("L006", "diesel", 60.0, 1668.0),    // Narrow gauge diesel
+            new Locomotive("L007", "electric", 200.0, 1668.0), // Very high-speed electric
+            new Locomotive("L008", "diesel", 90.0, 1668.0)     // Russian gauge diesel
         );
     }
 }
