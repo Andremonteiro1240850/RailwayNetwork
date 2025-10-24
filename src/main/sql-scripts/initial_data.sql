@@ -1,113 +1,129 @@
--- =============================================
--- DADOS REALISTAS BASEADOS NO ENUNCIADO MEDWAY
--- =============================================
+-- ======= FACILITY =======
+INSERT INTO Facility (facility_id, name, facility_type) VALUES (1, 'São Romão', 'REGULAR');
+INSERT INTO Facility (facility_id, name, facility_type) VALUES (2, 'Tamel', 'REGULAR');
+INSERT INTO Facility (facility_id, name, facility_type) VALUES (3, 'Senhora das Dores', 'REGULAR');
+INSERT INTO Facility (facility_id, name, facility_type) VALUES (4, 'Lousado', 'REGULAR');
+INSERT INTO Facility (facility_id, name, facility_type) VALUES (5, 'Porto Campanhã', 'REGULAR');
+INSERT INTO Facility (facility_id, name, facility_type) VALUES (6, 'Leandro', 'REGULAR');
+INSERT INTO Facility (facility_id, name, facility_type) VALUES (7, 'Porto São Bento', 'TERMINAL');
+INSERT INTO Facility (facility_id, name, facility_type) VALUES (8, 'Barcelos', 'REGULAR');
+INSERT INTO Facility (facility_id, name, facility_type) VALUES (9, 'Vila Nova da Cerveira', 'REGULAR');
+INSERT INTO Facility (facility_id, name, facility_type) VALUES (10, 'Midões', 'REGULAR');
+INSERT INTO Facility (facility_id, name, facility_type) VALUES (11, 'Valença', 'REGULAR');
+INSERT INTO Facility (facility_id, name, facility_type) VALUES (12, 'Darque', 'REGULAR');
+INSERT INTO Facility (facility_id, name, facility_type) VALUES (13, 'Contumil', 'REGULAR');
+INSERT INTO Facility (facility_id, name, facility_type) VALUES (14, 'Ermesinde', 'REGULAR');
+INSERT INTO Facility (facility_id, name, facility_type) VALUES (15, 'São Frutuoso', 'REGULAR');
+INSERT INTO Facility (facility_id, name, facility_type) VALUES (16, 'São Pedro da Torre', 'REGULAR');
+INSERT INTO Facility (facility_id, name, facility_type) VALUES (17, 'Viana do Castelo', 'REGULAR');
+INSERT INTO Facility (facility_id, name, facility_type) VALUES (18, 'Famalicão', 'REGULAR');
+INSERT INTO Facility (facility_id, name, facility_type) VALUES (19, 'Barroselas', 'REGULAR');
+INSERT INTO Facility (facility_id, name, facility_type) VALUES (20, 'Nine', 'REGULAR');
+INSERT INTO Facility (facility_id, name, facility_type) VALUES (21, 'Caminha', 'REGULAR');
+INSERT INTO Facility (facility_id, name, facility_type) VALUES (11, 'Valença', 'REGULAR');
+INSERT INTO Facility (facility_id, name, facility_type) VALUES (22, 'Carvalha', 'REGULAR');
+INSERT INTO Facility (facility_id, name, facility_type) VALUES (23, 'Carreço', 'REGULAR');
 
--- 1. OWNERS (Proprietários de infraestrutura)
-INSERT INTO Owner (owner_id, name, contact) VALUES
-                                                (1, 'Infraestruturas de Portugal', 'contact@ip.pt'),
-                                                (2, 'Refer - Rede Ferroviária Nacional', 'info@refer.pt'),
-                                                (3, 'Medway Iberia', 'operations@medway-iberia.com');
+-- ======= FACILITY_LINE =======
+INSERT INTO FACILITY_LINE (Facilityfacility_id,Lineline_id) VALUES (14, 5);
 
--- 2. OPERATORS (Operadores ferroviários - baseado no mapa Medway)
-INSERT INTO Operator (operator_id, name) VALUES
-                                             (1, 'Medway Portugal'),
-                                             (2, 'CP Carga'),
-                                             (3, 'Takargo Rail');
+-- ======= LINE =======
+INSERT INTO LINE (line_id, start_facility_id, end_facility_id, name, owner_id, Gaugecode) VALUES (1,7,5, 'Ramal São Bento - Campanhã', 'PT503933813', 116);
+INSERT INTO LINE (line_id, start_facility_id, end_facility_id, name, owner_id, Gaugecode) VALUES (7, 16, 11, 'Ramal Torre - Valença', 'PT503933813', 116);
+INSERT INTO LINE (line_id, start_facility_id, end_facility_id, name, owner_id, Gaugecode) VALUES (6, 21, 16, 'Ramal Caminha - Torre', 'PT503933813', 116);
+INSERT INTO LINE (line_id, start_facility_id, end_facility_id, name, owner_id, Gaugecode) VALUES (5, 17, 21, 'Ramal Viana - Caminha', 'PT503933813', 116);
+INSERT INTO LINE (line_id, start_facility_id, end_facility_id, name, owner_id, Gaugecode) VALUES (4, 8, 17, 'Ramal Barcelos - Viana', 'PT503933813', 116);
+INSERT INTO LINE (line_id, start_facility_id, end_facility_id, name, owner_id, Gaugecode) VALUES (3, 20, 8, 'Ramal Nine - Barcelos', 'PT503933813', 116);
+INSERT INTO LINE (line_id, start_facility_id, end_facility_id, name, owner_id, Gaugecode) VALUES (2,5,20, 'Ramal Campanhã - Nine', 'PT503933813', 116);
 
--- 3. STATIONS (Estações - baseado no mapa Medway Portugal)
-INSERT INTO Station (station_id, name, station_type) VALUES
--- Terminais principais
-(1, 'Lisboa Santa Apolónia', 'TERMINAL'),
-(2, 'Porto Campanhã', 'TERMINAL'),
-(3, 'Sines', 'TERMINAL'),
-(4, 'Póvoa de Santa Iria', 'TERMINAL'),
--- Estações regulares
-(5, 'Entroncamento', 'REGULAR'),
-(6, 'Pampilhosa', 'REGULAR'),
-(7, 'Faro', 'REGULAR'),
-(8, 'Évora', 'REGULAR');
+-- ======= SEGMENT =======
+INSERT INTO SEGMENT (segment_id, line_id, length_m, gauge_code, segment_order, electrified_flag, SegmentTypetrackNumber, max_weight_kg_m) VALUES (1, 1, 2618, 116, 1, 'Y', 4, 8000);
+INSERT INTO SEGMENT (segment_id, line_id, length_m, gauge_code, segment_order, electrified_flag, SegmentTypetrackNumber, max_weight_kg_m)VALUES (10, 1, 29003, 116, 2, 'Y', 2, 8000);
+INSERT INTO SEGMENT (segment_id, line_id, length_m, gauge_code, segment_order, electrified_flag, SegmentTypetrackNumber, max_weight_kg_m)VALUES (11, 2, 10000, 116, 2, 'Y', 2, 8000);
+INSERT INTO SEGMENT (segment_id, line_id, length_m, gauge_code, segment_order, electrified_flag, SegmentTypetrackNumber, max_weight_kg_m) VALUES (15, 3, 5286, 116, 1, 'Y', 2, 8000);
+INSERT INTO SEGMENT (segment_id, line_id, length_m, gauge_code, segment_order, electrified_flag, SegmentTypetrackNumber, max_weight_kg_m) VALUES (16, 3, 6000, 116, 2, 'Y', 2, 8000);
+INSERT INTO SEGMENT (segment_id, line_id, length_m, gauge_code, segment_order, electrified_flag, SegmentTypetrackNumber, max_weight_kg_m) VALUES (14, 4, 10387, 116, 1, 'Y', 2, 8000);
+INSERT INTO SEGMENT (segment_id, line_id, length_m, gauge_code, segment_order, electrified_flag, SegmentTypetrackNumber, max_weight_kg_m) VALUES (12, 4, 12000, 116, 2, 'Y', 2, 8000);
+INSERT INTO SEGMENT (segment_id, line_id, length_m, gauge_code, segment_order, electrified_flag, SegmentTypetrackNumber, max_weight_kg_m) VALUES (13, 4, 8000, 116, 3, 'Y', 2, 6400);
+INSERT INTO SEGMENT (segment_id, line_id, length_m, gauge_code, segment_order, electrified_flag, SegmentTypetrackNumber, max_weight_kg_m) VALUES (20, 5, 6000, 116, 1, 'Y', 2, 8000);
+INSERT INTO SEGMENT (segment_id, line_id, length_m, gauge_code, segment_order, electrified_flag, SegmentTypetrackNumber, max_weight_kg_m) VALUES (21, 5, 3000, 116, 2, 'Y', 2, 8000);
+INSERT INTO SEGMENT (segment_id, line_id, length_m, gauge_code, segment_order, electrified_flag, SegmentTypetrackNumber, max_weight_kg_m) VALUES (22, 5, 15000, 116, 3, 'Y', 2, 8000);
+INSERT INTO SEGMENT (segment_id, line_id, length_m, gauge_code, segment_order, electrified_flag, SegmentTypetrackNumber, max_weight_kg_m) VALUES (25, 6, 20829, 116, 1, 'Y', 2, 8000);
+INSERT INTO SEGMENT (segment_id, line_id, length_m, gauge_code, segment_order, electrified_flag, SegmentTypetrackNumber, max_weight_kg_m) VALUES (26, 7, 4264, 116, 1, 'Y', 2, 8000);
 
--- 4. WAREHOUSES & BAYS (Armazéns e docas - para ESINF)
-INSERT INTO Warehouse (warehouse_id, station_id) VALUES
-                                                     (1, 1), (2, 2), (3, 3), (4, 4);
+-- ======= SEGMENT TYPE =======
+INSERT INTO SegmentType (trackNumber, type) VALUES (4, 'DOUBLE');
+INSERT INTO SegmentType (trackNumber, type) VALUES (1, 'SINGLE');
+INSERT INTO SegmentType (trackNumber, type) VALUES (2, 'DOUBLE');
 
-INSERT INTO Bay (bay_id, warehouse_id, capacity_n) VALUES
--- Armazém de Lisboa
-(1, 1, 100), (2, 1, 150), (3, 1, 200),
--- Armazém do Porto
-(4, 2, 120), (5, 2, 180);
+-- ======= GAUGE =======
+INSERT INTO Gauge (code, width) VALUES (1668, 116);
+INSERT INTO Gauge (code, width) VALUES (1435, 100);
 
--- 5. GAUGES (Bitolas - baseado no enunciado)
-INSERT INTO Gauge (gauge_code, line_start_point, line_end_point, linestation_id, width, description, line_id) VALUES
-                                                                                                                  ('IBERO', 1, 2, 1, 1668, 'Bitola Ibérica', 1),
-                                                                                                                  ('STANDARD', 2, 3, 2, 1435, 'Bitola Europeia', 2),
-                                                                                                                  ('IBERO', 3, 4, 3, 1668, 'Bitola Ibérica', 3);
+-- ======= OWNER =======
+INSERT INTO Owner (owner_id, name) VALUES ('PT503933813', 'Infraestruturas de Portugal, SA');
 
--- 6. LINES (Linhas ferroviárias - baseado na rede Medway)
-INSERT INTO Line (station_id, start_station_id, end_station_id, gauge_code, name, owner_id, start_id, end_id) VALUES
--- Linha do Norte
-(1, 1, 2, 'IBERO', 'Linha do Norte', 1, 1, 2),
--- Linha do Sul
-(2, 1, 7, 'IBERO', 'Linha do Sul', 1, 1, 7),
--- Linha do Oeste
-(3, 1, 3, 'IBERO', 'Linha de Sines', 1, 1, 3);
+-- ======= LOCOMOTIVE =======
+INSERT INTO LOCOMOTIVE (locomotive_id, operator_id, entry_year, locomotive_model_id, Gaugecode) VALUES (5621,'PT509017800', 1995, 'Eurosprinter',116);
+INSERT INTO LOCOMOTIVE(locomotive_id, operator_id, entry_year, locomotive_model_id, Gaugecode) VALUES (5623,'PT509017800', 1995, 'Eurosprinter',116);
+INSERT INTO LOCOMOTIVE(locomotive_id, operator_id, entry_year, locomotive_model_id, Gaugecode) VALUES (5630,'PT509017800', 1996, 'Eurosprinter',116);
+INSERT INTO LOCOMOTIVE(locomotive_id, operator_id, entry_year, locomotive_model_id, Gaugecode) VALUES (1903,'PT509017800', 1981, 'CP 1900',116);
 
--- 7. SEGMENT TYPES (Tipos de segmento)
-INSERT INTO SegmentType (track_type_code, description) VALUES
-                                                           (1, 'SINGLE'),
-                                                           (2, 'DOUBLE');
+-- ======= LOCOMOTIVE MODEL =======
+INSERT INTO LocomotiveModel (locomotive_model_id, power, acelaration, make, lenght, weight, heigth, bogies_number, max_speed) VALUES ('Eurosprinter', 5600, 70, 'Siemens',19.2,87, 4.375, 2,220)
+    INSERT INTO LocomotiveModel (locomotive_model_id, power, acelaration, make, lenght, weight, heigth, bogies_number, max_speed) VALUES ('CP 1900' , 1623, 70, 'Sorefame - Alsthom', 19.084, 117, 4.310, 2, 100);
 
--- 8. SEGMENTS (Segmentos de linha - características técnicas)
-INSERT INTO Segment (segment_id, segment_type_code, length_km, line_id, gauge_code, electrified_flag, track_type) VALUES
--- Segmentos da Linha do Norte
-(1, 2, 45.5, 1, 'IBERO', 'Y', 'DOUBLE'),   -- Lisboa-Entroncamento (eletrificado)
-(2, 2, 60.2, 1, 'IBERO', 'Y', 'DOUBLE'),   -- Entroncamento-Pampilhosa
-(3, 1, 85.7, 1, 'IBERO', 'N', 'SINGLE'),   -- Pampilhosa-Porto (não eletrificado)
--- Segmentos da Linha de Sines
-(4, 1, 120.3, 3, 'IBERO', 'N', 'SINGLE');  -- Lisboa-Sines
+-- ======= ELECTRIC_LOCOMOTIVE =======
+INSERT INTO ELECTRIC_LOCOMOTIVE(Locomotivelocomotive_id, Voltage) VALUES (5621, 25);
+INSERT INTO ELECTRIC_LOCOMOTIVE(Locomotivelocomotive_id, Voltage) VALUES (5623, 25);
+INSERT INTO ELECTRIC_LOCOMOTIVE(Locomotivelocomotive_id, Voltage) VALUES (5630, 25);
 
--- 9. LOCOMOTIVE MODELS (Modelos de locomotivas)
-INSERT INTO LocomotiveModel (locomotive_model_id, name, power, acelaration, fuel_capacity, max_weight) VALUES
-                                                                                                           (1, 'Siemens Vectron', 6000, 0.8, NULL, 90000),    -- Elétrica
-                                                                                                           (2, 'Bombardier TRAXX', 5600, 0.7, NULL, 85000),   -- Elétrica
-                                                                                                           (3, 'EMD JT42C', 3200, 0.5, 6500, 126000),         -- Diesel
-                                                                                                           (4, 'GE PowerHaul', 3600, 0.6, 7000, 130000);      -- Diesel
+-- ======= DIESEL_LOCOMOTIVE =======
+INSERT INTO DIESEL_LOCOMOTIVE (Locomotivelocomotive_id, fuelCapacity) VALUES (1903, 4882);
 
--- 10. LOCOMOTIVES (Locomotivas reais em operação)
-INSERT INTO Locomotive (locomotive_id, locomotive_type, owner_id, gauge_code, operator_id, entry_year, locomotive_model_id, height, weight, lenght) VALUES
--- Locomotivas elétricas
-(1, 'ELECTRIC', 3, 'IBERO', 1, 2018, 1, 4.3, 87000, 18.9),
-(2, 'ELECTRIC', 3, 'IBERO', 1, 2019, 2, 4.2, 82000, 18.6),
--- Locomotivas diesel
-(3, 'DIESEL', 3, 'IBERO', 1, 2015, 3, 4.4, 124000, 21.3),
-(4, 'DIESEL', 3, 'STANDARD', 1, 2016, 4, 4.5, 128000, 22.1);
+-- ======= OPERATOR  =======
+INSERT INTO Operator (operator_id, name) VALUES ('PT509017800', 'Medway - Operador Ferroviário de Mercadorias, S.A');
 
--- 11. WAGON TYPES (Tipos de vagão - baseado no enunciado)
-INSERT INTO WagonType (wagon_type_code, description, max_weight_kg, max_volume_m3) VALUES
-                                                                                       (1, 'BOXCAR', 60000, 120),      -- Mercadoria geral
-                                                                                       (2, 'TANK_CAR', 80000, 90),     -- Químicos/líquidos
-                                                                                       (3, 'FLATCAR', 70000, 0),       -- Contentores/maquinaria
-                                                                                       (4, 'HOPPER', 75000, 110),      -- Granéis
-                                                                                       (5, 'REFRIGERATED', 50000, 85); -- Produtos perecíveis
+-- ======= LOCOMOTIVE_WAGON =======
+INSERT INTO LOCOMOTIVE_WAGON ( Locomotivelocomotive_id , Wagonwagon_id) VALUES (5623, 356 3 077);
 
--- 12. WAGONS (Vagões - dados realistas)
-INSERT INTO Wagon (wagon_id, operator_id, gauge_code, wagon_type_code, serial_code, payload, service_year, max_speed, weight, height, length) VALUES
-                                                                                                                                                  (1, 1, 'IBERO', 1, 'MED-BX-001', 58000, 2018, 100, 22000, 4.2, 14.8),
-                                                                                                                                                  (2, 1, 'IBERO', 2, 'MED-TK-001', 78000, 2019, 90, 32000, 3.8, 12.5),
-                                                                                                                                                  (3, 1, 'IBERO', 3, 'MED-FL-001', 68000, 2020, 110, 18000, 1.2, 19.2),
-                                                                                                                                                  (4, 1, 'STANDARD', 4, 'MED-HP-001', 73000, 2017, 85, 27000, 4.5, 15.3);
+-- ======= WAGON =======
+INSERT INTO WAGON (wagon_id, operator_id, freight_ID, service_year, WagonModelmodelID) VALUES (3563083, 'PT509017800', 963558, 1997, 988);
+INSERT INTO WAGON (wagon_id, operator_id, freight_ID, service_year, WagonModelmodelID) VALUES (3563082, 'PT509017800', 456892, 1996, 987);
+INSERT INTO WAGON (wagon_id, operator_id, freight_ID, service_year, WagonModelmodelID) VALUES (3563081, 'PT509017800', 195824, 1995, 985);
+INSERT INTO WAGON (wagon_id, operator_id, freight_ID, service_year, WagonModelmodelID) VALUES (3563080, 'PT509017800', 963558, 1988, 1325);
+INSERT INTO WAGON (wagon_id, operator_id, freight_ID, service_year, WagonModelmodelID) VALUES (3563079, 'PT509017800', 195824, 1991, 1278);
+INSERT INTO WAGON (wagon_id, operator_id, freight_ID, service_year, WagonModelmodelID) VALUES (3563078, 'PT509017800', 456892, 1990, 1245);
+INSERT INTO WAGON (wagon_id, operator_id, freight_ID, service_year, WagonModelmodelID) VALUES (3563077, 'PT509017800', 963558, 1987, 1104);
 
--- 13. ROUTES & FREIGHTS (Rotas e fretes)
-INSERT INTO Route_Type (route_type_id) VALUES (1), (2), (3);
-INSERT INTO Route (route_id, route_type_id) VALUES (1, 1), (2, 2);
+-- ======= WAGON MODEL =======
+INSERT INTO WAGONMODEL (modelID, name, maker, bogies_number, lenght, height, width, weight_t, max_speed,payload, gauge_code,volume) VALUES (1245,'Tadgs 32 94 082 3', 'Metalsines',2,17240, 4270, 3072, 24, 120, 56, 116, 75);
+INSERT INTO WAGONMODEL (modelID, name, maker, bogies_number, lenght, height, width, weight_t, max_speed,payload, gauge_code,volume) VALUES (1278,
+'Tadgs 4194 074 1', 'Equimetal', 2, 9640,  4166, 3120, 14, 120, 26, 116, 38);
+INSERT INTO WAGONMODEL (modelID, name, maker, bogies_number, lenght, height, width, weight_t, max_speed,payload, gauge_code,volume) VALUES (1325,
+'Gabs 8194 181 1', 'Sepsa Corr', 2, 21700, 4170, 3180, 30, 100, 50, 116, 110);
+INSERT INTO WAGONMODEL (modelID, name, maker, bogies_number, lenght, height, width, weight_t, max_speed,payload, gauge_code,volume) VALUES (1104,
+'Regmms 32 94 356 3', 'Metalsines', 2, 14040, 2535, 3104, 21, 120, 61, 116, 76);
+INSERT INTO WAGONMODEL (modelID, name, maker, bogies_number, lenght, height, width, weight_t, max_speed,payload, gauge_code,volume) VALUES (985,
+'Lgs 22 94 4416 5', 'Metalsines', 1, 13680, 1080, 2850, 12, 120, 28, 116, 76);
+INSERT INTO WAGONMODEL (modelID, name, maker, bogies_number, lenght, height, width, weight_t, max_speed,payload, gauge_code,volume) VALUES (987,
+'Sgnss 12 94 455 2', 'Emef', 2, 18116, 1030, 2950, 22, 120, 68, 116, 76);
+INSERT INTO WAGONMODEL (modelID, name, maker, bogies_number, lenght, height, width, weight_t, max_speed,payload, gauge_code,volume) VALUES (988,
+'Sgnss 12 94 455 2','Emef', 2, 18116, 1030, 2950, 22, 120, 68, 100, 76);
 
-INSERT INTO Freight (freight_id, initial_station_id, final_station_id, route_id) VALUES
-                                                                                     (1, 1, 2, 1),  -- Lisboa -> Porto
-                                                                                     (2, 3, 1, 2);  -- Sines -> Lisboa
 
--- 14. LOCOMOTIVE_WAGON (Composições de comboios)
-INSERT INTO Locomotive_Wagon (Locomotivelocomotive_id, Wagonwagon_id) VALUES
-                                                                          (1, 1), (1, 2),  -- Locomotiva 1 puxa vagões 1 e 2
-                                                                          (3, 3), (3, 4);  -- Locomotiva 3 puxa vagões 3 e 4
+-- ======= FREIGHT =======
+INSERT INTO FREIGHT (freight_id, cargoType, RouterouteID) VALUES (195824, 'Contrusction Materials', 12408);
+INSERT INTO FREIGHT (freight_id, cargoType, RouterouteID) VALUES (456892, 'Food', 25874);
+INSERT INTO FREIGHT (freight_id, cargoType, RouterouteID) VALUES (963558, 'Minerals', 12408);
 
-COMMIT;
+-- ======= ROUTE =======
+INSERT INTO ROUTE (routeid, routetype) VALUES (25874, 'COMPLEX');
+INSERT INTO ROUTE (routeid, routetype) VALUES (12408, 'SIMPLE');
+
+
+-- ======= ROUTE STOPS =======
+INSERT INTO ROUTE_STOPS (Facilityfacility_id, order_stop, RouterouteId) VALUES (14, 1,25874);
+INSERT INTO ROUTE_STOPS (Facilityfacility_id, order_stop, RouterouteId) VALUES (5, 3,12408);
+
+

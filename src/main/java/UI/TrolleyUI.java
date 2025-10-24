@@ -33,14 +33,22 @@ public class TrolleyUI implements Runnable {
             int opcao = getIntInput();
 
             switch (opcao) {
-                case 1 -> createTrolley();
-                case 2 -> startPacking();
-                case 3 -> listTrolleys();
-                case 0 -> {
+                case 1:
+                    createTrolley();
+                    break;
+                case 2:
+                    startPacking();
+                    break;
+                case 3:
+                    listTrolleys();
+                    break;
+                case 0:
                     System.out.println("Encerrando aplicação. Até logo!");
                     running = false;
-                }
-                default -> System.out.println("Opção inválida! Tente novamente.");
+                    break;
+                default:
+                    System.out.println("Opção inválida! Tente novamente.");
+                    break;
             }
         }
     }
