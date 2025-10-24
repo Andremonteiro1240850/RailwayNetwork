@@ -55,10 +55,10 @@ public class PickPathService {
      * @return the map
      */
     public static Map<PathStrategy, PickPath> processPickPathSequencing(List<PickStop> inputStops) {
-            // 1. Consolidar stops duplicados
-            List<PickStop> consolidatedStops = consolidateStops(inputStops);
+        // 1. Consolidar stops duplicados
+        List<PickStop> consolidatedStops = consolidateStops(inputStops);
 
-            // 2. Gerar ambos os paths
-            return generateBothPaths(consolidatedStops);
-        }
+        // 2. Gerar ambos os paths
+        return generateBothPaths(consolidatedStops);
     }
+}
