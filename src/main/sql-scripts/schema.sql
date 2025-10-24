@@ -52,8 +52,7 @@ CREATE TABLE Locomotive (
                                 PRIMARY KEY (locomotive_id),
                             CONSTRAINT ck_loco_year
                                 CHECK (entry_year BETWEEN 1900 AND 2100),
-                            CONSTRAINT ck_loco_type
-                                CHECK (locomotive_model_id IN ('DIESEL','ELECTRIC')));
+
 CREATE TABLE Locomotive_Wagon (
                                   Locomotivelocomotive_id number(10) NOT NULL,
                                   Wagonwagon_id           number(10) NOT NULL,
@@ -93,9 +92,13 @@ CREATE TABLE Segment (
                          line_id                number(10) NOT NULL,
                          length_m               number(10) NOT NULL,
                          gauge_code             number(10) NOT NULL,
-                         "order"                number(10) NOT NULL,
+                         segment_order                number(10) NOT NULL,
                          electrified_flag       char(1) NOT NULL,
                          SegmentTypetrackNumber number(10) NOT NULL,
+                         max_weight_kg_m        number(10) NOT NULL,
+
+
+
                          CONSTRAINT pk_segment
                              PRIMARY KEY (segment_id),
                          CONSTRAINT ck_seg_length
