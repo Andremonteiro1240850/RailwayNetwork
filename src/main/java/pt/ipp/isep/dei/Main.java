@@ -264,7 +264,7 @@ public class Main {
      * Travel Time Calculation (USLP03)
      */
     private static void travelTimeCalculation() {
-        System.out.println("\n=== TRAVEL TIME CALCULATION (USLP03) ===");
+        System.out.println("\n=== TRAVEL TIME CALCULATION  ===");
         
         TravelTimeController controller = new TravelTimeController();
         TravelTimeUI ui = new TravelTimeUI(controller);
