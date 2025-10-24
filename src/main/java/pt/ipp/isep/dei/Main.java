@@ -199,7 +199,7 @@ public class Main {
         warehouse.loadWagons("train_station_dataset/wagons.csv");
         warehouse.loadOrders("train_station_dataset/orders.csv", "train_station_dataset/order_lines.csv");
 
-        // Note: Boxes are already loaded and unassigned in DataLoader
+        // Note Boxes are already loaded and unassigned in DataLoader
         // They will be assigned to bays when the user explicitly chooses to unload wagons in the UI
 
         warehouseRepository.saveStock(boxRepository.getAllAssignedBoxes());
