@@ -1,10 +1,10 @@
 CREATE TABLE Diesel_Locomotive (
                                    Locomotivelocomotive_id number(10) NOT NULL,
-                                   Voltage                 number(10) NOT NULL,
+                                   fuelCapacity            number(10) NOT NULL,
                                    PRIMARY KEY (Locomotivelocomotive_id));
 CREATE TABLE Electric_Locomotive (
                                      Locomotivelocomotive_id number(10) NOT NULL,
-                                     fuelCapacity            number(10) NOT NULL,
+                                     Voltage                 number(10) NOT NULL,
                                      PRIMARY KEY (Locomotivelocomotive_id));
 CREATE TABLE Facility (
                           facility_id   number(10) GENERATED AS IDENTITY,
@@ -30,16 +30,14 @@ CREATE TABLE Gauge (
                        CONSTRAINT pk_gauge
                            PRIMARY KEY (code),
                        CONSTRAINT ck_gauge_width
-                           CHECK (width BETWEEN 50 AND 2000));
+                           CHECK (width BETWEEN 500 AND 2000));
 CREATE TABLE Line (
-                      line_id                 number(10) GENERATED AS IDENTITY,
-                      start_facility_id       number(10) NOT NULL,
-                      end_facility_id         number(10) NOT NULL,
-                      name                    varchar2(255) NOT NULL UNIQUE,
-                      owner_id                varchar2(255) NOT NULL,
-                      Gaugecode               number(10) NOT NULL,
-                      Locomotivelocomotive_id number(10) NOT NULL,
-                      Facilityfacility_id     number(10) NOT NULL,
+                      line_id           number(10) GENERATED AS IDENTITY,
+                      start_facility_id number(10) NOT NULL,
+                      end_facility_id   number(10) NOT NULL,
+                      name              varchar2(255) NOT NULL UNIQUE,
+                      owner_id          varchar2(255) NOT NULL,
+                      Gaugecode         number(10) NOT NULL,
                       CONSTRAINT pk_line
                           PRIMARY KEY (line_id),
                       CONSTRAINT ck_line_terminals
@@ -53,7 +51,7 @@ CREATE TABLE Locomotive (
                             CONSTRAINT pk_locomotive
                                 PRIMARY KEY (locomotive_id),
                             CONSTRAINT ck_loco_year
-                                CHECK (entry_year IS NULL OR (entry_year BETWEEN 1900 AND 2100)),
+                                CHECK (entry_year BETWEEN 1900 AND 2100),
                             CONSTRAINT ck_loco_type
                                 CHECK (locomotive_model_id IN ('DIESEL','ELECTRIC')));
 CREATE TABLE Locomotive_Wagon (
@@ -65,11 +63,12 @@ CREATE TABLE LocomotiveModel (
                                  locomotive_model_id varchar2(255) NOT NULL,
                                  power               number(10) NOT NULL,
                                  acelaration         number(10) NOT NULL,
-                                 max_weight          number(10) NOT NULL,
                                  make                varchar2(255) NOT NULL,
                                  lenght              number(10) NOT NULL,
                                  weight              number(10) NOT NULL,
                                  heigth              number(10) NOT NULL,
+                                 max_speed           number(10) NOT NULL,
+                                 bogies_number       number(10) NOT NULL,
                                  PRIMARY KEY (locomotive_model_id));
 CREATE TABLE Operator (
                           operator_id varchar2(255) NOT NULL,
@@ -96,16 +95,15 @@ CREATE TABLE Segment (
                          gauge_code             number(10) NOT NULL,
                          "order"                number(10) NOT NULL,
                          electrified_flag       char(1) NOT NULL,
-                         SegmentTypetype        varchar2(255) NOT NULL,
                          SegmentTypetrackNumber number(10) NOT NULL,
                          CONSTRAINT pk_segment
                              PRIMARY KEY (segment_id),
                          CONSTRAINT ck_seg_length
                              CHECK (length_m > 0),
+
                          CONSTRAINT ck_seg_electr
                              CHECK (electrified_flag IN ('Y','N')),
-                         CONSTRAINT ck_seg_track
-                             CHECK (SegmentTypetype IN ('SINGLE','DOUBLE')));
+
 CREATE TABLE SegmentType (
                              trackNumber number(10) GENERATED AS IDENTITY,
                              type        varchar2(255) NOT NULL,
@@ -113,11 +111,8 @@ CREATE TABLE SegmentType (
 CREATE TABLE Wagon (
                        wagon_id          number(10) GENERATED AS IDENTITY,
                        operator_id       varchar2(255) NOT NULL,
-                       serial_year       number(10) NOT NULL,
-                       locomotive_id     number(10) NOT NULL,
                        freight_ID        number(10),
                        service_year      number(10) NOT NULL,
-                       Gaugecode         number(10) NOT NULL,
                        WagonModelmodelID number(10) NOT NULL,
                        CONSTRAINT pk_wagon
                            PRIMARY KEY (wagon_id));
