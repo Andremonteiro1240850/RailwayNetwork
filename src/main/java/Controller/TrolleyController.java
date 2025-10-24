@@ -3,7 +3,9 @@ package Controller;
 import Domain.AllocationRow;
 import Domain.Item;
 import Domain.PickingItems;
+import Domain.PickingPlan;
 import Domain.Trolley;
+import Domain.ENUM.PackingHeuristic;
 import Repository.TrolleyRepository;
 import Repository.WarehouseRepository;
 
@@ -251,6 +253,19 @@ public class TrolleyController {
      */
     public List<Trolley> getTrolleyList() {
         return trolleyList;
+    }
+
+    /**
+     * USEI03 - Create picking plan using new implementation
+     *
+     * @param capacity the trolley capacity
+     * @param heuristic the packing heuristic
+     * @param allowSplitting whether to allow splitting
+     * @return the picking plan
+     */
+    public PickingPlan createPickingPlan(int capacity, PackingHeuristic heuristic, boolean allowSplitting) {
+        PickingPlanController pickingPlanController = new PickingPlanController(warehouseRepository);
+        return pickingPlanController.createPickingPlan(capacity, heuristic, allowSplitting);
     }
 
     @Override

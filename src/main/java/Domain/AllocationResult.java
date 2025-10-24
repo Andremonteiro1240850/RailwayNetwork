@@ -1,5 +1,4 @@
-import Domain.AllocationRow;
-import Domain.EligibilityResult;
+package Domain;
 
 import java.util.List;
 

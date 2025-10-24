@@ -2,11 +2,10 @@ package UI;
 
 import Controller.WarehouseController;
 import Domain.AllocationRow;
+import Domain.AllocationResult;
 import Domain.EligibilityResult;
-import Domain.Warehouse;
+import Domain.ENUM.AllocationMode;
 import Repository.BoxRepository;
-
-import java.util.List;
 
 /**
  * The type Order eligibility allocation ui.
@@ -30,8 +29,11 @@ public class orderEligibilityAllocationUI implements Runnable {
     }
     @Override
     public void run() {
-        List<EligibilityResult> estados = warehouseController.estadoEncomenda();
-        for (EligibilityResult er : estados) {
+        // USEI02 - Process order eligibility and allocation with STRICT mode (default)
+        AllocationResult result = warehouseController.processOrderEligibilityAndAllocation(boxRepository, AllocationMode.STRICT);
+        
+        System.out.println("=== ORDER ELIGIBILITY RESULTS ===");
+        for (EligibilityResult er : result.getEligibilityResults()) {
             System.out.println(
                     "order=" + er.getOrderId() +
                             ", lineNo=" + er.getLineNo() +
@@ -41,9 +43,9 @@ public class orderEligibilityAllocationUI implements Runnable {
                             ", status=" + er.getStatus()
             );
         }
-        System.out.println();
-        List<AllocationRow> resultados = warehouseController.createAllocationRows(boxRepository);
-        for (AllocationRow r : resultados) {
+        
+        System.out.println("\n=== ALLOCATION ROWS ===");
+        for (AllocationRow r : result.getAllocationRows()) {
             System.out.println(
                     "ALLOC order=" + r.getOrderId() +
                             ", lineNo=" + r.getLineNo() +
@@ -54,6 +56,5 @@ public class orderEligibilityAllocationUI implements Runnable {
                             ", bay=" + r.getBay()
             );
         }
-
     }
 }

@@ -1,7 +1,10 @@
 package UI;
 
 import Controller.TrolleyController;
+import Domain.PickingItems;
+import Domain.PickingPlan;
 import Domain.Trolley;
+import Domain.ENUM.PackingHeuristic;
 
 import java.util.InputMismatchException;
 import java.util.List;
@@ -33,31 +36,25 @@ public class TrolleyUI implements Runnable {
             int opcao = getIntInput();
 
             switch (opcao) {
-                case 1:
-                    createTrolley();
-                    break;
-                case 2:
-                    startPacking();
-                    break;
-                case 3:
-                    listTrolleys();
-                    break;
-                case 0:
+                case 1 -> createTrolley();
+                case 2 -> startPacking();
+                case 3 -> listTrolleys();
+                case 4 -> createPickingPlan();
+                case 0 -> {
                     System.out.println("Encerrando aplicação. Até logo!");
                     running = false;
-                    break;
-                default:
-                    System.out.println("Opção inválida! Tente novamente.");
-                    break;
+                }
+                default -> System.out.println("Opção inválida! Tente novamente.");
             }
         }
     }
 
     private void showMenu() {
-        System.out.println("\n====== MENU TROLLEY ======");
+        System.out.println("\n====== MENU TROLLEY (USEI03) ======");
         System.out.println("1. Criar novo trolley");
         System.out.println("2. Executar packing (heurísticas FF, FFD ou BFD)");
         System.out.println("3. Listar trolleys existentes");
+        System.out.println("4. USEI03 - Create Picking Plan (NEW)");
         System.out.println("0. Sair");
     }
 
@@ -103,6 +100,92 @@ public class TrolleyUI implements Runnable {
         System.out.println("\n--- Lista de Trolleys ---");
         for (Trolley t : lista) {
             System.out.println(t);
+        }
+    }
+
+    private void createPickingPlan() {
+        System.out.println("\n=== USEI03 - PICKING PLAN CREATION ===");
+        
+        // Get trolley capacity
+        System.out.print("Enter trolley capacity (kg): ");
+        int capacity = getIntInput();
+        
+        // Get heuristic choice
+        System.out.println("\nSelect packing heuristic:");
+        System.out.println("1. First Fit (FF)");
+        System.out.println("2. First Fit Decreasing (FFD)");
+        System.out.println("3. Best Fit Decreasing (BFD)");
+        System.out.print("Enter choice (1-3): ");
+        int heuristicChoice = getIntInput();
+        
+        PackingHeuristic heuristic = switch (heuristicChoice) {
+            case 1 -> PackingHeuristic.FF;
+            case 2 -> PackingHeuristic.FFD;
+            case 3 -> PackingHeuristic.BFD;
+            default -> {
+                System.out.println("Invalid choice, defaulting to First Fit");
+                yield PackingHeuristic.FF;
+            }
+        };
+        
+        // Get splitting preference
+        System.out.print("Allow splitting items that don't fit? (y/n): ");
+        boolean allowSplitting = sc.next().toLowerCase().startsWith("y");
+        
+        try {
+            // Create picking plan
+            PickingPlan plan = trolleyController.createPickingPlan(capacity, heuristic, allowSplitting);
+            
+            // Display results
+            displayPickingPlan(plan);
+            
+        } catch (Exception e) {
+            System.out.println("Error creating picking plan: " + e.getMessage());
+        }
+    }
+
+    private void displayPickingPlan(PickingPlan plan) {
+        System.out.println("\n" + "=".repeat(60));
+        System.out.println("PICKING PLAN RESULTS");
+        System.out.println("=".repeat(60));
+        System.out.println("Heuristic: " + plan.getHeuristic());
+        System.out.println("Total Trolleys: " + plan.getTotalTrolleys());
+        System.out.printf("Average Utilization: %.2f%%\n", plan.getAverageUtilization());
+        System.out.println("=".repeat(60));
+
+        List<Trolley> trolleys = plan.getTrolleys();
+        for (int i = 0; i < trolleys.size(); i++) {
+            Trolley trolley = trolleys.get(i);
+            displayTrolleyDetails(trolley, i + 1);
+        }
+    }
+
+    private void displayTrolleyDetails(Trolley trolley, int trolleyNumber) {
+        double utilization = (trolley.getCurrentLoad() / trolley.getMaxCapacity()) * 100;
+        
+        System.out.println("\n--- TROLLEY " + trolleyNumber + " ---");
+        System.out.printf("Capacity: %d kg | Used: %.2f kg | Utilization: %.1f%%\n", 
+                trolley.getMaxCapacity(), trolley.getCurrentLoad(), utilization);
+        
+        List<PickingItems> items = trolley.getPickingItems();
+        if (items.isEmpty()) {
+            System.out.println("No items assigned to this trolley.");
+        } else {
+            System.out.println("Picking Plan:");
+            System.out.println("Order ID | Line | Aisle | Bay | Box ID | SKU | Qty");
+            System.out.println("-".repeat(50));
+            
+            for (PickingItems item : items) {
+                System.out.printf("%-8s | %-4d | %-5d | %-3d | %-6s | %-3s | %-3d\n",
+                        item.getOrderId(),
+                        item.getLineNo(),
+                        item.getAisleId(),
+                        item.getBayId(),
+                        item.getBoxId(),
+                        item.getSku(),
+                        item.getQty()
+                );
+            }
         }
     }
 
