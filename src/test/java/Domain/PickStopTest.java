@@ -1,5 +1,6 @@
 package Domain;
 
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import java.util.*;
 import static org.junit.jupiter.api.Assertions.*;
@@ -231,5 +232,49 @@ class PickStopTest {
         assertEquals(45, quantities.get("1-2")); // 20 + 25
         assertEquals(30, quantities.get("2-1"));
         assertEquals(40, quantities.get("3-1"));
+    }
+    // TESTES ADICIONAIS ESPECÍFICOS PARA OS BRANCHES FALTANTES DO PICKSTOP
+    @Nested
+    class PickStopBranchCoverageTest {
+
+        @Test
+        void consolidateStops_FirstElementScenario() {
+            // Testa o branch do primeiro elemento no mapa vazio
+            List<PickStop> stops = Collections.singletonList(new PickStop(1, 1, 1, 5));
+            List<PickStop> result = PickStop.consolidateStops(stops);
+
+            assertEquals(1, result.size());
+            assertEquals(5, result.get(0).getTotalQty());
+        }
+
+        @Test
+        void consolidateStops_KeyExistsScenario() {
+            // Testa o branch quando a chave já existe no mapa
+            List<PickStop> stops = Arrays.asList(
+                    new PickStop(1, 1, 1, 5),
+                    new PickStop(2, 1, 1, 10) // Mesma chave - testa o branch do containsKey=true
+            );
+
+            List<PickStop> result = PickStop.consolidateStops(stops);
+
+            assertEquals(1, result.size());
+            assertEquals(15, result.get(0).getTotalQty());
+        }
+
+        @Test
+        void testEquals_WithNullCheckBranch() {
+            PickStop stop = new PickStop(1, 1, 1, 5);
+
+            // Testa o branch específico do null check no equals
+            assertFalse(stop.equals(null));
+        }
+
+        @Test
+        void testEquals_WithClassCheckBranch() {
+            PickStop stop = new PickStop(1, 1, 1, 5);
+
+            // Testa o branch específico da verificação de classe
+            assertFalse(stop.equals("Not a PickStop"));
+        }
     }
 }
