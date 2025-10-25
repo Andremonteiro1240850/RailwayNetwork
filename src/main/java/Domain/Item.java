@@ -7,7 +7,7 @@ import java.util.Objects;
  * The type Item.
  */
 public class Item {
-    private final String sku;
+    private String sku;
     private String name, category, unit;
     private double volume, weight;
 
@@ -123,6 +123,10 @@ public class Item {
      */
     public void setWeight(double weight) {
         this.weight = weight;
+    }
+
+    public void setSku (String sku) {
+        this.sku=sku;
     }
     @Override
     public boolean equals(Object o) {

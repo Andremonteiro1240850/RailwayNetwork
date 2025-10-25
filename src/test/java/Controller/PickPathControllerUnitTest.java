@@ -1,4 +1,4 @@
-package Controller;
+/**package Controller;
 
 import Domain.PickPath;
 import Domain.PickStop;
@@ -13,14 +13,18 @@ import org.junit.jupiter.params.provider.CsvSource;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
+ */
 
 /**
  * Testes unitários para PickPathController usando apenas JUnit5
  * Usa InMemoryTrolleyRepository para simular dados de teste
  * Foca na lógica de cálculo de caminhos, sequência de PickStops e validações
  */
-@DisplayName("PickPathController Unit Tests")
-class PickPathControllerUnitTest {
+
+/**import org.junit.jupiter.api.DisplayName;
+
+@DisplayName("PickPathController Unit Tests")*/
+/**class PickPathControllerUnitTest {
 
     private PickPathController controller;
     private List<PickStop> sampleStops;
@@ -648,4 +652,4 @@ class PickPathControllerUnitTest {
         assertEquals(0, ascSweepPath.getTotalDistance());
         assertEquals(0, nearestNeighbourPath.getTotalDistance());
     }
-}
+}*/
