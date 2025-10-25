@@ -57,8 +57,8 @@ INSERT INTO SegmentType (trackNumber, type) VALUES (1, 'SINGLE');
 INSERT INTO SegmentType (trackNumber, type) VALUES (2, 'DOUBLE');
 
 -- ======= GAUGE =======
-INSERT INTO Gauge (code, width) VALUES (1668, 116);
-INSERT INTO Gauge (code, width) VALUES (1435, 100);
+INSERT INTO Gauge (code, width) VALUES (116, 1668);
+INSERT INTO Gauge (code, width) VALUES (100, 1435);
 
 -- ======= OWNER =======
 INSERT INTO Owner (owner_id, name) VALUES ('PT503933813', 'Infraestruturas de Portugal, SA');
