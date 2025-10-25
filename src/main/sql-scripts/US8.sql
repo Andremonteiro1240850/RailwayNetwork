@@ -21,6 +21,8 @@ FROM Locomotive l
 WHERE lt.loco_type = '&p_type'      -- escreve: ELECTRIC ou DIESEL
 ORDER BY l.locomotive_id;
 
+
+
 WITH loco_types (locomotive_id, loco_type) AS (
     SELECT Locomotivelocomotive_id, 'ELECTRIC' FROM Electric_Locomotive
 )
