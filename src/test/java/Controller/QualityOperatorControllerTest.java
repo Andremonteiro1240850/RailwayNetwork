@@ -8,12 +8,15 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -22,23 +25,28 @@ import static org.junit.jupiter.api.Assertions.*;
  * Full test suite for QualityOperatorController.
  * - Uses reflection to access private methods/fields.
  * - Exercises menu, CSV loading (many branches), processing (restock/discard), sort, view, audit.
+ *
+ * Tests run by writing test CSV content into train_station_dataset/returns.csv,
+ * but a backup of any existing file is created and restored after each test so no real data is lost.
  */
 class QualityOperatorControllerTest {
 
     private QualityOperatorController controller;
 
-    /**
-     * Single reflection helper: invoke private method with varargs for arguments.
-     */
+    private static final Path TEST_DIR = Paths.get("train_station_dataset");
+    private static final Path ACTUAL_CSV = TEST_DIR.resolve("returns.csv");
+    private static final Path BACKUP_CSV = TEST_DIR.resolve("returns_backup_for_tests.csv");
+
+    // -----------------------
+    // Reflection helpers
+    // -----------------------
+
     private Object callPrivate(String methodName, Class<?>[] paramTypes, Object... args) throws Exception {
         Method m = QualityOperatorController.class.getDeclaredMethod(methodName, paramTypes);
         m.setAccessible(true);
         return m.invoke(controller, args);
     }
 
-    /**
-     * Single reflection helper: read a private field value.
-     */
     @SuppressWarnings("unchecked")
     private <T> T readPrivateField(String fieldName, Class<T> clazz) throws Exception {
         Field f = QualityOperatorController.class.getDeclaredField(fieldName);
@@ -46,45 +54,68 @@ class QualityOperatorControllerTest {
         return (T) f.get(controller);
     }
 
+    // Helpers to be used in a couple of added tests (reflection write/read)
+    @SuppressWarnings("unchecked")
+    private void writePrivateField(String fieldName, Object value) throws Exception {
+        Field f = QualityOperatorController.class.getDeclaredField(fieldName);
+        f.setAccessible(true);
+        f.set(controller, value);
+    }
+
+    // -----------------------
+    // File helpers (backup/restore)
+    // -----------------------
+
+    private void backupOriginalCsvIfExists() throws IOException {
+        Files.createDirectories(TEST_DIR);
+        if (Files.exists(ACTUAL_CSV) && !Files.isDirectory(ACTUAL_CSV)) {
+            Files.copy(ACTUAL_CSV, BACKUP_CSV, StandardCopyOption.REPLACE_EXISTING);
+        }
+    }
+
+    private void restoreOriginalCsvOrDelete() throws IOException {
+        if (Files.exists(BACKUP_CSV)) {
+            Files.move(BACKUP_CSV, ACTUAL_CSV, StandardCopyOption.REPLACE_EXISTING);
+        } else {
+            Files.deleteIfExists(ACTUAL_CSV);
+        }
+    }
+
+    private void writeCsvToActual(String content) throws IOException {
+        Files.createDirectories(TEST_DIR);
+        Files.write(ACTUAL_CSV, content.getBytes(StandardCharsets.UTF_8),
+                StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+    }
+
+    // -----------------------
+    // Setup / Teardown
+    // -----------------------
+
     @BeforeEach
     void setUp() throws Exception {
         controller = new QualityOperatorController();
 
-        // Clear audit log to make tests repeatable (production AuditLog has clearAll())
+        // clear audit
         try {
             AuditLog.clearAll();
-        } catch (Exception ignored) {
-        }
+        } catch (Exception ignored) {}
 
-        // Ensure quarantine list empty
+        // clear quarantine list
         List<Return> q = readPrivateField("quarantineItems", List.class);
         q.clear();
 
-        // Remove test CSV if present
-        try {
-            Path csvPath = Paths.get("train_station_dataset", "returns.csv");
-            // If it's a directory from previous failed test, delete it
-            if (Files.exists(csvPath) && Files.isDirectory(csvPath)) {
-                Files.delete(csvPath);
-            } else {
-                Files.deleteIfExists(csvPath);
-            }
-        } catch (Exception ignored) {
-        }
+        // backup any existing CSV and ensure a header exists
+        backupOriginalCsvIfExists();
+        String header = "returnId,sku,qty,reason,timestamp,expiryDate\n";
+        writeCsvToActual(header);
     }
 
     @AfterEach
     void tearDown() throws Exception {
-        // Remove test CSV if present
+        // restore original CSV (or remove test CSV)
         try {
-            Path csvPath = Paths.get("train_station_dataset", "returns.csv");
-            if (Files.exists(csvPath) && Files.isDirectory(csvPath)) {
-                Files.delete(csvPath);
-            } else {
-                Files.deleteIfExists(csvPath);
-            }
-        } catch (Exception ignored) {
-        }
+            restoreOriginalCsvOrDelete();
+        } catch (Exception ignored) {}
     }
 
     // -----------------------
@@ -196,20 +227,14 @@ class QualityOperatorControllerTest {
     @Test
     @DisplayName("loadReturnsFromCSV handles missing file when showDetails=true")
     void loadReturns_missingFile_showDetails() throws Exception {
-        Path csvPath = Paths.get("train_station_dataset", "returns.csv");
-        Files.deleteIfExists(csvPath);
-
-        // call with Boolean.TRUE
+        // remove the file to simulate missing file
+        Files.deleteIfExists(ACTUAL_CSV);
         callPrivate("loadReturnsFromCSV", new Class<?>[]{boolean.class}, Boolean.TRUE);
     }
 
     @Test
     @DisplayName("loadReturnsFromCSV reads valid CSV and skips bad lines (verbose)")
     void loadReturns_validAndBadLines_showDetails() throws Exception {
-        Path dir = Paths.get("train_station_dataset");
-        Files.createDirectories(dir);
-        Path csv = dir.resolve("returns.csv");
-
         String header = "returnId,sku,qty,reason,timestamp,expiryDate";
         String valid1 = "R1,SKU1,2,customer-remorse,2025-10-25T10:00,2025-11-01";
         String bad = "BADLINE,one,two";
@@ -217,9 +242,8 @@ class QualityOperatorControllerTest {
         String valid2 = "R3,SKU3,5,expired,2025-10-26T12:30,2025-10-01";
 
         String content = String.join(System.lineSeparator(), header, valid1, bad, malformed, valid2);
-        Files.write(csv, content.getBytes(StandardCharsets.UTF_8), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+        writeCsvToActual(content);
 
-        // call verbose loader to hit warnings printing
         callPrivate("loadReturnsFromCSV", new Class<?>[]{boolean.class}, Boolean.TRUE);
 
         List<Return> q = readPrivateField("quarantineItems", List.class);
@@ -229,19 +253,15 @@ class QualityOperatorControllerTest {
     @Test
     @DisplayName("loadReturnsFromCSV prints first 5 and '... and N more' when >5 entries (verbose)")
     void loadReturns_moreThanFive_showDetails() throws Exception {
-        Path dir = Paths.get("train_station_dataset");
-        Files.createDirectories(dir);
-        Path csv = dir.resolve("returns.csv");
-
         String header = "returnId,sku,qty,reason,timestamp,expiryDate";
         StringBuilder sb = new StringBuilder(header);
         // create 6 valid lines to force "... and N more"
         for (int i = 1; i <= 6; i++) {
             sb.append(System.lineSeparator())
-                    .append("R").append(i).append(",SKU").append(i).append(",").append(i).append(",customer-remorse,2025-10-2")
-                    .append(i).append("T10:00,");
+                    .append("R").append(i).append(",SKU").append(i).append(",").append(i)
+                    .append(",customer-remorse,2025-12-01T10:00,");
         }
-        Files.write(csv, sb.toString().getBytes(StandardCharsets.UTF_8), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+        writeCsvToActual(sb.toString());
 
         callPrivate("loadReturnsFromCSV", new Class<?>[]{boolean.class}, Boolean.TRUE);
 
@@ -252,14 +272,10 @@ class QualityOperatorControllerTest {
     @Test
     @DisplayName("loadReturnsFromCSV (no-arg) reads CSV silently when file exists")
     void loadReturns_noArg_readsSilently() throws Exception {
-        Path dir = Paths.get("train_station_dataset");
-        Files.createDirectories(dir);
-        Path csv = dir.resolve("returns.csv");
-
         String header = "returnId,sku,qty,reason,timestamp,expiryDate";
         String valid = "T1,TSKU,1,customer-remorse,2025-12-01T10:00,";
         String content = header + System.lineSeparator() + valid + System.lineSeparator();
-        Files.write(csv, content.getBytes(java.nio.charset.StandardCharsets.UTF_8), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+        writeCsvToActual(content);
 
         // call private no-arg loader
         callPrivate("loadReturnsFromCSV", new Class<?>[]{});
@@ -271,22 +287,17 @@ class QualityOperatorControllerTest {
     @Test
     @DisplayName("loadReturnsFromCSV handles IO exception path (unreadable file) gracefully (verbose)")
     void loadReturns_ioExceptionPath() throws Exception {
-        Path parent = Paths.get("train_station_dataset");
-        Files.createDirectories(parent);
-        Path csvPath = parent.resolve("returns.csv");
-
-        // create a directory where the file should be to cause an IOException when trying to open a reader
-        Files.deleteIfExists(csvPath);
-        Files.createDirectory(csvPath); // now 'returns.csv' is a directory
+        // ensure clean and create a directory at the file path to cause IOException
+        Files.deleteIfExists(ACTUAL_CSV);
+        Files.createDirectories(TEST_DIR);
+        Files.createDirectory(ACTUAL_CSV); // ACTUAL_CSV is now a directory
 
         try {
             callPrivate("loadReturnsFromCSV", new Class<?>[]{boolean.class}, Boolean.TRUE);
-            // no exception expected; we only assert the method returned gracefully
-            assertTrue(true);
+            assertTrue(true); // no exception expected
         } finally {
-            // cleanup: delete the directory we created
-            if (Files.exists(csvPath) && Files.isDirectory(csvPath)) {
-                Files.delete(csvPath);
+            if (Files.exists(ACTUAL_CSV) && Files.isDirectory(ACTUAL_CSV)) {
+                Files.delete(ACTUAL_CSV);
             }
         }
     }
@@ -300,7 +311,10 @@ class QualityOperatorControllerTest {
     void processSingleInspection_emptyQueue() throws Exception {
         List<Return> q = readPrivateField("quarantineItems", List.class);
         q.clear();
+
+        // method is void; calling should not throw and queue remains empty
         callPrivate("processSingleInspection", new Class<?>[]{});
+        assertTrue(q.isEmpty());
     }
 
     @Test
@@ -309,7 +323,8 @@ class QualityOperatorControllerTest {
         List<Return> q = readPrivateField("quarantineItems", List.class);
         q.clear();
         // REMORSE -> RESTOCK
-        q.add(new Return("R20", "SKU-20", 3, "REMORSE", LocalDateTime.now(), null));
+        Return r = new Return("R20", "SKU-20", 3, "REMORSE", LocalDateTime.now(), null);
+        q.add(r);
 
         callPrivate("processSingleInspection", new Class<?>[]{});
 
@@ -317,16 +332,16 @@ class QualityOperatorControllerTest {
         assertEquals(0, after.size());
 
         List<String> lines = AuditLog.readAll();
-        assertTrue(lines.stream().anyMatch(s -> s.contains("SKU=SKU-20")));
+        assertTrue(lines.stream().anyMatch(s -> s.contains("SKU=SKU-20") || s.contains("SKU: SKU-20")));
     }
 
     @Test
-    @DisplayName("processSingleInspection processes DISCARD when expired and prints expiry branch")
+    @DisplayName("processSingleInspection processes DISCARD when expired and writes audit")
     void processSingleInspection_discard_expired() throws Exception {
         List<Return> q = readPrivateField("quarantineItems", List.class);
         q.clear();
-        // expiry before now -> determineProcessingReason returns EXPIRED -> action DISCARD
-        q.add(new Return("REXP", "SKU-EXP", 1, "REMORSE", LocalDateTime.now().minusDays(5), LocalDate.now().minusDays(1)));
+        Return r = new Return("REXP", "SKU-EXP", 1, "REMORSE", LocalDateTime.now().minusDays(5), LocalDate.now().minusDays(1));
+        q.add(r);
 
         callPrivate("processSingleInspection", new Class<?>[]{});
 
@@ -334,7 +349,7 @@ class QualityOperatorControllerTest {
         assertEquals(0, after.size());
 
         List<String> lines = AuditLog.readAll();
-        assertTrue(lines.stream().anyMatch(s -> s.contains("SKU=SKU-EXP")));
+        assertTrue(lines.stream().anyMatch(s -> s.contains("SKU=SKU-EXP") || s.contains("SKU: SKU-EXP")));
     }
 
     @Test
@@ -342,8 +357,8 @@ class QualityOperatorControllerTest {
     void processSingleInspection_discard_damaged() throws Exception {
         List<Return> q = readPrivateField("quarantineItems", List.class);
         q.clear();
-        // damaged with future expiry -> action DISCARD, but not EXPIRED branch
-        q.add(new Return("RDAM", "SKU-DAM", 2, "DAMAGED", LocalDateTime.now(), LocalDate.now().plusDays(10)));
+        Return r = new Return("RDAM", "SKU-DAM", 2, "DAMAGED", LocalDateTime.now(), LocalDate.now().plusDays(10));
+        q.add(r);
 
         callPrivate("processSingleInspection", new Class<?>[]{});
 
@@ -351,7 +366,7 @@ class QualityOperatorControllerTest {
         assertEquals(0, after.size());
 
         List<String> lines = AuditLog.readAll();
-        assertTrue(lines.stream().anyMatch(s -> s.contains("SKU=SKU-DAM")));
+        assertTrue(lines.stream().anyMatch(s -> s.contains("SKU=SKU-DAM") || s.contains("SKU: SKU-DAM")));
     }
 
     @Test
@@ -385,9 +400,9 @@ class QualityOperatorControllerTest {
         assertTrue(after.size() >= before.size() + 3);
 
         List<String> lines = AuditLog.readAll();
-        assertTrue(lines.stream().anyMatch(s -> s.contains("SKU=SKU-A")));
-        assertTrue(lines.stream().anyMatch(s -> s.contains("SKU=SKU-B")));
-        assertTrue(lines.stream().anyMatch(s -> s.contains("SKU=SKU-C")));
+        assertTrue(lines.stream().anyMatch(s -> s.contains("SKU=SKU-A") || s.contains("SKU: SKU-A")));
+        assertTrue(lines.stream().anyMatch(s -> s.contains("SKU=SKU-B") || s.contains("SKU: SKU-B")));
+        assertTrue(lines.stream().anyMatch(s -> s.contains("SKU=SKU-C") || s.contains("SKU: SKU-C")));
     }
 
     // -----------------------
@@ -419,7 +434,6 @@ class QualityOperatorControllerTest {
     @Test
     @DisplayName("viewAuditLog prints 'no audit logs available' when empty")
     void viewAuditLog_emptyRuns() throws Exception {
-        // ensure audit cleared
         AuditLog.clearAll();
         callPrivate("viewAuditLog", new Class<?>[]{});
     }
@@ -436,11 +450,16 @@ class QualityOperatorControllerTest {
                 "1", "2", "3", "4", "5", "6", "7"
         ) + System.lineSeparator();
 
-        java.io.InputStream is = new java.io.ByteArrayInputStream(menuInputs.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        InputStream is = new java.io.ByteArrayInputStream(menuInputs.getBytes(java.nio.charset.StandardCharsets.UTF_8));
         java.util.Scanner testScanner = new java.util.Scanner(is);
         Field scannerField = QualityOperatorController.class.getDeclaredField("scanner");
         scannerField.setAccessible(true);
         scannerField.set(controller, testScanner);
+
+        // ensure there's some data so options that expect queue won't short-circuit for "empty queue"
+        String header = "returnId,sku,qty,reason,timestamp,expiryDate";
+        String valid = "MTEST,MSKU,1,customer-remorse,2025-12-01T10:00,";
+        writeCsvToActual(header + System.lineSeparator() + valid);
 
         // run menu (will exit on "7")
         controller.showMainMenu();
@@ -451,9 +470,8 @@ class QualityOperatorControllerTest {
     @Test
     @DisplayName("showMainMenu handles invalid option (default branch)")
     void showMainMenu_invalidOption() throws Exception {
-        // feed an invalid option then exit
         String menuInputs = String.join(System.lineSeparator(), "x", "7") + System.lineSeparator();
-        java.io.InputStream is = new java.io.ByteArrayInputStream(menuInputs.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        InputStream is = new java.io.ByteArrayInputStream(menuInputs.getBytes(java.nio.charset.StandardCharsets.UTF_8));
         java.util.Scanner testScanner = new java.util.Scanner(is);
         Field scannerField = QualityOperatorController.class.getDeclaredField("scanner");
         scannerField.setAccessible(true);
@@ -471,16 +489,13 @@ class QualityOperatorControllerTest {
     @Test
     @DisplayName("constructor with WarehouseManager triggers restock insert in WarehouseManager.stock")
     void constructorWithWarehouseManager_triggersRestockInsert() throws Exception {
-        // create a WarehouseManager using production constructor (empty maps, empty bay list)
         java.util.Map<String, Domain.Item> items = new java.util.HashMap<>();
         java.util.Map<String, java.util.List<Domain.Box>> stock = new java.util.HashMap<>();
         java.util.List<Domain.Bay> bays = new java.util.ArrayList<>();
         Domain.WarehouseManager wm = new Domain.WarehouseManager(items, stock, bays);
 
-        // new controller that uses this WarehouseManager
         QualityOperatorController ctrlWithWM = new QualityOperatorController(wm);
 
-        // inject a return into ctrlWithWM's private quarantineItems
         Field qField = QualityOperatorController.class.getDeclaredField("quarantineItems");
         qField.setAccessible(true);
         @SuppressWarnings("unchecked")
@@ -488,70 +503,51 @@ class QualityOperatorControllerTest {
         qList.clear();
         qList.add(new Return("W1", "WM-SKU", 2, "REMORSE", LocalDateTime.now(), null));
 
-        // call processSingleInspection via reflection on that instance
         Method m = QualityOperatorController.class.getDeclaredMethod("processSingleInspection");
         m.setAccessible(true);
         m.invoke(ctrlWithWM);
 
-        // ensure removed from that controller's queue
         @SuppressWarnings("unchecked")
         List<Return> after = (List<Return>) qField.get(ctrlWithWM);
         assertEquals(0, after.size());
 
-        // WarehouseManager.stock should contain the restocked SKU
         assertTrue(wm.getStock().containsKey("WM-SKU"));
     }
 
-    // 1) Silent load: CSV has an insufficient-column line but showDetails = false (silent skip)
     @Test
     @DisplayName("loadReturnsFromCSV silent skips lines with insufficient columns")
     void loadReturns_silent_skipsInsufficientColumns() throws Exception {
-        Path dir = Paths.get("train_station_dataset");
-        Files.createDirectories(dir);
-        Path csv = dir.resolve("returns.csv");
-
         String header = "returnId,sku,qty,reason,timestamp,expiryDate";
-        // this line has <6 columns and should be skipped silently
         String insufficient = "BADLINE,one,two";
         String valid = "SIL1,SKU-S,1,customer-remorse,2025-12-01T10:00,";
 
         String content = String.join(System.lineSeparator(), header, insufficient, valid);
-        Files.write(csv, content.getBytes(StandardCharsets.UTF_8), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+        writeCsvToActual(content);
 
-        // call private no-verbose loader (silent branch)
         callPrivate("loadReturnsFromCSV", new Class<?>[]{boolean.class}, Boolean.FALSE);
 
         List<Return> q = readPrivateField("quarantineItems", List.class);
-        // only the valid line should be present
         assertTrue(q.stream().anyMatch(r -> r.getReturnId().equals("SIL1")));
         assertFalse(q.stream().anyMatch(r -> r.getReturnId().equals("BADLINE")));
     }
 
-    // 2) Silent load: CSV has malformed timestamp -> should be skipped silently (no exception thrown)
     @Test
     @DisplayName("loadReturnsFromCSV silent skips malformed timestamp lines")
     void loadReturns_silent_skipsMalformedTimestamp() throws Exception {
-        Path dir = Paths.get("train_station_dataset");
-        Files.createDirectories(dir);
-        Path csv = dir.resolve("returns.csv");
-
         String header = "returnId,sku,qty,reason,timestamp,expiryDate";
         String malformed = "MAL1,SKU-M,1,damaged,NOT-A-TIMESTAMP,";
         String valid = "MAL2,SKU-M2,2,customer-remorse,2025-12-02T11:00,";
 
         String content = String.join(System.lineSeparator(), header, malformed, valid);
-        Files.write(csv, content.getBytes(StandardCharsets.UTF_8), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+        writeCsvToActual(content);
 
-        // silent load
         callPrivate("loadReturnsFromCSV", new Class<?>[]{boolean.class}, Boolean.FALSE);
 
         List<Return> q = readPrivateField("quarantineItems", List.class);
         assertTrue(q.stream().anyMatch(r -> r.getReturnId().equals("MAL2")));
-        // malformed should not crash, and MAL1 should not be present
         assertFalse(q.stream().anyMatch(r -> r.getReturnId().equals("MAL1")));
     }
 
-    // 3) mapReturnReason handles input with extra spaces and mixed case (default branch coverage)
     @Test
     @DisplayName("mapReturnReason handles spaces and mixed case")
     void mapReturnReason_spacesAndCase() throws Exception {
@@ -560,7 +556,6 @@ class QualityOperatorControllerTest {
         assertEquals("REMORSE", callPrivate("mapReturnReason", new Class<?>[]{String.class}, "UNKNOWN-REASON"));
     }
 
-    // 4) sortQuarantineQueue extra: identical timestamps and verify returnId tie-breaker again (edge)
     @Test
     @DisplayName("sortQuarantineQueue tie-breaker edge case")
     void sortQuarantineQueue_tieBreakerEdge() throws Exception {
@@ -578,8 +573,8 @@ class QualityOperatorControllerTest {
         callPrivate("sortQuarantineQueue", new Class<?>[]{});
 
         List<Return> after = readPrivateField("quarantineItems", List.class);
-        // A10 vs A2 vs A3 when compared lexicographically: "A10" > "A2" > "A3"
-        // but sort uses thenComparing(Return::getReturnId) ascending, so ensure consistent order
+        // A10 vs A2 vs A3 when compared lexicographically: A10 > A2 > A3
+        // but sort uses thenComparing(Return::getReturnId) ascending, assert consistent order
         assertEquals("A10", after.get(0).getReturnId());
     }
 

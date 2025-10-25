@@ -9,4 +9,4 @@ This directory contains shared project artifacts that describe both the **concep
 **Conceptual Model** - vpp and svg files representing the conceptual model.
 **Domain Model** - PlantUML and svg files representing the domain model.
 **PhisicalModel** - vpp and svg files representing the physical database model.
-**GLOSSARY.md** - Glossary of project terms and domain definitions.
+**GLOSSARY** - Glossary of project terms and domain definitions.
