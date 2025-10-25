@@ -250,7 +250,7 @@ public class TrolleyControllerTest {
 
     public void testToString_shouldHandleNullTrolley() {
         setUp();
-        // Controller with no trolley created
+        // Controller with no trolley created.
         String result = trolleyController.toString();
 
         assertTrue(result.contains("TrolleyController =>"), "Should contain class name");
