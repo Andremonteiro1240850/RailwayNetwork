@@ -21,6 +21,17 @@ public class PickPath {
      * @param totalDistance a distância total calculada
      */
     public PickPath(PathStrategy strategy, List<PickStop> stops, int totalDistance) {
+        // Validações que os testes esperam
+        if (strategy == null) {
+            throw new IllegalArgumentException("Strategy cannot be null");
+        }
+        if (stops == null) {
+            throw new IllegalArgumentException("Stops cannot be null");
+        }
+        if (totalDistance < 0) {
+            throw new IllegalArgumentException("Total distance cannot be negative");
+        }
+
         this.strategy = strategy;
         this.stops = new ArrayList<>(stops);
         this.totalDistance = totalDistance;
@@ -31,8 +42,8 @@ public class PickPath {
      *
      * @return the strategy
      */
-    public PathStrategy getStrategy() { 
-        return strategy; 
+    public PathStrategy getStrategy() {
+        return strategy;
     }
 
     /**
@@ -40,8 +51,8 @@ public class PickPath {
      *
      * @return the total distance
      */
-    public int getTotalDistance() { 
-        return totalDistance; 
+    public int getTotalDistance() {
+        return totalDistance;
     }
 
     /**
@@ -49,8 +60,8 @@ public class PickPath {
      *
      * @return the stops
      */
-    public List<PickStop> getStops() { 
-        return new ArrayList<>(stops); 
+    public List<PickStop> getStops() {
+        return new ArrayList<>(stops);
     }
 
     @Override
