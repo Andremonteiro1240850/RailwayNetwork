@@ -99,7 +99,7 @@ class AllocationResultTest {
         // ARRANGE
         List<AllocationRow> newRows = Collections.emptyList();
 
-        // ACT
+        // ACT.
         allocationResult.setAllocationRows(newRows);
 
         // ASSERT
