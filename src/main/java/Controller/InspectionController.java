@@ -83,12 +83,12 @@ public class InspectionController {
 
             return String.format(
                     "Inspection Processed\nInspection ID: %s\nSKU: %s\nQuantity: %d\nAction: %s\nMotive: %s\nDate: %s",
-                    inspection.getInspectionId(), sku, quantity, action, returnReason, 
+                    inspection.getInspectionId(), sku, quantity, action, returnReason,
                     LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
             );
 
         } catch (Exception e) {
-            return String.format("RROR: Inspection error. %s", e.getMessage());
+            return String.format("ERROR: Inspection error. %s", e.getMessage());
         }
     }
 

@@ -1,5 +1,10 @@
 package Domain;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * The type Audit log.
  */
@@ -33,6 +38,10 @@ public class AuditLog {
      */
     int qtyDiscarded;
 
+    // Static helpers to read audit log file
+    // Note: the file is written by InspectionController
+    private static Path AUDIT_LOG_PATH = Paths.get("logs", "audit.log");
+
     /**
      * Instantiates a new Audit log.
      *
@@ -52,6 +61,14 @@ public class AuditLog {
         this.action = action;
         this.qtyRestocked = qtyRestocked;
         this.qtyDiscarded = qtyDiscarded;
+    }
+
+    /**
+     * FOR TESTING ONLY - Set audit log path
+     * @param testPath the test path to use
+     */
+    public static void setAuditLogPath(Path testPath) {
+        AUDIT_LOG_PATH = testPath;
     }
 
     /**
@@ -166,15 +183,16 @@ public class AuditLog {
 
     @Override
     public String toString() {
-        return String.format(
-                "Domain.AuditLog{id=%d, returnId=%d, timeStamp=%d, sku=%d, action='%s', qtyRestocked=%d, qtyDiscarded=%d}",
-                id, returnId, timeStamp, sku, action, qtyRestocked, qtyDiscarded
-        );
+        return "AuditLog{" +
+                "id=" + id +
+                ", returnId=" + returnId +
+                ", timeStamp=" + timeStamp +
+                ", sku=" + sku +
+                ", action='" + action + '\'' +
+                ", qtyRestocked=" + qtyRestocked +
+                ", qtyDiscarded=" + qtyDiscarded +
+                '}';
     }
-
-    // Static helpers to read audit log file
-    // Note: the file is written by InspectionController
-    private static final java.nio.file.Path AUDIT_LOG_PATH = java.nio.file.Paths.get("logs", "audit.log");
 
     /**
      * Read all java . util . list.
@@ -182,12 +200,12 @@ public class AuditLog {
      * @return the java . util . list
      */
 //Reads the file and returns all lines
-    public static java.util.List<String> readAll() {
+    public static List<String> readAll() {
         ensureFile();
         try {
             return java.nio.file.Files.readAllLines(AUDIT_LOG_PATH, java.nio.charset.StandardCharsets.UTF_8);
         } catch (Exception e) {
-            return new java.util.ArrayList<>();
+            return new ArrayList<>();
         }
     }
 
@@ -224,8 +242,8 @@ public class AuditLog {
     public static void appendLine(String line) {
         try {
             ensureFile();
-            java.nio.file.Files.write(AUDIT_LOG_PATH, (line + System.lineSeparator()).getBytes(java.nio.charset.StandardCharsets.UTF_8), 
-                                    java.nio.file.StandardOpenOption.APPEND);
+            java.nio.file.Files.write(AUDIT_LOG_PATH, (line + System.lineSeparator()).getBytes(java.nio.charset.StandardCharsets.UTF_8),
+                    java.nio.file.StandardOpenOption.APPEND);
         } catch (Exception e) {
             throw new RuntimeException("Failed to append audit log entry", e);
         }
