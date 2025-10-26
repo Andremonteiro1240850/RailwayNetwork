@@ -1,4 +1,4 @@
-package pt.ipp.isep.dei;
+package Service;
 
 import Domain.ENUM.PathStrategy;
 import Domain.PickPath;

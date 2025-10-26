@@ -4,7 +4,7 @@ import Domain.PickPath;
 import Domain.PickStop;
 import Domain.Trolley;
 import Domain.ENUM.PathStrategy;
-import pt.ipp.isep.dei.PickPathService;
+import Service.PickPathService;
 import Repository.TrolleyRepository;
 
 import java.util.*;
