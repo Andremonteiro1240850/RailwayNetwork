@@ -1,4 +1,4 @@
-startuml
+@startuml
 skinparam style strictuml
 
 
@@ -210,19 +210,9 @@ Box "0..*" -- "1" Wagon : transport
 
 
 
-package "WMS / Movimentos ( Perguntar ao Stor) " {
 
-  class WMSMovement {
-    +movementId : String
-    +timestamp : DateTime
-    +type : MovementType
-    +sku : String
-    +qty : int
-    +fromBay : String
-    +toBay : String
-    +boxId : String
-    +userRole : String
-  }
+
+
 
   class UnloadingOperation {
     +opId : String
@@ -240,14 +230,12 @@ package "WMS / Movimentos ( Perguntar ao Stor) " {
     +fromBay : String
     +toBay : String
   }
-}
 
-UnloadingOperation "1" -- "1..*" Box : creates
+
+UnloadingOperation "1" -- "1..*" Box : unload
 DispatchOperation "1" -- "1..*" Box : consumes
 Relocation "1" -- "1..*" Box : moves
-WMSMovement "1" -- "0..1" UnloadingOperation : can be
-WMSMovement "1" -- "0..1" DispatchOperation : can be
-WMSMovement "1" -- "0..1" Relocation : can be
+
 
 
 
