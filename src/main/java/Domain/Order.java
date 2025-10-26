@@ -32,7 +32,7 @@ public class Order implements Comparable<Order> {
      * @param dueDate  the due date
      * @param priority the priority
      */
-    Order(String id, LocalDateTime dueDate, int priority) {
+    public Order(String id, LocalDateTime dueDate, int priority) {
         this.id = id; this.dueDate = dueDate; this.priority = priority;
     }
 

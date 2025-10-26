@@ -40,7 +40,7 @@ public class AuditLog {
 
     // Static helpers to read audit log file
     // Note: the file is written by InspectionController
-    private static Path AUDIT_LOG_PATH = Paths.get("logs", "audit.log");
+    private static Path AUDIT_LOG_PATH = Paths.get("train_station_dataset", "audit.log");
 
     /**
      * Instantiates a new Audit log.

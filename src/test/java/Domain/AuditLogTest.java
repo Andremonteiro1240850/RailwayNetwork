@@ -377,4 +377,102 @@ class AuditLogTest {
         // cleanup
         Files.deleteIfExists(rootFile);
     }
+
+    // ---------------------------------------------------------------------
+    // NEW TESTS: exercise branch where AUDIT_LOG_PATH is null and ensureFile()
+    // throws and propagates RuntimeException (these were missing)
+    // ---------------------------------------------------------------------
+
+    @Test
+    void testSetAuditLogPathNull_readAllThrowsRuntimeException() {
+        Path original = testAuditLogPath;
+        try {
+            AuditLog.setAuditLogPath(null);
+            assertThrows(RuntimeException.class, AuditLog::readAll);
+        } finally {
+            // restore to avoid breaking other tests
+            AuditLog.setAuditLogPath(original);
+        }
+    }
+
+    @Test
+    void testSetAuditLogPathNull_clearAllThrowsRuntimeException() {
+        Path original = testAuditLogPath;
+        try {
+            AuditLog.setAuditLogPath(null);
+            assertThrows(RuntimeException.class, AuditLog::clearAll);
+        } finally {
+            AuditLog.setAuditLogPath(original);
+        }
+    }
+
+    @Test
+    void testSetAuditLogPathNull_appendLineThrowsRuntimeException() {
+        Path original = testAuditLogPath;
+        try {
+            AuditLog.setAuditLogPath(null);
+            assertThrows(RuntimeException.class, () -> AuditLog.appendLine("x"));
+        } finally {
+            AuditLog.setAuditLogPath(original);
+        }
+    }
+
+    @Test
+    void testEnsureFile_WhenFileAlreadyExists_NoCreationAttempt() throws Exception {
+        // Cria a estrutura pai e o ficheiro explicitamente
+        Path parent = tempDir.resolve("parentDir");
+        Files.createDirectories(parent);
+        Path existingFile = parent.resolve("audit.log");
+        Files.write(existingFile, "existing".getBytes(java.nio.charset.StandardCharsets.UTF_8));
+
+        // Aponta a classe para esse ficheiro existente
+        AuditLog.setAuditLogPath(existingFile);
+
+        // Chamar readAll deve detectar que o ficheiro já existe e apenas ler (não lançar)
+        List<String> entries = AuditLog.readAll();
+        assertNotNull(entries);
+        // ficheiro contém "existing"
+        assertEquals(1, entries.size());
+        assertEquals("existing", entries.get(0));
+    }
+
+    @Test
+    void testEnsureFile_ParentAlreadyExists_NoDirectoryCreationNeeded() throws Exception {
+        // Cria apenas o diretório pai (sem ficheiro)
+        Path parent = tempDir.resolve("alreadyThere");
+        Files.createDirectories(parent);
+        Path targetFile = parent.resolve("audit.log");
+
+        AuditLog.setAuditLogPath(targetFile);
+
+        // Chamadas que asseguram que, com o pai existente, ensureFile funciona sem criar directorias
+        List<String> entries = AuditLog.readAll();
+        assertNotNull(entries);
+        assertTrue(Files.exists(targetFile)); // o ficheiro deverá ter sido criado por ensureFile
+        assertTrue(Files.exists(parent)); // o pai já existia, confirmamos ainda existe
+    }
+
+    @Test
+    void testOperations_WithExistingFile_appendAndClear() throws Exception {
+        // Cria file existente
+        Path parent = tempDir.resolve("ops");
+        Files.createDirectories(parent);
+        Path existingFile = parent.resolve("audit.log");
+        Files.write(existingFile, ("line0" + System.lineSeparator()).getBytes(java.nio.charset.StandardCharsets.UTF_8));
+
+        AuditLog.setAuditLogPath(existingFile);
+
+        // Append a line (exercita appendLine quando ficheiro existe)
+        AuditLog.appendLine("line1");
+        List<String> entriesAfterAppend = AuditLog.readAll();
+        assertEquals(2, entriesAfterAppend.size());
+        assertEquals("line0", entriesAfterAppend.get(0));
+        assertEquals("line1", entriesAfterAppend.get(1));
+
+        // Clear (exercita clearAll quando ficheiro existe)
+        AuditLog.clearAll();
+        List<String> afterClear = AuditLog.readAll();
+        assertTrue(afterClear.isEmpty());
+    }
+
 }
