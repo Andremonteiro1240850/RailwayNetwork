@@ -20,7 +20,6 @@ INSERT INTO Facility (facility_id, name, facility_type) VALUES (18, 'Famalicão'
 INSERT INTO Facility (facility_id, name, facility_type) VALUES (19, 'Barroselas', 'REGULAR');
 INSERT INTO Facility (facility_id, name, facility_type) VALUES (20, 'Nine', 'REGULAR');
 INSERT INTO Facility (facility_id, name, facility_type) VALUES (21, 'Caminha', 'REGULAR');
-INSERT INTO Facility (facility_id, name, facility_type) VALUES (11, 'Valença', 'REGULAR');
 INSERT INTO Facility (facility_id, name, facility_type) VALUES (22, 'Carvalha', 'REGULAR');
 INSERT INTO Facility (facility_id, name, facility_type) VALUES (23, 'Carreço', 'REGULAR');
 
@@ -85,7 +84,34 @@ INSERT INTO DIESEL_LOCOMOTIVE (Locomotivelocomotive_id, fuelCapacity) VALUES (19
 INSERT INTO Operator (operator_id, name) VALUES ('PT509017800', 'Medway - Operador Ferroviário de Mercadorias, S.A');
 
 -- ======= LOCOMOTIVE_WAGON =======
-INSERT INTO LOCOMOTIVE_WAGON ( Locomotivelocomotive_id , Wagonwagon_id) VALUES (5623, 356 3 077);
+INSERT INTO LOCOMOTIVE_WAGON ( Locomotivelocomotive_id , Wagonwagon_id) VALUES (5623, 3563077);
+
+-- ======= WAGON MODEL =======
+INSERT INTO WAGONMODEL (modelID, name, maker, bogies_number, lenght, height, width, weight_t, max_speed,payload, gauge_code,volume) VALUES (1245,'Tadgs 32 94 082 3', 'Metalsines',2,17240, 4270, 3072, 24, 120, 56, 116, 75);
+INSERT INTO WAGONMODEL (modelID, name, maker, bogies_number, lenght, height, width, weight_t, max_speed,payload, gauge_code,volume) VALUES (1278,
+                                                                                                                                            'Tadgs 4194 074 1', 'Equimetal', 2, 9640,  4166, 3120, 14, 120, 26, 116, 38);
+INSERT INTO WAGONMODEL (modelID, name, maker, bogies_number, lenght, height, width, weight_t, max_speed,payload, gauge_code,volume) VALUES (1325,
+                                                                                                                                            'Gabs 8194 181 1', 'Sepsa Corr', 2, 21700, 4170, 3180, 30, 100, 50, 116, 110);
+INSERT INTO WAGONMODEL (modelID, name, maker, bogies_number, lenght, height, width, weight_t, max_speed,payload, gauge_code,volume) VALUES (1104,
+                                                                                                                                            'Regmms 32 94 356 3', 'Metalsines', 2, 14040, 2535, 3104, 21, 120, 61, 116, 76);
+INSERT INTO WAGONMODEL (modelID, name, maker, bogies_number, lenght, height, width, weight_t, max_speed,payload, gauge_code,volume) VALUES (985,
+                                                                                                                                            'Lgs 22 94 4416 5', 'Metalsines', 1, 13680, 1080, 2850, 12, 120, 28, 116, 76);
+INSERT INTO WAGONMODEL (modelID, name, maker, bogies_number, lenght, height, width, weight_t, max_speed,payload, gauge_code,volume) VALUES (987,
+                                                                                                                                            'Sgnss 12 94 455 2', 'Emef', 2, 18116, 1030, 2950, 22, 120, 68, 116, 76);
+INSERT INTO WAGONMODEL (modelID, name, maker, bogies_number, lenght, height, width, weight_t, max_speed,payload, gauge_code,volume) VALUES (988,
+                                                                                                                                            'Sgnss 12 94 455 2','Emef', 2, 18116, 1030, 2950, 22, 120, 68, 100, 76);
+
+
+-- ======= ROUTE =======
+INSERT INTO ROUTE (routeid, routetype) VALUES (25874, 'COMPLEX');
+INSERT INTO ROUTE (routeid, routetype) VALUES (12408, 'SIMPLE');
+
+
+-- ======= FREIGHT =======
+INSERT INTO FREIGHT (freight_id, cargoType, RouterouteID) VALUES (195824, 'Contrusction Materials', 12408);
+INSERT INTO FREIGHT (freight_id, cargoType, RouterouteID) VALUES (456892, 'Food', 25874);
+INSERT INTO FREIGHT (freight_id, cargoType, RouterouteID) VALUES (963558, 'Minerals', 12408);
+
 
 -- ======= WAGON =======
 INSERT INTO WAGON (wagon_id, operator_id, freight_ID, service_year, WagonModelmodelID) VALUES (3563083, 'PT509017800', 963558, 1997, 988);
@@ -95,31 +121,6 @@ INSERT INTO WAGON (wagon_id, operator_id, freight_ID, service_year, WagonModelmo
 INSERT INTO WAGON (wagon_id, operator_id, freight_ID, service_year, WagonModelmodelID) VALUES (3563079, 'PT509017800', 195824, 1991, 1278);
 INSERT INTO WAGON (wagon_id, operator_id, freight_ID, service_year, WagonModelmodelID) VALUES (3563078, 'PT509017800', 456892, 1990, 1245);
 INSERT INTO WAGON (wagon_id, operator_id, freight_ID, service_year, WagonModelmodelID) VALUES (3563077, 'PT509017800', 963558, 1987, 1104);
-
--- ======= WAGON MODEL =======
-INSERT INTO WAGONMODEL (modelID, name, maker, bogies_number, lenght, height, width, weight_t, max_speed,payload, gauge_code,volume) VALUES (1245,'Tadgs 32 94 082 3', 'Metalsines',2,17240, 4270, 3072, 24, 120, 56, 116, 75);
-INSERT INTO WAGONMODEL (modelID, name, maker, bogies_number, lenght, height, width, weight_t, max_speed,payload, gauge_code,volume) VALUES (1278,
-'Tadgs 4194 074 1', 'Equimetal', 2, 9640,  4166, 3120, 14, 120, 26, 116, 38);
-INSERT INTO WAGONMODEL (modelID, name, maker, bogies_number, lenght, height, width, weight_t, max_speed,payload, gauge_code,volume) VALUES (1325,
-'Gabs 8194 181 1', 'Sepsa Corr', 2, 21700, 4170, 3180, 30, 100, 50, 116, 110);
-INSERT INTO WAGONMODEL (modelID, name, maker, bogies_number, lenght, height, width, weight_t, max_speed,payload, gauge_code,volume) VALUES (1104,
-'Regmms 32 94 356 3', 'Metalsines', 2, 14040, 2535, 3104, 21, 120, 61, 116, 76);
-INSERT INTO WAGONMODEL (modelID, name, maker, bogies_number, lenght, height, width, weight_t, max_speed,payload, gauge_code,volume) VALUES (985,
-'Lgs 22 94 4416 5', 'Metalsines', 1, 13680, 1080, 2850, 12, 120, 28, 116, 76);
-INSERT INTO WAGONMODEL (modelID, name, maker, bogies_number, lenght, height, width, weight_t, max_speed,payload, gauge_code,volume) VALUES (987,
-'Sgnss 12 94 455 2', 'Emef', 2, 18116, 1030, 2950, 22, 120, 68, 116, 76);
-INSERT INTO WAGONMODEL (modelID, name, maker, bogies_number, lenght, height, width, weight_t, max_speed,payload, gauge_code,volume) VALUES (988,
-'Sgnss 12 94 455 2','Emef', 2, 18116, 1030, 2950, 22, 120, 68, 100, 76);
-
-
--- ======= FREIGHT =======
-INSERT INTO FREIGHT (freight_id, cargoType, RouterouteID) VALUES (195824, 'Contrusction Materials', 12408);
-INSERT INTO FREIGHT (freight_id, cargoType, RouterouteID) VALUES (456892, 'Food', 25874);
-INSERT INTO FREIGHT (freight_id, cargoType, RouterouteID) VALUES (963558, 'Minerals', 12408);
-
--- ======= ROUTE =======
-INSERT INTO ROUTE (routeid, routetype) VALUES (25874, 'COMPLEX');
-INSERT INTO ROUTE (routeid, routetype) VALUES (12408, 'SIMPLE');
 
 
 -- ======= ROUTE STOPS =======
