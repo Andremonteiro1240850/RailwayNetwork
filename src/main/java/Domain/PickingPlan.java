@@ -14,7 +14,7 @@ public class PickingPlan {
     /**
      * Instantiates a new Picking plan.
      *
-     * @param trolleys the trolleys
+     * @param trolleys  the trolleys
      * @param heuristic the heuristic used
      */
     public PickingPlan(List<Trolley> trolleys, String heuristic) {

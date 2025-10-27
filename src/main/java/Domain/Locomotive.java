@@ -3,7 +3,7 @@ package Domain;
 /**
  * Represents a locomotive in the railway system.
  * A locomotive has specifications including type, maximum speed, and track gauge compatibility.
- * 
+ *
  * @author Development Team
  * @version 1.0
  */
@@ -13,14 +13,14 @@ public class Locomotive {
     private final String type;
     private final double maxSpeedKmH;
     private final double gauge;
-    
+
     /**
      * Constructs a new Locomotive with the specified parameters.
-     * 
-     * @param id the unique identifier for the locomotive
-     * @param type the type of locomotive ("diesel" or "electric")
+     *
+     * @param id          the unique identifier for the locomotive
+     * @param type        the type of locomotive ("diesel" or "electric")
      * @param maxSpeedKmH the maximum speed in kilometers per hour
-     * @param gauge the track gauge in millimeters
+     * @param gauge       the track gauge in millimeters
      * @throws IllegalArgumentException if parameters are invalid
      */
     public Locomotive(String id, String type, double maxSpeedKmH, double gauge) {
@@ -42,64 +42,64 @@ public class Locomotive {
         this.maxSpeedKmH = maxSpeedKmH;
         this.gauge = gauge;
     }
-    
+
     /**
      * Gets the locomotive ID.
-     * 
+     *
      * @return the locomotive ID
      */
     public String getId() {
         return id;
     }
-    
+
     /**
      * Gets the locomotive type.
-     * 
+     *
      * @return the locomotive type
      */
     public String getType() {
         return type;
     }
-    
+
     /**
      * Gets the maximum speed in kilometers per hour.
-     * 
+     *
      * @return the maximum speed in km/h
      */
     public double getMaxSpeedKmH() {
         return maxSpeedKmH;
     }
-    
+
     /**
      * Gets the track gauge in millimeters.
-     * 
+     *
      * @return the gauge in mm
      */
     public double getGauge() {
         return gauge;
     }
-    
+
     /**
      * Checks if this locomotive is electric.
-     * 
+     *
      * @return true if electric, false otherwise
      */
     public boolean isElectric() {
         return "electric".equals(type);
     }
-    
+
     /**
      * Checks if this locomotive is diesel.
-     * 
+     *
      * @return true if diesel, false otherwise
      */
     public boolean isDiesel() {
         return "diesel".equals(type);
     }
-    
+
     /**
      * Checks if this locomotive's gauge is compatible with the given gauge.
-     * 
+     *
      * @param otherGauge the gauge to check compatibility with
      * @return true if gauges are compatible (within 1mm tolerance), false otherwise
      */

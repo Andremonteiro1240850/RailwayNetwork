@@ -31,7 +31,7 @@ public class WarehouseController {
      * Main method that implements the complete USEI02 user story
      *
      * @param boxRepository the box repository
-     * @param mode the allocation mode (STRICT or PARTIAL)
+     * @param mode          the allocation mode (STRICT or PARTIAL)
      * @return the allocation result containing both eligibility results and allocation rows
      */
     public AllocationResult processOrderEligibilityAndAllocation(BoxRepository boxRepository, AllocationMode mode) {

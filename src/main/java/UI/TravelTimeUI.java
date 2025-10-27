@@ -7,7 +7,7 @@ import java.util.*;
 /**
  * User interface for calculating estimated travel time between railway stations.
  * This UI implements the CLI interaction for USLP03 - Calculate Estimated Travel Time.
- * 
+ *
  * @author Development Team
  * @version 1.0
  */
@@ -18,10 +18,10 @@ public class TravelTimeUI {
     private final List<Station> stations;
     private final List<Locomotive> locomotives;
     private final TravelTimeController controller;
-    
+
     /**
      * Constructs a new TravelTimeUI with the specified controller.
-     * 
+     *
      * @param controller the travel time controller
      */
     public TravelTimeUI(TravelTimeController controller) {
@@ -31,8 +31,8 @@ public class TravelTimeUI {
         this.stations = controller.getStations();
         this.locomotives = createMockLocomotives();
     }
-    
-    
+
+
     /**
      * Shows the main menu for travel time calculation.
      */

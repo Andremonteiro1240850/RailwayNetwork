@@ -258,8 +258,8 @@ public class TrolleyController {
     /**
      * USEI03 - Create picking plan using new implementation
      *
-     * @param capacity the trolley capacity
-     * @param heuristic the packing heuristic
+     * @param capacity       the trolley capacity
+     * @param heuristic      the packing heuristic
      * @param allowSplitting whether to allow splitting
      * @return the picking plan
      */

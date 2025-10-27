@@ -25,7 +25,7 @@ public class PickPathController {
     public PickPathController(TrolleyRepository trolleyRepository) {
         this.trolleyRepository = trolleyRepository;
     }
-    
+
     /**
      * Instantiates a new Pick path controller (default constructor for backward compatibility).
      */
@@ -77,7 +77,7 @@ public class PickPathController {
         
         return PickPathService.generateBothPaths(consolidatedStops);
     }
-    
+
     /**
      * Gets trolleys from US03 (Picking Plans)
      *
@@ -203,7 +203,7 @@ public class PickPathController {
      * Cria um PickPath calculado com a estratégia especificada
      *
      * @param strategy estratégia a usar
-     * @param stops lista de stops para calcular
+     * @param stops    lista de stops para calcular
      * @return PickPath calculado
      */
     public PickPath createCalculatedPath(PathStrategy strategy, List<PickStop> stops) {
