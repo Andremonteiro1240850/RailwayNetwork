@@ -25,8 +25,8 @@ public class PickingPlanController {
     /**
      * USEI03 - Create picking plan using specified heuristic
      *
-     * @param capacity the trolley capacity in kg
-     * @param heuristic the packing heuristic to use
+     * @param capacity       the trolley capacity in kg
+     * @param heuristic      the packing heuristic to use
      * @param allowSplitting whether to allow splitting items that don't fit
      * @return the picking plan
      */

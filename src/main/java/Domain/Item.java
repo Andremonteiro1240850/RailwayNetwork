@@ -124,6 +124,11 @@ public class Item {
         this.weight = weight;
     }
 
+    /**
+     * Sets sku.
+     *
+     * @param sku the sku
+     */
     public void setSku (String sku) {
         this.sku=sku;
     }

@@ -65,6 +65,7 @@ public class AuditLog {
 
     /**
      * FOR TESTING ONLY - Set audit log path
+     *
      * @param testPath the test path to use
      */
     public static void setAuditLogPath(Path testPath) {
@@ -238,6 +239,8 @@ public class AuditLog {
     /**
      * Append a line to the audit log
      * This method appends a new line to the audit log file
+     *
+     * @param line the line
      */
     public static void appendLine(String line) {
         try {

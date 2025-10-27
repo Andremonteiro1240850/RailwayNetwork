@@ -16,8 +16,8 @@ public class PickPath {
     /**
      * Construtor para criar um PickPath
      *
-     * @param strategy a estratégia utilizada
-     * @param stops a lista de stops ordenados
+     * @param strategy      a estratégia utilizada
+     * @param stops         a lista de stops ordenados
      * @param totalDistance a distância total calculada
      */
     public PickPath(PathStrategy strategy, List<PickStop> stops, int totalDistance) {

@@ -11,7 +11,7 @@ import java.util.*;
 /**
  * Data loader for railway stations and line segments from CSV files.
  * This class loads real railway data from facility.csv and line.csv files.
- * 
+ *
  * @author Development Team
  * @version 1.0
  */
@@ -20,7 +20,7 @@ public class RailwayDataLoader {
     private List<Station> stations;
     private List<LineSegment> lineSegments;
     private Map<String, Station> stationMap;
-    
+
     /**
      * Constructs a new RailwayDataLoader.
      */
@@ -29,20 +29,20 @@ public class RailwayDataLoader {
         this.lineSegments = new ArrayList<>();
         this.stationMap = new HashMap<>();
     }
-    
+
     /**
      * Loads all railway data from CSV files.
-     * 
+     *
      * @throws IOException if there's an error reading the files
      */
     public void loadAllData() throws IOException {
         loadStations("train_station_dataset/facility.csv");
         loadLineSegments("train_station_dataset/line.csv");
     }
-    
+
     /**
      * Loads stations from the facility CSV file.
-     * 
+     *
      * @param filePath the path to the facility CSV file
      * @throws IOException if there's an error reading the file
      */
@@ -96,10 +96,10 @@ public class RailwayDataLoader {
             System.out.println("Total stations loaded: " + loadedCount);
         }
     }
-    
+
     /**
      * Loads line segments from the line CSV file.
-     * 
+     *
      * @param filePath the path to the line CSV file
      * @throws IOException if there's an error reading the file
      */
@@ -240,47 +240,47 @@ public class RailwayDataLoader {
                (lineName.toLowerCase().contains("porto") || 
                 lineName.toLowerCase().contains("campanhã"));
     }
-    
+
     /**
      * Gets all loaded stations.
-     * 
+     *
      * @return list of stations
      */
     public List<Station> getStations() {
         return new ArrayList<>(stations);
     }
-    
+
     /**
      * Gets all loaded line segments.
-     * 
+     *
      * @return list of line segments
      */
     public List<LineSegment> getLineSegments() {
         return new ArrayList<>(lineSegments);
     }
-    
+
     /**
      * Gets a station by its ID.
-     * 
+     *
      * @param id the station ID
      * @return the station or null if not found
      */
     public Station getStationById(String id) {
         return stationMap.get(id);
     }
-    
+
     /**
      * Gets the number of loaded stations.
-     * 
+     *
      * @return number of stations
      */
     public int getStationCount() {
         return stations.size();
     }
-    
+
     /**
      * Gets the number of loaded line segments.
-     * 
+     *
      * @return number of line segments
      */
     public int getLineSegmentCount() {

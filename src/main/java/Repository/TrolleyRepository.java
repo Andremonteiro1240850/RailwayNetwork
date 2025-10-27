@@ -29,7 +29,7 @@ public class TrolleyRepository {
     public List<Trolley> getTrolley() {
         return new ArrayList<>(trolleyList);
     }
-    
+
     /**
      * Gets all trolleys.
      *

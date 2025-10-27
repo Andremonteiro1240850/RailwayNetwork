@@ -21,11 +21,11 @@ public class USEI03TestUI implements Runnable {
     /**
      * Instantiates a new USEI03 test ui.
      *
-     * @param warehouseController the warehouse controller
+     * @param warehouseController   the warehouse controller
      * @param pickingPlanController the picking plan controller
-     * @param boxRepository the box repository
+     * @param boxRepository         the box repository
      */
-    public USEI03TestUI(WarehouseController warehouseController, 
+    public USEI03TestUI(WarehouseController warehouseController,
                        PickingPlanController pickingPlanController,
                        BoxRepository boxRepository) {
         this.warehouseController = warehouseController;

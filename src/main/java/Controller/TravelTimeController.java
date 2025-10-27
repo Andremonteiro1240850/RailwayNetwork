@@ -7,7 +7,7 @@ import java.io.IOException;
 /**
  * Controller for managing travel time calculations.
  * This controller handles the business logic coordination for USLP03 functionality.
- * 
+ *
  * @author Development Team
  * @version 1.0
  */
@@ -17,7 +17,7 @@ public class TravelTimeController {
     private final List<LineSegment> lineSegments;
     private final List<Station> stations;
     private final RailwayDataLoader dataLoader;
-    
+
     /**
      * Constructs a new TravelTimeController with real railway data from CSV files.
      */
@@ -50,47 +50,47 @@ public class TravelTimeController {
         
         this.service = new TravelCalculationService(lineSegments);
     }
-    
+
     /**
      * Gets the travel calculation service.
-     * 
+     *
      * @return the travel calculation service
      */
     public TravelCalculationService getService() {
         return service;
     }
-    
+
     /**
      * Gets all available stations.
-     * 
+     *
      * @return list of stations
      */
     public List<Station> getStations() {
         return stations;
     }
-    
+
     /**
      * Gets all available line segments.
-     * 
+     *
      * @return list of line segments
      */
     public List<LineSegment> getLineSegments() {
         return lineSegments;
     }
-    
+
     /**
      * Gets a station by its ID.
-     * 
+     *
      * @param id the station ID
      * @return the station or null if not found
      */
     public Station getStationById(String id) {
         return dataLoader.getStationById(id);
     }
-    
+
     /**
      * Gets the railway data loader.
-     * 
+     *
      * @return the data loader.
      */
     public RailwayDataLoader getDataLoader() {

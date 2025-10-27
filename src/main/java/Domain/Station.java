@@ -3,7 +3,7 @@ package Domain;
 /**
  * Represents a railway station in the logistics system.
  * A station is identified by a unique ID and has a name and optional location.
- * 
+ *
  * @author Development Team
  * @version 1.0
  */
@@ -12,12 +12,12 @@ public class Station {
     private final String id;
     private final String name;
     private final String location;
-    
+
     /**
      * Constructs a new Station with the specified parameters.
-     * 
-     * @param id the unique identifier for the station
-     * @param name the name of the station
+     *
+     * @param id       the unique identifier for the station
+     * @param name     the name of the station
      * @param location the location of the station (optional)
      * @throws IllegalArgumentException if id or name are null or empty
      */
@@ -33,47 +33,47 @@ public class Station {
         this.name = name.trim();
         this.location = location != null ? location.trim() : "";
     }
-    
+
     /**
      * Constructs a new Station with ID and name only.
-     * 
-     * @param id the unique identifier for the station
+     *
+     * @param id   the unique identifier for the station
      * @param name the name of the station
      */
     public Station(String id, String name) {
         this(id, name, null);
     }
-    
+
     /**
      * Gets the station ID.
-     * 
+     *
      * @return the station ID
      */
     public String getId() {
         return id;
     }
-    
+
     /**
      * Gets the station name.
-     * 
+     *
      * @return the station name
      */
     public String getName() {
         return name;
     }
-    
+
     /**
      * Gets the station location.
-     * 
+     *
      * @return the station location, empty string if not specified
      */
     public String getLocation() {
         return location;
     }
-    
+
     /**
      * Checks if this station has a location specified.
-     * 
+     *
      * @return true if location is specified, false otherwise
      */
     public boolean hasLocation() {
