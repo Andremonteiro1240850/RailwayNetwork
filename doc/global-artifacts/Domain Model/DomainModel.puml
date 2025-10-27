@@ -290,7 +290,7 @@ Allocation "1" -- "1" AllocationMode : has
     +usedWeightKg : int
   }
 
-  enum PackingHeuristic_PerguntaraoStor {
+  enum PackingHeuristic {
     FF
     FFD
     BFD
@@ -329,7 +329,7 @@ Allocation "1" -- "1" AllocationMode : has
 PickingPlan "1" -- "1..*" PickingBatch : determines
 PickingBatch "1" -- "1" PickingTrolley : carried by
 PickingBatch "1" -- "1..*" Allocation : has
-PackingHeuristic_PerguntaraoStor "1" -- "1..*" PickingBatch : organizes
+PackingHeuristic "1" -- "1..*" PickingBatch : organizes
 PickPath "1" -- "1..*" PickStop : stops at
 PickStop "1" -- "1" Bay : matches
 PickPath "1" -- "1" PathStrategy : defined by
