@@ -99,6 +99,7 @@ public class RailwayDataLoader {
 
     /**
      * Loads line segments from the line CSV file.
+     * The CSV file should contain columns: ID, Name, Owner, Start ID, Start, End ID, End, Gauge, Length_m
      *
      * @param filePath the path to the line CSV file
      * @throws IOException if there's an error reading the file
@@ -134,37 +135,40 @@ public class RailwayDataLoader {
                 
                 String[] parts = line.split(";");
                 
-                if (parts.length >= 8) {
+                if (parts.length >= 9) {
                     String id = parts[0].trim();
                     String name = parts[1].trim();
                     String startId = parts[3].trim();
                     String endId = parts[5].trim();
                     String gaugeStr = parts[7].trim();
+                    String lengthStr = parts[8].trim();
                     
                     if (!id.isEmpty() && !name.isEmpty() && !startId.isEmpty() && 
-                        !endId.isEmpty() && !gaugeStr.isEmpty()) {
+                        !endId.isEmpty() && !gaugeStr.isEmpty() && !lengthStr.isEmpty()) {
                         
                         try {
                             double gauge = Double.parseDouble(gaugeStr);
+                            double lengthMeters = Double.parseDouble(lengthStr);
+                            double lengthKm = lengthMeters / 1000.0; // Convert meters to kilometers
+                            
                             Station startStation = stationMap.get(startId);
                             Station endStation = stationMap.get(endId);
                             
                             if (startStation != null && endStation != null) {
-                                // Estimate length based on typical Portuguese railway distances
-                                double estimatedLength = estimateSegmentLength(startStation, endStation);
+                                // Use actual length from CSV instead of estimation
                                 
                                 // Assume electrified for main lines
                                 boolean electrified = isMainLine(name);
                                 
                                 LineSegment segment = new LineSegment(id, name, startStation, endStation, 
-                                                                    estimatedLength, gauge, electrified);
+                                                                    lengthKm, gauge, electrified);
                                 lineSegments.add(segment);
                                 loadedCount++;
                             } else {
                                 System.err.println("Station not found - Start: " + startStation + ", End: " + endStation);
                             }
                         } catch (NumberFormatException e) {
-                            System.err.println("Invalid gauge value '" + gaugeStr + "' in line " + lineNumber);
+                            System.err.println("Invalid numeric value in line " + lineNumber + ": " + e.getMessage());
                         } catch (Exception e) {
                             System.err.println("Error creating line segment from line " + lineNumber + ": " + e.getMessage());
                         }
@@ -176,56 +180,6 @@ public class RailwayDataLoader {
         }
     }
     
-    /**
-     * Estimates the length of a line segment based on station names and typical Portuguese railway distances.
-     * This is a simplified approach - in a real system, you'd have actual distances from a database.
-     * 
-     * @param startStation the starting station
-     * @param endStation the ending station
-     * @return estimated length in kilometers
-     */
-    private double estimateSegmentLength(Station startStation, Station endStation) {
-        // This is a simplified estimation based on typical Portuguese railway distances
-        // In a real system, you would have actual distances from a database or GIS system
-        
-        // Real distances based on Portuguese railway network
-        Map<String, Double> stationDistances = new HashMap<>();
-        stationDistances.put("7", 0.0);     // Porto São Bento (reference point)
-        stationDistances.put("5", 1.5);     // Porto Campanhã
-        stationDistances.put("20", 15.0);   // Nine
-        stationDistances.put("8", 25.0);    // Barcelos
-        stationDistances.put("17", 35.0);   // Viana do Castelo
-        stationDistances.put("21", 45.0);   // Caminha
-        stationDistances.put("16", 50.0);   // São Pedro da Torre
-        stationDistances.put("11", 55.0);   // Valença
-        stationDistances.put("1", 5.0);     // São Romão
-        stationDistances.put("2", 8.0);     // Tamel
-        stationDistances.put("3", 12.0);    // Senhora das Dores
-        stationDistances.put("4", 18.0);    // Lousado
-        stationDistances.put("6", 22.0);    // Leandro
-        stationDistances.put("9", 28.0);    // Vila Nova da Cerveira
-        stationDistances.put("10", 32.0);   // Midões
-        stationDistances.put("12", 38.0);   // Darque
-        stationDistances.put("13", 42.0);   // Contumil
-        stationDistances.put("14", 48.0);   // Ermesinde
-        stationDistances.put("15", 52.0);   // São Frutuoso
-        stationDistances.put("18", 58.0);   // Famalicão
-        stationDistances.put("19", 62.0);   // Barroselas
-        stationDistances.put("22", 68.0);   // Carvalha
-        stationDistances.put("23", 72.0);   // Carreço
-        
-        Double startDistance = stationDistances.get(startStation.getId());
-        Double endDistance = stationDistances.get(endStation.getId());
-        
-        if (startDistance != null && endDistance != null) {
-            double distance = Math.abs(endDistance - startDistance);
-            // Ensure minimum distance of 0.5km
-            return Math.max(distance, 0.5);
-        }
-        
-        // Default estimation if stations not in our map
-        return 5.0; // Default 5km for unknown segments
-    }
     
     /**
      * Determines if a line is a main electrified line based on its name.
