@@ -59,12 +59,12 @@ public class TrolleyUI implements Runnable {
     }
 
     private void showMenu() {
-        System.out.println("\n====== MENU TROLLEY (USEI03) ======");
+        System.out.println("\n====== MENU TROLLEY ======");
         System.out.println("1. Create new trolley");
         System.out.println("2. Execute packing (heurístics FF, FFD ou BFD)");
         System.out.println("3. List existing trolleys");
         System.out.println("4. Create Picking Plan ");
-        System.out.println("0. Sair");
+        System.out.println("0. Exit");
     }
 
     private void createTrolley() {
