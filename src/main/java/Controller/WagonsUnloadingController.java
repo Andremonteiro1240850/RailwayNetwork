@@ -88,7 +88,7 @@ public class WagonsUnloadingController {
     }
 
     /**
-     * Get available SKUs
+     * Get available SKUsou a
      *
      * @return the available skus
      */

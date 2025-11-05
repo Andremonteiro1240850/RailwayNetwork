@@ -1,5 +1,3 @@
-
-
 SELECT
     f.name AS nome_instalacao,
     COUNT(l.id_line) AS total_linhas_partida
