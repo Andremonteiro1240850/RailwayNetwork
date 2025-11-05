@@ -82,151 +82,122 @@ public class TrolleyController {
      */
     public void packing() {
         List<AllocationRow> alocacoes = warehouseRepository.getAllocationRows();
-        List<PickingItems> itensASeremPegos = new ArrayList<>();
-        Map<Integer, Double> percTrol = new HashMap<>();
-
-        trolley.setCurrentLoad(0.0);
-
-        // --- FIRST FIT (FF) ---
-        if (trolley.getOptionHeuristic().equals("FF")) {
-
-            for (AllocationRow a : alocacoes) {
-                double pesoItem = a.getQty() * warehouseRepository.getItemBySku(a.getSku()).getWeight();
-
-                if (trolley.getCurrentLoad() + pesoItem <= trolley.getMaxCapacity()) {
-                    PickingItems item = new PickingItems(a.getOrderId(), a.getLineNo(), a.getAisle(),
-                            a.getBay(), a.getBoxId(), a.getSku(), a.getQty());
-                    itensASeremPegos.add(item);
-                    trolley.setCurrentLoad(trolley.getCurrentLoad() + pesoItem);
-                } else {
-                    Trolley trolleyAtual = new Trolley(trolley.getMaxCapacity(), trolley.getCurrentLoad(),
-                            (int)(Math.random()*10000)+1, new ArrayList<>(itensASeremPegos),
-                            trolley.getOptionHeuristic());
-
-                    trolleyList.add(trolleyAtual);
-                    double percent = (trolleyAtual.getCurrentLoad() / trolleyAtual.getMaxCapacity()) * 100;
-                    percTrol.put(trolleyAtual.getId(), percent);
-
-                    itensASeremPegos.clear();
-                    trolley.setCurrentLoad(0.0);
-
-                    PickingItems novoItem = new PickingItems(a.getOrderId(), a.getLineNo(), a.getAisle(),
-                            a.getBay(), a.getBoxId(), a.getSku(), a.getQty());
-                    itensASeremPegos.add(novoItem);
-                    trolley.setCurrentLoad(pesoItem);
-                }
-            }
-
-            if (!itensASeremPegos.isEmpty()) {
-                Trolley ultimo = new Trolley(trolley.getMaxCapacity(), trolley.getCurrentLoad(),
-                        (int)(Math.random()*10000)+1, new ArrayList<>(itensASeremPegos),
-                        trolley.getOptionHeuristic());
-                trolleyList.add(ultimo);
-                double percent = (ultimo.getCurrentLoad() / ultimo.getMaxCapacity()) * 100;
-                percTrol.put(ultimo.getId(), percent);
-            }
-            trolleyRepository.saveTrolley(trolleyList);
-            System.out.println("Heurística FF executada. Total de trolleys: " + trolleyList.size());
+        if (alocacoes.isEmpty()) {
+            return;
         }
 
-        // --- FIRST FIT DECREASING (FFD) ---
-        else if (trolley.getOptionHeuristic().equals("FFD")) {
-            alocacoes.sort((a1, a2) -> {
-                Item item1 = warehouseRepository.getItemBySku(a1.getSku());
-                Item item2 = warehouseRepository.getItemBySku(a2.getSku());
-                double weight1 = a1.getQty() * item1.getWeight();
-                double weight2 = a2.getQty() * item2.getWeight();
-                return Double.compare(weight2, weight1);
-            });
+        List<Trolley> trolleys = new ArrayList<>();
+        int capacity = trolley.getMaxCapacity();
+        String heuristic = trolley.getOptionHeuristic();
 
-            for (AllocationRow a : alocacoes) {
-                double pesoItem = a.getQty() * warehouseRepository.getItemBySku(a.getSku()).getWeight();
+        switch (heuristic) {
+            case "FF":
+                for (AllocationRow item : alocacoes) {
+                    double itemWeight = item.getQty() * warehouseRepository.getItemBySku(item.getSku()).getWeight();
+                    boolean placed = false;
 
-                if (trolley.getCurrentLoad() + pesoItem <= trolley.getMaxCapacity()) {
-                    PickingItems item = new PickingItems(a.getOrderId(), a.getLineNo(), a.getAisle(),
-                            a.getBay(), a.getBoxId(), a.getSku(), a.getQty());
-                    itensASeremPegos.add(item);
-                    trolley.setCurrentLoad(trolley.getCurrentLoad() + pesoItem);
-                } else {
-                    Trolley trolleyAtual = new Trolley(trolley.getMaxCapacity(), trolley.getCurrentLoad(),
-                            (int)(Math.random()*10000)+1, new ArrayList<>(itensASeremPegos),
-                            trolley.getOptionHeuristic());
-                    trolleyList.add(trolleyAtual);
-                    double percent = (trolleyAtual.getCurrentLoad() / trolleyAtual.getMaxCapacity()) * 100;
-                    percTrol.put(trolleyAtual.getId(), percent);
+                    // tenta colocar em trolleys existentes
+                    for (Trolley t : trolleys) {
+                        if (t.getCurrentLoad() + itemWeight <= capacity) {
+                            t.getPickingItems().add(new PickingItems(item.getOrderId(), item.getLineNo(), item.getAisle(),
+                                    item.getBay(), item.getBoxId(), item.getSku(), item.getQty()));
+                            t.setCurrentLoad(t.getCurrentLoad() + itemWeight);
+                            placed = true;
+                            break;
+                        }
+                    }
 
-                    itensASeremPegos.clear();
-                    trolley.setCurrentLoad(0.0);
-
-                    PickingItems novoItem = new PickingItems(a.getOrderId(), a.getLineNo(), a.getAisle(),
-                            a.getBay(), a.getBoxId(), a.getSku(), a.getQty());
-                    itensASeremPegos.add(novoItem);
-                    trolley.setCurrentLoad(pesoItem);
-                }
-            }
-
-            if (!itensASeremPegos.isEmpty()) {
-                Trolley ultimo = new Trolley(trolley.getMaxCapacity(), trolley.getCurrentLoad(),
-                        (int)(Math.random()*10000)+1, new ArrayList<>(itensASeremPegos),
-                        trolley.getOptionHeuristic());
-                trolleyList.add(ultimo);
-                double percent = (ultimo.getCurrentLoad() / ultimo.getMaxCapacity()) * 100;
-                percTrol.put(ultimo.getId(), percent);
-            }
-            trolleyRepository.saveTrolley(trolleyList);
-
-            System.out.println("Heurística FFD executada. Total de trolleys: " + trolleyList.size());
-        }
-
-        // --- BEST FIT DECREASING (BFD) ---
-        else if (trolley.getOptionHeuristic().equals("BFD")) {
-            alocacoes.sort((a1, a2) -> {
-                Item item1 = warehouseRepository.getItemBySku(a1.getSku());
-                Item item2 = warehouseRepository.getItemBySku(a2.getSku());
-                double weight1 = a1.getQty() * item1.getWeight();
-                double weight2 = a2.getQty() * item2.getWeight();
-                return Double.compare(weight2, weight1);
-            });
-
-            for (AllocationRow a : alocacoes) {
-                double pesoItem = a.getQty() * warehouseRepository.getItemBySku(a.getSku()).getWeight();
-                PickingItems item = new PickingItems(a.getOrderId(), a.getLineNo(), a.getAisle(),
-                        a.getBay(), a.getBoxId(), a.getSku(), a.getQty());
-
-                Trolley melhorTrolley = null;
-                double menorEspacoSobrante = Double.MAX_VALUE;
-
-                for (Trolley t : trolleyList) {
-                    double espacoRestante = t.getMaxCapacity() - t.getCurrentLoad();
-                    if (pesoItem <= espacoRestante && (espacoRestante - pesoItem) < menorEspacoSobrante) {
-                        melhorTrolley = t;
-                        menorEspacoSobrante = espacoRestante - pesoItem;
+                    // se não couber, cria novo trolley
+                    if (!placed) {
+                        Trolley newTrolley = new Trolley(capacity, 0, (int)(Math.random() * 10000) + 1,
+                                new ArrayList<>(), heuristic);
+                        newTrolley.getPickingItems().add(new PickingItems(item.getOrderId(), item.getLineNo(), item.getAisle(),
+                                item.getBay(), item.getBoxId(), item.getSku(), item.getQty()));
+                        newTrolley.setCurrentLoad(itemWeight);
+                        trolleys.add(newTrolley);
                     }
                 }
+                break;
 
-                if (melhorTrolley != null) {
-                    melhorTrolley.getPickingItems().add(item);
-                    melhorTrolley.setCurrentLoad(melhorTrolley.getCurrentLoad() + pesoItem);
-                } else {
-                    List<PickingItems> novosItens = new ArrayList<>();
-                    novosItens.add(item);
-                    Trolley novoTrolley = new Trolley(
-                            trolley.getMaxCapacity(), pesoItem,
-                            (int)(Math.random() * 10000) + 1,
-                            novosItens, trolley.getOptionHeuristic());
-                    trolleyList.add(novoTrolley);
+            case "FFD":
+                // Ordena decrescente pelo peso
+                alocacoes.sort((a1, a2) -> {
+                    double w1 = a1.getQty() * warehouseRepository.getItemBySku(a1.getSku()).getWeight();
+                    double w2 = a2.getQty() * warehouseRepository.getItemBySku(a2.getSku()).getWeight();
+                    return Double.compare(w2, w1);
+                });
+                // reaproveita lógica FF
+                for (AllocationRow item : alocacoes) {
+                    double itemWeight = item.getQty() * warehouseRepository.getItemBySku(item.getSku()).getWeight();
+                    boolean placed = false;
+                    for (Trolley t : trolleys) {
+                        if (t.getCurrentLoad() + itemWeight <= capacity) {
+                            t.getPickingItems().add(new PickingItems(item.getOrderId(), item.getLineNo(), item.getAisle(),
+                                    item.getBay(), item.getBoxId(), item.getSku(), item.getQty()));
+                            t.setCurrentLoad(t.getCurrentLoad() + itemWeight);
+                            placed = true;
+                            break;
+                        }
+                    }
+                    if (!placed) {
+                        Trolley newTrolley = new Trolley(capacity, 0, (int)(Math.random() * 10000) + 1,
+                                new ArrayList<>(), heuristic);
+                        newTrolley.getPickingItems().add(new PickingItems(item.getOrderId(), item.getLineNo(), item.getAisle(),
+                                item.getBay(), item.getBoxId(), item.getSku(), item.getQty()));
+                        newTrolley.setCurrentLoad(itemWeight);
+                        trolleys.add(newTrolley);
+                    }
                 }
-            }
+                break;
 
-            for (Trolley t : trolleyList) {
-                double percent = (t.getCurrentLoad() / t.getMaxCapacity()) * 100;
-                percTrol.put(t.getId(), percent);
-            }
-            trolleyRepository.saveTrolley(trolleyList);
+            case "BFD":
+                // Ordena decrescente pelo peso
+                alocacoes.sort((a1, a2) -> {
+                    double w1 = a1.getQty() * warehouseRepository.getItemBySku(a1.getSku()).getWeight();
+                    double w2 = a2.getQty() * warehouseRepository.getItemBySku(a2.getSku()).getWeight();
+                    return Double.compare(w2, w1);
+                });
 
-            System.out.println("Heurística BFD executada. Total de trolleys: " + trolleyList.size());
+                for (AllocationRow item : alocacoes) {
+                    double itemWeight = item.getQty() * warehouseRepository.getItemBySku(item.getSku()).getWeight();
+                    Trolley bestTrolley = null;
+                    double smallestRemaining = Double.MAX_VALUE;
+
+                    for (Trolley t : trolleys) {
+                        double remaining = capacity - t.getCurrentLoad();
+                        if (itemWeight <= remaining && remaining < smallestRemaining) {
+                            bestTrolley = t;
+                            smallestRemaining = remaining;
+                        }
+                    }
+
+                    if (bestTrolley != null) {
+                        bestTrolley.getPickingItems().add(new PickingItems(item.getOrderId(), item.getLineNo(), item.getAisle(),
+                                item.getBay(), item.getBoxId(), item.getSku(), item.getQty()));
+                        bestTrolley.setCurrentLoad(bestTrolley.getCurrentLoad() + itemWeight);
+                    } else {
+                        Trolley newTrolley = new Trolley(capacity, 0, (int)(Math.random() * 10000) + 1,
+                                new ArrayList<>(), heuristic);
+                        newTrolley.getPickingItems().add(new PickingItems(item.getOrderId(), item.getLineNo(), item.getAisle(),
+                                item.getBay(), item.getBoxId(), item.getSku(), item.getQty()));
+                        newTrolley.setCurrentLoad(itemWeight);
+                        trolleys.add(newTrolley);
+                    }
+                }
+                break;
+
+            default:
+                System.out.println("Heurística desconhecida: " + heuristic);
+                return;
         }
+
+        // Salva todos os trolleys
+        trolleyList.clear();
+        trolleyList.addAll(trolleys);
+        trolleyRepository.saveTrolley(trolleyList);
+        System.out.println("Heurística " + heuristic + " executada. Total de trolleys: " + trolleyList.size());
     }
+
 
     /**
      * Gets trolley.

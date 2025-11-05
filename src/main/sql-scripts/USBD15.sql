@@ -2,12 +2,15 @@
 
 SELECT
     f.name AS nome_instalacao,
-    COUNT(l.id_line) AS total_linhas_partida
+    COUNT(l.line_id) AS total_linhas_partida
 FROM
-    facility f
+    Facility f
         JOIN
-    line l ON f.id_facility = l.fk_facility_start
+    Line l ON f.facility_id = l.start_facility_id
 GROUP BY
-    f.id_facility, f.name
+    f.facility_id, f.name
 ORDER BY
     total_linhas_partida DESC, nome_instalacao ASC;
+
+
+

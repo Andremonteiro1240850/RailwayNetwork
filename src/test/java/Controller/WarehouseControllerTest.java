@@ -9,7 +9,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import java.time.LocalDate; // Importação corrigida para LocalDate
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -150,10 +150,6 @@ class WarehouseControllerTest {
         // A BOX-A expira mais cedo, deve ser a primeira a ser usada
         assertEquals("BOX-A", rowH1.getBoxId(), "A BOX-A (FEFO) deve ser usada primeiro.");
     }
-
-    // ----------------------------------------------------------------------------------
-    // TESTES DE FUNÇÕES SECUNDÁRIAS
-    // ----------------------------------------------------------------------------------
 
     @Test
     @DisplayName("ESTADO: estadoEncomenda deve calcular o estado corretamente (simula PARTIAL) e gravar resultados.")
