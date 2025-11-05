@@ -36,7 +36,7 @@ public class PickPathUI {
      */
     public void showMainMenu() {
         while (true) {
-            System.out.println("\n=== PICK PATH SEQUENCING (USEI04) ===");
+            System.out.println("\n=== PICK PATH SEQUENCING ===");
             System.out.println("1. Demo: ASC_SWEEP Strategy");
             System.out.println("2. Demo: NEAREST_NEIGHBOUR Strategy");
             System.out.println("3. Process (custom data)");
@@ -99,18 +99,18 @@ public class PickPathUI {
      * Process with trolley data from US03
      */
     private void processWithTrolleyData() {
-        System.out.println("\n=== PROCESSING WITH TROLLEY DATA FROM US03 ===");
+        System.out.println("\n=== PROCESSING WITH TROLLEY DATA AS PLANNER ===");
 
         try {
             // Get trolley data from controller
             List<Trolley> trolleys = controller.getTrolleysFromUS03();
 
             if (trolleys.isEmpty()) {
-                System.out.println("No trolleys found from US03. Please run trolley packing first.");
+                System.out.println("No trolleys found. Please run trolley packing first.");
                 return;
             }
 
-            System.out.println("Found " + trolleys.size() + " trolleys from US03:");
+            System.out.println("Found " + trolleys.size() + " trolleys:");
             for (int i = 0; i < trolleys.size(); i++) {
                 Trolley trolley = trolleys.get(i);
                 System.out.println("  " + (i + 1) + ". Trolley ID: " + trolley.getId() +

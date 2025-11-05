@@ -32,7 +32,7 @@ public class TrolleyUI implements Runnable {
 
         while (running) {
             showMenu();
-            System.out.print("Escolha uma opção: ");
+            System.out.print("Choose an option: ");
             int opcao = getIntInput();
 
             switch (opcao) {
@@ -49,71 +49,71 @@ public class TrolleyUI implements Runnable {
                     createPickingPlan();
                     break;
                 case 0:
-                    System.out.println("Encerrando aplicação. Até logo!");
+                    System.out.println("App closed. Goodbye!");
                     running = false;
                     break;
                 default:
-                    System.out.println("Opção inválida! Tente novamente.");
+                    System.out.println("Invalid option! Try again.");
             }
         }
     }
 
     private void showMenu() {
-        System.out.println("\n====== MENU TROLLEY (USEI03) ======");
-        System.out.println("1. Criar novo trolley");
-        System.out.println("2. Executar packing (heurísticas FF, FFD ou BFD)");
-        System.out.println("3. Listar trolleys existentes");
-        System.out.println("4. USEI03 - Create Picking Plan (NEW)");
-        System.out.println("0. Sair");
+        System.out.println("\n====== MENU TROLLEY ======");
+        System.out.println("1. Create new trolley");
+        System.out.println("2. Execute packing (heurístics FF, FFD ou BFD)");
+        System.out.println("3. List existing trolleys");
+        System.out.println("4. Create Picking Plan ");
+        System.out.println("0. Exit");
     }
 
     private void createTrolley() {
-        System.out.print("Digite a capacidade máxima do carrinho: ");
+        System.out.print("Type the max capacity of the trolley: ");
         int capacidade = getIntInput();
 
-        System.out.print("Digite a opção de heurística a usar (FF, FFD, BFD): ");
+        System.out.print("Digite the Euristic you want to use (FF, FFD, BFD): ");
         String opcao = sc.next().toUpperCase();
 
         if (!opcao.equals("FF") && !opcao.equals("FFD") && !opcao.equals("BFD")) {
-            System.out.println("Heurística inválida! Use FF, FFD ou BFD.");
+            System.out.println("Heurística invalid! Use FF, FFD ou BFD.");
             return;
         }
 
         Trolley t = trolleyController.createTrolley(capacidade, opcao);
-        System.out.println("Carrinho criado com sucesso!");
+        System.out.println("Trolley created!");
         System.out.println(t);
     }
 
     private void startPacking() {
         if (trolleyController.getTrolley() == null) {
-            System.out.println("Nenhum trolley criado. Crie um primeiro.");
+            System.out.println("No trolley created. Create one first.");
             return;
         }
 
         try {
-            System.out.println("Executando packing...");
+            System.out.println("Executing packing...");
             trolleyController.packing();
-            System.out.println("Packing concluído com sucesso!");
+            System.out.println("Packing finished!");
         } catch (Exception e) {
-            System.out.println("Erro ao executar packing: " + e.getMessage());
+            System.out.println("Error executing packing: " + e.getMessage());
         }
     }
 
     private void listTrolleys() {
         List<Trolley> lista = trolleyController.getTrolleyList();
         if (lista.isEmpty()) {
-            System.out.println("Nenhum trolley criado ainda.");
+            System.out.println("No trolley created.");
             return;
         }
 
-        System.out.println("\n--- Lista de Trolleys ---");
+        System.out.println("\n--- Trolleys List ---");
         for (Trolley t : lista) {
             System.out.println(t);
         }
     }
 
     private void createPickingPlan() {
-        System.out.println("\n=== USEI03 - PICKING PLAN CREATION ===");
+        System.out.println("\n=== PICKING PLAN CREATION ===");
 
         // Get trolley capacity
         System.out.print("Enter trolley capacity (kg): ");
