@@ -13,8 +13,8 @@ class BoxTest {
     @Test
     @DisplayName("getBoxId returns the correct boxId")
     void getBoxId() {
-        Box box = new Box("BOX001", "SKU001", 10, 
-            LocalDate.of(2025, 12, 31), LocalDateTime.now());
+        Box box = new Box("BOX001", "SKU001", 10,
+                LocalDate.of(2025, 12, 31), LocalDateTime.now());
         assertEquals("BOX001", box.getBoxId());
     }
 
