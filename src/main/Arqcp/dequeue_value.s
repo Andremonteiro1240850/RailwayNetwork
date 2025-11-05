@@ -4,7 +4,7 @@ dequeue_value:
 li t0, 0
 li t1, 1
 
-lw t7, 0(a2)        # carrega o valor de nelem
+lw t7, 0(a2)        # carrega o valor de nelemm
 beqz t7, return_zero
 
 lw t2, 0(a3)        # carrega o valor de tail em t2
