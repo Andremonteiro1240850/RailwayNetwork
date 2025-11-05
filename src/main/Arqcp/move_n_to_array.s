@@ -87,8 +87,8 @@ end_second_loop:
 
 no_wrap:
     sw t19, 0(a3)               # *tail = new_tail
-    sub t20, t0, a5             # *nelem = cur - n
-    sw t20, 0(a2)
+    sub t20, t0, a5
+    sw t20, 0(a2)               # *nelem = cur - n
 
 
     li a0, 1
