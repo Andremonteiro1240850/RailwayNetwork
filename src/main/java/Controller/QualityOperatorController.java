@@ -116,7 +116,7 @@ public class QualityOperatorController {
      */
     private void loadReturnsFromCSV(boolean showDetails) {
         if (showDetails) {
-            System.out.println("\n=== LOAD RETURNS FROM CSV (USEI05) ===");
+            System.out.println("\n=== LOAD RETURNS FROM CSV ===");
         }
 
         Path csvPath = Paths.get("train_station_dataset", "returns.csv");
@@ -256,7 +256,7 @@ public class QualityOperatorController {
      * View quarantine queue (sorted by timestamp DESC, returnId ASC) according to USEI05
      */
     private void viewQuarantineQueue() {
-        System.out.println("\n=== QUARANTINE QUEUE (USEI05) ===");
+        System.out.println("\n=== QUARANTINE QUEUE ===");
 
         if (quarantineItems.isEmpty()) {
             System.out.println("No items in quarantine queue.");

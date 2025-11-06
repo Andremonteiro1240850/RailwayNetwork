@@ -1,5 +1,3 @@
-
-
 WITH loco_types (locomotive_id, loco_type) AS (
     SELECT Locomotivelocomotive_id, 'DIESEL'  FROM Diesel_Locomotive
     UNION ALL
