@@ -1,0 +1,164 @@
+@startuml USEI05_ClassDiagram
+skinparam monochrome true
+skinparam style strictuml
+
+package "UI" {
+    class ReturnsUI {
+        - qualityOperatorController : QualityOperatorController
+        - scanner : Scanner
+        + ReturnsUI(qualityOperatorController: QualityOperatorController)
+        + showMainMenu() : void
+        - viewQuarantineQueue() : void
+        - processNextInspection() : void
+        - viewProcessedInspections() : void
+        - viewAuditLog() : void
+    }
+}
+
+package "Controller" {
+    class QualityOperatorController {
+        - inspectionController : InspectionController
+        - scanner : Scanner
+        - dateFormatter : DateTimeFormatter
+        - quarantineItems : List<Return>
+        + QualityOperatorController()
+        + QualityOperatorController(warehouseManager: WarehouseManager)
+        + showLogin() : boolean
+        + showMainMenu() : void
+        - loadReturnsFromCSV() : void
+        - loadReturnsFromCSV(showDetails: boolean) : void
+        - mapReturnReason(csvReason: String) : String
+        - viewQuarantineQueue() : void
+        - processSingleInspection() : void
+        - processNextInspection() : void
+        - determineProcessingReason(item: Return) : String
+        - determineActionFromReason(reason: String) : String
+        - viewProcessedInspections() : void
+        - viewAuditLog() : void
+        - sortQuarantineQueue() : void
+    }
+    
+    class InspectionController {
+        - quarantineInspections : List<QuarantineInspection>
+        - warehouseManager : WarehouseManager
+        - auditFormatter : DateTimeFormatter
+        + InspectionController()
+        + InspectionController(warehouseManager: WarehouseManager)
+        + processQuarantine(sku: String, quantity: int, returnReason: String, expiryDate: LocalDate) : String
+        + processQuarantine(sku: String, quantity: int, returnReason: String, expiryDate: LocalDate, qtyRestocked: Integer, qtyDiscarded: Integer) : String
+        + getInspectionsBySku(sku: String) : List<QuarantineInspection>
+        + getAuditLogs() : List<String>
+        - createQuarantineInspection() : QuarantineInspection
+        - determineAction(returnReason: String) : QAAction
+        - processRestock(inspection: QuarantineInspection, sku: String, quantity: int, expiryDate: LocalDate) : void
+        - processDiscard(inspection: QuarantineInspection, sku: String, quantity: int) : void
+        - createAuditLog(inspection: QuarantineInspection, sku: String, quantity: int, qtyRestocked: int, qtyDiscarded: int) : void
+        - generateId(prefix: String) : String
+    }
+}
+
+package "Domain" {
+    class Return {
+        - returnId : String
+        - sku : String
+        - qty : int
+        - reason : String
+        - timestamp : LocalDateTime
+        - expiryDate : LocalDate
+        + Return(returnId: String, sku: String, qty: int, reason: String, timestamp: LocalDateTime, expiryDate: LocalDate)
+        + getReturnId() : String
+        + getSku() : String
+        + getQty() : int
+        + getReason() : String
+        + getTimestamp() : LocalDateTime
+        + getExpiryDate() : LocalDate
+        + setQty(qty: int) : void
+        + setReason(reason: String) : void
+        + setExpiryDate(expiryDate: LocalDate) : void
+        + toString() : String
+    }
+    
+    class QuarantineInspection {
+        - inspectionId : String
+        - inspectedAt : LocalDateTime
+        - returnId : String
+        - action : QAAction
+        + QuarantineInspection()
+        + QuarantineInspection(inspectionId: String, returnId: String, inspectedAt: LocalDateTime, action: QAAction)
+        + getInspectionId() : String
+        + getInspectedAt() : LocalDateTime
+        + getReturnId() : String
+        + getAction() : QAAction
+        + setInspectionId(inspectionId: String) : void
+        + setInspectedAt(inspectedAt: LocalDateTime) : void
+        + setReturnId(returnId: String) : void
+        + setAction(action: QAAction) : void
+        + toString() : String
+    }
+    
+    class AuditLog {
+        - id : int
+        - returnId : int
+        - timeStamp : int
+        - sku : int
+        - action : String
+        - qtyRestocked : int
+        - qtyDiscarded : int
+        + AuditLog(id: int, returnId: int, timeStamp: int, sku: int, action: String, qtyRestocked: int, qtyDiscarded: int)
+        + getId() : int
+        + getReturnId() : int
+        + getTimeStamp() : int
+        + getSku() : int
+        + getAction() : String
+        + getQtyRestocked() : int
+        + getQtyDiscarded() : int
+        + setId(id: int) : void
+        + setReturnId(returnId: int) : void
+        + setTimeStamp(timeStamp: int) : void
+        + setSku(sku: int) : void
+        + setAction(action: String) : void
+        + setQtyRestocked(qtyRestocked: int) : void
+        + setQtyDiscarded(qtyDiscarded: int) : void
+        + {static} readAll() : List<String>
+        + {static} clearAll() : void
+        + {static} appendLine(line: String) : void
+    }
+    
+    class WarehouseManager {
+        + insertReturnedBox(box: Box) : void
+    }
+    
+    class Box {
+        - boxId : String
+        - sku : String
+        - qty : int
+        - expiryDate : LocalDate
+        - receivedAt : LocalDateTime
+        + getBoxId() : String
+        + getSku() : String
+        + getQty() : int
+        + getExpiryDate() : LocalDate
+        + getReceivedAt() : LocalDateTime
+    }
+    
+    enum QAAction {
+        RESTOCK
+        DISCARD
+    }
+}
+
+ReturnsUI "1" --> "1" QualityOperatorController
+QualityOperatorController "1" --> "1" InspectionController
+QualityOperatorController ..> Return
+QualityOperatorController ..> WarehouseManager
+InspectionController "1" *-- "*" QuarantineInspection
+InspectionController ..> WarehouseManager
+InspectionController ..> Box
+InspectionController ..> QAAction
+InspectionController ..> AuditLog
+QuarantineInspection "1" --> "1" QAAction
+QuarantineInspection ..> Return
+WarehouseManager ..> Box
+
+@enduml
+

@@ -1,0 +1,141 @@
+@startuml USEI04_ClassDiagram
+skinparam monochrome true
+skinparam style strictuml
+
+package "UI" {
+    class PickPathUI {
+        - controller : PickPathController
+        - scanner : Scanner
+        + PickPathUI(controller: PickPathController)
+        + showMainMenu() : void
+        - processWithCustomData() : void
+        - processWithTrolleyData() : void
+        - demonstrateAscSweepStrategy() : void
+        - demonstrateNearestNeighbourStrategy() : void
+        - readCustomStops() : List<PickStop>
+        - trolleyToStops(trolley: Trolley) : List<PickStop>
+        - allTrolleysToStops(trolleys: List<Trolley>) : List<PickStop>
+        - displayStops(stops: List<PickStop>) : void
+        - displayPathResults(results: Map<PathStrategy, PickPath>) : void
+        - findNearestStopDemo(currentAisle: int, currentBay: int, stops: List<PickStop>) : PickStop
+    }
+}
+
+package "Controller" {
+    class PickPathController {
+        - trolleyRepository : TrolleyRepository
+        + PickPathController()
+        + PickPathController(trolleyRepository: TrolleyRepository)
+        + processPickPathSequencing(inputStops: List<PickStop>) : Map<PathStrategy, PickPath>
+        + consolidateStops(originalStops: List<PickStop>) : List<PickStop>
+        + generateBothPaths(consolidatedStops: List<PickStop>) : Map<PathStrategy, PickPath>
+        + getTrolleysFromUS03() : List<Trolley>
+        + {static} calculateDistance(a1: int, b1: int, a2: int, b2: int) : int
+        + calculateTotalDistance(stops: List<PickStop>) : int
+        + calculateAscSweep(stops: List<PickStop>) : List<PickStop>
+        + calculateNearestNeighbour(stops: List<PickStop>) : List<PickStop>
+        - findNearestStop(currentAisle: int, currentBay: int, stops: List<PickStop>) : PickStop
+        + createCalculatedPath(strategy: PathStrategy, stops: List<PickStop>) : PickPath
+    }
+}
+
+package "Service" {
+    class PickPathService {
+        + {static} generateBothPaths(stops: List<PickStop>) : Map<PathStrategy, PickPath>
+        + {static} consolidateStops(originalStops: List<PickStop>) : List<PickStop>
+        + {static} processPickPathSequencing(inputStops: List<PickStop>) : Map<PathStrategy, PickPath>
+    }
+}
+
+package "Domain" {
+    class PickPath {
+        - strategy : PathStrategy
+        - totalDistance : int
+        - stops : List<PickStop>
+        + PickPath(strategy: PathStrategy, stops: List<PickStop>, totalDistance: int)
+        + getStrategy() : PathStrategy
+        + getTotalDistance() : int
+        + getStops() : List<PickStop>
+        + toString() : String
+    }
+    
+    class PickStop {
+        - seq : int
+        - aisle : int
+        - bay : int
+        - totalQty : int
+        + PickStop(seq: int, aisle: int, bay: int, totalQty: int)
+        + getSeq() : int
+        + getAisle() : int
+        + getBay() : int
+        + getTotalQty() : int
+        + setSeq(seq: int) : void
+        + setAisle(aisle: int) : void
+        + setBay(bay: int) : void
+        + setTotalQty(totalQty: int) : void
+        + {static} consolidateStops(originalStops: List<PickStop>) : List<PickStop>
+        + equals(obj: Object) : boolean
+        + hashCode() : int
+        + toString() : String
+    }
+    
+    class Trolley {
+        - maxCapacity : int
+        - currentLoad : double
+        - id : int
+        - pickingItems : List<PickingItems>
+        - optionHeuristic : String
+        + Trolley(maxCapacity: int, currentLoad: double, id: int, pickingItems: List<PickingItems>, optionHeuristic: String)
+        + getId() : int
+        + getMaxCapacity() : int
+        + getCurrentLoad() : double
+        + getPickingItems() : List<PickingItems>
+        + getOptionHeuristic() : String
+    }
+    
+    class PickingItems {
+        - orderId : String
+        - lineNo : int
+        - aisleId : int
+        - bayId : int
+        - boxId : String
+        - sku : String
+        - qty : int
+        + PickingItems(orderId: String, lineNo: int, aisleId: int, bayId: int, boxId: String, sku: String, qty: int)
+        + getAisleId() : int
+        + getBayId() : int
+        + getQty() : int
+        + getSku() : String
+    }
+    
+    enum PathStrategy {
+        ASC_SWEEP
+        NEAREST_NEIGHBOUR
+    }
+}
+
+package "Repository" {
+    class TrolleyRepository {
+        - trolleyList : List<Trolley>
+        + saveTrolley(trolleyList: List<Trolley>) : void
+        + getAllTrolleys() : List<Trolley>
+        + getTrolley() : List<Trolley>
+    }
+}
+
+PickPathUI "1" --> "1" PickPathController
+PickPathController "1" --> "0..1" TrolleyRepository
+PickPathService ..> PickPathController
+PickPathService ..> PickStop
+PickPathController ..> PickPath
+PickPathController ..> PickStop
+PickPath "1" *-- "*" PickStop
+PickPath "1" --> "1" PathStrategy
+PickPathController ..> Trolley
+Trolley "1" *-- "*" PickingItems
+TrolleyRepository "1" o-- "*" Trolley
+PickPathUI ..> Trolley
+PickPathUI ..> PickPath
+PickPathUI ..> PathStrategy
+
+@enduml
