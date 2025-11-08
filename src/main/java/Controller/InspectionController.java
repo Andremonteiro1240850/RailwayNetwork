@@ -8,12 +8,21 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 /**
- * The type Inspection controller.
+ * Controller for handling quarantine inspections (USEI05)
+ * 
+ * Manages the inspection process for returned goods:
+ * - Creates inspection records
+ * - Determines action (RESTOCK or DISCARD) based on return reason
+ * - Processes restock (creates box and inserts into inventory following FEFO/FIFO)
+ * - Processes discard
+ * - Maintains audit log of all actions
  */
 public class InspectionController {
 
     private List<QuarantineInspection> quarantineInspections = new ArrayList<>();
     private Domain.WarehouseManager warehouseManager; // for FEFO/FIFO insertion
+
+    private static final DateTimeFormatter AUDIT_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
     /**
      * Instantiates a new Inspection controller.
@@ -22,47 +31,47 @@ public class InspectionController {
     }
 
     /**
-     * Instantiates a new Inspection controller.
+     * Instantiates a new Inspection controller with warehouse manager.
      *
-     * @param warehouseManager the warehouse manager
+     * @param warehouseManager the warehouse manager for inventory operations
      */
     public InspectionController(Domain.WarehouseManager warehouseManager) {
         this.warehouseManager = warehouseManager;
     }
 
-    private final DateTimeFormatter auditFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
-
     /**
-     * US05 - Process inspection
-     *
-     * @param sku          the sku
-     * @param quantity     the quantity
-     * @param returnReason the return reason
-     * @param expiryDate   the expiry date
-     * @return the string
+     * Process inspection for a returned item (USEI05)
+     * 
+     * @param sku          the SKU of the returned item
+     * @param quantity     the quantity returned
+     * @param returnReason the reason for return (REMORSE, DAMAGED, EXPIRED, CYCLE_COUNT)
+     * @param expiryDate   the expiry date (can be null)
+     * @return result message with inspection details
      */
     public String processQuarantine(String sku, int quantity, String returnReason, LocalDate expiryDate) {
         return processQuarantine(sku, quantity, returnReason, expiryDate, null, null);
     }
 
     /**
-     * US05 - Process inspection with partial restock support
-     *
-     * @param sku          the sku
-     * @param quantity     the quantity
-     * @param returnReason the return reason
-     * @param expiryDate   the expiry date
-     * @param qtyRestocked the qty restocked
-     * @param qtyDiscarded the qty discarded
-     * @return the string
+     * Process inspection with partial restock support (USEI05)
+     * 
+     * Allows splitting a return into partial restock and discard quantities.
+     * 
+     * @param sku          the SKU of the returned item
+     * @param quantity     the total quantity returned
+     * @param returnReason the reason for return (REMORSE, DAMAGED, EXPIRED, CYCLE_COUNT)
+     * @param expiryDate   the expiry date (can be null)
+     * @param qtyRestocked the quantity to restock (if null, uses full quantity for restock)
+     * @param qtyDiscarded the quantity to discard (if null, uses full quantity for discard)
+     * @return result message with inspection details
      */
     public String processQuarantine(String sku, int quantity, String returnReason, LocalDate expiryDate,
                                     Integer qtyRestocked, Integer qtyDiscarded) {
         try {
-            // 1. Created inspection
+            // 1. Create inspection record
             QuarantineInspection inspection = createQuarantineInspection();
 
-            // 2. Determines action based on motive
+            // 2. Determine action based on return reason
             QAAction action = determineAction(returnReason);
             inspection.setAction(action);
 
@@ -75,10 +84,10 @@ public class InspectionController {
                 processDiscard(inspection, sku, discardQty);
             }
 
-            // 4. Add to inspection list (reverse order - most recent first)
+            // 4. Add to inspection list (most recent first)
             quarantineInspections.add(0, inspection);
 
-            // 5. Creates audit log
+            // 5. Create audit log entry
             createAuditLog(inspection, sku, quantity, action, returnReason, qtyRestocked, qtyDiscarded);
 
             return String.format(
@@ -93,7 +102,31 @@ public class InspectionController {
     }
 
     /**
-     * Creates new inspection
+     * Get all processed inspections
+     * 
+     * Note: The sku parameter is currently not used but kept for API compatibility.
+     * All inspections are returned regardless of SKU.
+     *
+     * @param sku the SKU filter (currently ignored)
+     * @return list of all processed quarantine inspections
+     */
+    public List<QuarantineInspection> getInspectionsBySku(String sku) {
+        return new ArrayList<>(quarantineInspections);
+    }
+
+    /**
+     * Get all audit log entries
+     *
+     * @return list of audit log entries as strings
+     */
+    public List<String> getAuditLogs() {
+        return Domain.AuditLog.readAll();
+    }
+
+    // ==================== Private Helper Methods ====================
+
+    /**
+     * Creates a new inspection record with generated IDs
      */
     private QuarantineInspection createQuarantineInspection() {
         QuarantineInspection inspection = new QuarantineInspection();
@@ -104,7 +137,12 @@ public class InspectionController {
     }
 
     /**
-     * Determines action based on reason
+     * Determines action (RESTOCK or DISCARD) based on return reason
+     * 
+     * Logic according to USEI05:
+     * - REMORSE, CYCLE_COUNT -> RESTOCK
+     * - DAMAGED, EXPIRED -> DISCARD
+     * - Unknown -> DISCARD (safety default)
      */
     private QAAction determineAction(String returnReason) {
         switch (returnReason.toUpperCase()) {
@@ -115,17 +153,25 @@ public class InspectionController {
             case "EXPIRED":
                 return QAAction.DISCARD;
             default:
-                return QAAction.DISCARD;
+                return QAAction.DISCARD; // Safety default
         }
     }
 
     /**
-     * Process restock - create new box for inventory
+     * Process restock action
+     * 
+     * Creates a new box with ID format "RET-{returnId}" and inserts it into inventory
+     * following FEFO/FIFO placement rules (USEI01).
+     * 
+     * @param inspection the inspection record
+     * @param sku        the SKU to restock
+     * @param quantity   the quantity to restock
+     * @param expiryDate the expiry date (can be null)
      */
     private void processRestock(QuarantineInspection inspection, String sku, int quantity, LocalDate expiryDate) {
-        // BoxId conforme imagem: "RET-" + returnId
+        // BoxId format: "RET-" + returnId (as per USEI05 requirements)
         String boxId = String.format("RET-%s", inspection.getReturnId());
-        System.out.println(String.format("RESTOCK: Creating box %s for SKU %s, quantity: %d", boxId, sku, quantity));
+        
         // Insert the box into inventory following FEFO/FIFO placement rules
         if (warehouseManager != null) {
             warehouseManager.insertReturnedBox(boxId, sku, quantity, expiryDate, LocalDateTime.now());
@@ -133,22 +179,41 @@ public class InspectionController {
     }
 
     /**
-     * Process discard
+     * Process discard action
+     * 
+     * Marks the item as discarded (no further processing needed).
+     * 
+     * @param inspection the inspection record
+     * @param sku        the SKU being discarded
+     * @param quantity   the quantity being discarded
      */
     private void processDiscard(QuarantineInspection inspection, String sku, int quantity) {
-        System.out.println(String.format("DISCARD: Discarding SKU %s, quantity: %d", sku, quantity));
+        // Discard action - item is flagged as no longer usable
+        // No additional processing required
     }
 
     /**
-     * Create audit log
+     * Create audit log entry
+     * 
+     * Format: timestamp | ReturnId=... | SKU=... | Action=[Restocked|Discarded] | Quantity=...
+     * 
+     * For partial restocks, also includes Quantity Restocked and Quantity Discarded.
+     * 
+     * @param inspection    the inspection record
+     * @param sku           the SKU
+     * @param quantity      the total quantity
+     * @param action        the action taken
+     * @param returnReason  the return reason
+     * @param qtyRestocked  partial restock quantity (if applicable)
+     * @param qtyDiscarded  partial discard quantity (if applicable)
      */
     private void createAuditLog(QuarantineInspection inspection, String sku, int quantity,
                                 QAAction action, String returnReason, Integer qtyRestocked, Integer qtyDiscarded) {
-        LocalDateTime ts = LocalDateTime.now();
+        LocalDateTime timestamp = LocalDateTime.now();
         String actionLabel = (action == QAAction.RESTOCK) ? "Restocked" : "Discarded";
 
-        StringBuilder line = new StringBuilder();
-        line.append(auditFormatter.format(ts))
+        StringBuilder logLine = new StringBuilder();
+        logLine.append(AUDIT_FORMATTER.format(timestamp))
                 .append(" | ReturnId=").append(inspection.getReturnId())
                 .append(" | SKU=").append(sku)
                 .append(" | Action=").append(actionLabel)
@@ -156,40 +221,24 @@ public class InspectionController {
 
         // Add partial quantities if provided
         if (qtyRestocked != null) {
-            line.append(" | Quantity Restocked=").append(qtyRestocked);
+            logLine.append(" | Quantity Restocked=").append(qtyRestocked);
         }
         if (qtyDiscarded != null) {
-            line.append(" | Quantity Discarded=").append(qtyDiscarded);
+            logLine.append(" | Quantity Discarded=").append(qtyDiscarded);
         }
 
-        // Use AuditLog to write the entry
-        Domain.AuditLog.appendLine(line.toString());
+        // Write to audit log file
+        Domain.AuditLog.appendLine(logLine.toString());
     }
 
     /**
-     * Generates unique ID
+     * Generates a unique ID with the given prefix
+     * 
+     * @param prefix the prefix for the ID
+     * @return formatted ID: "{prefix}-{8-char-UUID}"
      */
     private String generateId(String prefix) {
         return String.format("%s-%s", prefix, UUID.randomUUID().toString().substring(0, 8).toUpperCase());
-    }
-
-    /**
-     * Get inspections by SKU
-     *
-     * @param sku the sku
-     * @return the inspections by sku
-     */
-    public List<QuarantineInspection> getInspectionsBySku(String sku) {
-        return new ArrayList<>(quarantineInspections);
-    }
-
-    /**
-     * Get audit log
-     *
-     * @return the audit logs
-     */
-    public List<String> getAuditLogs() {
-        return Domain.AuditLog.readAll();
     }
 
 }

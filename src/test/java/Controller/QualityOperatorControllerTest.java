@@ -9,22 +9,21 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Full test suite for QualityOperatorController.
- * - Uses reflection to access private methods/fields.
- * - Exercises menu, CSV loading (many branches), processing (restock/discard), sort, view, audit.
+ * - Uses reflection to access private methods/fields where needed.
+ * - Exercises CSV loading, processing (restock/discard), sorting logic.
+ * - Tests business logic only (UI methods moved to QualityOperatorUI).
  *
  * Tests run by writing test CSV content into train_station_dataset/returns.csv,
  * but a backup of any existing file is created and restored after each test so no real data is lost.
@@ -52,14 +51,6 @@ class QualityOperatorControllerTest {
         Field f = QualityOperatorController.class.getDeclaredField(fieldName);
         f.setAccessible(true);
         return (T) f.get(controller);
-    }
-
-    // Helpers to be used in a couple of added tests (reflection write/read)
-    @SuppressWarnings("unchecked")
-    private void writePrivateField(String fieldName, Object value) throws Exception {
-        Field f = QualityOperatorController.class.getDeclaredField(fieldName);
-        f.setAccessible(true);
-        f.set(controller, value);
     }
 
     // -----------------------
@@ -119,16 +110,6 @@ class QualityOperatorControllerTest {
     }
 
     // -----------------------
-    // Basic public methods
-    // -----------------------
-
-    @Test
-    @DisplayName("showLogin returns true")
-    void showLogin_returnsTrue() {
-        assertTrue(controller.showLogin());
-    }
-
-    // -----------------------
     // Reason & action logic
     // -----------------------
 
@@ -175,7 +156,7 @@ class QualityOperatorControllerTest {
     }
 
     // -----------------------
-    // Sorting & queue view
+    // Sorting & queue management
     // -----------------------
 
     @Test
@@ -203,21 +184,18 @@ class QualityOperatorControllerTest {
     }
 
     @Test
-    @DisplayName("viewQuarantineQueue empty does not throw")
-    void viewQuarantineQueue_empty() throws Exception {
+    @DisplayName("getQuarantineItems returns defensive copy")
+    void getQuarantineItems_returnsDefensiveCopy() throws Exception {
         List<Return> q = readPrivateField("quarantineItems", List.class);
         q.clear();
-        callPrivate("viewQuarantineQueue", new Class<?>[]{});
-    }
+        q.add(new Return("R1", "SKU1", 1, "REMORSE", LocalDateTime.now(), null));
 
-    @Test
-    @DisplayName("viewQuarantineQueue with items does not throw")
-    void viewQuarantineQueue_withItems() throws Exception {
-        List<Return> q = readPrivateField("quarantineItems", List.class);
-        q.clear();
-        q.add(new Return("R100", "SKU100", 10, "REMORSE", LocalDateTime.now(), LocalDate.now().plusDays(5)));
-        q.add(new Return("R101", "SKU101", 1, "DAMAGED", LocalDateTime.now(), null));
-        callPrivate("viewQuarantineQueue", new Class<?>[]{});
+        List<Return> publicList = controller.getQuarantineItems();
+        assertEquals(1, publicList.size());
+        
+        // Modifying public list should not affect internal list
+        publicList.clear();
+        assertEquals(1, readPrivateField("quarantineItems", List.class).size());
     }
 
     // -----------------------
@@ -225,16 +203,22 @@ class QualityOperatorControllerTest {
     // -----------------------
 
     @Test
-    @DisplayName("loadReturnsFromCSV handles missing file when showDetails=true")
-    void loadReturns_missingFile_showDetails() throws Exception {
+    @DisplayName("loadReturnsFromCSV returns failure when file missing")
+    void loadReturns_missingFile() {
         // remove the file to simulate missing file
-        Files.deleteIfExists(ACTUAL_CSV);
-        callPrivate("loadReturnsFromCSV", new Class<?>[]{boolean.class}, Boolean.TRUE);
+        try {
+            Files.deleteIfExists(ACTUAL_CSV);
+        } catch (IOException ignored) {}
+        
+        QualityOperatorController.LoadResult result = controller.loadReturnsFromCSV();
+        assertFalse(result.isSuccess());
+        assertNotNull(result.getErrorMessage());
+        assertTrue(result.getErrorMessage().contains("not found"));
     }
 
     @Test
-    @DisplayName("loadReturnsFromCSV reads valid CSV and skips bad lines (verbose)")
-    void loadReturns_validAndBadLines_showDetails() throws Exception {
+    @DisplayName("loadReturnsFromCSV reads valid CSV and skips bad lines")
+    void loadReturns_validAndBadLines() throws Exception {
         String header = "returnId,sku,qty,reason,timestamp,expiryDate";
         String valid1 = "R1,SKU1,2,customer-remorse,2025-10-25T10:00,2025-11-01";
         String bad = "BADLINE,one,two";
@@ -244,48 +228,49 @@ class QualityOperatorControllerTest {
         String content = String.join(System.lineSeparator(), header, valid1, bad, malformed, valid2);
         writeCsvToActual(content);
 
-        callPrivate("loadReturnsFromCSV", new Class<?>[]{boolean.class}, Boolean.TRUE);
+        QualityOperatorController.LoadResult result = controller.loadReturnsFromCSV(true);
+        assertTrue(result.isSuccess());
+        assertEquals(2, result.getLoadedCount());
+        assertFalse(result.getWarnings().isEmpty());
 
-        List<Return> q = readPrivateField("quarantineItems", List.class);
-        assertTrue(q.size() >= 2);
+        List<Return> q = controller.getQuarantineItems();
+        assertEquals(2, q.size());
     }
 
     @Test
-    @DisplayName("loadReturnsFromCSV prints first 5 and '... and N more' when >5 entries (verbose)")
-    void loadReturns_moreThanFive_showDetails() throws Exception {
+    @DisplayName("loadReturnsFromCSV includes warnings for bad lines")
+    void loadReturns_includesWarnings() throws Exception {
         String header = "returnId,sku,qty,reason,timestamp,expiryDate";
-        StringBuilder sb = new StringBuilder(header);
-        // create 6 valid lines to force "... and N more"
-        for (int i = 1; i <= 6; i++) {
-            sb.append(System.lineSeparator())
-                    .append("R").append(i).append(",SKU").append(i).append(",").append(i)
-                    .append(",customer-remorse,2025-12-01T10:00,");
-        }
-        writeCsvToActual(sb.toString());
+        String bad = "BADLINE,one,two";
+        String valid = "R1,SKU1,1,customer-remorse,2025-10-25T10:00,";
 
-        callPrivate("loadReturnsFromCSV", new Class<?>[]{boolean.class}, Boolean.TRUE);
+        String content = String.join(System.lineSeparator(), header, bad, valid);
+        writeCsvToActual(content);
 
-        List<Return> q = readPrivateField("quarantineItems", List.class);
-        assertEquals(6, q.size());
+        QualityOperatorController.LoadResult result = controller.loadReturnsFromCSV(true);
+        assertTrue(result.isSuccess());
+        assertFalse(result.getWarnings().isEmpty());
+        assertTrue(result.getWarnings().stream().anyMatch(w -> w.contains("insufficient columns")));
     }
 
     @Test
-    @DisplayName("loadReturnsFromCSV (no-arg) reads CSV silently when file exists")
-    void loadReturns_noArg_readsSilently() throws Exception {
+    @DisplayName("loadReturnsFromCSV (no-arg) reads CSV successfully")
+    void loadReturns_noArg_readsSuccessfully() throws Exception {
         String header = "returnId,sku,qty,reason,timestamp,expiryDate";
         String valid = "T1,TSKU,1,customer-remorse,2025-12-01T10:00,";
         String content = header + System.lineSeparator() + valid + System.lineSeparator();
         writeCsvToActual(content);
 
-        // call private no-arg loader
-        callPrivate("loadReturnsFromCSV", new Class<?>[]{});
+        QualityOperatorController.LoadResult result = controller.loadReturnsFromCSV();
+        assertTrue(result.isSuccess());
+        assertEquals(1, result.getLoadedCount());
 
-        List<Return> q = readPrivateField("quarantineItems", List.class);
+        List<Return> q = controller.getQuarantineItems();
         assertTrue(q.stream().anyMatch(r -> r.getReturnId().equals("T1")));
     }
 
     @Test
-    @DisplayName("loadReturnsFromCSV handles IO exception path (unreadable file) gracefully (verbose)")
+    @DisplayName("loadReturnsFromCSV handles IO exception gracefully")
     void loadReturns_ioExceptionPath() throws Exception {
         // ensure clean and create a directory at the file path to cause IOException
         Files.deleteIfExists(ACTUAL_CSV);
@@ -293,225 +278,14 @@ class QualityOperatorControllerTest {
         Files.createDirectory(ACTUAL_CSV); // ACTUAL_CSV is now a directory
 
         try {
-            callPrivate("loadReturnsFromCSV", new Class<?>[]{boolean.class}, Boolean.TRUE);
-            assertTrue(true); // no exception expected
+            QualityOperatorController.LoadResult result = controller.loadReturnsFromCSV(true);
+            assertFalse(result.isSuccess());
+            assertNotNull(result.getErrorMessage());
         } finally {
             if (Files.exists(ACTUAL_CSV) && Files.isDirectory(ACTUAL_CSV)) {
                 Files.delete(ACTUAL_CSV);
             }
         }
-    }
-
-    // -----------------------
-    // Processing single & multiple
-    // -----------------------
-
-    @Test
-    @DisplayName("processSingleInspection returns early on empty queue")
-    void processSingleInspection_emptyQueue() throws Exception {
-        List<Return> q = readPrivateField("quarantineItems", List.class);
-        q.clear();
-
-        // method is void; calling should not throw and queue remains empty
-        callPrivate("processSingleInspection", new Class<?>[]{});
-        assertTrue(q.isEmpty());
-    }
-
-    @Test
-    @DisplayName("processSingleInspection processes RESTOCK and writes audit")
-    void processSingleInspection_processOne_restocks() throws Exception {
-        List<Return> q = readPrivateField("quarantineItems", List.class);
-        q.clear();
-        // REMORSE -> RESTOCK
-        Return r = new Return("R20", "SKU-20", 3, "REMORSE", LocalDateTime.now(), null);
-        q.add(r);
-
-        callPrivate("processSingleInspection", new Class<?>[]{});
-
-        List<Return> after = readPrivateField("quarantineItems", List.class);
-        assertEquals(0, after.size());
-
-        List<String> lines = AuditLog.readAll();
-        assertTrue(lines.stream().anyMatch(s -> s.contains("SKU=SKU-20") || s.contains("SKU: SKU-20")));
-    }
-
-    @Test
-    @DisplayName("processSingleInspection processes DISCARD when expired and writes audit")
-    void processSingleInspection_discard_expired() throws Exception {
-        List<Return> q = readPrivateField("quarantineItems", List.class);
-        q.clear();
-        Return r = new Return("REXP", "SKU-EXP", 1, "REMORSE", LocalDateTime.now().minusDays(5), LocalDate.now().minusDays(1));
-        q.add(r);
-
-        callPrivate("processSingleInspection", new Class<?>[]{});
-
-        List<Return> after = readPrivateField("quarantineItems", List.class);
-        assertEquals(0, after.size());
-
-        List<String> lines = AuditLog.readAll();
-        assertTrue(lines.stream().anyMatch(s -> s.contains("SKU=SKU-EXP") || s.contains("SKU: SKU-EXP")));
-    }
-
-    @Test
-    @DisplayName("processSingleInspection processes DISCARD when reason DAMAGED (non-expired)")
-    void processSingleInspection_discard_damaged() throws Exception {
-        List<Return> q = readPrivateField("quarantineItems", List.class);
-        q.clear();
-        Return r = new Return("RDAM", "SKU-DAM", 2, "DAMAGED", LocalDateTime.now(), LocalDate.now().plusDays(10));
-        q.add(r);
-
-        callPrivate("processSingleInspection", new Class<?>[]{});
-
-        List<Return> after = readPrivateField("quarantineItems", List.class);
-        assertEquals(0, after.size());
-
-        List<String> lines = AuditLog.readAll();
-        assertTrue(lines.stream().anyMatch(s -> s.contains("SKU=SKU-DAM") || s.contains("SKU: SKU-DAM")));
-    }
-
-    @Test
-    @DisplayName("processNextInspection returns early on empty queue")
-    void processNextInspection_emptyQueue() throws Exception {
-        List<Return> q = readPrivateField("quarantineItems", List.class);
-        q.clear();
-        callPrivate("processNextInspection", new Class<?>[]{});
-    }
-
-    @Test
-    @DisplayName("processNextInspection processes multiple and writes audit")
-    void processNextInspection_processesMultiple() throws Exception {
-        List<Return> q = readPrivateField("quarantineItems", List.class);
-        q.clear();
-        q.add(new Return("RA", "SKU-A", 1, "REMORSE", LocalDateTime.now().minusHours(1), null));
-        q.add(new Return("RB", "SKU-B", 2, "DAMAGED", LocalDateTime.now().minusHours(2), null));
-        q.add(new Return("RC", "SKU-C", 3, "REMORSE", LocalDateTime.now().minusMinutes(10), LocalDate.now().plusDays(5)));
-
-        Object inspObj = readPrivateField("inspectionController", Object.class);
-        assertNotNull(inspObj);
-        InspectionController insp = (InspectionController) inspObj;
-        List<QuarantineInspection> before = insp.getInspectionsBySku("");
-
-        callPrivate("processNextInspection", new Class<?>[]{});
-
-        List<Return> afterQ = readPrivateField("quarantineItems", List.class);
-        assertEquals(0, afterQ.size());
-
-        List<QuarantineInspection> after = insp.getInspectionsBySku("");
-        assertTrue(after.size() >= before.size() + 3);
-
-        List<String> lines = AuditLog.readAll();
-        assertTrue(lines.stream().anyMatch(s -> s.contains("SKU=SKU-A") || s.contains("SKU: SKU-A")));
-        assertTrue(lines.stream().anyMatch(s -> s.contains("SKU=SKU-B") || s.contains("SKU: SKU-B")));
-        assertTrue(lines.stream().anyMatch(s -> s.contains("SKU=SKU-C") || s.contains("SKU: SKU-C")));
-    }
-
-    // -----------------------
-    // View processed inspections & audit log
-    // -----------------------
-
-    @Test
-    @DisplayName("viewProcessedInspections runs without exception when inspections exist")
-    void viewProcessedInspections_runs() throws Exception {
-        Object inspObj = readPrivateField("inspectionController", Object.class);
-        assertNotNull(inspObj);
-        InspectionController insp = (InspectionController) inspObj;
-        insp.processQuarantine("SKU-VIEW", 5, "REMORSE", LocalDate.now().plusDays(10));
-
-        callPrivate("viewProcessedInspections", new Class<?>[]{});
-    }
-
-    @Test
-    @DisplayName("viewAuditLog runs without exception when entries exist")
-    void viewAuditLog_runs() throws Exception {
-        Object inspObj = readPrivateField("inspectionController", Object.class);
-        assertNotNull(inspObj);
-        InspectionController insp = (InspectionController) inspObj;
-        insp.processQuarantine("SKU-AUD", 2, "DAMAGED", LocalDate.now().plusDays(1));
-
-        callPrivate("viewAuditLog", new Class<?>[]{});
-    }
-
-    @Test
-    @DisplayName("viewAuditLog prints 'no audit logs available' when empty")
-    void viewAuditLog_emptyRuns() throws Exception {
-        AuditLog.clearAll();
-        callPrivate("viewAuditLog", new Class<?>[]{});
-    }
-
-    // -----------------------
-    // Additional menu tests & default branch
-    // -----------------------
-
-    @Test
-    @DisplayName("showMainMenu executes menu options and exits cleanly")
-    void showMainMenu_runsThroughOptions() throws Exception {
-        // prepare input: 1:view queue, 2:process single, 3:process all, 4:view processed, 5:view audit, 6:reload csv(true), 7:exit
-        String menuInputs = String.join(System.lineSeparator(),
-                "1", "2", "3", "4", "5", "6", "7"
-        ) + System.lineSeparator();
-
-        InputStream is = new java.io.ByteArrayInputStream(menuInputs.getBytes(java.nio.charset.StandardCharsets.UTF_8));
-        java.util.Scanner testScanner = new java.util.Scanner(is);
-        Field scannerField = QualityOperatorController.class.getDeclaredField("scanner");
-        scannerField.setAccessible(true);
-        scannerField.set(controller, testScanner);
-
-        // ensure there's some data so options that expect queue won't short-circuit for "empty queue"
-        String header = "returnId,sku,qty,reason,timestamp,expiryDate";
-        String valid = "MTEST,MSKU,1,customer-remorse,2025-12-01T10:00,";
-        writeCsvToActual(header + System.lineSeparator() + valid);
-
-        // run menu (will exit on "7")
-        controller.showMainMenu();
-
-        assertTrue(true); // no exception = success
-    }
-
-    @Test
-    @DisplayName("showMainMenu handles invalid option (default branch)")
-    void showMainMenu_invalidOption() throws Exception {
-        String menuInputs = String.join(System.lineSeparator(), "x", "7") + System.lineSeparator();
-        InputStream is = new java.io.ByteArrayInputStream(menuInputs.getBytes(java.nio.charset.StandardCharsets.UTF_8));
-        java.util.Scanner testScanner = new java.util.Scanner(is);
-        Field scannerField = QualityOperatorController.class.getDeclaredField("scanner");
-        scannerField.setAccessible(true);
-        scannerField.set(controller, testScanner);
-
-        controller.showMainMenu(); // should process "x" -> default -> then "7" -> exit
-
-        assertTrue(true);
-    }
-
-    // -----------------------
-    // Constructor with WarehouseManager test (restock path coverage)
-    // -----------------------
-
-    @Test
-    @DisplayName("constructor with WarehouseManager triggers restock insert in WarehouseManager.stock")
-    void constructorWithWarehouseManager_triggersRestockInsert() throws Exception {
-        java.util.Map<String, Domain.Item> items = new java.util.HashMap<>();
-        java.util.Map<String, java.util.List<Domain.Box>> stock = new java.util.HashMap<>();
-        java.util.List<Domain.Bay> bays = new java.util.ArrayList<>();
-        Domain.WarehouseManager wm = new Domain.WarehouseManager(items, stock, bays);
-
-        QualityOperatorController ctrlWithWM = new QualityOperatorController(wm);
-
-        Field qField = QualityOperatorController.class.getDeclaredField("quarantineItems");
-        qField.setAccessible(true);
-        @SuppressWarnings("unchecked")
-        List<Return> qList = (List<Return>) qField.get(ctrlWithWM);
-        qList.clear();
-        qList.add(new Return("W1", "WM-SKU", 2, "REMORSE", LocalDateTime.now(), null));
-
-        Method m = QualityOperatorController.class.getDeclaredMethod("processSingleInspection");
-        m.setAccessible(true);
-        m.invoke(ctrlWithWM);
-
-        @SuppressWarnings("unchecked")
-        List<Return> after = (List<Return>) qField.get(ctrlWithWM);
-        assertEquals(0, after.size());
-
-        assertTrue(wm.getStock().containsKey("WM-SKU"));
     }
 
     @Test
@@ -524,9 +298,9 @@ class QualityOperatorControllerTest {
         String content = String.join(System.lineSeparator(), header, insufficient, valid);
         writeCsvToActual(content);
 
-        callPrivate("loadReturnsFromCSV", new Class<?>[]{boolean.class}, Boolean.FALSE);
-
-        List<Return> q = readPrivateField("quarantineItems", List.class);
+        QualityOperatorController.LoadResult result = controller.loadReturnsFromCSV(false);
+        assertTrue(result.isSuccess());
+        List<Return> q = controller.getQuarantineItems();
         assertTrue(q.stream().anyMatch(r -> r.getReturnId().equals("SIL1")));
         assertFalse(q.stream().anyMatch(r -> r.getReturnId().equals("BADLINE")));
     }
@@ -541,9 +315,9 @@ class QualityOperatorControllerTest {
         String content = String.join(System.lineSeparator(), header, malformed, valid);
         writeCsvToActual(content);
 
-        callPrivate("loadReturnsFromCSV", new Class<?>[]{boolean.class}, Boolean.FALSE);
-
-        List<Return> q = readPrivateField("quarantineItems", List.class);
+        QualityOperatorController.LoadResult result = controller.loadReturnsFromCSV(false);
+        assertTrue(result.isSuccess());
+        List<Return> q = controller.getQuarantineItems();
         assertTrue(q.stream().anyMatch(r -> r.getReturnId().equals("MAL2")));
         assertFalse(q.stream().anyMatch(r -> r.getReturnId().equals("MAL1")));
     }
@@ -573,9 +347,183 @@ class QualityOperatorControllerTest {
         callPrivate("sortQuarantineQueue", new Class<?>[]{});
 
         List<Return> after = readPrivateField("quarantineItems", List.class);
-        // A10 vs A2 vs A3 when compared lexicographically: A10 > A2 > A3
-        // but sort uses thenComparing(Return::getReturnId) ascending, assert consistent order
+        // Sort uses thenComparing(Return::getReturnId) ascending
+        // Lexicographically: A10 < A2 < A3 (string comparison)
         assertEquals("A10", after.get(0).getReturnId());
+    }
+
+    // -----------------------
+    // Processing single & multiple
+    // -----------------------
+
+    @Test
+    @DisplayName("processSingleInspection returns null on empty queue")
+    void processSingleInspection_emptyQueue() {
+        QualityOperatorController.ProcessingResult result = controller.processSingleInspection();
+        assertNull(result);
+    }
+
+    @Test
+    @DisplayName("processSingleInspection processes RESTOCK and writes audit")
+    void processSingleInspection_processOne_restocks() throws Exception {
+        List<Return> q = readPrivateField("quarantineItems", List.class);
+        q.clear();
+        // REMORSE -> RESTOCK
+        Return r = new Return("R20", "SKU-20", 3, "REMORSE", LocalDateTime.now(), null);
+        q.add(r);
+
+        QualityOperatorController.ProcessingResult result = controller.processSingleInspection();
+        assertNotNull(result);
+        assertEquals("RESTOCK", result.getAction());
+        assertEquals("REMORSE", result.getReason());
+        assertEquals(r, result.getItem());
+
+        List<Return> after = readPrivateField("quarantineItems", List.class);
+        assertEquals(0, after.size());
+
+        List<String> lines = AuditLog.readAll();
+        assertTrue(lines.stream().anyMatch(s -> s.contains("SKU=SKU-20")));
+    }
+
+    @Test
+    @DisplayName("processSingleInspection processes DISCARD when expired and writes audit")
+    void processSingleInspection_discard_expired() throws Exception {
+        List<Return> q = readPrivateField("quarantineItems", List.class);
+        q.clear();
+        Return r = new Return("REXP", "SKU-EXP", 1, "REMORSE", LocalDateTime.now().minusDays(5), LocalDate.now().minusDays(1));
+        q.add(r);
+
+        QualityOperatorController.ProcessingResult result = controller.processSingleInspection();
+        assertNotNull(result);
+        assertEquals("DISCARD", result.getAction());
+        assertEquals("EXPIRED", result.getReason());
+
+        List<Return> after = readPrivateField("quarantineItems", List.class);
+        assertEquals(0, after.size());
+
+        List<String> lines = AuditLog.readAll();
+        assertTrue(lines.stream().anyMatch(s -> s.contains("SKU=SKU-EXP")));
+    }
+
+    @Test
+    @DisplayName("processSingleInspection processes DISCARD when reason DAMAGED (non-expired)")
+    void processSingleInspection_discard_damaged() throws Exception {
+        List<Return> q = readPrivateField("quarantineItems", List.class);
+        q.clear();
+        Return r = new Return("RDAM", "SKU-DAM", 2, "DAMAGED", LocalDateTime.now(), LocalDate.now().plusDays(10));
+        q.add(r);
+
+        QualityOperatorController.ProcessingResult result = controller.processSingleInspection();
+        assertNotNull(result);
+        assertEquals("DISCARD", result.getAction());
+        assertEquals("DAMAGED", result.getReason());
+
+        List<Return> after = readPrivateField("quarantineItems", List.class);
+        assertEquals(0, after.size());
+
+        List<String> lines = AuditLog.readAll();
+        assertTrue(lines.stream().anyMatch(s -> s.contains("SKU=SKU-DAM")));
+    }
+
+    @Test
+    @DisplayName("processAllInspections returns summary with correct counts")
+    void processAllInspections_returnsSummary() throws Exception {
+        List<Return> q = readPrivateField("quarantineItems", List.class);
+        q.clear();
+        q.add(new Return("RA", "SKU-A", 1, "REMORSE", LocalDateTime.now().minusHours(1), null));
+        q.add(new Return("RB", "SKU-B", 2, "DAMAGED", LocalDateTime.now().minusHours(2), null));
+        q.add(new Return("RC", "SKU-C", 3, "REMORSE", LocalDateTime.now().minusMinutes(10), LocalDate.now().plusDays(5)));
+
+        QualityOperatorController.ProcessingSummary summary = controller.processAllInspections();
+        
+        assertNotNull(summary);
+        assertEquals(3, summary.getProcessedCount());
+        assertEquals(1, summary.getDiscardedCount()); // RB is DAMAGED
+        assertEquals(2, summary.getRestockedCount()); // RA and RC are REMORSE
+        assertEquals(3, summary.getResults().size());
+
+        List<Return> afterQ = readPrivateField("quarantineItems", List.class);
+        assertEquals(0, afterQ.size());
+
+        List<String> lines = AuditLog.readAll();
+        assertTrue(lines.stream().anyMatch(s -> s.contains("SKU=SKU-A")));
+        assertTrue(lines.stream().anyMatch(s -> s.contains("SKU=SKU-B")));
+        assertTrue(lines.stream().anyMatch(s -> s.contains("SKU=SKU-C")));
+    }
+
+    @Test
+    @DisplayName("processAllInspections returns empty summary on empty queue")
+    void processAllInspections_emptyQueue() {
+        QualityOperatorController.ProcessingSummary summary = controller.processAllInspections();
+        assertNotNull(summary);
+        assertEquals(0, summary.getProcessedCount());
+        assertEquals(0, summary.getDiscardedCount());
+        assertEquals(0, summary.getRestockedCount());
+        assertTrue(summary.getResults().isEmpty());
+    }
+
+    // -----------------------
+    // View processed inspections & audit log
+    // -----------------------
+
+    @Test
+    @DisplayName("getProcessedInspections returns list from InspectionController")
+    void getProcessedInspections_returnsList() throws Exception {
+        // Process an inspection first
+        List<Return> q = readPrivateField("quarantineItems", List.class);
+        q.clear();
+        q.add(new Return("R1", "SKU-VIEW", 5, "REMORSE", LocalDateTime.now(), LocalDate.now().plusDays(10)));
+        controller.processSingleInspection();
+
+        List<QuarantineInspection> inspections = controller.getProcessedInspections();
+        assertNotNull(inspections);
+        assertFalse(inspections.isEmpty());
+    }
+
+    @Test
+    @DisplayName("getAuditLogs returns list from InspectionController")
+    void getAuditLogs_returnsList() throws Exception {
+        // Process an inspection first
+        List<Return> q = readPrivateField("quarantineItems", List.class);
+        q.clear();
+        q.add(new Return("R1", "SKU-AUD", 2, "DAMAGED", LocalDateTime.now(), LocalDate.now().plusDays(1)));
+        controller.processSingleInspection();
+
+        List<String> logs = controller.getAuditLogs();
+        assertNotNull(logs);
+        assertFalse(logs.isEmpty());
+    }
+
+    // -----------------------
+    // Constructor with WarehouseManager test
+    // -----------------------
+
+    @Test
+    @DisplayName("constructor with WarehouseManager triggers restock insert in WarehouseManager.stock")
+    void constructorWithWarehouseManager_triggersRestockInsert() throws Exception {
+        java.util.Map<String, Domain.Item> items = new java.util.HashMap<>();
+        java.util.Map<String, java.util.List<Domain.Box>> stock = new java.util.HashMap<>();
+        java.util.List<Domain.Bay> bays = new java.util.ArrayList<>();
+        Domain.WarehouseManager wm = new Domain.WarehouseManager(items, stock, bays);
+
+        QualityOperatorController ctrlWithWM = new QualityOperatorController(wm);
+
+        Field qField = QualityOperatorController.class.getDeclaredField("quarantineItems");
+        qField.setAccessible(true);
+        @SuppressWarnings("unchecked")
+        List<Return> qList = (List<Return>) qField.get(ctrlWithWM);
+        qList.clear();
+        qList.add(new Return("W1", "WM-SKU", 2, "REMORSE", LocalDateTime.now(), null));
+
+        QualityOperatorController.ProcessingResult result = ctrlWithWM.processSingleInspection();
+        assertNotNull(result);
+        assertEquals("RESTOCK", result.getAction());
+
+        @SuppressWarnings("unchecked")
+        List<Return> after = (List<Return>) qField.get(ctrlWithWM);
+        assertEquals(0, after.size());
+
+        assertTrue(wm.getStock().containsKey("WM-SKU"));
     }
 
 }
