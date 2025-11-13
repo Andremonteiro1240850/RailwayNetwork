@@ -254,10 +254,11 @@ public class Main {
         );
 
         QualityOperatorController controller = new QualityOperatorController(wm);
+        QualityOperatorUI ui = new QualityOperatorUI(controller);
         
         // Show welcome message and go directly to menu
-        controller.showLogin();
-        controller.showMainMenu();
+        ui.showLogin();
+        ui.showMainMenu();
     }
     
     /**

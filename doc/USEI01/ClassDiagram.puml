@@ -1,0 +1,181 @@
+@startuml USEI01_ClassDiagram
+skinparam monochrome true
+skinparam style strictuml
+
+package "UI" {
+    class WagonsUnloadingUI {
+        - controller : WagonsUnloadingController
+        - scanner : Scanner
+        + WagonsUnloadingUI(controller: WagonsUnloadingController)
+        + showMainMenu() : void
+        - unloadWagons() : void
+        - dispatchStock() : void
+        - relocateBox() : void
+        - showDetailedAssignments(boxRepo: BoxRepository) : void
+    }
+}
+
+package "Controller" {
+    class WagonsUnloadingController {
+        - warehouseManager : WarehouseManager
+        - dataLoader : DataLoader
+        - dataLoaded : boolean
+        + WagonsUnloadingController(dataLoader: DataLoader)
+        + unloadWagons() : void
+        + dispatchStock(sku: String, quantity: int) : List<Box>
+        + relocateBox(boxId: String, warehouseId: String, aisle: int, bay: int) : boolean
+        + getAvailableSkus() : List<String>
+        + isDataLoaded() : boolean
+        + getWarehouseManager() : WarehouseManager
+        + getBoxRepository() : BoxRepository
+    }
+}
+
+package "Domain" {
+    class WarehouseManager {
+        - items : Map<String, Item>
+        - stock : Map<String, List<Box>>
+        - bays : List<Bay>
+        - bayMap : Map<BayId, Bay>
+        - boxRepository : BoxRepository
+        + WarehouseManager(items: Map<String, Item>, stock: Map<String, List<Box>>, bays: List<Bay>)
+        + WarehouseManager(items: Map<String, Item>, stock: Map<String, List<Box>>, bays: List<Bay>, boxRepository: BoxRepository)
+        + unloadWagons() : void
+        + dispatchStock(sku: String, quantity: int) : List<Box>
+        + relocateBox(boxId: String, newBayId: BayId) : boolean
+        + getItems() : Map<String, Item>
+        - unloadWagonsWithRepository() : void
+        - unloadWagonsWithStock() : void
+        - assignBoxToBay(box: Box) : void
+        - assignBoxToBayWithRepository(box: Box) : void
+        - findBestBayForBox(box: Box) : Bay
+    }
+    
+    class DataLoader {
+        + items : Map<String, Item>
+        + stock : Map<String, List<Box>>
+        + bays : List<Bay>
+        + boxRepository : BoxRepository
+        + loadItems(filename: String) : void
+        + loadWagons(filename: String) : void
+        + loadBays(filename: String) : void
+    }
+    
+    class Box {
+        - boxId : String
+        - sku : String
+        - qty : int
+        - expiryDate : LocalDate
+        - receivedAt : LocalDateTime
+        - location : BayId
+        + Box(boxId: String, sku: String, qty: int, expiryDate: LocalDate, receivedAt: LocalDateTime)
+        + Box(boxId: String, sku: String, qty: int, expiryDate: LocalDate, receivedAt: LocalDateTime, location: BayId)
+        + getBoxId() : String
+        + getSku() : String
+        + getQty() : int
+        + getExpiryDate() : LocalDate
+        + getReceivedAt() : LocalDateTime
+        + getLocation() : BayId
+        + setQty(qty: int) : void
+        + setLocation(location: BayId) : void
+        + {static} FEFO_COMPARATOR : Comparator<Box>
+    }
+    
+    class Item {
+        - sku : String
+        - name : String
+        - category : String
+        - unit : String
+        - volume : double
+        - weight : double
+        + Item(sku: String, name: String, category: String, unit: String, volume: double, weight: double)
+        + getSku() : String
+        + getName() : String
+        + getCategory() : String
+        + getUnit() : String
+        + getVolume() : double
+        + getWeight() : double
+        + setSku(sku: String) : void
+        + setName(name: String) : void
+        + setCategory(category: String) : void
+        + setUnit(unit: String) : void
+        + setVolume(volume: double) : void
+        + setWeight(weight: double) : void
+    }
+    
+    class Bay {
+        - id : BayId
+        - capacityBoxes : int
+        - bySku : Map<String, TreeSet<Box>>
+        - dedicatedSku : String
+        + Bay(id: BayId, capacityBoxes: int)
+        + getId() : BayId
+        + getCapacityBoxes() : int
+        + insertBox(box: Box) : void
+        + peekFront(sku: String) : Box
+        + pollFront(sku: String) : Box
+        + removeBox(box: Box) : void
+        + isFull() : boolean
+        + totalBoxes() : int
+        + getAllBoxes() : Collection<Box>
+        + getBoxCountForSku(sku: String) : int
+        + getTotalQuantityForSku(sku: String) : int
+        + hasSku(sku: String) : boolean
+        + getAvailableSkus() : List<String>
+        + getDedicatedSku() : String
+        + isEmpty() : boolean
+        + canAcceptSku(sku: String) : boolean
+        + isDedicatedToSku(sku: String) : boolean
+    }
+    
+    class BayId {
+        - warehouseId : String
+        - aisle : int
+        - bay : int
+        + BayId(warehouseId: String, aisle: int, bay: int)
+        + getWarehouseId() : String
+        + getAisle() : int
+        + getBay() : int
+        + compareTo(other: BayId) : int
+        + equals(obj: Object) : boolean
+        + hashCode() : int
+        + toString() : String
+    }
+}
+
+package "Repository" {
+    class BoxRepository {
+        - unassignedBoxes : Map<String, List<Box>>
+        - assignedBoxes : Map<String, List<Box>>
+        - allBoxes : Map<String, Box>
+        + BoxRepository()
+        + addUnassignedBox(box: Box) : void
+        + assignBoxToBay(box: Box, bayId: BayId) : void
+        + removeAssignedBox(box: Box) : void
+        + getAllUnassignedBoxes() : Map<String, List<Box>>
+        + getAllAssignedBoxes() : Map<String, List<Box>>
+        + getBoxById(boxId: String) : Box
+        + printStatus() : void
+        + getStats() : RepositoryStats
+    }
+}
+
+WagonsUnloadingUI "1" --> "1" WagonsUnloadingController
+WagonsUnloadingController "1" --> "1" WarehouseManager
+WagonsUnloadingController "1" --> "1" DataLoader
+WarehouseManager "1" --> "0..1" BoxRepository
+WarehouseManager ..> Box
+WarehouseManager ..> Bay
+WarehouseManager ..> Item
+DataLoader "1" --> "1" BoxRepository
+DataLoader ..> Item
+DataLoader ..> Box
+DataLoader ..> Bay
+Box "1" --> "0..1" BayId
+Box "1" --> "1" Item
+Bay "1" --> "1" BayId
+Bay "1" *-- "*" Box
+BoxRepository "1" *-- "*" Box
+
+@enduml
+
