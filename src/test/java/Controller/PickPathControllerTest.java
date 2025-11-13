@@ -60,9 +60,14 @@ class PickPathControllerTest {
     // Consolidação de Stops
     // -------------------------
     @Test
-    void shouldThrowExceptionWhenConsolidatingNullOrEmptyStops() {
-        assertThrows(IllegalArgumentException.class, () -> controller.consolidateStops(null));
-        assertThrows(IllegalArgumentException.class, () -> controller.consolidateStops(Collections.emptyList()));
+    void shouldReturnEmptyListWhenConsolidatingNullOrEmptyStops() {
+        List<PickStop> resultNull = controller.consolidateStops(null);
+        assertNotNull(resultNull);
+        assertTrue(resultNull.isEmpty());
+        
+        List<PickStop> resultEmpty = controller.consolidateStops(Collections.emptyList());
+        assertNotNull(resultEmpty);
+        assertTrue(resultEmpty.isEmpty());
     }
 
     @Test
@@ -88,9 +93,12 @@ class PickPathControllerTest {
     // Geração de Paths
     // -------------------------
     @Test
-    void shouldThrowExceptionWhenGeneratingPathsWithInvalidStops() {
-        assertThrows(IllegalArgumentException.class, () -> controller.generateBothPaths(null));
-        assertThrows(IllegalArgumentException.class, () -> controller.generateBothPaths(Collections.emptyList()));
+    void shouldGenerateEmptyPathsWhenGivenEmptyStops() {
+        Map<PathStrategy, PickPath> resultEmpty = controller.generateBothPaths(Collections.emptyList());
+        assertNotNull(resultEmpty);
+        assertEquals(2, resultEmpty.size());
+        assertEquals(0, resultEmpty.get(PathStrategy.ASC_SWEEP).getStops().size());
+        assertEquals(0, resultEmpty.get(PathStrategy.NEAREST_NEIGHBOUR).getStops().size());
     }
 
     @Test

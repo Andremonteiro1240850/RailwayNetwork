@@ -4,7 +4,6 @@ import Domain.PickPath;
 import Domain.PickStop;
 import Domain.Trolley;
 import Domain.ENUM.PathStrategy;
-import Service.PickPathService;
 import Repository.TrolleyRepository;
 
 import java.util.*;
@@ -37,7 +36,12 @@ public class PickPathController {
 
     /**
      * Processa a sequenciação completa de percursos de picking.
-     * Valida inputs e delega para o Service que faz o trabalho real.
+     * Método principal do USEI04 - Orquestra todo o processo de sequenciação.
+     * 
+     * Fluxo:
+     * 1. Consolida stops duplicados
+     * 2. Gera percursos para ambas estratégias (que aplica estratégia + calcula distância)
+     * 3. Retorna Map com ambos os resultados
      * 
      * @param inputStops Lista de PickStops (pode ter duplicados - mesmo aisle/bay)
      * @return Map com ambas as estratégias (ASC_SWEEP e NEAREST_NEIGHBOUR) e seus percursos calculados
@@ -47,40 +51,41 @@ public class PickPathController {
             throw new IllegalArgumentException("Stop list cannot be null or empty");
         }
         
-        return PickPathService.processPickPathSequencing(inputStops);
+        List<PickStop> consolidatedStops = consolidateStops(inputStops);
+        return generateBothPaths(consolidatedStops);
     }
 
     /**
      * Consolida stops duplicados (mesmo aisle/bay) somando as quantidades.
      * Delega para o domínio (PickStop) que contém a regra de negócio.
      * 
-     * Exemplo: [(1,2,qty:5), (1,2,qty:3)] → [(1,2,qty:8)]
+     * Exemplo: [(1,2,qty:5), (1,2,qty:3), (2,3,qty:2)] → [(1,2,qty:8), (2,3,qty:2)]
      *
      * @param originalStops Lista original com possíveis duplicados
      * @return Lista consolidada sem duplicados (quantidades somadas)
      */
     public List<PickStop> consolidateStops(List<PickStop> originalStops) {
-        if (originalStops == null || originalStops.isEmpty()) {
-            throw new IllegalArgumentException("Stop list cannot be null or empty");
-        }
-        
         return PickStop.consolidateStops(originalStops);
     }
 
     /**
      * Gera percursos para ambas as estratégias (ASC_SWEEP e NEAREST_NEIGHBOUR).
-     * Assume que stops já foram consolidados.
-     * Delega para o Service que cria ambos os percursos.
+     * IMPORTANTE: Assume que os stops já foram consolidados (sem duplicados)!
+     * Cria um percurso para cada estratégia e retorna ambos num Map.
      *
      * @param consolidatedStops Lista de stops já consolidados (sem duplicados)
      * @return Map com ambos os percursos calculados (um para cada estratégia)
      */
     public Map<PathStrategy, PickPath> generateBothPaths(List<PickStop> consolidatedStops) {
-        if (consolidatedStops == null || consolidatedStops.isEmpty()) {
-            throw new IllegalArgumentException("Stop list cannot be null or empty");
-        }
+        Map<PathStrategy, PickPath> results = new HashMap<>();
         
-        return PickPathService.generateBothPaths(consolidatedStops);
+        PickPath ascSweepPath = createCalculatedPath(PathStrategy.ASC_SWEEP, consolidatedStops);
+        results.put(PathStrategy.ASC_SWEEP, ascSweepPath);
+        
+        PickPath nearestNeighbourPath = createCalculatedPath(PathStrategy.NEAREST_NEIGHBOUR, consolidatedStops);
+        results.put(PathStrategy.NEAREST_NEIGHBOUR, nearestNeighbourPath);
+        
+        return results;
     }
 
     /**
