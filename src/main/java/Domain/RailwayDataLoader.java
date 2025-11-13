@@ -17,15 +17,15 @@ import java.util.*;
  */
 public class RailwayDataLoader {
     
-    private List<Station> stations;
+    private List<Facility> facilities;
     private List<LineSegment> lineSegments;
-    private Map<String, Station> stationMap;
+    private Map<String, Facility> stationMap;
 
     /**
      * Constructs a new RailwayDataLoader.
      */
     public RailwayDataLoader() {
-        this.stations = new ArrayList<>();
+        this.facilities = new ArrayList<>();
         this.lineSegments = new ArrayList<>();
         this.stationMap = new HashMap<>();
     }
@@ -82,9 +82,9 @@ public class RailwayDataLoader {
                     
                     if (!id.isEmpty() && !name.isEmpty()) {
                         try {
-                            Station station = new Station(id, name);
-                            stations.add(station);
-                            stationMap.put(id, station);
+                            Facility facility = new Facility(id, name);
+                            facilities.add(facility);
+                            stationMap.put(id, facility);
                             loadedCount++;
                         } catch (Exception e) {
                             System.err.println("Error creating station from line " + lineNumber + ": " + e.getMessage());
@@ -151,21 +151,21 @@ public class RailwayDataLoader {
                             double lengthMeters = Double.parseDouble(lengthStr);
                             double lengthKm = lengthMeters / 1000.0; // Convert meters to kilometers
                             
-                            Station startStation = stationMap.get(startId);
-                            Station endStation = stationMap.get(endId);
+                            Facility startFacility = stationMap.get(startId);
+                            Facility endFacility = stationMap.get(endId);
                             
-                            if (startStation != null && endStation != null) {
+                            if (startFacility != null && endFacility != null) {
                                 // Use actual length from CSV instead of estimation
                                 
                                 // Assume electrified for main lines
                                 boolean electrified = isMainLine(name);
                                 
-                                LineSegment segment = new LineSegment(id, name, startStation, endStation, 
+                                LineSegment segment = new LineSegment(id, name, startFacility, endFacility,
                                                                     lengthKm, gauge, electrified);
                                 lineSegments.add(segment);
                                 loadedCount++;
                             } else {
-                                System.err.println("Station not found - Start: " + startStation + ", End: " + endStation);
+                                System.err.println("Station not found - Start: " + startFacility + ", End: " + endFacility);
                             }
                         } catch (NumberFormatException e) {
                             System.err.println("Invalid numeric value in line " + lineNumber + ": " + e.getMessage());
@@ -200,8 +200,8 @@ public class RailwayDataLoader {
      *
      * @return list of stations
      */
-    public List<Station> getStations() {
-        return new ArrayList<>(stations);
+    public List<Facility> getStations() {
+        return new ArrayList<>(facilities);
     }
 
     /**
@@ -219,7 +219,7 @@ public class RailwayDataLoader {
      * @param id the station ID
      * @return the station or null if not found
      */
-    public Station getStationById(String id) {
+    public Facility getStationById(String id) {
         return stationMap.get(id);
     }
 
@@ -229,7 +229,7 @@ public class RailwayDataLoader {
      * @return number of stations
      */
     public int getStationCount() {
-        return stations.size();
+        return facilities.size();
     }
 
     /**

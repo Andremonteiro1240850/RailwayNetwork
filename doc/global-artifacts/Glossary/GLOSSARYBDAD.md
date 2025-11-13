@@ -15,7 +15,7 @@
 | Siding                                  | Desvio / Via de Cruzamento            | Track area that allows trains to pass each other on single-track routes.                |
 | Station                                 | Estação                               | Operational node where train movement, control and coordination occurs.                 |
 | Terminal                                | Terminal Ferroviário                  | Major freight handling installation for loading, unloading and assembling trains.       |
-| Freight Yard                            | Pátio de Mercadorias                  | Area for sorting, parking and assembling wagons within a station or terminal.          |
+| Freight Yard                            | Pátio de Mercadorias                  | Area for sorting, parking and assembling wagons within a facility or terminal.          |
 | Infrastructure Owner                    | Proprietário da Infraestrutura        | Entity responsible for maintaining and managing railway lines and their segments.       |
 | Train Operating Company / Railway Operator | Operador Ferroviário               | Company owning rolling stock and providing railway freight services.                    |
 | Rolling Stock                           | Material Circulante                   | All railway vehicles including locomotives and wagons.                                  |
@@ -28,6 +28,6 @@
 | Container                               | Contentor                             | Standard freight transport unit used in intermodal operations (e.g., 20ft/40ft).        |
 | Tare                                    | Tara                                  | Empty weight of a wagon used to calculate allowable payload.                             |
 | Freight (Service)                       | Serviço de Carga / Comboio de Carga   | Movement of a set of wagons between origin and destination facilities.                   |
-| Path                                    | Caminho                               | Ordered sequence of stations a train must follow between endpoints.                      |
+| Path                                    | Caminho                               | Ordered sequence of facilities a train must follow between endpoints.                      |
 | Route                                   | Rota                                  | Defined plan describing the ordered facilities included in a freight movement.           |
 

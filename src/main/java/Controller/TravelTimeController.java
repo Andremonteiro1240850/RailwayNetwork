@@ -15,7 +15,7 @@ public class TravelTimeController {
     
     private final TravelCalculationService service;
     private final List<LineSegment> lineSegments;
-    private final List<Station> stations;
+    private final List<Facility> facilities;
     private final RailwayDataLoader dataLoader;
 
     /**
@@ -23,16 +23,16 @@ public class TravelTimeController {
      */
     public TravelTimeController() {
         this.dataLoader = new RailwayDataLoader();
-        this.stations = new ArrayList<>();
+        this.facilities = new ArrayList<>();
         this.lineSegments = new ArrayList<>();
         
         try {
             System.out.println("=== LOADING RAILWAY DATA FROM CSV ===");
             dataLoader.loadAllData();
-            this.stations.addAll(dataLoader.getStations());
+            this.facilities.addAll(dataLoader.getStations());
             this.lineSegments.addAll(dataLoader.getLineSegments());
             System.out.println("✅ CSV data loaded successfully!");
-            System.out.println("   Stations: " + this.stations.size());
+            System.out.println("   Stations: " + this.facilities.size());
             System.out.println("   Line segments: " + this.lineSegments.size());
         } catch (IOException e) {
             System.err.println("❌ CRITICAL ERROR: Cannot load railway data from CSV files!");
@@ -65,8 +65,8 @@ public class TravelTimeController {
      *
      * @return list of stations
      */
-    public List<Station> getStations() {
-        return stations;
+    public List<Facility> getStations() {
+        return facilities;
     }
 
     /**
@@ -84,7 +84,7 @@ public class TravelTimeController {
      * @param id the station ID
      * @return the station or null if not found
      */
-    public Station getStationById(String id) {
+    public Facility getStationById(String id) {
         return dataLoader.getStationById(id);
     }
 
