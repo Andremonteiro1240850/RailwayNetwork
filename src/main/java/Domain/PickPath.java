@@ -5,8 +5,9 @@ import java.util.List;
 import java.util.ArrayList;
 
 /**
- * Entidade de domínio PickPath - representa um percurso de picking
- * Contém apenas estado e regras de negócio básicas
+ * Entidade de domínio PickPath - representa um percurso de picking calculado.
+ * Guarda a estratégia usada, os stops ordenados/otimizados e a distância total.
+ * Contém apenas estado e regras de negócio básicas (validações).
  */
 public class PickPath {
     private PathStrategy strategy;
@@ -14,14 +15,15 @@ public class PickPath {
     private List<PickStop> stops;
 
     /**
-     * Construtor para criar um PickPath
+     * Construtor para criar um PickPath.
+     * Valida todos os inputs e cria cópia defensiva da lista de stops.
      *
-     * @param strategy      a estratégia utilizada
-     * @param stops         a lista de stops ordenados
-     * @param totalDistance a distância total calculada
+     * @param strategy Estratégia utilizada (ASC_SWEEP ou NEAREST_NEIGHBOUR)
+     * @param stops Lista de stops já ordenados/otimizados pela estratégia
+     * @param totalDistance Distância total calculada do percurso
+     * @throws IllegalArgumentException Se strategy for null, stops for null, ou distância for negativa
      */
     public PickPath(PathStrategy strategy, List<PickStop> stops, int totalDistance) {
-        // Validações que os testes esperam
         if (strategy == null) {
             throw new IllegalArgumentException("Strategy cannot be null");
         }
@@ -38,27 +40,28 @@ public class PickPath {
     }
 
     /**
-     * Gets strategy.
+     * Retorna a estratégia utilizada para calcular este percurso.
      *
-     * @return the strategy
+     * @return Estratégia (ASC_SWEEP ou NEAREST_NEIGHBOUR)
      */
     public PathStrategy getStrategy() {
         return strategy;
     }
 
     /**
-     * Gets total distance.
+     * Retorna a distância total do percurso.
      *
-     * @return the total distance
+     * @return Distância total calculada
      */
     public int getTotalDistance() {
         return totalDistance;
     }
 
     /**
-     * Gets stops.
+     * Retorna a lista de stops ordenados/otimizados.
+     * Retorna cópia defensiva para evitar modificações externas.
      *
-     * @return the stops
+     * @return Cópia da lista de stops ordenados
      */
     public List<PickStop> getStops() {
         return new ArrayList<>(stops);

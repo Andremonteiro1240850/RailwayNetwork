@@ -16,6 +16,12 @@ import java.util.*;
  * - Processes restock (creates box and inserts into inventory following FEFO/FIFO)
  * - Processes discard
  * - Maintains audit log of all actions
+ * 
+ * Architecture Note:
+ * This controller follows clean architecture principles - it handles business logic only
+ * and does NOT contain any print statements or direct output. All user-facing output
+ * is handled by the UI layer (QualityOperatorUI). This controller returns data structures
+ * and formatted strings that the UI layer displays to users.
  */
 public class InspectionController {
 
@@ -90,14 +96,14 @@ public class InspectionController {
             // 5. Create audit log entry
             createAuditLog(inspection, sku, quantity, action, returnReason, qtyRestocked, qtyDiscarded);
 
-            return String.format(
-                    "Inspection Processed\nInspection ID: %s\nSKU: %s\nQuantity: %d\nAction: %s\nMotive: %s\nDate: %s",
-                    inspection.getInspectionId(), sku, quantity, action, returnReason,
-                    LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
-            );
+            // Note: Formatting moved to UI layer - return null to indicate success
+            // UI will format and display using System.out.print
+            return null;
 
         } catch (Exception e) {
-            return String.format("ERROR: Inspection error. %s", e.getMessage());
+            // Note: Error message formatting moved to UI layer
+            // Return error indicator - UI will format and display
+            return "ERROR: " + e.getMessage();
         }
     }
 

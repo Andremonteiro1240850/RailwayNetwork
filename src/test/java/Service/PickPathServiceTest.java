@@ -1,5 +1,6 @@
 package Service;
 
+import Controller.PickPathController;
 import Domain.ENUM.PathStrategy;
 import Domain.PickPath;
 import Domain.PickStop;
@@ -10,6 +11,8 @@ import java.util.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 class PickPathServiceTest {
+    
+    private PickPathController controller = new PickPathController();
 
     @Test
     void generateBothPaths_WithValidStops_ReturnsBothStrategies() {
@@ -21,7 +24,7 @@ class PickPathServiceTest {
         );
 
         // Act
-        Map<PathStrategy, PickPath> result = PickPathService.generateBothPaths(stops);
+        Map<PathStrategy, PickPath> result = controller.generateBothPaths(stops);
 
         // Assert
         assertNotNull(result);
@@ -46,7 +49,7 @@ class PickPathServiceTest {
         );
 
         // Act
-        Map<PathStrategy, PickPath> result = PickPathService.generateBothPaths(singleStop);
+        Map<PathStrategy, PickPath> result = controller.generateBothPaths(singleStop);
 
         // Assert
         assertNotNull(result);
@@ -67,7 +70,7 @@ class PickPathServiceTest {
         List<PickStop> emptyStops = new ArrayList<>();
 
         // Act
-        Map<PathStrategy, PickPath> result = PickPathService.generateBothPaths(emptyStops);
+        Map<PathStrategy, PickPath> result = controller.generateBothPaths(emptyStops);
 
         // Assert
         assertNotNull(result);
@@ -93,7 +96,7 @@ class PickPathServiceTest {
         );
 
         // Act
-        List<PickStop> result = PickPathService.consolidateStops(stopsWithDuplicates);
+        List<PickStop> result = controller.consolidateStops(stopsWithDuplicates);
 
         // Assert
         assertEquals(2, result.size()); // Should have 2 unique locations
@@ -117,7 +120,7 @@ class PickPathServiceTest {
         );
 
         // Act
-        List<PickStop> result = PickPathService.consolidateStops(uniqueStops);
+        List<PickStop> result = controller.consolidateStops(uniqueStops);
 
         // Assert
         assertEquals(3, result.size());
@@ -130,7 +133,7 @@ class PickPathServiceTest {
     @Test
     void consolidateStops_WithNullInput_ReturnsEmptyList() {
         // Act
-        List<PickStop> result = PickPathService.consolidateStops(null);
+        List<PickStop> result = controller.consolidateStops(null);
 
         // Assert
         assertNotNull(result);
@@ -143,7 +146,7 @@ class PickPathServiceTest {
         List<PickStop> emptyList = new ArrayList<>();
 
         // Act
-        List<PickStop> result = PickPathService.consolidateStops(emptyList);
+        List<PickStop> result = controller.consolidateStops(emptyList);
 
         // Assert
         assertNotNull(result);
@@ -161,7 +164,7 @@ class PickPathServiceTest {
         );
 
         // Act
-        Map<PathStrategy, PickPath> result = PickPathService.processPickPathSequencing(inputStops);
+        Map<PathStrategy, PickPath> result = controller.processPickPathSequencing(inputStops);
 
         // Assert
         assertNotNull(result);
@@ -187,7 +190,7 @@ class PickPathServiceTest {
         );
 
         // Act
-        Map<PathStrategy, PickPath> result = PickPathService.processPickPathSequencing(singleStop);
+        Map<PathStrategy, PickPath> result = controller.processPickPathSequencing(singleStop);
 
         // Assert
         assertNotNull(result);
@@ -210,7 +213,7 @@ class PickPathServiceTest {
         );
 
         // Act
-        Map<PathStrategy, PickPath> result = PickPathService.processPickPathSequencing(allDuplicates);
+        Map<PathStrategy, PickPath> result = controller.processPickPathSequencing(allDuplicates);
 
         // Assert
         assertNotNull(result);
@@ -236,7 +239,7 @@ class PickPathServiceTest {
         );
 
         // Act
-        Map<PathStrategy, PickPath> result = PickPathService.processPickPathSequencing(complexStops);
+        Map<PathStrategy, PickPath> result = controller.processPickPathSequencing(complexStops);
 
         // Assert
         assertNotNull(result);
@@ -269,7 +272,7 @@ class PickPathServiceTest {
         );
 
         // Act
-        Map<PathStrategy, PickPath> result = PickPathService.generateBothPaths(stops);
+        Map<PathStrategy, PickPath> result = controller.generateBothPaths(stops);
 
         // Assert
         assertNotNull(result);
@@ -291,7 +294,7 @@ class PickPathServiceTest {
         );
 
         // Act
-        List<PickStop> result = PickPathService.consolidateStops(stops);
+        List<PickStop> result = controller.consolidateStops(stops);
 
         // Assert
         assertEquals(1, result.size());

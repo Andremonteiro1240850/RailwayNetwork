@@ -22,9 +22,11 @@ public class PickPathUI {
     private final Scanner scanner;
 
     /**
-     * Instantiates a new Pick path ui.
+     * Construtor da UI para Pick Path Sequencing.
+     * Inicializa a interface com o controller fornecido.
+     * O controller deve ter TrolleyRepository se quiser usar trolleys do USEI03.
      *
-     * @param controller the controller
+     * @param controller Controller que contém a lógica de sequenciação
      */
     public PickPathUI(PickPathController controller) {
         this.controller = controller;
@@ -32,7 +34,8 @@ public class PickPathUI {
     }
 
     /**
-     * Main menu for USEI04
+     * Menu principal do USEI04.
+     * Exibe opções e chama os métodos correspondentes conforme a escolha do utilizador.
      */
     public void showMainMenu() {
         while (true) {
@@ -96,7 +99,15 @@ public class PickPathUI {
     }
 
     /**
-     * Process with trolley data from US03
+     * Processa sequenciação usando dados de trolleys do USEI03.
+     * Este é o método principal usado no USEI04.
+     * 
+     * Fluxo:
+     * 1. Obtém trolleys do repositório através do controller
+     * 2. Mostra lista de trolleys e permite escolher um ou todos
+     * 3. Converte trolley(s) em PickStops
+     * 4. Chama processPickPathSequencing() para calcular percursos
+     * 5. Mostra resultados comparando ambas estratégias
      */
     private void processWithTrolleyData() {
         System.out.println("\n=== PROCESSING WITH TROLLEY DATA AS PLANNER ===");
@@ -206,7 +217,13 @@ public class PickPathUI {
     }
 
     /**
-     * Converts a trolley to pick stops
+     * Converte UM trolley do USEI03 em lista de PickStops.
+     * Extrai PickingItems do trolley, agrupa items com mesmo aisle/bay e soma quantidades.
+     * 
+     * Exemplo: Trolley com items (1,2,qty:5) e (1,2,qty:3) → PickStop (1,2,qty:8)
+     *
+     * @param trolley Trolley do USEI03 com PickingItems
+     * @return Lista de PickStops consolidados (sem duplicados no mesmo local)
      */
     private List<PickStop> trolleyToStops(Trolley trolley) {
         List<PickStop> stops = new ArrayList<>();
@@ -233,7 +250,14 @@ public class PickPathUI {
     }
 
     /**
-     * Converts all trolleys to pick stops (consolidated)
+     * Converte TODOS os trolleys do USEI03 em lista de PickStops.
+     * Processa múltiplos trolleys e consolida stops entre trolleys diferentes.
+     * Se dois trolleys têm items no mesmo local, soma as quantidades.
+     * 
+     * Exemplo: Trolley1 tem (1,2,qty:5), Trolley2 tem (1,2,qty:3) → PickStop (1,2,qty:8)
+     *
+     * @param trolleys Lista de trolleys do USEI03
+     * @return Lista consolidada de PickStops de todos os trolleys
      */
     private List<PickStop> allTrolleysToStops(List<Trolley> trolleys) {
         List<PickStop> allStops = new ArrayList<>();
@@ -286,7 +310,11 @@ public class PickPathUI {
     }
 
     /**
-     * Display the results of sequencing strategies
+     * Mostra os resultados das estratégias de sequenciação.
+     * Extrai ambos os percursos (ASC_SWEEP e NEAREST_NEIGHBOUR) do Map,
+     * mostra distância total e percurso de cada um, e compara qual é mais eficiente.
+     *
+     * @param results Map com ambos os percursos calculados (chave=estratégia, valor=PickPath)
      */
     private void displayPathResults(Map<PathStrategy, PickPath> results) {
         System.out.println("\n--- STRATEGY A - ASC SWEEP ---");

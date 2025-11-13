@@ -16,5 +16,5 @@ FROM Locomotive l
          JOIN Gauge g       ON g.code = l.Gaugecode
 WHERE lt.loco_type  = '&p_type'
   AND l.operator_id = '&p_operator'
-  AND g.code        = &p_gauge_code
+  AND g.code        = '&p_gauge_code'
 ORDER BY l.locomotive_id;
