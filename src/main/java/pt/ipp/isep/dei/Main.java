@@ -1,9 +1,11 @@
 package pt.ipp.isep.dei;
 
 import Controller.*;
+import Domain.StationLoader;
 import Domain.Warehouse;
 import Domain.ENUM.ReturnReason;
 import Repository.BoxRepository;
+import Repository.StationRepository;
 import Repository.TrolleyRepository;
 import Repository.WarehouseRepository;
 import UI.*;
@@ -22,6 +24,8 @@ public class Main {
     private static WarehouseRepository warehouseRepository = new WarehouseRepository();
     private static TrolleyRepository trolleyRepository = new TrolleyRepository();
     private static BoxRepository boxRepository;
+    private StationRepository stationRepository;
+    private static StationLoader stationLoader;
     
     /**
      * Load all data from CSV files once at startup
@@ -85,7 +89,9 @@ public class Main {
             System.out.println("4. Login as a Picker");
             System.out.println("5. Login as a Quality Operator");
             System.out.println("6. Login as a Traffic Dispatcher");
-            System.out.println("7. Back");
+            System.out.println("7. Login as a Planner to loockup for Stations");
+
+            System.out.println("8. Back");
 
             System.out.print("Select option: ");
             String choice = scanner.nextLine().trim();
@@ -122,6 +128,12 @@ public class Main {
                     // After travel time calculation, return to login menu (continue loop)
                     break;
                 case "7":
+                    // Planner -> Station Lookup
+                    stationLookup();
+                    // After station lookup, return to login menu (continue loop)
+                    break;
+
+                case "8":
                     return false; // Back selecionado
                 default:
                     System.out.println("Invalid option!");
@@ -270,5 +282,11 @@ public class Main {
         TravelTimeController controller = new TravelTimeController();
         TravelTimeUI ui = new TravelTimeUI(controller);
         ui.showMainMenu();
+    }
+    private static void stationLookup() {
+        System.out.println("\n=== STATION LOOKUP ===");
+        StationController controller = new StationController(new StationRepository(stationLoader.loadFromCSV("train_stations_europe.csv")));
+        StationUI ui = new StationUI(controller, scanner);
+        ui.run();
     }
 }
