@@ -14,10 +14,10 @@ import java.util.List;
  */
 class TravelCalculationServiceTest {
 
-    private Station station1;
-    private Station station2;
-    private Station station3;
-    private Station station4; // Not connected
+    private Facility facility1;
+    private Facility facility2;
+    private Facility facility3;
+    private Facility facility4; // Not connected
     private LineSegment segment12; // 10 km, 1668mm gauge, electrified
     private LineSegment segment23; // 5 km, 1435mm gauge, non-electrified
 
@@ -32,13 +32,13 @@ class TravelCalculationServiceTest {
 
     @BeforeEach
     void setUp() {
-        station1 = new Station("S1", "Station 1");
-        station2 = new Station("S2", "Station 2");
-        station3 = new Station("S3", "Station 3");
-        station4 = new Station("S4", "Station 4"); // Unconnected station
+        facility1 = new Facility("S1", "Station 1");
+        facility2 = new Facility("S2", "Station 2");
+        facility3 = new Facility("S3", "Station 3");
+        facility4 = new Facility("S4", "Station 4"); // Unconnected station
 
-        segment12 = new LineSegment("L12", "Line 1-2", station1, station2, 10.0, 1668.0, true);
-        segment23 = new LineSegment("L23", "Line 2-3", station2, station3, 5.0, 1435.0, false);
+        segment12 = new LineSegment("L12", "Line 1-2", facility1, facility2, 10.0, 1668.0, true);
+        segment23 = new LineSegment("L23", "Line 2-3", facility2, facility3, 5.0, 1435.0, false);
 
         // Instanciação das Locomotivas reais
         locoWideGauge = new Locomotive("LW", "Electric", 100.0, 1668.0);
@@ -69,12 +69,12 @@ class TravelCalculationServiceTest {
     void testCalculateTravelTime_ValidConnection_CompatibleGauge() {
         // station1 -> station2 (10km) with locoWideGauge (100km/h) -> 10/100 = 0.1 hours
         double expectedTime12 = 10.0 / 100.0;
-        double actualTime12 = serviceWithSegments.calculateTravelTime(station1, station2, locoWideGauge);
+        double actualTime12 = serviceWithSegments.calculateTravelTime(facility1, facility2, locoWideGauge);
         assertEquals(expectedTime12, actualTime12, 0.0001, "Travel time calculation 1-2 is incorrect");
 
         // station2 -> station3 (5km) with locoStandardGauge (120km/h) -> 5/120 hours
         double expectedTime23 = 5.0 / 120.0;
-        double actualTime23 = serviceWithSegments.calculateTravelTime(station2, station3, locoStandardGauge);
+        double actualTime23 = serviceWithSegments.calculateTravelTime(facility2, facility3, locoStandardGauge);
         assertEquals(expectedTime23, actualTime23, 0.0001, "Travel time calculation 2-3 is incorrect");
     }
 
@@ -82,14 +82,14 @@ class TravelCalculationServiceTest {
     void testCalculateTravelTime_IncompatibleGauge_ThrowsException() {
         // Agora usamos a classe real IncompatibleGaugeException
         assertThrows(IncompatibleGaugeException.class, () ->
-                        serviceWithSegments.calculateTravelTime(station1, station2, locoStandardGauge),
+                        serviceWithSegments.calculateTravelTime(facility1, facility2, locoStandardGauge),
                 "Should throw IncompatibleGaugeException for gauge mismatch");
     }
 
     @Test
     void testCalculateTravelTime_NoDirectConnection_ThrowsException() {
         assertThrows(IllegalStateException.class, () ->
-                        serviceWithSegments.calculateTravelTime(station1, station3, locoWideGauge),
+                        serviceWithSegments.calculateTravelTime(facility1, facility3, locoWideGauge),
                 "Should throw IllegalStateException when no direct connection exists");
     }
 
@@ -99,7 +99,7 @@ class TravelCalculationServiceTest {
     void testCalculateTravelTimeWithSegment_Valid() {
         // Use segment12 (10km) with locoWideGauge (100km/h) -> 0.1 hours
         double expectedTime = 10.0 / 100.0;
-        double actualTime = serviceWithSegments.calculateTravelTime(station1, station2, locoWideGauge, segment12);
+        double actualTime = serviceWithSegments.calculateTravelTime(facility1, facility2, locoWideGauge, segment12);
         assertEquals(expectedTime, actualTime, 0.0001);
     }
 
@@ -107,7 +107,7 @@ class TravelCalculationServiceTest {
     void testCalculateTravelTimeWithSegment_IncompatibleGauge_ThrowsException() {
         // Agora usamos a classe real IncompatibleGaugeException
         assertThrows(IncompatibleGaugeException.class, () ->
-                serviceWithSegments.calculateTravelTime(station1, station2, locoStandardGauge, segment12));
+                serviceWithSegments.calculateTravelTime(facility1, facility2, locoStandardGauge, segment12));
     }
 
     // --- formatTravelTime() Tests (static method) ---

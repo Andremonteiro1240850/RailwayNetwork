@@ -24,7 +24,7 @@
 | **Dispatching** | **Despacho** | Planning train movements to avoid delays and maximize efficiency. |
 | **Double Track** | **Via Dupla** | Railway segment with parallel tracks allowing bidirectional movement. |
 | **Electrified Line** | **Linha Eletrificada** | Track segment with overhead electrical systems for electric locomotives. |
-| **Endpoint** | **Ponto Final** | Terminal station where railway lines begin or end. |
+| **Endpoint** | **Ponto Final** | Terminal facility where railway lines begin or end. |
 | **Expired** | **Expirado** | Return reason for products past expiry date requiring disposal. |
 | **Expiry Date** | **Data de Validade** | Date after which perishable products become unsuitable. |
 | **FEFO (First-Expired-First-Out)** | **FEFO** | Inventory rule dispatching nearest-expiry products first. |
@@ -48,17 +48,17 @@
 | **Order** | **Pedido** | Customer request for products with quantities and dates. |
 | **Order Line** | **Linha de Pedido** | Individual order item specifying SKU and quantity. |
 | **Parking Lines** | **Linhas de Estacionamento** | Terminal sidings for temporary wagon storage. |
-| **Path** | **Caminho** | Ordered list of stations through which a train must pass. |
+| **Path** | **Caminho** | Ordered list of facilities through which a train must pass. |
 | **Perishable Goods** | **Bens Perecíveis** | Products requiring expiry date tracking and FEFO management. |
 | **Planner** | **Planeador** | User profile analyzing and adjusting train schedules. |
 | **Pressure Gas Car** | **Vagão de Gás sob Pressão** | Tank wagon for liquefied gases requiring pressure. |
 | **Quarantine** | **Quarentena** | Controlled area inspecting returned goods before processing. |
-| **Railway Infrastructure** | **Infraestrutura Ferroviária** | Physical components including tracks and stations. |
+| **Railway Infrastructure** | **Infraestrutura Ferroviária** | Physical components including tracks and facilities. |
 | **Railway Network** | **Rede Ferroviária** | Complete system of interconnected railway lines. |
 | **Refrigerated Car** | **Vagão Frigorífico** | Temperature-controlled wagon for perishable goods. |
 | **Returns** | **Devoluções** | Products sent back requiring inspection and quarantine. |
 | **Rolling Stock** | **Material Circulante** | All railway vehicles including locomotives and wagons. |
-| **Route** | **Rota** | Ordered station sequence train passes through. |
+| **Route** | **Rota** | Ordered facility sequence train passes through. |
 | **Scheduling** | **Calendarização** | Planning train movements to avoid conflicts and maximize efficiency. |
 | **Siding** | **Desvio** | Designated crossing area on single-track segments. |
 | **Simple Route** | **Rota Simples** | Route consisting of a single freight transport. |
@@ -66,7 +66,7 @@
 | **SKU (Stock Keeping Unit)** | **SKU** | Unique code identifying specific product type in inventory. |
 | **Sorting** | **Triagem** | Process organizing wagons in freight yards for efficiency. |
 | **Station** | **Estação** | Nodal point in railway network for logistical operations. |
-| **Station Master** | **Chefe de Estação** | User overseeing station operations and coordination. |
+| **Station Master** | **Chefe de Estação** | User overseeing facility operations and coordination. |
 | **Station Storage Manager** | **Gestor de Armazenamento** | User responsible for warehouse operations. |
 | **Tank Car** | **Vagão-tanque** | Wagon for liquids, chemicals, and fuels. |
 | **Tare** | **Tara** | Empty wagon weight used in payload calculations. |

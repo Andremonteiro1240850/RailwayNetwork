@@ -7,7 +7,7 @@ package Domain;
  * @author Development Team
  * @version 1.0
  */
-public class Station {
+public class Facility {
     
     private final String id;
     private final String name;
@@ -21,7 +21,7 @@ public class Station {
      * @param location the location of the station (optional)
      * @throws IllegalArgumentException if id or name are null or empty
      */
-    public Station(String id, String name, String location) {
+    public Facility(String id, String name, String location) {
         if (id == null || id.trim().isEmpty()) {
             throw new IllegalArgumentException("Station ID cannot be null or empty");
         }
@@ -40,7 +40,7 @@ public class Station {
      * @param id   the unique identifier for the station
      * @param name the name of the station
      */
-    public Station(String id, String name) {
+    public Facility(String id, String name) {
         this(id, name, null);
     }
 
@@ -84,8 +84,8 @@ public class Station {
     public boolean equals(Object obj) {
         if (this == obj) return true;
         if (obj == null || getClass() != obj.getClass()) return false;
-        Station station = (Station) obj;
-        return id.equals(station.id);
+        Facility facility = (Facility) obj;
+        return id.equals(facility.id);
     }
     
     @Override

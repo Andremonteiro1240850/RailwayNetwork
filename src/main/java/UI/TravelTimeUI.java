@@ -15,7 +15,7 @@ public class TravelTimeUI {
     
     private final TravelCalculationService service;
     private final Scanner scanner;
-    private final List<Station> stations;
+    private final List<Facility> facilities;
     private final List<Locomotive> locomotives;
     private final TravelTimeController controller;
 
@@ -28,7 +28,7 @@ public class TravelTimeUI {
         this.controller = controller;
         this.service = controller.getService();
         this.scanner = new Scanner(System.in);
-        this.stations = controller.getStations();
+        this.facilities = controller.getStations();
         this.locomotives = createMockLocomotives();
     }
 
@@ -77,15 +77,15 @@ public class TravelTimeUI {
         
         try {
             // Get start station
-            Station startStation = selectStation("Enter Start Station ID");
-            if (startStation == null) return;
+            Facility startFacility = selectStation("Enter Start Station ID");
+            if (startFacility == null) return;
             
             // Get end station
-            Station endStation = selectStation("Enter End Station ID");
-            if (endStation == null) return;
+            Facility endFacility = selectStation("Enter End Station ID");
+            if (endFacility == null) return;
             
             // Check if stations are the same
-            if (startStation.equals(endStation)) {
+            if (startFacility.equals(endFacility)) {
                 System.out.println("❌ Start and end stations cannot be the same!");
                 return;
             }
@@ -95,10 +95,10 @@ public class TravelTimeUI {
             if (locomotive == null) return;
             
             // Calculate travel time
-            double travelTimeHours = service.calculateTravelTime(startStation, endStation, locomotive);
+            double travelTimeHours = service.calculateTravelTime(startFacility, endFacility, locomotive);
             
             // Display results
-            displayResults(startStation, endStation, locomotive, travelTimeHours);
+            displayResults(startFacility, endFacility, locomotive, travelTimeHours);
             
         } catch (IncompatibleGaugeException e) {
             System.out.println("❌ " + e.getMessage());
@@ -116,7 +116,7 @@ public class TravelTimeUI {
      * @param prompt the prompt message
      * @return the selected station or null if cancelled
      */
-    private Station selectStation(String prompt) {
+    private Facility selectStation(String prompt) {
         while (true) {
             System.out.print(prompt + ": ");
             String stationId = scanner.nextLine().trim();
@@ -126,9 +126,9 @@ public class TravelTimeUI {
                 continue;
             }
             
-            Station station = findStationById(stationId);
-            if (station != null) {
-                return station;
+            Facility facility = findStationById(stationId);
+            if (facility != null) {
+                return facility;
             } else {
                 System.out.println("❌ Station with ID '" + stationId + "' not found!");
                 System.out.print("Do you want to try again? (y/n): ");
@@ -172,19 +172,19 @@ public class TravelTimeUI {
     /**
      * Displays the calculation results in a formatted manner.
      * 
-     * @param startStation the starting station
-     * @param endStation the ending station
+     * @param startFacility the starting station
+     * @param endFacility the ending station
      * @param locomotive the locomotive used
      * @param travelTimeHours the travel time in hours
      */
-    private void displayResults(Station startStation, Station endStation, 
-                              Locomotive locomotive, double travelTimeHours) {
+    private void displayResults(Facility startFacility, Facility endFacility,
+                                Locomotive locomotive, double travelTimeHours) {
         System.out.println("\n" + "=".repeat(50));
         System.out.println("RESULT:");
         System.out.println("=".repeat(50));
         
         System.out.printf("From \"%s\" to \"%s\"%n", 
-                         startStation.getName(), endStation.getName());
+                         startFacility.getName(), endFacility.getName());
         System.out.printf("Using locomotive \"%s\" (%s, %.0f km/h)%n", 
                          locomotive.getId(), locomotive.getType(), locomotive.getMaxSpeedKmH());
         
@@ -192,7 +192,7 @@ public class TravelTimeUI {
         System.out.printf("Estimated Travel Time: %s%n", formattedTime);
         
         // Additional information
-        LineSegment segment = service.findConnectingSegment(startStation, endStation);
+        LineSegment segment = service.findConnectingSegment(startFacility, endFacility);
         if (segment != null) {
             if (!segment.getName().isEmpty()) {
                 System.out.printf("Line Segment: %s (%s)%n", 
@@ -214,14 +214,14 @@ public class TravelTimeUI {
         System.out.println("Available Stations (from CSV data)");
         System.out.println("-".repeat(60));
         
-        if (stations.isEmpty()) {
+        if (facilities.isEmpty()) {
             System.out.println("No stations loaded from CSV files.");
         } else {
-            System.out.printf("Total stations: %d%n%n", stations.size());
+            System.out.printf("Total stations: %d%n%n", facilities.size());
             
-            for (Station station : stations) {
+            for (Facility facility : facilities) {
                 System.out.printf("ID: %-3s | Name: %s%n", 
-                                 station.getId(), station.getName());
+                                 facility.getId(), facility.getName());
             }
         }
         
@@ -249,12 +249,12 @@ public class TravelTimeUI {
      * @param id the station ID
      * @return the station or null if not found
      */
-    private Station findStationById(String id) {
+    private Facility findStationById(String id) {
         if (controller != null) {
             return controller.getStationById(id);
         }
         
-        return stations.stream()
+        return facilities.stream()
                 .filter(station -> station.getId().equalsIgnoreCase(id))
                 .findFirst()
                 .orElse(null);

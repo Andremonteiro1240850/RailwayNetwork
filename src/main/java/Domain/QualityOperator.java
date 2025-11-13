@@ -7,7 +7,13 @@ import java.util.*;
 /**
  * Quality Operator - Handles quarantine queue management,
  * inspection processing, and audit logging.
+ * 
+ * NOTE: This is legacy code used only for testing purposes.
+ * Production code should use QualityOperatorController + QualityOperatorUI instead.
+ * 
+ * @deprecated Use QualityOperatorController and QualityOperatorUI for production code
  */
+@Deprecated
 public class QualityOperator {
 
     // Quarantine management

@@ -11,8 +11,8 @@ public class LineSegment {
     
     private final String id;
     private final String name;
-    private final Station startStation;
-    private final Station endStation;
+    private final Facility startFacility;
+    private final Facility endFacility;
     private final double lengthKm;
     private final double gauge;
     private final boolean electrified;
@@ -21,25 +21,25 @@ public class LineSegment {
      * Constructs a new LineSegment with the specified parameters.
      *
      * @param id           the unique identifier for the line segment
-     * @param startStation the starting station
-     * @param endStation   the ending station
+     * @param startFacility the starting station
+     * @param endFacility   the ending station
      * @param lengthKm     the length of the segment in kilometers
      * @param gauge        the track gauge in millimeters
      * @param electrified  whether the segment is electrified
      * @throws IllegalArgumentException if parameters are invalid
      */
-    public LineSegment(String id, Station startStation, Station endStation,
-                      double lengthKm, double gauge, boolean electrified) {
+    public LineSegment(String id, Facility startFacility, Facility endFacility,
+                       double lengthKm, double gauge, boolean electrified) {
         if (id == null || id.trim().isEmpty()) {
             throw new IllegalArgumentException("Line segment ID cannot be null or empty");
         }
-        if (startStation == null) {
+        if (startFacility == null) {
             throw new IllegalArgumentException("Start station cannot be null");
         }
-        if (endStation == null) {
+        if (endFacility == null) {
             throw new IllegalArgumentException("End station cannot be null");
         }
-        if (startStation.equals(endStation)) {
+        if (startFacility.equals(endFacility)) {
             throw new IllegalArgumentException("Start and end stations cannot be the same");
         }
         if (lengthKm <= 0) {
@@ -51,8 +51,8 @@ public class LineSegment {
         
         this.id = id.trim();
         this.name = ""; // Default empty name for backward compatibility
-        this.startStation = startStation;
-        this.endStation = endStation;
+        this.startFacility = startFacility;
+        this.endFacility = endFacility;
         this.lengthKm = lengthKm;
         this.gauge = gauge;
         this.electrified = electrified;
@@ -63,25 +63,25 @@ public class LineSegment {
      *
      * @param id           the unique identifier for the line segment
      * @param name         the name of the line segment
-     * @param startStation the starting station
-     * @param endStation   the ending station
+     * @param startFacility the starting station
+     * @param endFacility   the ending station
      * @param lengthKm     the length of the segment in kilometers
      * @param gauge        the track gauge in millimeters
      * @param electrified  whether the segment is electrified
      * @throws IllegalArgumentException if parameters are invalid
      */
-    public LineSegment(String id, String name, Station startStation, Station endStation,
-                      double lengthKm, double gauge, boolean electrified) {
+    public LineSegment(String id, String name, Facility startFacility, Facility endFacility,
+                       double lengthKm, double gauge, boolean electrified) {
         if (id == null || id.trim().isEmpty()) {
             throw new IllegalArgumentException("Line segment ID cannot be null or empty");
         }
-        if (startStation == null) {
+        if (startFacility == null) {
             throw new IllegalArgumentException("Start station cannot be null");
         }
-        if (endStation == null) {
+        if (endFacility == null) {
             throw new IllegalArgumentException("End station cannot be null");
         }
-        if (startStation.equals(endStation)) {
+        if (startFacility.equals(endFacility)) {
             throw new IllegalArgumentException("Start and end stations cannot be the same");
         }
         if (lengthKm <= 0) {
@@ -93,8 +93,8 @@ public class LineSegment {
         
         this.id = id.trim();
         this.name = name != null ? name.trim() : "";
-        this.startStation = startStation;
-        this.endStation = endStation;
+        this.startFacility = startFacility;
+        this.endFacility = endFacility;
         this.lengthKm = lengthKm;
         this.gauge = gauge;
         this.electrified = electrified;
@@ -123,8 +123,8 @@ public class LineSegment {
      *
      * @return the starting station
      */
-    public Station getStartStation() {
-        return startStation;
+    public Facility getStartStation() {
+        return startFacility;
     }
 
     /**
@@ -132,8 +132,8 @@ public class LineSegment {
      *
      * @return the ending station
      */
-    public Station getEndStation() {
-        return endStation;
+    public Facility getEndStation() {
+        return endFacility;
     }
 
     /**
@@ -166,17 +166,17 @@ public class LineSegment {
     /**
      * Checks if this segment connects the two given stations.
      *
-     * @param station1 the first station
-     * @param station2 the second station
+     * @param facility1 the first station
+     * @param facility2 the second station
      * @return true if this segment connects the stations, false otherwise
      */
-    public boolean connectsStations(Station station1, Station station2) {
-        if (station1 == null || station2 == null) {
+    public boolean connectsStations(Facility facility1, Facility facility2) {
+        if (facility1 == null || facility2 == null) {
             return false;
         }
         
-        return (startStation.equals(station1) && endStation.equals(station2)) ||
-               (startStation.equals(station2) && endStation.equals(station1));
+        return (startFacility.equals(facility1) && endFacility.equals(facility2)) ||
+               (startFacility.equals(facility2) && endFacility.equals(facility1));
     }
 
     /**
@@ -192,18 +192,18 @@ public class LineSegment {
     /**
      * Gets the other station in this segment.
      *
-     * @param station one of the stations in this segment
+     * @param facility one of the stations in this segment
      * @return the other station, or null if the given station is not part of this segment
      */
-    public Station getOtherStation(Station station) {
-        if (station == null) {
+    public Facility getOtherStation(Facility facility) {
+        if (facility == null) {
             return null;
         }
         
-        if (startStation.equals(station)) {
-            return endStation;
-        } else if (endStation.equals(station)) {
-            return startStation;
+        if (startFacility.equals(facility)) {
+            return endFacility;
+        } else if (endFacility.equals(facility)) {
+            return startFacility;
         }
         
         return null;
@@ -226,11 +226,11 @@ public class LineSegment {
     public String toString() {
         if (!name.isEmpty()) {
             return String.format("%s (%s): %s -> %s (%.2f km, %.0fmm gauge, %s)", 
-                               id, name, startStation.getName(), endStation.getName(), 
+                               id, name, startFacility.getName(), endFacility.getName(),
                                lengthKm, gauge, electrified ? "electrified" : "non-electrified");
         } else {
             return String.format("%s: %s -> %s (%.2f km, %.0fmm gauge, %s)", 
-                               id, startStation.getName(), endStation.getName(), 
+                               id, startFacility.getName(), endFacility.getName(),
                                lengthKm, gauge, electrified ? "electrified" : "non-electrified");
         }
     }

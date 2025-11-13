@@ -33,19 +33,19 @@ public class TravelCalculationService {
      * <p>
      * The calculation formula: travelTime = lineSegmentLengthKm / locomotiveMaxSpeedKmH
      *
-     * @param startStation the starting station
-     * @param endStation   the ending station
+     * @param startFacility the starting station
+     * @param endFacility   the ending station
      * @param locomotive   the locomotive to use for the calculation
      * @return the travel time in hours
      * @throws IllegalArgumentException   if any parameter is null
      * @throws IncompatibleGaugeException if locomotive gauge is incompatible with segment gauge
      * @throws IllegalStateException      if no direct connection exists between the stations
      */
-    public double calculateTravelTime(Station startStation, Station endStation, Locomotive locomotive) {
-        if (startStation == null) {
+    public double calculateTravelTime(Facility startFacility, Facility endFacility, Locomotive locomotive) {
+        if (startFacility == null) {
             throw new IllegalArgumentException("Start station cannot be null");
         }
-        if (endStation == null) {
+        if (endFacility == null) {
             throw new IllegalArgumentException("End station cannot be null");
         }
         if (locomotive == null) {
@@ -53,7 +53,7 @@ public class TravelCalculationService {
         }
         
         // Find the line segment connecting the two stations
-        LineSegment segment = findConnectingSegment(startStation, endStation);
+        LineSegment segment = findConnectingSegment(startFacility, endFacility);
         if (segment == null) {
             throw new IllegalStateException("No direct connection found between stations");
         }
@@ -71,8 +71,8 @@ public class TravelCalculationService {
      * Calculates the estimated travel time using a specific line segment and locomotive.
      * This method is useful when the line segment is already known.
      *
-     * @param startStation the starting station
-     * @param endStation   the ending station
+     * @param startFacility the starting station
+     * @param endFacility   the ending station
      * @param locomotive   the locomotive to use for the calculation
      * @param segment      the specific line segment to use
      * @return the travel time in hours
@@ -80,12 +80,12 @@ public class TravelCalculationService {
      * @throws IncompatibleGaugeException if locomotive gauge is incompatible with segment gauge
      * @throws IllegalStateException      if the segment doesn't connect the specified stations
      */
-    public double calculateTravelTime(Station startStation, Station endStation,
-                                   Locomotive locomotive, LineSegment segment) {
-        if (startStation == null) {
+    public double calculateTravelTime(Facility startFacility, Facility endFacility,
+                                      Locomotive locomotive, LineSegment segment) {
+        if (startFacility == null) {
             throw new IllegalArgumentException("Start station cannot be null");
         }
-        if (endStation == null) {
+        if (endFacility == null) {
             throw new IllegalArgumentException("End station cannot be null");
         }
         if (locomotive == null) {
@@ -96,7 +96,7 @@ public class TravelCalculationService {
         }
         
         // Verify the segment connects the specified stations
-        if (!segment.connectsStations(startStation, endStation)) {
+        if (!segment.connectsStations(startFacility, endFacility)) {
             throw new IllegalStateException("Line segment does not connect the specified stations");
         }
         
@@ -112,17 +112,17 @@ public class TravelCalculationService {
     /**
      * Finds a line segment that connects the two specified stations.
      *
-     * @param startStation the starting station
-     * @param endStation   the ending station
+     * @param startFacility the starting station
+     * @param endFacility   the ending station
      * @return the connecting line segment, or null if no direct connection exists
      */
-    public LineSegment findConnectingSegment(Station startStation, Station endStation) {
-        if (startStation == null || endStation == null) {
+    public LineSegment findConnectingSegment(Facility startFacility, Facility endFacility) {
+        if (startFacility == null || endFacility == null) {
             return null;
         }
         
         return lineSegments.stream()
-                .filter(segment -> segment.connectsStations(startStation, endStation))
+                .filter(segment -> segment.connectsStations(startFacility, endFacility))
                 .findFirst()
                 .orElse(null);
     }
@@ -130,12 +130,12 @@ public class TravelCalculationService {
     /**
      * Checks if two stations are directly connected.
      *
-     * @param startStation the starting station
-     * @param endStation   the ending station
+     * @param startFacility the starting station
+     * @param endFacility   the ending station
      * @return true if stations are directly connected, false otherwise
      */
-    public boolean areStationsConnected(Station startStation, Station endStation) {
-        return findConnectingSegment(startStation, endStation) != null;
+    public boolean areStationsConnected(Facility startFacility, Facility endFacility) {
+        return findConnectingSegment(startFacility, endFacility) != null;
     }
 
     /**

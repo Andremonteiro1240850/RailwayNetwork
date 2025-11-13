@@ -7,50 +7,50 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * Unit tests for the Station class.
  */
-class StationTest {
+class FacilityTest {
 
-    private Station stationWithLocation;
-    private Station stationWithoutLocation;
-    private Station stationWithTrimmedInput;
+    private Facility facilityWithLocation;
+    private Facility facilityWithoutLocation;
+    private Facility facilityWithTrimmedInput;
 
     @BeforeEach
     void setUp() {
-        stationWithLocation = new Station("S1", "Porto São Bento", "Porto");
-        stationWithoutLocation = new Station("S2", "Porto Campanhã");
-        stationWithTrimmedInput = new Station(" S3 ", " Ermesinde ", " Valongo ");
+        facilityWithLocation = new Facility("S1", "Porto São Bento", "Porto");
+        facilityWithoutLocation = new Facility("S2", "Porto Campanhã");
+        facilityWithTrimmedInput = new Facility(" S3 ", " Ermesinde ", " Valongo ");
     }
 
     // --- Constructor Tests ---
 
     @Test
     void testConstructorWithLocation_Valid() {
-        assertEquals("S1", stationWithLocation.getId());
-        assertEquals("Porto São Bento", stationWithLocation.getName());
-        assertEquals("Porto", stationWithLocation.getLocation());
-        assertTrue(stationWithLocation.hasLocation());
+        assertEquals("S1", facilityWithLocation.getId());
+        assertEquals("Porto São Bento", facilityWithLocation.getName());
+        assertEquals("Porto", facilityWithLocation.getLocation());
+        assertTrue(facilityWithLocation.hasLocation());
     }
 
     @Test
     void testConstructorWithoutLocation_Valid() {
-        assertEquals("S2", stationWithoutLocation.getId());
-        assertEquals("Porto Campanhã", stationWithoutLocation.getName());
-        assertEquals("", stationWithoutLocation.getLocation(), "Location should be empty string when not provided");
-        assertFalse(stationWithoutLocation.hasLocation());
+        assertEquals("S2", facilityWithoutLocation.getId());
+        assertEquals("Porto Campanhã", facilityWithoutLocation.getName());
+        assertEquals("", facilityWithoutLocation.getLocation(), "Location should be empty string when not provided");
+        assertFalse(facilityWithoutLocation.hasLocation());
     }
 
     @Test
     void testConstructorWithTrimming() {
-        assertEquals("S3", stationWithTrimmedInput.getId(), "ID should be trimmed");
-        assertEquals("Ermesinde", stationWithTrimmedInput.getName(), "Name should be trimmed");
-        assertEquals("Valongo", stationWithTrimmedInput.getLocation(), "Location should be trimmed");
-        assertTrue(stationWithTrimmedInput.hasLocation());
+        assertEquals("S3", facilityWithTrimmedInput.getId(), "ID should be trimmed");
+        assertEquals("Ermesinde", facilityWithTrimmedInput.getName(), "Name should be trimmed");
+        assertEquals("Valongo", facilityWithTrimmedInput.getLocation(), "Location should be trimmed");
+        assertTrue(facilityWithTrimmedInput.hasLocation());
     }
 
     @Test
     void testConstructor_NullId_ThrowsException() {
         IllegalArgumentException thrown = assertThrows(
                 IllegalArgumentException.class,
-                () -> new Station(null, "Test Name", "Test Location"),
+                () -> new Facility(null, "Test Name", "Test Location"),
                 "Expected constructor to throw, but it didn't"
         );
         assertTrue(thrown.getMessage().contains("Station ID cannot be null or empty"));
@@ -60,7 +60,7 @@ class StationTest {
     void testConstructor_EmptyId_ThrowsException() {
         IllegalArgumentException thrown = assertThrows(
                 IllegalArgumentException.class,
-                () -> new Station("", "Test Name", "Test Location"),
+                () -> new Facility("", "Test Name", "Test Location"),
                 "Expected constructor to throw, but it didn't"
         );
         assertTrue(thrown.getMessage().contains("Station ID cannot be null or empty"));
@@ -70,7 +70,7 @@ class StationTest {
     void testConstructor_BlankId_ThrowsException() {
         IllegalArgumentException thrown = assertThrows(
                 IllegalArgumentException.class,
-                () -> new Station("   ", "Test Name", "Test Location"),
+                () -> new Facility("   ", "Test Name", "Test Location"),
                 "Expected constructor to throw, but it didn't"
         );
         assertTrue(thrown.getMessage().contains("Station ID cannot be null or empty"));
@@ -81,7 +81,7 @@ class StationTest {
     void testConstructor_NullName_ThrowsException() {
         IllegalArgumentException thrown = assertThrows(
                 IllegalArgumentException.class,
-                () -> new Station("TestId", null, "Test Location"),
+                () -> new Facility("TestId", null, "Test Location"),
                 "Expected constructor to throw, but it didn't"
         );
         assertTrue(thrown.getMessage().contains("Station name cannot be null or empty"));
@@ -91,7 +91,7 @@ class StationTest {
     void testConstructor_EmptyName_ThrowsException() {
         IllegalArgumentException thrown = assertThrows(
                 IllegalArgumentException.class,
-                () -> new Station("TestId", "", "Test Location"),
+                () -> new Facility("TestId", "", "Test Location"),
                 "Expected constructor to throw, but it didn't"
         );
         assertTrue(thrown.getMessage().contains("Station name cannot be null or empty"));
@@ -101,7 +101,7 @@ class StationTest {
     void testConstructor_BlankName_ThrowsException() {
         IllegalArgumentException thrown = assertThrows(
                 IllegalArgumentException.class,
-                () -> new Station("TestId", "  ", "Test Location"),
+                () -> new Facility("TestId", "  ", "Test Location"),
                 "Expected constructor to throw, but it didn't"
         );
         assertTrue(thrown.getMessage().contains("Station name cannot be null or empty"));
@@ -111,61 +111,61 @@ class StationTest {
 
     @Test
     void testGetId() {
-        assertEquals("S1", stationWithLocation.getId());
+        assertEquals("S1", facilityWithLocation.getId());
     }
 
     @Test
     void testGetName() {
-        assertEquals("Porto São Bento", stationWithLocation.getName());
+        assertEquals("Porto São Bento", facilityWithLocation.getName());
     }
 
     @Test
     void testGetLocation() {
-        assertEquals("Porto", stationWithLocation.getLocation());
-        assertEquals("", stationWithoutLocation.getLocation());
+        assertEquals("Porto", facilityWithLocation.getLocation());
+        assertEquals("", facilityWithoutLocation.getLocation());
     }
 
     // --- hasLocation Test ---
 
     @Test
     void testHasLocation() {
-        assertTrue(stationWithLocation.hasLocation());
-        assertFalse(stationWithoutLocation.hasLocation());
+        assertTrue(facilityWithLocation.hasLocation());
+        assertFalse(facilityWithoutLocation.hasLocation());
     }
 
     // --- equals() and hashCode() Tests ---
 
     @Test
     void testEquals_SameObject() {
-        assertTrue(stationWithLocation.equals(stationWithLocation), "Station should be equal to itself");
+        assertTrue(facilityWithLocation.equals(facilityWithLocation), "Station should be equal to itself");
     }
 
     @Test
     void testEquals_EqualObjects() {
-        Station station1Copy = new Station("S1", "Another Name", "Another Location");
-        assertTrue(stationWithLocation.equals(station1Copy), "Stations with the same ID should be equal");
+        Facility facility1Copy = new Facility("S1", "Another Name", "Another Location");
+        assertTrue(facilityWithLocation.equals(facility1Copy), "Stations with the same ID should be equal");
     }
 
     @Test
     void testEquals_DifferentObjects() {
-        assertFalse(stationWithLocation.equals(stationWithoutLocation), "Stations with different IDs should not be equal");
+        assertFalse(facilityWithLocation.equals(facilityWithoutLocation), "Stations with different IDs should not be equal");
     }
 
     @Test
     void testEquals_Null() {
-        assertFalse(stationWithLocation.equals(null), "Station should not be equal to null");
+        assertFalse(facilityWithLocation.equals(null), "Station should not be equal to null");
     }
 
     @Test
     void testEquals_DifferentClass() {
         Object other = new Object();
-        assertFalse(stationWithLocation.equals(other), "Station should not be equal to an object of a different class");
+        assertFalse(facilityWithLocation.equals(other), "Station should not be equal to an object of a different class");
     }
 
     @Test
     void testHashCode_EqualObjects() {
-        Station station1Copy = new Station("S1", "Different Name");
-        assertEquals(stationWithLocation.hashCode(), station1Copy.hashCode(), "Hash codes should be equal for equal objects");
+        Facility facility1Copy = new Facility("S1", "Different Name");
+        assertEquals(facilityWithLocation.hashCode(), facility1Copy.hashCode(), "Hash codes should be equal for equal objects");
     }
 
     @Test
@@ -173,7 +173,7 @@ class StationTest {
         // While not strictly required by the contract, different objects ideally have different hash codes
         // However, the contract only mandates equal objects MUST have equal hash codes.
         // We can assert they are different if we are confident in the implementation.
-        assertNotEquals(stationWithLocation.hashCode(), stationWithoutLocation.hashCode(), "Hash codes should ideally be different for different objects");
+        assertNotEquals(facilityWithLocation.hashCode(), facilityWithoutLocation.hashCode(), "Hash codes should ideally be different for different objects");
     }
 
     // --- toString() Test ---
@@ -181,12 +181,12 @@ class StationTest {
     @Test
     void testToString_WithLocation() {
         String expected = "Porto São Bento (S1) - Porto";
-        assertEquals(expected, stationWithLocation.toString());
+        assertEquals(expected, facilityWithLocation.toString());
     }
 
     @Test
     void testToString_WithoutLocation() {
         String expected = "Porto Campanhã (S2)";
-        assertEquals(expected, stationWithoutLocation.toString());
+        assertEquals(expected, facilityWithoutLocation.toString());
     }
 }
