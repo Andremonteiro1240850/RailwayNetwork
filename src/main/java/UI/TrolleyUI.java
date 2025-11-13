@@ -37,15 +37,9 @@ public class TrolleyUI implements Runnable {
 
             switch (opcao) {
                 case 1:
-                    createTrolley();
-                    break;
-                case 2:
-                    startPacking();
-                    break;
-                case 3:
                     listTrolleys();
                     break;
-                case 4:
+                case 2:
                     createPickingPlan();
                     break;
                 case 0:
@@ -60,45 +54,10 @@ public class TrolleyUI implements Runnable {
 
     private void showMenu() {
         System.out.println("\n====== MENU TROLLEY ======");
-        System.out.println("1. Create new trolley");
-        System.out.println("2. Execute packing (heurístics FF, FFD ou BFD)");
-        System.out.println("3. List existing trolleys");
-        System.out.println("4. Create Picking Plan ");
+        System.out.println("1. List existing trolleys");
+        System.out.println("2. Create Picking Plan ");
         System.out.println("0. Exit");
     }
-
-    private void createTrolley() {
-        System.out.print("Type the max capacity of the trolley: ");
-        int capacidade = getIntInput();
-
-        System.out.print("Digite the Euristic you want to use (FF, FFD, BFD): ");
-        String opcao = sc.next().toUpperCase();
-
-        if (!opcao.equals("FF") && !opcao.equals("FFD") && !opcao.equals("BFD")) {
-            System.out.println("Heurística invalid! Use FF, FFD ou BFD.");
-            return;
-        }
-
-        Trolley t = trolleyController.createTrolley(capacidade, opcao);
-        System.out.println("Trolley created!");
-        System.out.println(t);
-    }
-
-    private void startPacking() {
-        if (trolleyController.getTrolley() == null) {
-            System.out.println("No trolley created. Create one first.");
-            return;
-        }
-
-        try {
-            System.out.println("Executing packing...");
-            trolleyController.packing();
-            System.out.println("Packing finished!");
-        } catch (Exception e) {
-            System.out.println("Error executing packing: " + e.getMessage());
-        }
-    }
-
     private void listTrolleys() {
         List<Trolley> lista = trolleyController.getTrolleyList();
         if (lista.isEmpty()) {

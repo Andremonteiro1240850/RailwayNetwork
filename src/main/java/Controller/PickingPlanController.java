@@ -82,7 +82,7 @@ public class PickingPlanController {
                 while (remainingWeight > 0) {
                     Trolley trolley = findOrCreateTrolley(trolleys, capacity);
                     double weightToAdd = Math.min(remainingWeight, capacity - trolley.getCurrentLoad());
-                    
+
                     if (weightToAdd > 0) {
                         AllocationRow splitItem = createSplitItem(item, weightToAdd);
                         addItemToTrolley(trolley, splitItem, weightToAdd);
@@ -105,7 +105,6 @@ public class PickingPlanController {
                 remainingItems.remove(item);
             }
         }
-
         return trolleys;
     }
 

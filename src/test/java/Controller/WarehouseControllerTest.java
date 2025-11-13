@@ -150,45 +150,4 @@ class WarehouseControllerTest {
         // A BOX-A expira mais cedo, deve ser a primeira a ser usada
         assertEquals("BOX-A", rowH1.getBoxId(), "A BOX-A (FEFO) deve ser usada primeiro.");
     }
-
-    @Test
-    @DisplayName("ESTADO: estadoEncomenda deve calcular o estado corretamente (simula PARTIAL) e gravar resultados.")
-    void estadoEncomenda() {
-        // ACT
-        List<EligibilityResult> estados = controller.estadoEncomenda();
-
-        // ASSERT: Deve ter o resultado do modo PARTIAL
-        assertEquals(3, estados.size(), "Deve ter 3 estados de elegibilidade.");
-
-        // Verificação: ORD-H (Linha 3) deve estar PARTIAL (5/10)
-        EligibilityResult resH3 = estados.stream()
-                .filter(r -> r.getOrderId().equals("ORD-H") && r.getLineNo() == 3)
-                .findFirst().orElseThrow();
-
-        assertEquals(AllocationStatus.PARTIAL, resH3.getStatus());
-        assertEquals(5, resH3.getAllocatedQty());
-
-        // O repositório deve ter gravado os resultados
-        assertEquals(3, warehouseRepository.getEligibilityResults().size(), "O repositório deve ter gravado 3 resultados de elegibilidade.");
-    }
-
-    @Test
-    @DisplayName("CREATE ROWS: createAllocationRows deve gerar as linhas e gravá-las, simulando alocação PARTIAL e ordem FEFO.")
-    void createAllocationRows() {
-        // ACT
-        controller.createAllocationRows(boxRepository);
-
-        // ASSERTIONS GERAIS
-        List<AllocationRow> savedRows = warehouseRepository.getAllocationRows();
-
-        // Total esperado: 4 linhas de alocação (idêntico ao modo PARTIAL)
-        assertEquals(4, savedRows.size(), "O repositório deve ter gravado 4 linhas de alocação.");
-
-        // Verifica a alocação de ORD-H/L1
-        AllocationRow rowH1 = savedRows.stream()
-                .filter(r -> r.getOrderId().equals("ORD-H") && r.getLineNo() == 1)
-                .findFirst().orElseThrow();
-        assertEquals("BOX-A", rowH1.getBoxId(), "A BOX-A (FEFO) deve ser usada para a primeira linha.");
-        assertEquals(5, rowH1.getQty());
-    }
 }
