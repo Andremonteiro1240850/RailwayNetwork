@@ -18,43 +18,46 @@ public class PickPathController {
     private TrolleyRepository trolleyRepository;
 
     /**
-     * Instantiates a new Pick path controller.
+     * Construtor com repositório de trolleys.
+     * Permite aceder aos trolleys criados no USEI03.
      *
-     * @param trolleyRepository the trolley repository
+     * @param trolleyRepository Repositório que guarda os trolleys do USEI03
      */
     public PickPathController(TrolleyRepository trolleyRepository) {
         this.trolleyRepository = trolleyRepository;
     }
 
     /**
-     * Instantiates a new Pick path controller (default constructor for backward compatibility).
+     * Construtor padrão sem repositório.
+     * Usado quando não é necessário aceder a trolleys do USEI03.
      */
     public PickPathController() {
         this.trolleyRepository = null;
     }
 
     /**
-     * Processa a sequenciação de picking para uma lista de stops
-     *
-     * @param inputStops Lista de PickStops (pode ter duplicados)
-     * @return Map com ambas as estratégias e seus resultados
+     * Processa a sequenciação completa de percursos de picking.
+     * Valida inputs e delega para o Service que faz o trabalho real.
+     * 
+     * @param inputStops Lista de PickStops (pode ter duplicados - mesmo aisle/bay)
+     * @return Map com ambas as estratégias (ASC_SWEEP e NEAREST_NEIGHBOUR) e seus percursos calculados
      */
     public Map<PathStrategy, PickPath> processPickPathSequencing(List<PickStop> inputStops) {
-        // Validação básica
         if (inputStops == null || inputStops.isEmpty()) {
             throw new IllegalArgumentException("Stop list cannot be null or empty");
         }
         
-        // Usar o PickPathService que já criaste
         return PickPathService.processPickPathSequencing(inputStops);
     }
 
     /**
-     * Consolida stops duplicados (mesmo aisle/bay)
-     * Delega para o domínio que contém a regra de negócio
+     * Consolida stops duplicados (mesmo aisle/bay) somando as quantidades.
+     * Delega para o domínio (PickStop) que contém a regra de negócio.
+     * 
+     * Exemplo: [(1,2,qty:5), (1,2,qty:3)] → [(1,2,qty:8)]
      *
      * @param originalStops Lista original com possíveis duplicados
-     * @return Lista consolidada
+     * @return Lista consolidada sem duplicados (quantidades somadas)
      */
     public List<PickStop> consolidateStops(List<PickStop> originalStops) {
         if (originalStops == null || originalStops.isEmpty()) {
@@ -65,10 +68,12 @@ public class PickPathController {
     }
 
     /**
-     * Gera paths para ambas as estratégias (assume stops já consolidados)
+     * Gera percursos para ambas as estratégias (ASC_SWEEP e NEAREST_NEIGHBOUR).
+     * Assume que stops já foram consolidados.
+     * Delega para o Service que cria ambos os percursos.
      *
-     * @param consolidatedStops Lista de stops já consolidados
-     * @return Map com ambas as estratégias
+     * @param consolidatedStops Lista de stops já consolidados (sem duplicados)
+     * @return Map com ambos os percursos calculados (um para cada estratégia)
      */
     public Map<PathStrategy, PickPath> generateBothPaths(List<PickStop> consolidatedStops) {
         if (consolidatedStops == null || consolidatedStops.isEmpty()) {
@@ -79,9 +84,11 @@ public class PickPathController {
     }
 
     /**
-     * Gets trolleys from US03 (Picking Plans)
-     *
-     * @return List of trolleys from US03
+     * Obtém todos os trolleys criados no USEI03 (Picking Plans).
+     * Acede ao repositório que guarda os trolleys.
+     * 
+     * @return Lista de todos os trolleys disponíveis com os seus PickingItems
+     * @throws IllegalStateException Se o repositório não estiver inicializado
      */
     public List<Trolley> getTrolleysFromUS03() {
         if (trolleyRepository == null) {
@@ -91,32 +98,35 @@ public class PickPathController {
         return trolleyRepository.getAllTrolleys();
     }
 
-    // ========== MÉTODOS DE CÁLCULO MOVIDOS DO DOMÍNIO ==========
-
     /**
-     * Calcula a distância entre dois pontos conforme especificado no enunciado
+     * Calcula a distância entre dois pontos no armazém conforme a fórmula especificada.
+     * Método estático que pode ser chamado sem instanciar o controller.
+     * 
+     * Fórmula:
+     * - Mesmo corredor (a1 == a2): |b1 - b2|
+     * - Corredores diferentes: b1 + (|a1 - a2| * 3) + b2
      *
-     * @param a1 aisle do ponto 1
-     * @param b1 bay do ponto 1
-     * @param a2 aisle do ponto 2
-     * @param b2 bay do ponto 2
-     * @return distância calculada
+     * @param a1 Corredor do ponto 1
+     * @param b1 Bay do ponto 1
+     * @param a2 Corredor do ponto 2
+     * @param b2 Bay do ponto 2
+     * @return Distância calculada entre os dois pontos
      */
     public static int calculateDistance(int a1, int b1, int a2, int b2) {
         if (a1 == a2) {
-            // Mesmo corredor
             return Math.abs(b1 - b2);
         } else {
-            // Corredores diferentes: b1 + distância horizontal + b2
             return b1 + (Math.abs(a1 - a2) * 3) + b2;
         }
     }
 
     /**
-     * Calcula a distância total de um percurso
+     * Calcula a distância total de um percurso completo.
+     * IMPORTANTE: Recebe stops JÁ ORDENADOS pela estratégia (não calcula antes de ordenar!).
+     * Soma as distâncias entre cada par consecutivo de stops, começando da entrada (0,0).
      *
-     * @param stops lista de stops ordenados
-     * @return distância total
+     * @param stops Lista de stops já ordenados/otimizados pela estratégia
+     * @return Distância total do percurso
      */
     public int calculateTotalDistance(List<PickStop> stops) {
         if (stops.isEmpty()) return 0;
@@ -136,10 +146,13 @@ public class PickPathController {
     }
 
     /**
-     * Estratégia A: Ordenação ascendente por aisle e bay
+     * Implementa a estratégia ASC_SWEEP (Ascending Sweep).
+     * Ordena stops por corredor (aisle) em ordem ascendente, depois por bay em ordem ascendente.
+     * 
+     * Exemplo: [(3,4), (1,8), (2,2)] → [(1,8), (2,2), (3,4)]
      *
-     * @param stops lista de stops para ordenar
-     * @return lista ordenada
+     * @param stops Lista de stops para ordenar
+     * @return Lista ordenada (não modifica a original)
      */
     public List<PickStop> calculateAscSweep(List<PickStop> stops) {
         List<PickStop> sorted = new ArrayList<>(stops);
@@ -150,16 +163,17 @@ public class PickPathController {
     }
 
     /**
-     * Estratégia B: Vizinho mais próximo
+     * Implementa a estratégia NEAREST_NEIGHBOUR (Vizinho Mais Próximo).
+     * Algoritmo ganancioso que sempre escolhe o stop mais próximo da posição atual.
+     * Começa na entrada (0,0) e repete até visitar todos os stops.
      *
-     * @param stops lista de stops para otimizar
-     * @return lista otimizada
+     * @param stops Lista de stops para otimizar
+     * @return Lista otimizada com ordem de visitação (não modifica a original)
      */
     public List<PickStop> calculateNearestNeighbour(List<PickStop> stops) {
         List<PickStop> unvisited = new ArrayList<>(stops);
         List<PickStop> path = new ArrayList<>();
 
-        // Começa na entrada (0,0)
         int currentAisle = 0;
         int currentBay = 0;
 
@@ -168,7 +182,6 @@ public class PickPathController {
             path.add(nearest);
             unvisited.remove(nearest);
 
-            // Atualiza posição atual
             currentAisle = nearest.getAisle();
             currentBay = nearest.getBay();
         }
@@ -177,12 +190,14 @@ public class PickPathController {
     }
 
     /**
-     * Encontra o stop mais próximo da posição atual
+     * Encontra o stop mais próximo da posição atual.
+     * Método auxiliar privado usado pela estratégia NEAREST_NEIGHBOUR.
+     * Calcula distância para todos os stops e retorna o mais próximo.
      *
-     * @param currentAisle aisle atual
-     * @param currentBay bay atual
-     * @param stops lista de stops disponíveis
-     * @return stop mais próximo
+     * @param currentAisle Corredor atual
+     * @param currentBay Bay atual
+     * @param stops Lista de stops disponíveis
+     * @return Stop com menor distância da posição atual
      */
     private PickStop findNearestStop(int currentAisle, int currentBay, List<PickStop> stops) {
         PickStop nearest = null;
@@ -200,11 +215,17 @@ public class PickPathController {
     }
 
     /**
-     * Cria um PickPath calculado com a estratégia especificada
+     * Cria um PickPath completo calculado com uma estratégia específica.
+     * IMPORTANTE: Primeiro aplica a estratégia (ordena stops), depois calcula distância.
+     * 
+     * Ordem de execução:
+     * 1. Aplica estratégia → ordena/otimiza stops
+     * 2. Calcula distância total dos stops já ordenados
+     * 3. Cria e retorna PickPath com estratégia, stops ordenados e distância total
      *
-     * @param strategy estratégia a usar
-     * @param stops    lista de stops para calcular
-     * @return PickPath calculado
+     * @param strategy Estratégia a usar (ASC_SWEEP ou NEAREST_NEIGHBOUR)
+     * @param stops Lista de stops para calcular
+     * @return PickPath completo com estratégia, stops ordenados e distância total
      */
     public PickPath createCalculatedPath(PathStrategy strategy, List<PickStop> stops) {
         List<PickStop> calculatedStops;
@@ -221,6 +242,7 @@ public class PickPathController {
         }
 
         int totalDistance = calculateTotalDistance(calculatedStops);
+        
         return new PickPath(strategy, calculatedStops, totalDistance);
     }
 }

@@ -3,7 +3,9 @@ package Domain;
 import java.util.*;
 
 /**
- * The type Pick stop.
+ * Entidade de domínio PickStop - representa um local de picking no armazém.
+ * Um PickStop é identificado por um par (aisle, bay) e tem uma quantidade total a recolher.
+ * Contém a regra de negócio para consolidar stops duplicados.
  */
 public class PickStop {
     private int seq;
@@ -12,12 +14,13 @@ public class PickStop {
     private int totalQty;
 
     /**
-     * Instantiates a new Pick stop.
+     * Construtor para criar um PickStop.
+     * Representa um local único no armazém onde é necessário recolher items.
      *
-     * @param seq      the seq
-     * @param aisle    the aisle
-     * @param bay      the bay
-     * @param totalQty the total qty
+     * @param seq Número de sequência (pode ser alterado após ordenação)
+     * @param aisle Número do corredor (aisle)
+     * @param bay Número do bay dentro do corredor
+     * @param totalQty Quantidade total a recolher neste local
      */
     public PickStop(int seq, int aisle, int bay, int totalQty) {
         this.seq = seq;
@@ -98,7 +101,14 @@ public class PickStop {
         this.totalQty = totalQty;
     }
 
-    // Para merge de duplicados - equals e hashCode baseados em aisle e bay
+    /**
+     * Compara dois PickStops para verificar se são iguais.
+     * Dois stops são iguais se tiverem o mesmo aisle e bay (mesmo local no armazém).
+     * Usado para consolidar stops duplicados.
+     *
+     * @param obj Objeto a comparar
+     * @return true se tiverem mesmo aisle e bay, false caso contrário
+     */
     @Override
     public boolean equals(Object obj) {
         if (this == obj) return true;
@@ -107,6 +117,13 @@ public class PickStop {
         return aisle == other.aisle && bay == other.bay;
     }
 
+    /**
+     * Calcula código hash baseado em aisle e bay.
+     * Necessário para usar PickStop em estruturas como HashMap.
+     * Dois stops com mesmo aisle/bay têm o mesmo hash.
+     *
+     * @return Código hash baseado em aisle e bay
+     */
     @Override
     public int hashCode() {
         return Objects.hash(aisle, bay);
@@ -118,11 +135,16 @@ public class PickStop {
     }
 
     /**
-     * Consolida stops duplicados (mesmo aisle/bay) somando as quantidades
-     * Esta é uma regra de negócio que pertence ao domínio
+     * Consolida stops duplicados (mesmo aisle/bay) somando as quantidades.
+     * Esta é uma REGRA DE NEGÓCIO que pertence ao domínio.
+     * 
+     * Se dois stops têm o mesmo aisle e bay, são consolidados num único stop
+     * com a quantidade total (soma das quantidades).
+     * 
+     * Exemplo: [(1,2,qty:5), (1,2,qty:3), (2,3,qty:2)] → [(1,2,qty:8), (2,3,qty:2)]
      *
-     * @param originalStops Lista original com possíveis duplicados
-     * @return Lista consolidada sem duplicados
+     * @param originalStops Lista original com possíveis duplicados (mesmo aisle/bay)
+     * @return Lista consolidada sem duplicados (quantidades somadas)
      */
     public static List<PickStop> consolidateStops(List<PickStop> originalStops) {
         if (originalStops == null || originalStops.isEmpty()) {
@@ -135,11 +157,9 @@ public class PickStop {
             String key = stop.getAisle() + "-" + stop.getBay();
 
             if (consolidatedMap.containsKey(key)) {
-                // Já existe - soma a quantidade
                 PickStop existing = consolidatedMap.get(key);
                 existing.setTotalQty(existing.getTotalQty() + stop.getTotalQty());
             } else {
-                // Novo - cria uma cópia
                 consolidatedMap.put(key, new PickStop(
                         stop.getSeq(),
                         stop.getAisle(),
