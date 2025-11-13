@@ -22,6 +22,13 @@ import java.util.List;
  * - Processing inspections (single or batch)
  * - Determining processing actions based on return reasons and expiry dates
  * - Accessing processed inspections and audit logs
+ * 
+ * Architecture Note:
+ * This controller follows clean architecture principles - it handles business logic only
+ * and does NOT contain any print statements or direct output. All user-facing output
+ * is handled by the UI layer (QualityOperatorUI). This controller returns data structures
+ * (LoadResult, ProcessingResult, ProcessingSummary) and formatted strings that the UI
+ * layer displays to users.
  */
 public class QualityOperatorController {
 
