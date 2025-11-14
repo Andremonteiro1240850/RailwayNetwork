@@ -38,9 +38,9 @@ public class TravelTimeUI {
      */
     public void showMainMenu() {
         while (true) {
-            System.out.println("\n" + "=".repeat(50));
+            System.out.println("\n" + StringUtils.repeat("=", 50));
             System.out.println("Calculate Estimated Travel Time");
-            System.out.println("=".repeat(50));
+            System.out.println(StringUtils.repeat("=", 50));
             System.out.println("1. Calculate Travel Time");
             System.out.println("2. View Available Stations");
             System.out.println("3. View Available Locomotives");
@@ -71,9 +71,9 @@ public class TravelTimeUI {
      * Handles the travel time calculation process.
      */
     private void calculateTravelTime() {
-        System.out.println("\n" + "-".repeat(50));
+        System.out.println("\n" + StringUtils.repeat("-", 50));
         System.out.println("Travel Time Calculation");
-        System.out.println("-".repeat(50));
+        System.out.println(StringUtils.repeat("-", 50));
         
         try {
             // Get start station
@@ -179,9 +179,9 @@ public class TravelTimeUI {
      */
     private void displayResults(Facility startFacility, Facility endFacility,
                                 Locomotive locomotive, double travelTimeHours) {
-        System.out.println("\n" + "=".repeat(50));
+        System.out.println("\n" + StringUtils.repeat("=", 50));
         System.out.println("RESULT:");
-        System.out.println("=".repeat(50));
+        System.out.println(StringUtils.repeat("=", 50));
         
         System.out.printf("From \"%s\" to \"%s\"%n", 
                          startFacility.getName(), endFacility.getName());
@@ -210,9 +210,9 @@ public class TravelTimeUI {
      * Shows all available stations.
      */
     private void showAvailableStations() {
-        System.out.println("\n" + "-".repeat(60));
+        System.out.println("\n" + StringUtils.repeat("-", 60));
         System.out.println("Available Stations (from CSV data)");
-        System.out.println("-".repeat(60));
+        System.out.println(StringUtils.repeat("-", 60));
         
         if (facilities.isEmpty()) {
             System.out.println("No stations loaded from CSV files.");
@@ -231,9 +231,9 @@ public class TravelTimeUI {
      * Shows all available locomotives.
      */
     private void showAvailableLocomotives() {
-        System.out.println("\n" + "-".repeat(50));
+        System.out.println("\n" + StringUtils.repeat("-", 50));
         System.out.println("Available Locomotives");
-        System.out.println("-".repeat(50));
+        System.out.println(StringUtils.repeat("-", 50));
         
         for (Locomotive locomotive : locomotives) {
             System.out.printf("ID: %s | Type: %s | Max Speed: %.0f km/h | Gauge: %.0fmm%n",
