@@ -2,152 +2,124 @@ package Domain;
 
 import java.util.Comparator;
 
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- *
-
-/**
- *
- * @author DEI-ESINF
- * @param <E>
- */
-public class AVL <E extends Comparable<E>> extends BST<E> {
+public class AVL<E extends Comparable<E>> extends BST<E> {
 
     public AVL() {
         super();
     }
+
     public AVL(Comparator<E> comparator) {
         super(comparator);
     }
+    public Node<E> getRoot() {
+        return root;
+    }
 
-    private int balanceFactor(Node<E> node){
-        if (node == null)
-            return 0;
+
+    private int balanceFactor(Node<E> node) {
+        if (node == null) return 0;
         return height(node.getLeft()) - height(node.getRight());
     }
 
-    private Node<E> rightRotation(Node<E> node){
+    private Node<E> rightRotation(Node<E> node) {
         Node<E> temp = node.getLeft();
         node.setLeft(temp.getRight());
         temp.setRight(node);
         return temp;
-
     }
 
-    private Node<E> leftRotation(Node<E> node){
+    private Node<E> leftRotation(Node<E> node) {
         Node<E> temp = node.getRight();
         node.setRight(temp.getLeft());
         temp.setLeft(node);
         return temp;
-
     }
 
-    private Node<E> twoRotations(Node<E> node){
+    private Node<E> balanceNode(Node<E> node) {
+        int balance = balanceFactor(node);
 
-        if (balanceFactor(node) > 1) {
-            node.setLeft( rightRotation(node.getLeft()) );
-            return leftRotation(node);
-        }
-        else {
-            node.setRight( leftRotation(node.getRight()) );
+        // Left-heavy (LL or LR)
+        if (balance > 1) {
+            if (balanceFactor(node.getLeft()) < 0) {
+                // LR case → rotate left first
+                node.setLeft(leftRotation(node.getLeft()));
+            }
             return rightRotation(node);
         }
-    }
 
-    private Node<E> balanceNode(Node<E> node)
-    {
-
-        int balance = balanceFactor(node);
-        if (balance > 1 || balance < -1) {
-            node = twoRotations(node);
+        // Right-heavy (RR or RL)
+        if (balance < -1) {
+            if (balanceFactor(node.getRight()) > 0) {
+                // RL case → rotate right first
+                node.setRight(rightRotation(node.getRight()));
+            }
+            return leftRotation(node);
         }
+
         return node;
     }
 
     @Override
-    public void insert(E element){
+    public void insert(E element) {
         root = insert(element, root);
     }
-    private Node<E> insert(E element, Node<E> node){
 
+    private Node<E> insert(E element, Node<E> node) {
         if (node == null) {
-            node = new Node<>(element, null, null);
+            return new Node<>(element, null, null);
         }
-        else if (element.compareTo(node.getElement()) < 0) {
-            node.setLeft( insert(element, node.getLeft()) );
-            node = balanceNode(node);
+
+        // USAR O COMPARATOR DO BST
+        int cmp = compare(element, node.getElement());
+
+        if (cmp < 0) {
+            node.setLeft(insert(element, node.getLeft()));
         }
         else {
-            node.setRight( insert(element, node.getRight()) );
-            node = balanceNode(node);
+            node.setRight(insert(element, node.getRight()));
         }
-        return node;
+
+        return balanceNode(node);
     }
 
     @Override
-    public void remove(E element){
-        root = remove(element, root());
+    public void remove(E element) {
+        root = remove(element, root);
     }
 
     private Node<E> remove(E element, Node<E> node) {
-        if (node == null) {
-            return null;
-        }
-        if (element.compareTo(node.getElement())==0) { // node is the Node to be removed
+        if (node == null) return null;
 
-            if (node.getLeft() == null && node.getRight() == null) { //node is a leaf (has no childs)
+        int cmp = compare(element, node.getElement());
+
+        if (cmp == 0) {
+            // no children
+            if (node.getLeft() == null && node.getRight() == null) {
                 return null;
             }
-            if (node.getLeft() == null) {   //has only right child
+
+            // only right
+            if (node.getLeft() == null) {
                 return node.getRight();
             }
-            if (node.getRight() == null) {  //has only left child
+
+            // only left
+            if (node.getRight() == null) {
                 return node.getLeft();
             }
-            //has two child trees
-            //replace the elem with the smallest of right subtree and remove it
-            E smallElem = smallestElement(node.getRight());
-            node.setElement(smallElem);
-            node.setRight( remove(smallElem, node.getRight()) );
-            node = balanceNode(node);
+
+            // 2 children → substitute
+            E min = smallestElement(node.getRight());
+            node.setElement(min);
+            node.setRight(remove(min, node.getRight()));
         }
-        else if (element.compareTo(node.getElement()) < 0) {
-            node.setLeft( remove(element, node.getLeft()) );
-            node = balanceNode(node);
+        else if (cmp < 0) {
+            node.setLeft(remove(element, node.getLeft()));
         }
         else {
-            node.setRight( remove(element, node.getRight()) );
-            node = balanceNode(node);
+            node.setRight(remove(element, node.getRight()));
         }
-        return node;
+
+        return balanceNode(node);
     }
-
-
-    public boolean equals(Object otherObj) {
-
-        if (this == otherObj)
-            return true;
-
-        if (otherObj == null || this.getClass() != otherObj.getClass())
-            return false;
-
-        AVL<E> second = (AVL<E>) otherObj;
-        return equals(root, second.root);
-    }
-
-    public boolean equals(Node<E> root1, Node<E> root2) {
-        if (root1 == null && root2 == null)
-            return true;
-        else if (root1 != null && root2 != null) {
-            if (root1.getElement().compareTo(root2.getElement()) == 0) {
-                return equals(root1.getLeft(), root2.getLeft())
-                        && equals(root1.getRight(), root2.getRight());
-            } else
-                return false;
-        }
-        else return false;
-    }
-
 }
