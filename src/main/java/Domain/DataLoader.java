@@ -1,7 +1,13 @@
 package Domain;
 
+import Domain.ENUM.Country;
+
 import java.io.BufferedReader;
 import java.io.FileReader;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -38,6 +44,22 @@ public class DataLoader {
      * The Box repository.
      */
     public Repository.BoxRepository boxRepository = new Repository.BoxRepository(); // New repository for boxes
+    
+    /**
+     * The Facilities with geographical data (USEI08).
+     */
+    public List<Facility> facilities = new ArrayList<>();
+    
+    /**
+     * The Line segments (railway lines).
+     */
+    public List<LineSegment> lineSegments = new ArrayList<>();
+    
+    /**
+     * Map for quick station lookup by ID.
+     */
+    private final Map<String, Facility> stationMap = new HashMap<>();
+    
     // Contadores não necessários quando ficheiro já fornece lineNo
 
     // Indexes auxiliares para construir Bays
@@ -357,6 +379,387 @@ public class DataLoader {
     public Repository.BoxRepository getBoxRepository() {
         return boxRepository;
     }
+    
+    /**
+     * Loads stations with geographical data from CSV file (USEI08).
+     * Expected CSV format: ID;Name;Latitude;Longitude;Country;TimeZone;TimeZoneGroup;IsCity;IsMainStation
+     * 
+     * Validates: non-empty name, country, time zone group; 
+     *            latitude ∈ [-90,90], longitude ∈ [-180,180]
+     * Rejects invalid rows.
+     *
+     * @param filePath the path to the CSV file with geographical data
+     */
+    public void loadStationsWithGeographicalData(String filePath) {
+        Path path = Paths.get(filePath);
+        
+        if (!Files.exists(path)) {
+            System.out.println("⚠️ File not found: " + filePath);
+            return;
+        }
+        
+        System.out.println("Loading stations with geographical data from: " + filePath);
+        
+        try (BufferedReader br = Files.newBufferedReader(path, StandardCharsets.UTF_8)) {
+            String line;
+            boolean firstLine = true;
+            int lineNumber = 0;
+            int loadedCount = 0;
+            int rejectedCount = 0;
+            
+            while ((line = br.readLine()) != null) {
+                lineNumber++;
+                
+                if (firstLine) {
+                    firstLine = false;
+                    System.out.println("Header: " + line);
+                    continue; // Skip header
+                }
+                
+                if (line.trim().isEmpty()) {
+                    continue; // Skip empty lines
+                }
+                
+                String[] parts = line.split(";");
+                
+                // Expected format: ID;Name;Latitude;Longitude;Country;TimeZone;TimeZoneGroup;IsCity;IsMainStation
+                if (parts.length >= 9) {
+                    try {
+                        String id = safeGet(parts, 0);
+                        String name = safeGet(parts, 1);
+                        String latStr = safeGet(parts, 2);
+                        String lonStr = safeGet(parts, 3);
+                        String countryStr = safeGet(parts, 4);
+                        String timeZone = safeGet(parts, 5);
+                        String timeZoneGroup = safeGet(parts, 6);
+                        String isCityStr = safeGet(parts, 7);
+                        String isMainStationStr = safeGet(parts, 8);
+                        
+                        // Validate required fields
+                        if (id == null || id.isEmpty() || name == null || name.isEmpty() || 
+                            countryStr == null || countryStr.isEmpty() || 
+                            timeZoneGroup == null || timeZoneGroup.isEmpty()) {
+                            System.out.println("⚠️ Line " + lineNumber + " rejected: Missing required fields");
+                            rejectedCount++;
+                            continue;
+                        }
+                        
+                        // Parse and validate coordinates
+                        Double latitude = null;
+                        Double longitude = null;
+                        
+                        if (latStr != null && !latStr.isEmpty()) {
+                            latitude = parseDoubleValue(latStr);
+                            if (latitude == null || latitude < -90 || latitude > 90) {
+                                System.out.println("⚠️ Line " + lineNumber + " rejected: Invalid latitude " + latStr);
+                                rejectedCount++;
+                                continue;
+                            }
+                        }
+                        
+                        if (lonStr != null && !lonStr.isEmpty()) {
+                            longitude = parseDoubleValue(lonStr);
+                            if (longitude == null || longitude < -180 || longitude > 180) {
+                                System.out.println("⚠️ Line " + lineNumber + " rejected: Invalid longitude " + lonStr);
+                                rejectedCount++;
+                                continue;
+                            }
+                        }
+                        
+                        // Parse country
+                        Country country = Country.fromString(countryStr);
+                        if (country == null && !countryStr.equalsIgnoreCase("all") && !countryStr.isEmpty()) {
+                            System.out.println("⚠️ Line " + lineNumber + " rejected: Invalid country " + countryStr);
+                            rejectedCount++;
+                            continue;
+                        }
+                        
+                        // Parse boolean flags
+                        Boolean isCity = parseBoolean(isCityStr);
+                        Boolean isMainStation = parseBoolean(isMainStationStr);
+                        
+                        // Create facility with geographical data
+                        Facility facility = new Facility(id, name, "", latitude, longitude, country,
+                                                         isCity, isMainStation, timeZone, timeZoneGroup);
+                        
+                        // Update existing facility or add new one
+                        Facility existing = stationMap.get(id);
+                        if (existing != null) {
+                            // Update existing facility with geographical data
+                            facilities.remove(existing);
+                        }
+                        
+                        facilities.add(facility);
+                        stationMap.put(id, facility);
+                        loadedCount++;
+                        
+                    } catch (IllegalArgumentException e) {
+                        System.out.println("⚠️ Line " + lineNumber + " rejected: " + e.getMessage());
+                        rejectedCount++;
+                    } catch (Exception e) {
+                        System.out.println("⚠️ Line " + lineNumber + " rejected: " + e.getMessage());
+                        rejectedCount++;
+                    }
+                } else {
+                    System.out.println("⚠️ Line " + lineNumber + " rejected: Insufficient columns (expected 9, got " + parts.length + ")");
+                    rejectedCount++;
+                }
+            }
+            
+            System.out.println("✅ Total stations loaded: " + loadedCount);
+            if (rejectedCount > 0) {
+                System.out.println("⚠️ Total stations rejected: " + rejectedCount);
+            }
+        } catch (Exception e) {
+            System.out.println("❌ Erro a ler stations com dados geográficos: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Parses a boolean string value.
+     *
+     * @param value the string value (true/false/1/0/yes/no)
+     * @return Boolean value, or null if empty/invalid
+     */
+    private Boolean parseBoolean(String value) {
+        if (value == null || value.trim().isEmpty()) {
+            return null;
+        }
+        
+        String lower = value.trim().toLowerCase();
+        if (lower.equals("true") || lower.equals("1") || lower.equals("yes")) {
+            return true;
+        } else if (lower.equals("false") || lower.equals("0") || lower.equals("no")) {
+            return false;
+        }
+        
+        return null;
+    }
+    
+    /**
+     * Gets facilities with geographical data.
+     *
+     * @return list of facilities
+     */
+    public List<Facility> getFacilities() {
+        return new ArrayList<>(facilities);
+    }
+    
+    // ---------- RAILWAY DATA LOADING (from RailwayDataLoader) ----------
+    
+    /**
+     * Loads all railway data from CSV files.
+     *
+     * @param facilityFilePath path to facility CSV file
+     * @param lineFilePath     path to line CSV file
+     */
+    public void loadAllRailwayData(String facilityFilePath, String lineFilePath) {
+        loadStations(facilityFilePath);
+        loadLineSegments(lineFilePath);
+    }
+    
+    /**
+     * Loads stations from the facility CSV file.
+     *
+     * @param filePath the path to the facility CSV file
+     */
+    public void loadStations(String filePath) {
+        Path path = Paths.get(filePath);
+        
+        if (!Files.exists(path)) {
+            System.out.println("⚠️ File not found: " + filePath);
+            return;
+        }
+        
+        System.out.println("Loading stations from: " + filePath);
+        
+        try (BufferedReader br = Files.newBufferedReader(path, StandardCharsets.UTF_8)) {
+            String line;
+            boolean firstLine = true;
+            int lineNumber = 0;
+            int loadedCount = 0;
+            
+            while ((line = br.readLine()) != null) {
+                lineNumber++;
+                
+                if (firstLine) {
+                    firstLine = false;
+                    System.out.println("Header: " + line);
+                    continue; // Skip header
+                }
+                
+                if (line.trim().isEmpty()) {
+                    continue; // Skip empty lines
+                }
+                
+                String[] parts = line.split(";");
+                
+                if (parts.length >= 2) {
+                    String id = safeGet(parts, 0);
+                    String name = safeGet(parts, 1);
+                    
+                    if (id != null && !id.isEmpty() && name != null && !name.isEmpty()) {
+                        try {
+                            Facility facility = new Facility(id, name);
+                            facilities.add(facility);
+                            stationMap.put(id, facility);
+                            loadedCount++;
+                        } catch (Exception e) {
+                            System.out.println("⚠️ Error creating station from line " + lineNumber + ": " + e.getMessage());
+                        }
+                    }
+                }
+            }
+            
+            System.out.println("✅ Total stations loaded: " + loadedCount);
+        } catch (Exception e) {
+            System.out.println("❌ Erro a ler stations: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Loads line segments from the line CSV file.
+     * The CSV file should contain columns: ID;Name;Owner;Start ID;Start;End ID;End;Gauge;Length_m
+     *
+     * @param filePath the path to the line CSV file
+     */
+    public void loadLineSegments(String filePath) {
+        Path path = Paths.get(filePath);
+        
+        if (!Files.exists(path)) {
+            System.out.println("⚠️ File not found: " + filePath);
+            return;
+        }
+        
+        System.out.println("Loading line segments from: " + filePath);
+        
+        try (BufferedReader br = Files.newBufferedReader(path, StandardCharsets.UTF_8)) {
+            String line;
+            boolean firstLine = true;
+            int lineNumber = 0;
+            int loadedCount = 0;
+            
+            while ((line = br.readLine()) != null) {
+                lineNumber++;
+                
+                if (firstLine) {
+                    firstLine = false;
+                    System.out.println("Header: " + line);
+                    continue; // Skip header
+                }
+                
+                if (line.trim().isEmpty()) {
+                    continue; // Skip empty lines
+                }
+                
+                String[] parts = line.split(";");
+                
+                if (parts.length >= 9) {
+                    String id = safeGet(parts, 0);
+                    String name = safeGet(parts, 1);
+                    String startId = safeGet(parts, 3);
+                    String endId = safeGet(parts, 5);
+                    String gaugeStr = safeGet(parts, 7);
+                    String lengthStr = safeGet(parts, 8);
+                    
+                    if (id != null && !id.isEmpty() && name != null && !name.isEmpty() && 
+                        startId != null && !startId.isEmpty() && endId != null && !endId.isEmpty() && 
+                        gaugeStr != null && !gaugeStr.isEmpty() && lengthStr != null && !lengthStr.isEmpty()) {
+                        
+                        try {
+                            double gauge = Double.parseDouble(gaugeStr);
+                            double lengthMeters = Double.parseDouble(lengthStr);
+                            double lengthKm = lengthMeters / 1000.0; // Convert meters to kilometers
+                            
+                            Facility startFacility = stationMap.get(startId);
+                            Facility endFacility = stationMap.get(endId);
+                            
+                            if (startFacility != null && endFacility != null) {
+                                // Assume electrified for main lines
+                                boolean electrified = isMainLine(name);
+                                
+                                LineSegment segment = new LineSegment(id, name, startFacility, endFacility,
+                                                                    lengthKm, gauge, electrified);
+                                lineSegments.add(segment);
+                                loadedCount++;
+                            } else {
+                                System.out.println("⚠️ Station not found - Start: " + startFacility + ", End: " + endFacility);
+                            }
+                        } catch (NumberFormatException e) {
+                            System.out.println("⚠️ Invalid numeric value in line " + lineNumber + ": " + e.getMessage());
+                        } catch (Exception e) {
+                            System.out.println("⚠️ Error creating line segment from line " + lineNumber + ": " + e.getMessage());
+                        }
+                    }
+                }
+            }
+            
+            System.out.println("✅ Total line segments loaded: " + loadedCount);
+        } catch (Exception e) {
+            System.out.println("❌ Erro a ler line segments: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Determines if a line is a main electrified line based on its name.
+     * 
+     * @param lineName the name of the line
+     * @return true if it's a main line, false otherwise
+     */
+    private boolean isMainLine(String lineName) {
+        // Main lines in Portugal are typically electrified
+        // This is a simplified approach - in a real system, you'd have electrification data
+        return lineName != null && lineName.toLowerCase().contains("ramal") && 
+               (lineName.toLowerCase().contains("porto") || 
+                lineName.toLowerCase().contains("campanhã"));
+    }
+    
+    /**
+     * Gets all loaded stations (alias for getFacilities for compatibility).
+     *
+     * @return list of stations
+     */
+    public List<Facility> getStations() {
+        return new ArrayList<>(facilities);
+    }
+    
+    /**
+     * Gets all loaded line segments.
+     *
+     * @return list of line segments
+     */
+    public List<LineSegment> getLineSegments() {
+        return new ArrayList<>(lineSegments);
+    }
+    
+    /**
+     * Gets a station by its ID.
+     *
+     * @param id the station ID
+     * @return the station or null if not found
+     */
+    public Facility getStationById(String id) {
+        return stationMap.get(id);
+    }
+    
+    /**
+     * Gets the number of loaded stations.
+     *
+     * @return number of stations
+     */
+    public int getStationCount() {
+        return facilities.size();
+    }
+    
+    /**
+     * Gets the number of loaded line segments.
+     *
+     * @return number of line segments
+     */
+    public int getLineSegmentCount() {
+        return lineSegments.size();
+    }
+    
 }
 
 

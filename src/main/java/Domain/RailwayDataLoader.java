@@ -1,5 +1,7 @@
 package Domain;
 
+import Domain.ENUM.Country;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -239,5 +241,158 @@ public class RailwayDataLoader {
      */
     public int getLineSegmentCount() {
         return lineSegments.size();
+    }
+    
+    /**
+     * Loads stations with geographical data from CSV file (USEI08).
+     * Expected CSV format: ID;Name;Latitude;Longitude;Country;TimeZone;TimeZoneGroup;IsCity;IsMainStation
+     * 
+     * Validates: non-empty name, country, time zone group; 
+     *            latitude ∈ [-90,90], longitude ∈ [-180,180]
+     * Rejects invalid rows.
+     *
+     * @param filePath the path to the CSV file with geographical data
+     * @throws IOException if there's an error reading the file
+     */
+    public void loadStationsWithGeographicalData(String filePath) throws IOException {
+        Path path = Paths.get(filePath);
+        
+        if (!Files.exists(path)) {
+            throw new IOException("File not found: " + filePath);
+        }
+        
+        System.out.println("Loading stations with geographical data from: " + filePath);
+        
+        try (BufferedReader br = Files.newBufferedReader(path, StandardCharsets.UTF_8)) {
+            String line;
+            boolean firstLine = true;
+            int lineNumber = 0;
+            int loadedCount = 0;
+            int rejectedCount = 0;
+            
+            while ((line = br.readLine()) != null) {
+                lineNumber++;
+                
+                if (firstLine) {
+                    firstLine = false;
+                    System.out.println("Header: " + line);
+                    continue; // Skip header
+                }
+                
+                if (line.trim().isEmpty()) {
+                    continue; // Skip empty lines
+                }
+                
+                String[] parts = line.split(";");
+                
+                // Expected format: ID;Name;Latitude;Longitude;Country;TimeZone;TimeZoneGroup;IsCity;IsMainStation
+                if (parts.length >= 9) {
+                    try {
+                        String id = parts[0].trim();
+                        String name = parts[1].trim();
+                        String latStr = parts[2].trim();
+                        String lonStr = parts[3].trim();
+                        String countryStr = parts[4].trim();
+                        String timeZone = parts[5].trim();
+                        String timeZoneGroup = parts[6].trim();
+                        String isCityStr = parts[7].trim();
+                        String isMainStationStr = parts[8].trim();
+                        
+                        // Validate required fields
+                        if (id.isEmpty() || name.isEmpty() || countryStr.isEmpty() || timeZoneGroup.isEmpty()) {
+                            System.err.println("Line " + lineNumber + " rejected: Missing required fields");
+                            rejectedCount++;
+                            continue;
+                        }
+                        
+                        // Parse and validate coordinates
+                        Double latitude = null;
+                        Double longitude = null;
+                        
+                        if (!latStr.isEmpty()) {
+                            latitude = Double.parseDouble(latStr);
+                            if (latitude < -90 || latitude > 90) {
+                                System.err.println("Line " + lineNumber + " rejected: Invalid latitude " + latitude);
+                                rejectedCount++;
+                                continue;
+                            }
+                        }
+                        
+                        if (!lonStr.isEmpty()) {
+                            longitude = Double.parseDouble(lonStr);
+                            if (longitude < -180 || longitude > 180) {
+                                System.err.println("Line " + lineNumber + " rejected: Invalid longitude " + longitude);
+                                rejectedCount++;
+                                continue;
+                            }
+                        }
+                        
+                        // Parse country
+                        Country country = Country.fromString(countryStr);
+                        if (country == null && !countryStr.equalsIgnoreCase("all") && !countryStr.isEmpty()) {
+                            System.err.println("Line " + lineNumber + " rejected: Invalid country " + countryStr);
+                            rejectedCount++;
+                            continue;
+                        }
+                        
+                        // Parse boolean flags
+                        Boolean isCity = parseBoolean(isCityStr);
+                        Boolean isMainStation = parseBoolean(isMainStationStr);
+                        
+                        // Create facility with geographical data
+                        Facility facility = new Facility(id, name, "", latitude, longitude, country,
+                                                         isCity, isMainStation, timeZone, timeZoneGroup);
+                        
+                        // Update existing facility or add new one
+                        Facility existing = stationMap.get(id);
+                        if (existing != null) {
+                            // Update existing facility with geographical data
+                            facilities.remove(existing);
+                        }
+                        
+                        facilities.add(facility);
+                        stationMap.put(id, facility);
+                        loadedCount++;
+                        
+                    } catch (NumberFormatException e) {
+                        System.err.println("Line " + lineNumber + " rejected: Invalid number format - " + e.getMessage());
+                        rejectedCount++;
+                    } catch (IllegalArgumentException e) {
+                        System.err.println("Line " + lineNumber + " rejected: " + e.getMessage());
+                        rejectedCount++;
+                    } catch (Exception e) {
+                        System.err.println("Line " + lineNumber + " rejected: " + e.getMessage());
+                        rejectedCount++;
+                    }
+                } else {
+                    System.err.println("Line " + lineNumber + " rejected: Insufficient columns (expected 9, got " + parts.length + ")");
+                    rejectedCount++;
+                }
+            }
+            
+            System.out.println("Total stations loaded: " + loadedCount);
+            System.out.println("Total stations rejected: " + rejectedCount);
+        }
+    }
+    
+    /**
+     * Parses a boolean string value.
+     *
+     * @param value the string value (true/false/1/0/yes/no)
+     * @return Boolean value, or null if empty/invalid
+     */
+    private Boolean parseBoolean(String value) {
+        if (value == null || value.trim().isEmpty()) {
+            return null;
+        }
+        
+        String lower = value.trim().toLowerCase();
+        if (lower.equals("true") || lower.equals("1") || lower.equals("yes")) {
+            return true;
+        } else if (lower.equals("false") || lower.equals("0") || lower.equals("no")) {
+            return false;
+        }
+        
+        return null;
     }
 }
