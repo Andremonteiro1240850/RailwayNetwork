@@ -167,7 +167,7 @@ public class WarehouseManager {
             Bay targetBay = dedicatedBays.get(0);
             boxRepository.assignBoxToBay(box, targetBay.getId());
             targetBay.insertBox(box);
-            System.out.println("✅ Assigned box " + box.getBoxId() + " to " + targetBay.getId());
+            System.out.println(" Assigned box " + box.getBoxId() + " to " + targetBay.getId());
             return;
         }
 
@@ -181,12 +181,12 @@ public class WarehouseManager {
             Bay targetBay = emptyBays.get(0);
             boxRepository.assignBoxToBay(box, targetBay.getId());
             targetBay.insertBox(box);
-            System.out.println("✅ Assigned box " + box.getBoxId() + " to new dedicated bay " + targetBay.getId() + " for SKU " + sku);
+            System.out.println(" Assigned box " + box.getBoxId() + " to new dedicated bay " + targetBay.getId() + " for SKU " + sku);
             return;
         }
 
         // 3. No available bays
-        System.out.println("⚠️ No available bays for SKU: " + sku + " (Box: " + box.getBoxId() + ")");
+        System.out.println(" No available bays for SKU: " + sku + " (Box: " + box.getBoxId() + ")");
         System.out.println("All bays are either full or dedicated to other SKUs");
     }
 
@@ -237,7 +237,7 @@ public class WarehouseManager {
                     Box dispatchedBox = bay.pollFront(sku);
                     dispatchedBoxes.add(dispatchedBox);
                     remainingQty -= dispatchedBox.getQty();
-                    System.out.println("✓ Dispatched entire box " + dispatchedBox.getBoxId() + 
+                    System.out.println("Dispatched entire box " + dispatchedBox.getBoxId() +
                                      " (qty: " + dispatchedBox.getQty() + ") from " + bay.getId());
                 } else {
                     // Take partial quantity
