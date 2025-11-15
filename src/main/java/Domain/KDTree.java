@@ -416,6 +416,222 @@ public class KDTree {
     }
     
     /**
+     * Finds the N nearest stations to a target point.
+     * Uses a priority queue to maintain the N closest stations during tree traversal.
+     *
+     * @param targetLat target latitude
+     * @param targetLon target longitude
+     * @param n number of nearest stations to find
+     * @return list of pairs (station, distance in km), sorted by distance (ascending)
+     */
+    public List<StationDistance> nearestN(double targetLat, double targetLon, int n) {
+        if (n <= 0) {
+            throw new IllegalArgumentException("n must be positive");
+        }
+        if (root == null) {
+            return new ArrayList<>();
+        }
+        
+        // Use a priority queue to keep track of the N nearest stations
+        // Max heap: we want to remove the farthest station when we have more than N
+        PriorityQueue<StationDistance> nearestQueue = new PriorityQueue<>(
+            (a, b) -> Double.compare(b.getDistance(), a.getDistance()) // Reverse order for max heap
+        );
+        
+        nearestNRecursive(root, targetLat, targetLon, n, 0, nearestQueue);
+        
+        // Convert to list and sort by distance (ascending)
+        List<StationDistance> results = new ArrayList<>(nearestQueue);
+        results.sort(Comparator.comparing(StationDistance::getDistance));
+        
+        return results;
+    }
+    
+    /**
+     * Recursive helper for nearest neighbor search.
+     * Uses branch-and-bound pruning to avoid exploring unnecessary subtrees.
+     *
+     * @param node current node
+     * @param targetLat target latitude
+     * @param targetLon target longitude
+     * @param n number of nearest stations to find
+     * @param depth current depth
+     * @param nearestQueue priority queue maintaining N nearest stations
+     */
+    private void nearestNRecursive(KDNode node, double targetLat, double targetLon, int n, 
+                                   int depth, PriorityQueue<StationDistance> nearestQueue) {
+        if (node == null) {
+            return;
+        }
+        
+        // Check all stations in the bucket
+        for (Station station : node.getBucket()) {
+            double distance = haversineDistance(targetLat, targetLon, 
+                                               station.getLatitude(), station.getLongitude());
+            
+            if (nearestQueue.size() < n) {
+                nearestQueue.offer(new StationDistance(station, distance));
+            } else if (distance < nearestQueue.peek().getDistance()) {
+                // Replace the farthest station with this one
+                nearestQueue.poll();
+                nearestQueue.offer(new StationDistance(station, distance));
+            }
+        }
+        
+        int axis = node.getAxis();
+        double splitValue = node.getSplitValue();
+        double targetCoord = (axis == 0) ? targetLat : targetLon;
+        
+        // Decide which subtree to explore first (closer one)
+        KDNode nearChild, farChild;
+        if (targetCoord <= splitValue) {
+            nearChild = node.getLeft();
+            farChild = node.getRight();
+        } else {
+            nearChild = node.getRight();
+            farChild = node.getLeft();
+        }
+        
+        // Always explore the near child first
+        nearestNRecursive(nearChild, targetLat, targetLon, n, depth + 1, nearestQueue);
+        
+        // Check if we need to explore the far child
+        // We only explore if:
+        // 1. We don't have N stations yet, OR
+        // 2. The distance to the split plane is less than the farthest distance in our queue
+        double distanceToSplit = Math.abs(targetCoord - splitValue);
+        double maxDistance = nearestQueue.isEmpty() ? Double.MAX_VALUE : nearestQueue.peek().getDistance();
+        
+        // Convert distance along axis to approximate distance in km
+        // This is a heuristic: 1 degree latitude ≈ 111 km, 1 degree longitude ≈ 111*cos(lat) km
+        double axisDistanceKm;
+        if (axis == 0) {
+            axisDistanceKm = distanceToSplit * 111.0; // Latitude
+        } else {
+            axisDistanceKm = distanceToSplit * 111.0 * Math.cos(Math.toRadians(targetLat)); // Longitude
+        }
+        
+        if (nearestQueue.size() < n || axisDistanceKm < maxDistance) {
+            nearestNRecursive(farChild, targetLat, targetLon, n, depth + 1, nearestQueue);
+        }
+    }
+    
+    /**
+     * Finds all stations within a specified radius of a target point.
+     * Uses spatial pruning to efficiently search the KD-tree.
+     *
+     * @param targetLat target latitude
+     * @param targetLon target longitude
+     * @param radiusKm search radius in kilometers
+     * @return list of pairs (station, distance in km), sorted by distance (ascending)
+     */
+    public List<StationDistance> radiusSearch(double targetLat, double targetLon, double radiusKm) {
+        if (radiusKm < 0) {
+            throw new IllegalArgumentException("Radius must be non-negative");
+        }
+        if (root == null) {
+            return new ArrayList<>();
+        }
+        
+        List<StationDistance> results = new ArrayList<>();
+        radiusSearchRecursive(root, targetLat, targetLon, radiusKm, 0, results);
+        
+        // Sort by distance (ascending)
+        results.sort(Comparator.comparing(StationDistance::getDistance));
+        
+        return results;
+    }
+    
+    /**
+     * Recursive helper for radius search.
+     * Uses spatial pruning to avoid exploring subtrees that cannot contain stations within the radius.
+     *
+     * @param node current node
+     * @param targetLat target latitude
+     * @param targetLon target longitude
+     * @param radiusKm search radius in kilometers
+     * @param depth current depth
+     * @param results list to collect results
+     */
+    private void radiusSearchRecursive(KDNode node, double targetLat, double targetLon, 
+                                       double radiusKm, int depth, List<StationDistance> results) {
+        if (node == null) {
+            return;
+        }
+        
+        // Check all stations in the bucket
+        for (Station station : node.getBucket()) {
+            double distance = haversineDistance(targetLat, targetLon, 
+                                               station.getLatitude(), station.getLongitude());
+            if (distance <= radiusKm) {
+                results.add(new StationDistance(station, distance));
+            }
+        }
+        
+        int axis = node.getAxis();
+        double splitValue = node.getSplitValue();
+        double targetCoord = (axis == 0) ? targetLat : targetLon;
+        
+        // Calculate distance from target to split plane
+        double distanceToSplit = Math.abs(targetCoord - splitValue);
+        
+        // Convert distance along axis to approximate distance in km
+        double axisDistanceKm;
+        if (axis == 0) {
+            axisDistanceKm = distanceToSplit * 111.0; // Latitude
+        } else {
+            axisDistanceKm = distanceToSplit * 111.0 * Math.cos(Math.toRadians(targetLat)); // Longitude
+        }
+        
+        // Decide which subtrees to explore
+        if (targetCoord <= splitValue) {
+            // Target is on the left side
+            // Always explore left subtree
+            radiusSearchRecursive(node.getLeft(), targetLat, targetLon, radiusKm, depth + 1, results);
+            
+            // Only explore right subtree if the split plane is within the search radius
+            if (axisDistanceKm <= radiusKm) {
+                radiusSearchRecursive(node.getRight(), targetLat, targetLon, radiusKm, depth + 1, results);
+            }
+        } else {
+            // Target is on the right side
+            // Always explore right subtree
+            radiusSearchRecursive(node.getRight(), targetLat, targetLon, radiusKm, depth + 1, results);
+            
+            // Only explore left subtree if the split plane is within the search radius
+            if (axisDistanceKm <= radiusKm) {
+                radiusSearchRecursive(node.getLeft(), targetLat, targetLon, radiusKm, depth + 1, results);
+            }
+        }
+    }
+    
+    /**
+     * Helper class to store a station with its distance from a target point.
+     */
+    public static class StationDistance {
+        private final Station station;
+        private final double distance; // in kilometers
+        
+        public StationDistance(Station station, double distance) {
+            this.station = station;
+            this.distance = distance;
+        }
+        
+        public Station getStation() {
+            return station;
+        }
+        
+        public double getDistance() {
+            return distance;
+        }
+        
+        @Override
+        public String toString() {
+            return String.format("%s (%.2f km)", station.getName(), distance);
+        }
+    }
+    
+    /**
      * Checks if the tree is empty.
      *
      * @return true if empty

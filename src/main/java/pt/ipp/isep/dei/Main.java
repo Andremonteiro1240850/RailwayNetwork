@@ -46,7 +46,7 @@ public class Main {
             boxRepository = dataLoader.getBoxRepository();
             
             dataLoaded = true;
-            System.out.println("✓ All data loaded successfully!");
+            System.out.println("All data loaded successfully!");
         } catch (Exception e) {
             System.out.println("Error loading data: " + e.getMessage());
             dataLoaded = false;
@@ -175,10 +175,11 @@ public class Main {
         while (true) {
             System.out.println("\n=== SPATIAL INDEXING & GEOGRAPHICAL QUERIES ===");
             System.out.println("1. Login as a Planner to lookup for Stations");
-            System.out.println("2. Login as a Planner - Search by Geographical Area (USEI08)");
-            System.out.println("3. Login as a Freight Manager");
-            System.out.println("4. Login as Data Engineer");
-            System.out.println("5. Back");
+            System.out.println("2. Build a balanced 2D-Tree on Latitude/Longitude");
+            System.out.println("3. Search by Geographical Area");
+            System.out.println("4. Proximity Search");
+            System.out.println("5. Schedule Train Dispatches");
+            System.out.println("6. Back");
 
             System.out.print("Select option: ");
             String choice = scanner.nextLine().trim();
@@ -191,20 +192,25 @@ public class Main {
                     break;
                 case "2":
                     // Planner -> Geographical Search (USEI08)
-                    geographicalSearch();
+                    dataEngineerMain();
                     // After geographical search, return to menu (continue loop)
                     break;
                 case "3":
-                    // Freight Manager -> Train Dispatch Scheduler
-                    freightManager();
-                    // After freight manager, return to menu (continue loop)
+                    // Planner -> Proximity Search (USEI09)
+                    geographicalSearch();
+                    // After proximity search, return to menu (continue loop)
                     break;
                 case "4":
-                    // Data Engineer -> KD-Tree Operations
-                    dataEngineerMain();
-                    // After data engineer, return to menu (continue loop)
+                    // Freight Manager -> Train Dispatch Scheduler
+                    proximitySearch();
+                    // After freight manager, return to menu (continue loop)
                     break;
                 case "5":
+                    // Data Engineer -> KD-Tree Operations
+                    freightManager();
+                    // After data engineer, return to menu (continue loop)
+                    break;
+                case "6":
                     return false; // Back selecionado
                 default:
                     System.out.println("Invalid option!");
@@ -388,7 +394,7 @@ public class Main {
      */
     private static void dataEngineerMain() {
         try {
-            System.out.println("\n=== DATA ENGINEER - BALANCED KD-TREE OPERATIONS ===");
+            System.out.println("\n=== BALANCED KD-TREE OPERATIONS ===");
             System.out.println("Loading stations...");
 
             StationRepository repository = new StationRepository(
@@ -436,6 +442,38 @@ public class Main {
 
         } catch (Exception e) {
             System.err.println("ERROR in geographicalSearch: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+    
+    /**
+     * Planner - Proximity Search (Nearest-N with Filters) (USEI09)
+     * Allows finding the N nearest stations to a target coordinate with optional filters.
+     */
+    private static void proximitySearch() {
+        try {
+            System.out.println("\n=== PROXIMITY SEARCH ===");
+            System.out.println("Loading stations...");
+
+            // Load stations using StationLoader from USEI06
+            List<Domain.Station> stations = stationLoader.loadFromCSV("train_station_dataset/train_stations_europe.csv");
+
+            if (stations == null || stations.isEmpty()) {
+                System.out.println("No stations loaded. Please check the CSV file.");
+                return;
+            }
+
+            System.out.println("Stations loaded successfully! Total: " + stations.size());
+
+            // Create controller and UI
+            GeographicalSearchController controller = new GeographicalSearchController(stations);
+            GeographicalSearchUI ui = new GeographicalSearchUI(controller);
+            
+            // Show Nearest-N search menu
+            ui.showNearestNSearchMenu();
+
+        } catch (Exception e) {
+            System.err.println("ERROR in proximitySearch: " + e.getMessage());
             e.printStackTrace();
         }
     }

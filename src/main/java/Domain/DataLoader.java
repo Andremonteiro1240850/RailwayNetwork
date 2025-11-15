@@ -133,11 +133,11 @@ public class DataLoader {
                 Double weight = parseDoubleValue(safeGet(p, 5));
 
                 if (sku == null || sku.isEmpty()) {
-                    System.out.println("⚠️ Linha items com SKU inválido (ignorado)");
+                    System.out.println("WARNING: Linha items com SKU inválido (ignorado)");
                     continue;
                 }
                 if (volume == null || weight == null) {
-                    System.out.println("⚠️ Item " + sku + " com volume/peso inválidos (ignorado)");
+                    System.out.println("WARNING: Item " + sku + " com volume/peso inválidos (ignorado)");
                     continue;
                 }
 
@@ -170,19 +170,19 @@ public class DataLoader {
                 LocalDateTime receivedAt = parseLocalDateTimeFlexible(safeGet(p, 5));
 
                 if (!items.containsKey(sku)) {
-                    System.out.println("⚠️ SKU " + sku + " não existe no catálogo (ignorado)");
+                    System.out.println("WARNING: SKU " + sku + " não existe no catálogo (ignorado)");
                     continue;
                 }
                 if (boxId == null || boxId.isEmpty()) {
-                    System.out.println("⚠️ BoxId inválido (ignorado)");
+                    System.out.println("WARNING: BoxId inválido (ignorado)");
                     continue;
                 }
                 if (qty == null || qty <= 0) {
-                    System.out.println("⚠️ Quantidade inválida para box " + boxId + " (ignorado)");
+                    System.out.println("WARNING: Quantidade inválida para box " + boxId + " (ignorado)");
                     continue;
                 }
                 if (receivedAt == null) {
-                    System.out.println("⚠️ Data/hora de receção inválida para box " + boxId + " (ignorado)");
+                    System.out.println("WARNING: Data/hora de receção inválida para box " + boxId + " (ignorado)");
                     continue;
                 }
 
@@ -219,15 +219,15 @@ public class DataLoader {
                 Integer priority = parseInteger(safeGet(p, 2));
 
                 if (id == null || id.isEmpty()) {
-                    System.out.println("⚠️ Order com ID inválido (ignorado)");
+                    System.out.println("WARNING: Order com ID inválido (ignorado)");
                     continue;
                 }
                 if (dueDate == null) {
-                    System.out.println("⚠️ Order " + id + " com dueDate inválido (ignorado)");
+                    System.out.println("WARNING: Order " + id + " com dueDate inválido (ignorado)");
                     continue;
                 }
                 if (priority == null) {
-                    System.out.println("⚠️ Order " + id + " com prioridade inválida (ignorado)");
+                    System.out.println("WARNING: Order " + id + " com prioridade inválida (ignorado)");
                     continue;
                 }
 
@@ -251,19 +251,19 @@ public class DataLoader {
                 Integer qty = parseInteger(safeGet(p, 3));
 
                 if (!items.containsKey(sku)) {
-                    System.out.println("⚠️ SKU " + sku + " não existe no catálogo (ignorado)");
+                    System.out.println("WARNING: SKU " + sku + " não existe no catálogo (ignorado)");
                     continue;
                 }
                 if (orderId == null || orderId.isEmpty()) {
-                    System.out.println("⚠️ Linha de encomenda com orderId inválido (ignorado)");
+                    System.out.println("WARNING: Linha de encomenda com orderId inválido (ignorado)");
                     continue;
                 }
                 if (lineNo == null || lineNo <= 0) {
-                    System.out.println("⚠️ Linha de encomenda " + orderId + " com lineNo inválido (ignorado)");
+                    System.out.println("WARNING: Linha de encomenda " + orderId + " com lineNo inválido (ignorado)");
                     continue;
                 }
                 if (qty == null || qty <= 0) {
-                    System.out.println("⚠️ Linha de encomenda " + orderId + " com quantidade inválida (ignorado)");
+                    System.out.println("WARNING: Linha de encomenda " + orderId + " com quantidade inválida (ignorado)");
                     continue;
                 }
 
@@ -298,11 +298,11 @@ public class DataLoader {
                 Integer capacity = parseInteger(safeGet(p, 3));
 
                 if (warehouseId == null || warehouseId.isEmpty() || aisleNo == null || bayId == null || capacity == null) {
-                    System.out.println("⚠️ Bay com campos inválidos (ignorado)");
+                    System.out.println("WARNING: Bay com campos inválidos (ignorado)");
                     continue;
                 }
                 if (capacity <= 0) {
-                    System.out.println("⚠️ Bay " + aisleNo + "-" + bayId + " tem capacidade inválida: " + capacity);
+                    System.out.println("WARNING: Bay " + aisleNo + "-" + bayId + " tem capacidade inválida: " + capacity);
                     continue;
                 }
 
@@ -338,19 +338,19 @@ public class DataLoader {
 
                 // validações
                 if (!items.containsKey(sku)) {
-                    System.out.println("⚠️ SKU " + sku + " não existe no catálogo (ignorado)");
+                    System.out.println("WARNING: SKU " + sku + " não existe no catálogo (ignorado)");
                     continue;
                 }
                 if (returnId == null || returnId.isEmpty()) {
-                    System.out.println("⚠️ Devolução com ID inválido (ignorado)");
+                    System.out.println("WARNING: Devolução com ID inválido (ignorado)");
                     continue;
                 }
                 if (qty == null || qty <= 0) {
-                    System.out.println("⚠️ Devolução " + returnId + " tem quantidade inválida: " + qty);
+                    System.out.println("WARNING: Devolução " + returnId + " tem quantidade inválida: " + qty);
                     continue;
                 }
                 if (timestamp == null) {
-                    System.out.println("⚠️ Devolução " + returnId + " com timestamp inválido (ignorado)");
+                    System.out.println("WARNING: Devolução " + returnId + " com timestamp inválido (ignorado)");
                     continue;
                 }
 
@@ -394,7 +394,7 @@ public class DataLoader {
         Path path = Paths.get(filePath);
         
         if (!Files.exists(path)) {
-            System.out.println("⚠️ File not found: " + filePath);
+            System.out.println("WARNING: File not found: " + filePath);
             return;
         }
         
@@ -439,7 +439,7 @@ public class DataLoader {
                         if (id == null || id.isEmpty() || name == null || name.isEmpty() || 
                             countryStr == null || countryStr.isEmpty() || 
                             timeZoneGroup == null || timeZoneGroup.isEmpty()) {
-                            System.out.println("⚠️ Line " + lineNumber + " rejected: Missing required fields");
+                            System.out.println("WARNING: Line " + lineNumber + " rejected: Missing required fields");
                             rejectedCount++;
                             continue;
                         }
@@ -451,7 +451,7 @@ public class DataLoader {
                         if (latStr != null && !latStr.isEmpty()) {
                             latitude = parseDoubleValue(latStr);
                             if (latitude == null || latitude < -90 || latitude > 90) {
-                                System.out.println("⚠️ Line " + lineNumber + " rejected: Invalid latitude " + latStr);
+                                System.out.println("WARNING: Line " + lineNumber + " rejected: Invalid latitude " + latStr);
                                 rejectedCount++;
                                 continue;
                             }
@@ -460,7 +460,7 @@ public class DataLoader {
                         if (lonStr != null && !lonStr.isEmpty()) {
                             longitude = parseDoubleValue(lonStr);
                             if (longitude == null || longitude < -180 || longitude > 180) {
-                                System.out.println("⚠️ Line " + lineNumber + " rejected: Invalid longitude " + lonStr);
+                                System.out.println("WARNING: Line " + lineNumber + " rejected: Invalid longitude " + lonStr);
                                 rejectedCount++;
                                 continue;
                             }
@@ -469,7 +469,7 @@ public class DataLoader {
                         // Parse country
                         Country country = Country.fromString(countryStr);
                         if (country == null && !countryStr.equalsIgnoreCase("all") && !countryStr.isEmpty()) {
-                            System.out.println("⚠️ Line " + lineNumber + " rejected: Invalid country " + countryStr);
+                            System.out.println("WARNING: Line " + lineNumber + " rejected: Invalid country " + countryStr);
                             rejectedCount++;
                             continue;
                         }
@@ -494,24 +494,24 @@ public class DataLoader {
                         loadedCount++;
                         
                     } catch (IllegalArgumentException e) {
-                        System.out.println("⚠️ Line " + lineNumber + " rejected: " + e.getMessage());
+                        System.out.println("WARNING: Line " + lineNumber + " rejected: " + e.getMessage());
                         rejectedCount++;
                     } catch (Exception e) {
-                        System.out.println("⚠️ Line " + lineNumber + " rejected: " + e.getMessage());
+                        System.out.println("WARNING: Line " + lineNumber + " rejected: " + e.getMessage());
                         rejectedCount++;
                     }
                 } else {
-                    System.out.println("⚠️ Line " + lineNumber + " rejected: Insufficient columns (expected 9, got " + parts.length + ")");
+                    System.out.println("WARNING: Line " + lineNumber + " rejected: Insufficient columns (expected 9, got " + parts.length + ")");
                     rejectedCount++;
                 }
             }
             
-            System.out.println("✅ Total stations loaded: " + loadedCount);
+            System.out.println(" Total stations loaded: " + loadedCount);
             if (rejectedCount > 0) {
-                System.out.println("⚠️ Total stations rejected: " + rejectedCount);
+                System.out.println("WARNING: Total stations rejected: " + rejectedCount);
             }
         } catch (Exception e) {
-            System.out.println("❌ Erro a ler stations com dados geográficos: " + e.getMessage());
+            System.out.println("Erro a ler stations com dados geográficos: " + e.getMessage());
         }
     }
     
@@ -567,7 +567,7 @@ public class DataLoader {
         Path path = Paths.get(filePath);
         
         if (!Files.exists(path)) {
-            System.out.println("⚠️ File not found: " + filePath);
+            System.out.println("WARNING: File not found: " + filePath);
             return;
         }
         
@@ -605,15 +605,15 @@ public class DataLoader {
                             stationMap.put(id, facility);
                             loadedCount++;
                         } catch (Exception e) {
-                            System.out.println("⚠️ Error creating station from line " + lineNumber + ": " + e.getMessage());
+                            System.out.println("WARNING: Error creating station from line " + lineNumber + ": " + e.getMessage());
                         }
                     }
                 }
             }
             
-            System.out.println("✅ Total stations loaded: " + loadedCount);
+            System.out.println(" Total stations loaded: " + loadedCount);
         } catch (Exception e) {
-            System.out.println("❌ Erro a ler stations: " + e.getMessage());
+            System.out.println("Erro a ler stations: " + e.getMessage());
         }
     }
     
@@ -627,7 +627,7 @@ public class DataLoader {
         Path path = Paths.get(filePath);
         
         if (!Files.exists(path)) {
-            System.out.println("⚠️ File not found: " + filePath);
+            System.out.println("WARNING: File not found: " + filePath);
             return;
         }
         
@@ -683,20 +683,20 @@ public class DataLoader {
                                 lineSegments.add(segment);
                                 loadedCount++;
                             } else {
-                                System.out.println("⚠️ Station not found - Start: " + startFacility + ", End: " + endFacility);
+                                System.out.println("WARNING: Station not found - Start: " + startFacility + ", End: " + endFacility);
                             }
                         } catch (NumberFormatException e) {
-                            System.out.println("⚠️ Invalid numeric value in line " + lineNumber + ": " + e.getMessage());
+                            System.out.println("WARNING: Invalid numeric value in line " + lineNumber + ": " + e.getMessage());
                         } catch (Exception e) {
-                            System.out.println("⚠️ Error creating line segment from line " + lineNumber + ": " + e.getMessage());
+                            System.out.println("WARNING: Error creating line segment from line " + lineNumber + ": " + e.getMessage());
                         }
                     }
                 }
             }
             
-            System.out.println("✅ Total line segments loaded: " + loadedCount);
+            System.out.println(" Total line segments loaded: " + loadedCount);
         } catch (Exception e) {
-            System.out.println("❌ Erro a ler line segments: " + e.getMessage());
+            System.out.println("Erro a ler line segments: " + e.getMessage());
         }
     }
     
