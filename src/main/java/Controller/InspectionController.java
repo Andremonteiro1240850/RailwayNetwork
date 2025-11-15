@@ -26,7 +26,7 @@ import java.util.*;
 public class InspectionController {
 
     private List<QuarantineInspection> quarantineInspections = new ArrayList<>();
-    private Domain.WarehouseManager warehouseManager; // for FEFO/FIFO insertion
+    private WagonsUnloadingController wagonsUnloadingController; // for FEFO/FIFO insertion
 
     private static final DateTimeFormatter AUDIT_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
@@ -37,12 +37,12 @@ public class InspectionController {
     }
 
     /**
-     * Instantiates a new Inspection controller with warehouse manager.
+     * Instantiates a new Inspection controller with wagons unloading controller.
      *
-     * @param warehouseManager the warehouse manager for inventory operations
+     * @param wagonsUnloadingController the wagons unloading controller for inventory operations
      */
-    public InspectionController(Domain.WarehouseManager warehouseManager) {
-        this.warehouseManager = warehouseManager;
+    public InspectionController(WagonsUnloadingController wagonsUnloadingController) {
+        this.wagonsUnloadingController = wagonsUnloadingController;
     }
 
     /**
@@ -179,8 +179,8 @@ public class InspectionController {
         String boxId = String.format("RET-%s", inspection.getReturnId());
         
         // Insert the box into inventory following FEFO/FIFO placement rules
-        if (warehouseManager != null) {
-            warehouseManager.insertReturnedBox(boxId, sku, quantity, expiryDate, LocalDateTime.now());
+        if (wagonsUnloadingController != null) {
+            wagonsUnloadingController.insertReturnedBox(boxId, sku, quantity, expiryDate, LocalDateTime.now());
         }
     }
 

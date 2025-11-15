@@ -259,13 +259,9 @@ public class Main {
         
         System.out.println("\n=== QUALITY OPERATOR LOGIN ===");
         
-        Domain.WarehouseManager wm = new Domain.WarehouseManager(
-                dataLoader.items,
-                dataLoader.stock,
-                dataLoader.bays
-        );
+        WagonsUnloadingController wagonsController = new WagonsUnloadingController(dataLoader);
 
-        QualityOperatorController controller = new QualityOperatorController(wm);
+        QualityOperatorController controller = new QualityOperatorController(wagonsController);
         QualityOperatorUI ui = new QualityOperatorUI(controller);
         
         // Show welcome message and go directly to menu
