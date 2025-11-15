@@ -113,19 +113,25 @@ public class StationRepository {
     private void collectByTimeZone(BST.Node<Station> node, String timeZone, List<Station> result) {
         if (node == null) return;
 
-        int cmp = node.getElement().getTimeZoneGroup().compareTo(timeZone);
+        String nodeTimeZone = node.getElement().getTimeZoneGroup();
+        int cmp = nodeTimeZone.compareTo(timeZone);
 
-        if (cmp > 0) return; // todos os restantes são maiores → parar recursão
-
-        if (cmp < 0)
-            collectByTimeZone(node.getRight(), timeZone, result);
-        else {
-            // cmp == 0 → nó do fuso horário correto
+        // 1. Ir para a esquerda
+        if (cmp >= 0) {
             collectByTimeZone(node.getLeft(), timeZone, result);
+        }
+
+        // 2. Adicionar nó
+        if (cmp == 0) {
             result.add(node.getElement());
+        }
+
+        // 3. Ir para a direita
+        if (cmp <= 0) {
             collectByTimeZone(node.getRight(), timeZone, result);
         }
     }
+
 
 
 }
