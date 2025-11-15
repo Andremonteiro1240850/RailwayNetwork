@@ -1,0 +1,315 @@
+@startuml
+'https://plantuml.com/class-diagram
+
+' --- Pacotes para organização ---
+
+    class SchedulerUI {
+        - controller: DispatchController
+        - scanner: Scanner
+        - facilities: List<Facility>
+        - locomotives: List<Locomotive>
+        - wagons: List<Wagon>
+        - dataLoader: RailwayDataLoader
+        + void: showMainMenu()
+        - void: dispatchTrains()
+        - List<Train>: collectTrains()
+        - Train: collectTrainInfo(trainId: String, existingTrains: List<Train>)
+        - RouteData: collectRoute()
+        - LocalDateTime: collectDepartureTime()
+        - List<Locomotive>: collectLocomotivesWithValidation(existingTrains: List<Train>, departureStation: Facility, departureTimeWrapper: LocalDateTime[])
+        - List<Wagon>: collectWagonsWithValidation(existingTrains: List<Train>)
+        - double: calculateTotalWeight(selectedWagons: List<Wagon>)
+        - void: displayDispatchReport(report: DispatchReport)
+        - void: displayTrainSchedule(schedule: DispatchReport.TrainSchedule)
+        - void: displayConflictSimple(conflict: DispatchReport.Conflict)
+        - void: showAvailableStations()
+        - void: showAvailableLocomotives()
+        - void: showAvailableWagons()
+        - String: validateLocomotiveAvailability(locomotive: Locomotive, existingTrains: List<Train>, departureStation: Facility, departureTime: LocalDateTime)
+        - String: validateWagonAvailability(wagon: Wagon, existingTrains: List<Train>)
+        - LocalDateTime: calculateLocomotiveAvailableTime(locomotive: Locomotive, train: Train, targetStation: Facility, travelService: TravelCalculationService)
+    }
+
+
+
+    class DispatchController {
+        - schedulerService: SchedulerService
+        - travelTimeController: TravelTimeController
+        + DispatchController()
+        + DispatchController(travelTimeController: TravelTimeController)
+        + DispatchReport: scheduleTrains(trains: List<Train>)
+        + SchedulerService: getSchedulerService()
+        + TravelTimeController: getTravelTimeController()
+        + List<Facility>: getStations()
+        + Facility: getStationById(id: String)
+    }
+    
+    class "DispatchController.TrainConfiguration" as TrainConfiguration {
+        - trainId: String
+        - locomotives: List<Locomotive>
+        - wagons: List<Wagon>
+        + String: getTrainId()
+        + List<Locomotive>: getLocomotives()
+        + List<Wagon>: getWagons()
+    }
+    
+    class TravelTimeController {
+        - service: TravelCalculationService
+        - lineSegments: List<LineSegment>
+        - facilities: List<Facility>
+        - dataLoader: RailwayDataLoader
+        + TravelTimeController()
+        + TravelCalculationService: getService()
+        + List<Facility>: getStations()
+        + List<LineSegment>: getLineSegments()
+        + Facility: getStationById(id: String)
+        + RailwayDataLoader: getDataLoader()
+    }
+
+
+
+    class Train {
+        - trainId: String
+        - route: List<Facility>
+        - selectedStations: List<Facility>
+        - locomotives: List<Locomotive>
+        - wagons: List<Wagon>
+        - departurePlannedDateTime: LocalDateTime
+        - totalWeight: double
+        + Train(trainId: String, route: List<Facility>, selectedStations: List<Facility>, locomotives: List<Locomotive>, wagons: List<Wagon>, departurePlannedDateTime: LocalDateTime, totalWeight: double)
+        + String: getTrainId()
+        + List<Facility>: getRoute()
+        + List<Facility>: getSelectedStations()
+        + List<Locomotive>: getLocomotives()
+        + List<Wagon>: getWagons()
+        + Locomotive: getPrimaryLocomotive()
+        + LocalDateTime: getDeparturePlannedDateTime()
+        + double: getTotalWeight()
+        + double: getEffectiveMaxSpeedKmH()
+        + double: calculateEffectiveSpeed(segment: LineSegment)
+    }
+    
+    class SchedulerService {
+        - travelCalculationService: TravelCalculationService
+        - lineSegments: List<LineSegment>
+        + SchedulerService(travelCalculationService: TravelCalculationService, lineSegments: List<LineSegment>)
+        + DispatchReport: scheduleTrains(trains: List<Train>)
+        - DispatchReport.TrainSchedule: calculateTrainSchedule(train: Train)
+        - List<DispatchReport.Conflict>: detectConflicts(schedules: List<DispatchReport.TrainSchedule>)
+        - DispatchReport.Summary: generateSummary(schedules: List<DispatchReport.TrainSchedule>, conflicts: List<DispatchReport.Conflict>)
+        - LineSegment: findConnectingSegment(startStation: Facility, endStation: Facility)
+    }
+    
+    class DispatchReport {
+        - trainSchedules: List<TrainSchedule>
+        - conflicts: List<Conflict>
+        - summary: Summary
+        + DispatchReport(trainSchedules: List<TrainSchedule>, conflicts: List<Conflict>, summary: Summary)
+        + List<TrainSchedule>: getTrainSchedules()
+        + List<Conflict>: getConflicts()
+        + Summary: getSummary()
+    }
+    
+    class "DispatchReport.TrainSchedule" as TrainSchedule {
+        - trainId: String
+        - routeWithETAs: List<StationETA>
+        - segmentTimes: List<SegmentTime>
+        - selectedStations: List<Facility>
+        - totalTravelTimeHours: double
+        + String: getTrainId()
+        + List<StationETA>: getRouteWithETAs()
+        + List<SegmentTime>: getSegmentTimes()
+        + List<Facility>: getSelectedStations()
+        + double: getTotalTravelTimeHours()
+    }
+    
+    class "DispatchReport.TrainSchedule.StationETA" as StationETA {
+        - station: Facility
+        - eta: LocalDateTime
+        - travelTimeHours: double
+        - segmentId: String
+        + Facility: getStation()
+        + LocalDateTime: getEta()
+        + double: getTravelTimeHours()
+        + String: getSegmentId()
+    }
+    
+    class "DispatchReport.TrainSchedule.SegmentTime" as SegmentTime {
+        - segmentId: String
+        - startStation: Facility
+        - endStation: Facility
+        - travelTimeHours: double
+        - startTime: LocalDateTime
+        - endTime: LocalDateTime
+        + String: getSegmentId()
+        + Facility: getStartStation()
+        + Facility: getEndStation()
+        + double: getTravelTimeHours()
+        + LocalDateTime: getStartTime()
+        + LocalDateTime: getEndTime()
+    }
+    
+    class "DispatchReport.Conflict" as Conflict {
+        - train1Id: String
+        - train2Id: String
+        - segmentId: String
+        - conflictType: ConflictType
+        - resolution: ResolutionType
+        - description: String
+        - crossingStationId: String
+        - waitingTrainId: String
+        - waitTimeMinutes: Long
+        + enum ConflictType
+        + enum ResolutionType
+        + String: getTrain1Id()
+        + String: getTrain2Id()
+        + String: getSegmentId()
+        + ConflictType: getConflictType()
+        + ResolutionType: getResolution()
+        + String: getDescription()
+        + String: getCrossingStationId()
+        + String: getWaitingTrainId()
+        + Long: getWaitTimeMinutes()
+        + boolean: hasCrossingDetails()
+    }
+    
+    class "DispatchReport.Summary" as Summary {
+        - totalTrainsDispatched: int
+        - numberOfConflicts: int
+        - numberOfResolvableConflicts: int
+        - numberOfUnsolvableConflicts: int
+        + int: getTotalTrainsDispatched()
+        + int: getNumberOfConflicts()
+        + int: getNumberOfResolvableConflicts()
+        + int: getNumberOfUnsolvableConflicts()
+    }
+    
+    class Locomotive {
+        - id: String
+        - type: String
+        - maxSpeedKmH: double
+        - gauge: double
+        + Locomotive(id: String, type: String, maxSpeedKmH: double, gauge: double)
+        + String: getId()
+        + String: getType()
+        + double: getMaxSpeedKmH()
+        + double: getGauge()
+    }
+    
+    class Wagon {
+        - wagonId: String
+        - type: String
+        - emptyWeightKg: double
+        - maxLoadWeightKg: double
+        + Wagon(wagonId: String, type: String, emptyWeightKg: double, maxLoadWeightKg: double)
+        + String: getWagonId()
+        + String: getType()
+        + double: getEmptyWeightKg()
+        + double: getMaxLoadWeightKg()
+        + double: getFullyLoadedWeightKg()
+    }
+    
+    class Facility {
+        - id: String
+        - name: String
+        - location: String
+        - latitude: Double
+        - longitude: Double
+        - country: Country
+        - isCity: Boolean
+        - isMainStation: Boolean
+        - timeZone: String
+        - timeZoneGroup: String
+        + String: getId()
+        + String: getName()
+        + String: getLocation()
+        + Double: getLatitude()
+        + Double: getLongitude()
+    }
+    
+    class LineSegment {
+        - id: String
+        - name: String
+        - startFacility: Facility
+        - endFacility: Facility
+        - lengthKm: double
+        - gauge: double
+        - electrified: boolean
+        - speedLimitKmH: Double
+        + String: getId()
+        + Facility: getStartFacility()
+        + Facility: getEndFacility()
+        + double: getLengthKm()
+        + double: getGauge()
+        + boolean: isElectrified()
+        + Double: getSpeedLimitKmH()
+        + boolean: hasSpeedLimit()
+    }
+    
+    class TravelCalculationService {
+        - lineSegments: List<LineSegment>
+        + TravelCalculationService(lineSegments: List<LineSegment>)
+        + double: calculateTravelTime(startStation: Facility, endStation: Facility, train: Train)
+        + double: calculateTravelTime(startStation: Facility, endStation: Facility, locomotive: Locomotive)
+        + boolean: areStationsConnected(startStation: Facility, endStation: Facility)
+        + List<Facility>: findPath(startStation: Facility, endStation: Facility)
+        + String: formatTravelTime(hours: double)
+        + LineSegment: findConnectingSegment(startStation: Facility, endStation: Facility)
+    }
+    
+    class RailwayDataLoader {
+        - stations: List<Facility>
+        - lineSegments: List<LineSegment>
+        + void: loadAllData()
+        + List<Locomotive>: loadLocomotivesFromCSV(filePath: String)
+        + List<Wagon>: loadWagonsFromCSV(filePath: String)
+        + Facility: getStationById(id: String)
+        + List<Facility>: getStations()
+        + List<LineSegment>: getLineSegments()
+    }
+
+
+' --- Relações ---
+SchedulerUI --> DispatchController : uses
+SchedulerUI --> RailwayDataLoader : uses
+DispatchController --* SchedulerService : manages
+DispatchController --> TravelTimeController : uses
+DispatchController +-- TrainConfiguration : contains
+TravelTimeController --* TravelCalculationService : manages
+TravelTimeController --> RailwayDataLoader : uses
+SchedulerService --> TravelCalculationService : uses
+SchedulerService --> LineSegment : uses
+SchedulerService --> Train : uses
+SchedulerService --> DispatchReport : creates
+DispatchReport +-- TrainSchedule : contains
+DispatchReport +-- Conflict : contains
+DispatchReport +-- Summary : contains
+TrainSchedule +-- StationETA : contains
+TrainSchedule +-- SegmentTime : contains
+TrainSchedule --> Facility : uses
+SegmentTime --> Facility : uses
+SegmentTime --> LineSegment : references
+StationETA --> Facility : uses
+Train "0..*" --> "1..*" Locomotive : has
+Train "0..*" --> "0..*" Wagon : has
+Train "1..*" --> "1" Facility : route contains
+Train --> LocalDateTime : has departure time
+Conflict --> Train : references
+LineSegment "1" --> "1" Facility : connects
+LineSegment "1" --> "1" Facility : connects
+TravelCalculationService --> LineSegment : uses
+RailwayDataLoader --> Facility : creates
+RailwayDataLoader --> LineSegment : creates
+
+' Composição: DispatchController possui SchedulerService
+' TravelTimeController possui TravelCalculationService
+' DispatchReport contém TrainSchedule, Conflict e Summary (classes internas)
+' TrainSchedule contém StationETA e SegmentTime (classes internas)
+' Cardinalidade: Train contém muitas Locomotive e Wagon
+' Train tem uma rota (List<Facility>) e uma data/hora de partida planeada
+' SchedulerService usa TravelCalculationService para calcular tempos de viagem
+' Conflict representa conflitos entre dois trains no mesmo segmento (single-track)
+' RailwayDataLoader carrega dados de CSV (locomotives, wagons, stations, line segments)
+
+@enduml
+
