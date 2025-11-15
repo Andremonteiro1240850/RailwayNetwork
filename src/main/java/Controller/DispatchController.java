@@ -1,11 +1,12 @@
 package Controller;
 
 import Domain.*;
+import java.util.Collections;
 import java.util.List;
 
 /**
  * Controller for managing train dispatch operations.
- * This controller handles the business logic coordination for USPL07 functionality.
+ * This controller handles the business logic coordination for train dispatch functionality.
  *
  * @author Development Team
  * @version 1.0
@@ -16,17 +17,86 @@ public class DispatchController {
     private final TravelTimeController travelTimeController;
 
     /**
+     * Represents a train configuration loaded from CSV.
+     * Contains the train ID, assigned locomotives, and wagons.
+     * The route will be defined manually by the Freight Manager.
+     */
+    public static class TrainConfiguration {
+        
+        private final String trainId;
+        private final List<Locomotive> locomotives;
+        private final List<Wagon> wagons;
+
+        /**
+         * Constructs a new TrainConfiguration.
+         *
+         * @param trainId     the train ID
+         * @param locomotives the list of locomotives assigned to this train
+         * @param wagons      the list of wagons assigned to this train
+         * @throws IllegalArgumentException if parameters are invalid
+         */
+        public TrainConfiguration(String trainId, List<Locomotive> locomotives, List<Wagon> wagons) {
+            if (trainId == null || trainId.trim().isEmpty()) {
+                throw new IllegalArgumentException("Train ID cannot be null or empty");
+            }
+            if (locomotives == null || locomotives.isEmpty()) {
+                throw new IllegalArgumentException("Train must have at least one locomotive");
+            }
+            if (wagons == null) {
+                throw new IllegalArgumentException("Wagons list cannot be null");
+            }
+            
+            this.trainId = trainId.trim();
+            this.locomotives = Collections.unmodifiableList(locomotives);
+            this.wagons = Collections.unmodifiableList(wagons);
+        }
+
+        /**
+         * Gets the train ID.
+         *
+         * @return the train ID
+         */
+        public String getTrainId() {
+            return trainId;
+        }
+
+        /**
+         * Gets the locomotives assigned to this train.
+         *
+         * @return the list of locomotives
+         */
+        public List<Locomotive> getLocomotives() {
+            return locomotives;
+        }
+
+        /**
+         * Gets the wagons assigned to this train.
+         *
+         * @return the list of wagons
+         */
+        public List<Wagon> getWagons() {
+            return wagons;
+        }
+
+        @Override
+        public String toString() {
+            return String.format("TrainConfiguration[%s, Locomotives: %d, Wagons: %d]", 
+                               trainId, locomotives.size(), wagons.size());
+        }
+    }
+
+    /**
      * Constructs a new DispatchController.
-     * This controller reuses the TravelTimeController to access the TravelCalculationService (USPL03).
+     * This controller reuses the TravelTimeController to access the TravelCalculationService.
      */
     public DispatchController() {
         this.travelTimeController = new TravelTimeController();
         
-        // Reuse the TravelCalculationService from USPL03
+        // Reuse the TravelCalculationService
         TravelCalculationService travelCalculationService = travelTimeController.getService();
         List<LineSegment> lineSegments = travelTimeController.getLineSegments();
         
-        // Create the scheduler service that reuses USPL03's travel calculation
+        // Create the scheduler service that reuses travel calculation
         this.schedulerService = new SchedulerService(travelCalculationService, lineSegments);
     }
 
@@ -43,11 +113,11 @@ public class DispatchController {
         
         this.travelTimeController = travelTimeController;
         
-        // Reuse the TravelCalculationService from USPL03
+        // Reuse the TravelCalculationService
         TravelCalculationService travelCalculationService = travelTimeController.getService();
         List<LineSegment> lineSegments = travelTimeController.getLineSegments();
         
-        // Create the scheduler service that reuses USPL03's travel calculation
+        // Create the scheduler service that reuses travel calculation
         this.schedulerService = new SchedulerService(travelCalculationService, lineSegments);
     }
 
@@ -76,7 +146,7 @@ public class DispatchController {
     }
 
     /**
-     * Gets the travel time controller (for accessing USPL03 functionality).
+     * Gets the travel time controller.
      *
      * @return the travel time controller
      */

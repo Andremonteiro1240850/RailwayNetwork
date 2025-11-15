@@ -1,15 +1,13 @@
 package Domain;
 
 import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Service class responsible for scheduling trains and detecting conflicts.
- * This service implements the business logic for USPL07 - Train Dispatch Scheduler.
  * <p>
- * This service reuses the TravelCalculationService (USPL03) to calculate travel times
+ * This service reuses the TravelCalculationService to calculate travel times
  * for each segment in a train's route.
  *
  * @author Development Team
@@ -23,7 +21,7 @@ public class SchedulerService {
     /**
      * Constructs a new SchedulerService with the specified travel calculation service and line segments.
      *
-     * @param travelCalculationService the service for calculating travel times (USPL03)
+     * @param travelCalculationService the service for calculating travel times
      * @param lineSegments            the list of available line segments
      * @throws IllegalArgumentException if parameters are null
      */
@@ -43,7 +41,7 @@ public class SchedulerService {
      * Schedules a list of trains and generates a dispatch report with ETAs and conflicts.
      * <p>
      * This method:
-     * 1. Calculates travel times for each segment using USPL03's TravelCalculationService
+     * 1. Calculates travel times for each segment using TravelCalculationService
      * 2. Accumulates ETAs for each station in each train's route
      * 3. Detects single-track conflicts (overlapping segment time intervals)
      * 4. Suggests basic resolutions for conflicts
@@ -57,13 +55,13 @@ public class SchedulerService {
             throw new IllegalArgumentException("Trains list cannot be null or empty");
         }
 
-        List<TrainSchedule> schedules = new ArrayList<>();
-        List<Conflict> conflicts = new ArrayList<>();
+        List<DispatchReport.TrainSchedule> schedules = new ArrayList<>();
+        List<DispatchReport.Conflict> conflicts = new ArrayList<>();
 
         // Step 1: Calculate schedules for each train
         for (Train train : trains) {
             try {
-                TrainSchedule schedule = calculateTrainSchedule(train);
+                DispatchReport.TrainSchedule schedule = calculateTrainSchedule(train);
                 schedules.add(schedule);
             } catch (Exception e) {
                 // Log error but continue with other trains
@@ -82,15 +80,15 @@ public class SchedulerService {
 
     /**
      * Calculates the schedule for a single train.
-     * This method reuses USPL03's TravelCalculationService for each segment.
+     * This method reuses TravelCalculationService for each segment.
      *
      * @param train the train to schedule
      * @return the train schedule with ETAs
      * @throws IllegalStateException if route segments are not directly connected
      */
-    private TrainSchedule calculateTrainSchedule(Train train) {
-        List<TrainSchedule.StationETA> routeWithETAs = new ArrayList<>();
-        List<SegmentTime> segmentTimes = new ArrayList<>();
+    private DispatchReport.TrainSchedule calculateTrainSchedule(Train train) {
+        List<DispatchReport.TrainSchedule.StationETA> routeWithETAs = new ArrayList<>();
+        List<DispatchReport.TrainSchedule.SegmentTime> segmentTimes = new ArrayList<>();
         
         LocalDateTime currentTime = train.getDeparturePlannedDateTime();
         Locomotive primaryLocomotive = train.getPrimaryLocomotive();
@@ -99,7 +97,7 @@ public class SchedulerService {
         double totalTravelTime = 0.0;
 
         // Add departure station (first station)
-        routeWithETAs.add(new TrainSchedule.StationETA(
+        routeWithETAs.add(new DispatchReport.TrainSchedule.StationETA(
             route.get(0),
             currentTime,
             0.0,
@@ -119,9 +117,10 @@ public class SchedulerService {
                                 startStation.getId(), endStation.getId(), train.getTrainId()));
             }
 
-            // REUSE USPL03 METHOD: Calculate travel time using existing service
+            // Calculate travel time using existing service
+            // Use the enhanced method that considers all factors
             double travelTimeHours = travelCalculationService.calculateTravelTime(
-                startStation, endStation, primaryLocomotive);
+                startStation, endStation, train);
 
             totalTravelTime += travelTimeHours;
 
@@ -132,7 +131,7 @@ public class SchedulerService {
             LocalDateTime segmentEndTime = currentTime.plusMinutes(totalMinutes);
 
             // Create segment time
-            SegmentTime segmentTime = new SegmentTime(
+            DispatchReport.TrainSchedule.SegmentTime segmentTime = new DispatchReport.TrainSchedule.SegmentTime(
                 segment.getId(),
                 startStation,
                 endStation,
@@ -146,7 +145,7 @@ public class SchedulerService {
             currentTime = segmentEndTime;
 
             // Add ETA for the end station
-            routeWithETAs.add(new TrainSchedule.StationETA(
+            routeWithETAs.add(new DispatchReport.TrainSchedule.StationETA(
                 endStation,
                 segmentEndTime,
                 travelTimeHours,
@@ -154,7 +153,7 @@ public class SchedulerService {
             ));
         }
 
-        return new TrainSchedule(train.getTrainId(), routeWithETAs, segmentTimes, totalTravelTime);
+        return new DispatchReport.TrainSchedule(train.getTrainId(), routeWithETAs, segmentTimes, totalTravelTime);
     }
 
     /**
@@ -178,26 +177,26 @@ public class SchedulerService {
      * @param schedules the list of train schedules
      * @return the list of detected conflicts
      */
-    private List<Conflict> detectConflicts(List<TrainSchedule> schedules) {
-        List<Conflict> conflicts = new ArrayList<>();
+    private List<DispatchReport.Conflict> detectConflicts(List<DispatchReport.TrainSchedule> schedules) {
+        List<DispatchReport.Conflict> conflicts = new ArrayList<>();
 
         // Compare each pair of schedules
         for (int i = 0; i < schedules.size(); i++) {
-            TrainSchedule schedule1 = schedules.get(i);
+            DispatchReport.TrainSchedule schedule1 = schedules.get(i);
             for (int j = i + 1; j < schedules.size(); j++) {
-                TrainSchedule schedule2 = schedules.get(j);
+                DispatchReport.TrainSchedule schedule2 = schedules.get(j);
 
                 // Track conflicts for this pair to avoid duplicates
                 boolean conflictFound = false;
 
                 // Check each segment in schedule1 against each segment in schedule2
-                for (SegmentTime segmentTime1 : schedule1.getSegmentTimes()) {
-                    for (SegmentTime segmentTime2 : schedule2.getSegmentTimes()) {
+                for (DispatchReport.TrainSchedule.SegmentTime segmentTime1 : schedule1.getSegmentTimes()) {
+                    for (DispatchReport.TrainSchedule.SegmentTime segmentTime2 : schedule2.getSegmentTimes()) {
                         // Check if segments overlap (same segment ID and overlapping times)
                         if (segmentTime1.overlapsWith(segmentTime2)) {
                             // Only create one conflict per train pair per segment
                             if (!conflictFound) {
-                                Conflict conflict = createConflict(schedule1, schedule2, segmentTime1, segmentTime2);
+                                DispatchReport.Conflict conflict = createConflict(schedule1, schedule2, segmentTime1, segmentTime2);
                                 conflicts.add(conflict);
                                 conflictFound = true;
                                 break; // Move to next train pair
@@ -216,6 +215,7 @@ public class SchedulerService {
 
     /**
      * Creates a conflict object with suggested resolution.
+     * Implements C4: considers sidings for crossings and C5: provides detailed crossing operations.
      *
      * @param schedule1     the first train schedule
      * @param schedule2     the second train schedule
@@ -223,8 +223,8 @@ public class SchedulerService {
      * @param segmentTime2  the segment time for train 2
      * @return the conflict object
      */
-    private Conflict createConflict(TrainSchedule schedule1, TrainSchedule schedule2,
-                                    SegmentTime segmentTime1, SegmentTime segmentTime2) {
+    private DispatchReport.Conflict createConflict(DispatchReport.TrainSchedule schedule1, DispatchReport.TrainSchedule schedule2,
+                                    DispatchReport.TrainSchedule.SegmentTime segmentTime1, DispatchReport.TrainSchedule.SegmentTime segmentTime2) {
         String train1Id = schedule1.getTrainId();
         String train2Id = schedule2.getTrainId();
         String segmentId = segmentTime1.getSegmentId();
@@ -233,42 +233,97 @@ public class SchedulerService {
         boolean train1ArrivesFirst = segmentTime1.getSegmentStartTime()
             .isBefore(segmentTime2.getSegmentStartTime());
 
-        // Suggest resolution based on priority and arrival order
-        Conflict.ResolutionType resolution;
-        String description;
-
-        // Simple resolution logic:
-        // 1. If one train has priority, suggest waiting for it
-        // 2. Otherwise, suggest waiting at previous station for the later train
-        // 3. If both trains are already in transit, mark as unsolvable
-
-        if (train1ArrivesFirst) {
-            resolution = Conflict.ResolutionType.WAIT_AT_PREVIOUS_STATION;
-            description = String.format(
-                "Train %s arrives first at segment %s. Train %s should wait at previous station.",
-                train1Id, segmentId, train2Id);
-        } else {
-            resolution = Conflict.ResolutionType.WAIT_AT_PREVIOUS_STATION;
-            description = String.format(
-                "Train %s arrives first at segment %s. Train %s should wait at previous station.",
-                train2Id, segmentId, train1Id);
-        }
+        // Find previous stations (for checking sidings)
+        Facility previousStation1 = segmentTime1.getStartStation();
+        Facility previousStation2 = segmentTime2.getStartStation();
 
         // Check if conflict is unsolvable (both trains already in transit)
         if (segmentTime1.getSegmentStartTime().equals(segmentTime2.getSegmentStartTime())) {
-            resolution = Conflict.ResolutionType.UNSOLVABLE;
-            description = String.format(
-                "Both trains %s and %s arrive simultaneously at segment %s. Conflict is unsolvable.",
-                train1Id, train2Id, segmentId);
+            return new DispatchReport.Conflict(
+                train1Id,
+                train2Id,
+                segmentId,
+                DispatchReport.Conflict.ConflictType.OVERLAPPING_SEGMENT,
+                DispatchReport.Conflict.ResolutionType.UNSOLVABLE,
+                String.format(
+                    "Both trains %s and %s arrive simultaneously at segment %s. Conflict is unsolvable.",
+                    train1Id, train2Id, segmentId)
+            );
         }
 
-        return new Conflict(
+        // C4: Check if we can use a siding for crossing
+        // Check if previous station of the later train has a siding
+        Facility crossingStation = null;
+        String waitingTrainId = null;
+        Long waitTimeMinutes = null;
+        DispatchReport.Conflict.ResolutionType resolution;
+        String description;
+
+        if (train1ArrivesFirst) {
+            // Train 1 arrives first, train 2 should wait
+            if (previousStation2.hasSiding()) {
+                // Can cross at previous station of train 2 (which has siding)
+                crossingStation = previousStation2;
+                waitingTrainId = train2Id;
+                resolution = DispatchReport.Conflict.ResolutionType.CROSS_AT_STATION_WITH_SIDING;
+                
+                // Calculate wait time: train 2 should wait until train 1 passes
+                long minutesBetween = java.time.Duration.between(
+                    segmentTime2.getSegmentStartTime(), 
+                    segmentTime1.getSegmentEndTime()
+                ).toMinutes();
+                waitTimeMinutes = Math.max(0, minutesBetween);
+                
+                description = String.format(
+                    "Train %s arrives first at segment %s. Train %s should wait at station %s (has siding) for %d minutes to allow crossing.",
+                    train1Id, segmentId, train2Id, crossingStation.getId(), waitTimeMinutes);
+            } else {
+                // No siding available, train 2 must wait at previous station
+                waitingTrainId = train2Id;
+                resolution = DispatchReport.Conflict.ResolutionType.WAIT_AT_PREVIOUS_STATION;
+                description = String.format(
+                    "Train %s arrives first at segment %s. Train %s should wait at previous station %s (no siding available).",
+                    train1Id, segmentId, train2Id, previousStation2.getId());
+            }
+        } else {
+            // Train 2 arrives first, train 1 should wait
+            if (previousStation1.hasSiding()) {
+                // Can cross at previous station of train 1 (which has siding)
+                crossingStation = previousStation1;
+                waitingTrainId = train1Id;
+                resolution = DispatchReport.Conflict.ResolutionType.CROSS_AT_STATION_WITH_SIDING;
+                
+                // Calculate wait time: train 1 should wait until train 2 passes
+                long minutesBetween = java.time.Duration.between(
+                    segmentTime1.getSegmentStartTime(), 
+                    segmentTime2.getSegmentEndTime()
+                ).toMinutes();
+                waitTimeMinutes = Math.max(0, minutesBetween);
+                
+                description = String.format(
+                    "Train %s arrives first at segment %s. Train %s should wait at station %s (has siding) for %d minutes to allow crossing.",
+                    train2Id, segmentId, train1Id, crossingStation.getId(), waitTimeMinutes);
+            } else {
+                // No siding available, train 1 must wait at previous station
+                waitingTrainId = train1Id;
+                resolution = DispatchReport.Conflict.ResolutionType.WAIT_AT_PREVIOUS_STATION;
+                description = String.format(
+                    "Train %s arrives first at segment %s. Train %s should wait at previous station %s (no siding available).",
+                    train2Id, segmentId, train1Id, previousStation1.getId());
+            }
+        }
+
+        // C5: Create conflict with detailed crossing operation information
+        return new DispatchReport.Conflict(
             train1Id,
             train2Id,
             segmentId,
-            Conflict.ConflictType.OVERLAPPING_SEGMENT,
+            DispatchReport.Conflict.ConflictType.OVERLAPPING_SEGMENT,
             resolution,
-            description
+            description,
+            crossingStation != null ? crossingStation.getId() : null,
+            waitingTrainId,
+            waitTimeMinutes
         );
     }
 
@@ -279,14 +334,14 @@ public class SchedulerService {
      * @param conflicts the list of conflicts
      * @return the summary
      */
-    private DispatchReport.Summary generateSummary(List<TrainSchedule> schedules, List<Conflict> conflicts) {
+    private DispatchReport.Summary generateSummary(List<DispatchReport.TrainSchedule> schedules, List<DispatchReport.Conflict> conflicts) {
         int totalTrains = schedules.size();
         int numberOfConflicts = conflicts.size();
         int resolvableConflicts = 0;
         int unsolvableConflicts = 0;
 
-        for (Conflict conflict : conflicts) {
-            if (conflict.getResolution() == Conflict.ResolutionType.UNSOLVABLE) {
+        for (DispatchReport.Conflict conflict : conflicts) {
+            if (conflict.getResolution() == DispatchReport.Conflict.ResolutionType.UNSOLVABLE) {
                 unsolvableConflicts++;
             } else {
                 resolvableConflicts++;

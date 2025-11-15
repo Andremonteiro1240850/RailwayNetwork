@@ -31,18 +31,18 @@ public class TravelTimeController {
             dataLoader.loadAllData();
             this.facilities.addAll(dataLoader.getStations());
             this.lineSegments.addAll(dataLoader.getLineSegments());
-            System.out.println("✅ CSV data loaded successfully!");
+            System.out.println("  CSV data loaded successfully!");
             System.out.println("   Stations: " + this.facilities.size());
             System.out.println("   Line segments: " + this.lineSegments.size());
         } catch (IOException e) {
-            System.err.println("❌ CRITICAL ERROR: Cannot load railway data from CSV files!");
+            System.err.println("CRITICAL ERROR: Cannot load railway data from CSV files!");
             System.err.println("Error details: " + e.getMessage());
             System.err.println("Please check that the following files exist:");
             System.err.println("  - train_station_dataset/facility.csv");
             System.err.println("  - train_station_dataset/line.csv");
             throw new RuntimeException("Failed to load railway data", e);
         } catch (Exception e) {
-            System.err.println("❌ CRITICAL ERROR: Unexpected error loading railway data!");
+            System.err.println("CRITICAL ERROR: Unexpected error loading railway data!");
             System.err.println("Error details: " + e.getMessage());
             e.printStackTrace();
             throw new RuntimeException("Failed to load railway data", e);

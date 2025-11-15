@@ -83,57 +83,115 @@ public class Main {
     private static boolean showRoleLoginMenu() {
         while (true) {
             System.out.println("\n=== LOGIN ===");
-            System.out.println("1. Login as a Terminal Operator");
-            System.out.println("2. Login as a Warehouse Planner");
-            System.out.println("3. Login as a Planner");
-            System.out.println("4. Login as a Picker");
-            System.out.println("5. Login as a Quality Operator");
-            System.out.println("6. Login as a Traffic Dispatcher");
-            System.out.println("7. Login as a Planner to loockup for Stations");
-
-            System.out.println("8. Back");
+            System.out.println("1. Cargo Handling & Terminal Operations");
+            System.out.println("2. Spatial Indexing & Geographical Queries");
+            System.out.println("3. Back");
 
             System.out.print("Select option: ");
             String choice = scanner.nextLine().trim();
 
             switch (choice) {
                 case "1":
-                    // Terminal Operator -> Wagons Unloading UI
-                    wagonsUnloading();
-                    // After wagons unloading, return to login menu (continue loop)
+                    // Cargo Handling & Terminal Operations
+                    if (!showCargoHandlingMenu()) {
+                        continue; // User selected back, return to main login menu
+                    }
                     break;
                 case "2":
-                    // Warehouse Planner -> Order Eligibility & Allocation
-                    orderEligibilityAllocation();
-                    // After order eligibility, return to login menu (continue loop)
+                    // Spatial Indexing & Geographical Queries
+                    if (!showSpatialIndexingMenu()) {
+                        continue; // User selected back, return to main login menu
+                    }
                     break;
                 case "3":
-                    // Planner -> Picking Plans
-                    pickingPlans();
-                    // After picking plans, return to login menu (continue loop)
-                    break;
-                case "4":
-                    // Picker -> Pick Path Sequencing
-                    pickPathSequencing();
-                    // After pick path sequencing, return to login menu (continue loop)
-                    break;
-                case "5":
+                    return false; // Back selecionado
+                default:
+                    System.out.println("Invalid option!");
+            }
+        }
+    }
+
+    /**
+     * Shows the Cargo Handling & Terminal Operations menu
+     */
+    private static boolean showCargoHandlingMenu() {
+        while (true) {
+            System.out.println("\n=== CARGO HANDLING & TERMINAL OPERATIONS ===");
+            System.out.println("1. Login as a Quality Operator");
+            System.out.println("2. Login as a Planner");
+            System.out.println("3. Login as a Picker");
+            System.out.println("4. Login as a Warehouse Planner");
+            System.out.println("5. Login as a Terminal Operator");
+            System.out.println("6. Login as a Traffic Dispatcher");
+            System.out.println("7. Back");
+
+            System.out.print("Select option: ");
+            String choice = scanner.nextLine().trim();
+
+            switch (choice) {
+                case "1":
                     // Quality Operator -> show main menu directly
                     qualityOperatorMain();
-                    // After quality operator, return to login menu (continue loop)
+                    // After quality operator, return to menu (continue loop)
+                    break;
+                case "2":
+                    // Planner -> Picking Plans
+                    pickingPlans();
+                    // After picking plans, return to menu (continue loop)
+                    break;
+                case "3":
+                    // Picker -> Pick Path Sequencing
+                    pickPathSequencing();
+                    // After pick path sequencing, return to menu (continue loop)
+                    break;
+                case "4":
+                    // Warehouse Planner -> Order Eligibility & Allocation
+                    orderEligibilityAllocation();
+                    // After order eligibility, return to menu (continue loop)
+                    break;
+                case "5":
+                    // Terminal Operator -> Wagons Unloading UI
+                    wagonsUnloading();
+                    // After wagons unloading, return to menu (continue loop)
                     break;
                 case "6":
                     // Traffic Dispatcher -> Travel Time Calculation
                     travelTimeCalculation();
-                    // After travel time calculation, return to login menu (continue loop)
+                    // After travel time calculation, return to menu (continue loop)
                     break;
                 case "7":
+                    return false; // Back selecionado
+                default:
+                    System.out.println("Invalid option!");
+            }
+        }
+    }
+
+    /**
+     * Shows the Spatial Indexing & Geographical Queries menu
+     */
+    private static boolean showSpatialIndexingMenu() {
+        while (true) {
+            System.out.println("\n=== SPATIAL INDEXING & GEOGRAPHICAL QUERIES ===");
+            System.out.println("1. Login as a Planner to lookup for Stations");
+            System.out.println("2. Login as a Freight Manager");
+            System.out.println("3. Back");
+
+            System.out.print("Select option: ");
+            String choice = scanner.nextLine().trim();
+
+            switch (choice) {
+                case "1":
                     // Planner -> Station Lookup
                     stationLookup();
-                    // After station lookup, return to login menu (continue loop)
+                    // After station lookup, return to menu (continue loop)
                     break;
-
-                case "8":
+                case "2":
+                    // Freight Manager -> Train Dispatch Scheduler (USLP07)
+                    freightManager();
+                    // After freight manager, return to menu (continue loop)
+                    break;
+                case "3":
                     return false; // Back selecionado
                 default:
                     System.out.println("Invalid option!");
@@ -299,5 +357,16 @@ public class Main {
             System.err.println("ERROR in stationLookup: " + e.getMessage());
             e.printStackTrace();
         }
+    }
+    
+    /**
+     * Freight Manager - Train Dispatch Scheduler (USLP07)
+     */
+    private static void freightManager() {
+        System.out.println("\n=== FREIGHT MANAGER - TRAIN DISPATCH SCHEDULER (USLP07) ===");
+        
+        DispatchController controller = new DispatchController();
+        SchedulerUI ui = new SchedulerUI(controller);
+        ui.showMainMenu();
     }
 }

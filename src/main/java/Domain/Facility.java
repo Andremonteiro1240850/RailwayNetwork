@@ -212,6 +212,18 @@ public class Facility {
         return latitude != null && longitude != null;
     }
     
+    /**
+     * Checks if this station has a siding (desvio) for train crossings.
+     * A siding allows trains to pass each other on single-track segments.
+     * By default, main stations are assumed to have sidings.
+     *
+     * @return true if the station has a siding, false otherwise
+     */
+    public boolean hasSiding() {
+        // Main stations typically have sidings for train crossings
+        return isMainStation != null && isMainStation;
+    }
+    
     @Override
     public boolean equals(Object obj) {
         if (this == obj) return true;

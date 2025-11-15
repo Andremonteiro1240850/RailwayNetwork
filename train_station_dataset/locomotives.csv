@@ -1,0 +1,10 @@
+locomotiveId,type,maxSpeedKmH,gauge,powerKW
+L001,electric,120.0,1668.0,3000.0
+L002,diesel,100.0,1668.0,2500.0
+L003,electric,160.0,1668.0,5000.0
+L004,diesel,80.0,1668.0,2000.0
+L005,electric,100.0,1668.0,2800.0
+L006,diesel,60.0,1668.0,1500.0
+L007,electric,200.0,1668.0,6000.0
+L008,diesel,90.0,1668.0,2200.0
+

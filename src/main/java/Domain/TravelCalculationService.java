@@ -148,6 +148,53 @@ public class TravelCalculationService {
     }
 
     /**
+     * Calculates the estimated travel time for a train between two stations.
+     * This method implements C3 of USLP07: considers track limitations, combined power of locomotives, and weight.
+     * <p>
+     * The calculation considers:
+     * - Track speed limit (if present)
+     * - Combined power of all locomotives
+     * - Total weight of the train (locomotives + wagons)
+     *
+     * @param startFacility the starting station
+     * @param endFacility   the ending station
+     * @param train        the train with locomotives and weight information
+     * @return the travel time in hours
+     * @throws IllegalArgumentException   if any parameter is null
+     * @throws IncompatibleGaugeException if locomotive gauge is incompatible with segment gauge
+     * @throws IllegalStateException      if no direct connection exists between the stations
+     */
+    public double calculateTravelTime(Facility startFacility, Facility endFacility, Train train) {
+        if (startFacility == null) {
+            throw new IllegalArgumentException("Start station cannot be null");
+        }
+        if (endFacility == null) {
+            throw new IllegalArgumentException("End station cannot be null");
+        }
+        if (train == null) {
+            throw new IllegalArgumentException("Train cannot be null");
+        }
+        
+        // Find the line segment connecting the two stations
+        LineSegment segment = findConnectingSegment(startFacility, endFacility);
+        if (segment == null) {
+            throw new IllegalStateException("No direct connection found between stations");
+        }
+        
+        // Check gauge compatibility (using primary locomotive)
+        Locomotive primaryLocomotive = train.getPrimaryLocomotive();
+        if (!primaryLocomotive.isGaugeCompatible(segment.getGauge())) {
+            throw new IncompatibleGaugeException(primaryLocomotive.getGauge(), segment.getGauge());
+        }
+        
+        // Calculate effective speed considering all factors (C3)
+        double effectiveSpeed = train.calculateEffectiveSpeed(segment);
+        
+        // Calculate travel time: distance / effective speed
+        return segment.getLengthKm() / effectiveSpeed;
+    }
+
+    /**
      * Formats travel time in a human-readable format.
      *
      * @param travelTimeHours the travel time in hours

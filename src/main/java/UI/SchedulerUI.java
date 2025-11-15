@@ -9,7 +9,7 @@ import java.util.*;
 
 /**
  * User interface for train dispatch scheduling.
- * This UI implements the CLI interaction for USPL07 - Train Dispatch Scheduler.
+ * This UI implements the CLI interaction for Train Dispatch Scheduler.
  *
  * @author Development Team
  * @version 1.0
@@ -20,6 +20,8 @@ public class SchedulerUI {
     private final Scanner scanner;
     private final List<Facility> facilities;
     private final List<Locomotive> locomotives;
+    private final List<Wagon> wagons;
+    private final RailwayDataLoader dataLoader;
 
     /**
      * Constructs a new SchedulerUI with the specified controller.
@@ -30,7 +32,29 @@ public class SchedulerUI {
         this.controller = controller;
         this.scanner = new Scanner(System.in);
         this.facilities = controller.getStations();
-        this.locomotives = createMockLocomotives();
+        this.dataLoader = new RailwayDataLoader();
+        
+        // Load locomotives and wagons from CSV
+        List<Locomotive> loadedLocomotives;
+        List<Wagon> loadedWagons;
+        
+        try {
+            loadedLocomotives = dataLoader.loadLocomotivesFromCSV("train_station_dataset/locomotives.csv");
+            loadedWagons = dataLoader.loadWagonsFromCSV("train_station_dataset/wagons.csv");
+            
+            if (loadedLocomotives.isEmpty()) {
+                System.out.println("WARNING: No locomotives loaded from CSV, using mock data.");
+                loadedLocomotives = createMockLocomotives();
+            }
+        } catch (Exception e) {
+            System.out.println("WARNING: Error loading data from CSV: " + e.getMessage());
+            System.out.println("Using mock locomotives.");
+            loadedLocomotives = createMockLocomotives();
+            loadedWagons = new ArrayList<>();
+        }
+        
+        this.locomotives = loadedLocomotives;
+        this.wagons = loadedWagons;
     }
 
     /**
@@ -39,12 +63,13 @@ public class SchedulerUI {
     public void showMainMenu() {
         while (true) {
             System.out.println("\n" + StringUtils.repeat("=", 60));
-            System.out.println("Train Dispatch Scheduler (USPL07)");
+            System.out.println("Train Dispatch Scheduler");
             System.out.println(StringUtils.repeat("=", 60));
             System.out.println("1. Dispatch Trains");
             System.out.println("2. View Available Stations");
             System.out.println("3. View Available Locomotives");
-            System.out.println("4. Back to Main Menu");
+            System.out.println("4. View Available Wagons");
+            System.out.println("5. Back to Main Menu");
             
             System.out.print("Select option: ");
             String choice = scanner.nextLine().trim();
@@ -60,9 +85,12 @@ public class SchedulerUI {
                     showAvailableLocomotives();
                     break;
                 case "4":
+                    showAvailableWagons();
+                    break;
+                case "5":
                     return;
                 default:
-                    System.out.println("❌ Invalid option! Please try again.");
+                    System.out.println("ERROR: Invalid option! Please try again.");
             }
         }
     }
@@ -93,42 +121,73 @@ public class SchedulerUI {
             displayDispatchReport(report);
 
         } catch (Exception e) {
-            System.out.println("❌ An error occurred: " + e.getMessage());
+            System.out.println("\nERROR: An error occurred: " + e.getMessage());
             e.printStackTrace();
         }
     }
 
     /**
      * Collects train information from the user.
+     * First asks how many trains to create, then collects information for each train.
      *
      * @return the list of trains to dispatch
      */
     private List<Train> collectTrains() {
         List<Train> trains = new ArrayList<>();
         
-        System.out.println("Enter train information. Press Enter with empty train ID to finish.");
-        
+        // Ask how many trains to create
+        int numTrains = 0;
         while (true) {
-            System.out.println("\n" + StringUtils.repeat("-", 40));
-            System.out.print("Train ID (or press Enter to finish): ");
-            String trainId = scanner.nextLine().trim();
+            System.out.println("\nHow many trains do you want to create?");
+            System.out.print("Number of trains: ");
+            String numStr = scanner.nextLine().trim();
             
-            if (trainId.isEmpty()) {
-                break;
-            }
-
             try {
-                Train train = collectTrainInfo(trainId);
-                if (train != null) {
-                    trains.add(train);
-                    System.out.println("✅ Train " + trainId + " added successfully!");
+                numTrains = Integer.parseInt(numStr);
+                if (numTrains < 1) {
+                    System.out.println("ERROR: Must create at least 1 train.");
+                    continue;
                 }
-            } catch (Exception e) {
-                System.out.println("❌ Error creating train: " + e.getMessage());
-                System.out.print("Do you want to try again? (y/n): ");
-                String retry = scanner.nextLine().trim().toLowerCase();
-                if (!retry.equals("y") && !retry.equals("yes")) {
-                    break;
+                break;
+            } catch (NumberFormatException e) {
+                System.out.println("ERROR: Invalid number. Please enter a positive integer.");
+            }
+        }
+        
+        System.out.println("\n" + StringUtils.repeat("=", 60));
+        System.out.println("CREATING " + numTrains + " TRAIN(S)");
+        System.out.println(StringUtils.repeat("=", 60));
+        
+        // Collect information for each train
+        for (int i = 1; i <= numTrains; i++) {
+            System.out.println("\n" + StringUtils.repeat("-", 60));
+            System.out.println("TRAIN " + i + " of " + numTrains);
+            System.out.println(StringUtils.repeat("-", 60));
+            
+            while (true) {
+                System.out.print("Train ID: ");
+                String trainId = scanner.nextLine().trim();
+                
+                if (trainId.isEmpty()) {
+                    System.out.println("ERROR: Train ID cannot be empty.");
+                    continue;
+                }
+
+                try {
+                    Train train = collectTrainInfo(trainId, trains);
+                    if (train != null) {
+                        trains.add(train);
+                        System.out.println("\n[SUCCESS] Train " + trainId + " created successfully!");
+                        break;
+                    }
+                } catch (Exception e) {
+                    System.out.println("\nERROR: Error creating train: " + e.getMessage());
+                    System.out.print("Do you want to try again? (y/n): ");
+                    String retry = scanner.nextLine().trim().toLowerCase();
+                    if (!retry.equals("y") && !retry.equals("yes")) {
+                        System.out.println("Skipping this train. Continuing with next train...");
+                        break;
+                    }
                 }
             }
         }
@@ -138,38 +197,56 @@ public class SchedulerUI {
 
     /**
      * Collects information for a single train.
+     * User manually selects locomotives and wagons from CSV, and enters the route.
+     * Validates that locomotives are not being used by other trains at the same time.
      *
      * @param trainId the train ID
+     * @param existingTrains the list of trains already created (for locomotive validation)
      * @return the train object, or null if cancelled
      */
-    private Train collectTrainInfo(String trainId) {
+    private Train collectTrainInfo(String trainId, List<Train> existingTrains) {
         // Collect route
         List<Facility> route = collectRoute();
         if (route == null || route.size() < 2) {
-            System.out.println("❌ Route must contain at least 2 stations.");
+            System.out.println("\nERROR: Route must contain at least 2 stations.");
             return null;
         }
 
-        // Collect locomotives
-        List<Locomotive> locomotives = collectLocomotives();
-        if (locomotives == null || locomotives.isEmpty()) {
-            System.out.println("❌ Train must have at least one locomotive.");
-            return null;
-        }
-
-        // Collect departure time
+        // Collect departure time first (needed for locomotive validation)
         LocalDateTime departureTime = collectDepartureTime();
         if (departureTime == null) {
             return null;
         }
 
-        // Collect total weight
-        double totalWeight = collectTotalWeight();
+        // Use wrapper array to allow modification of departure time during locomotive selection
+        LocalDateTime[] departureTimeWrapper = new LocalDateTime[]{departureTime};
 
-        // Collect priority (optional)
-        Integer priority = collectPriority();
+        // Collect locomotives from CSV with validation
+        List<Locomotive> selectedLocomotives = collectLocomotivesWithValidation(existingTrains, route.get(0), departureTimeWrapper);
+        if (selectedLocomotives == null || selectedLocomotives.isEmpty()) {
+            System.out.println("\nERROR: Train must have at least one locomotive.");
+            return null;
+        }
 
-        return new Train(trainId, route, locomotives, departureTime, totalWeight, priority);
+        // Update departure time in case it was changed during locomotive selection
+        departureTime = departureTimeWrapper[0];
+
+        // Use wrapper array to allow modification of departure time during wagon selection
+        LocalDateTime[] departureTimeWrapperForWagons = new LocalDateTime[]{departureTime};
+
+        // Collect wagons from CSV with validation
+        List<Wagon> selectedWagons = collectWagonsWithValidation(existingTrains, route.get(0), departureTimeWrapperForWagons);
+        if (selectedWagons == null) {
+            return null;
+        }
+
+        // Update departure time in case it was changed during wagon selection
+        departureTime = departureTimeWrapperForWagons[0];
+
+        // Calculate total weight from wagons (empty or loaded)
+        double totalWeight = calculateTotalWeight(selectedWagons);
+
+        return new Train(trainId, route, selectedLocomotives, selectedWagons, departureTime, totalWeight);
     }
 
     /**
@@ -180,8 +257,9 @@ public class SchedulerUI {
     private List<Facility> collectRoute() {
         List<Facility> route = new ArrayList<>();
         
-        System.out.println("Enter route stations (at least 2 stations, each pair must be directly connected).");
+        System.out.println("\nEnter route stations (at least 2 stations, each pair must be directly connected).");
         System.out.println("Press Enter with empty station ID to finish route.");
+        System.out.println();
         
         while (true) {
             System.out.print("Station ID (or press Enter to finish route): ");
@@ -189,7 +267,8 @@ public class SchedulerUI {
             
             if (stationId.isEmpty()) {
                 if (route.size() < 2) {
-                    System.out.println("❌ Route must contain at least 2 stations.");
+                    System.out.println("ERROR: Route must contain at least 2 stations.");
+                    System.out.println();
                     continue;
                 }
                 break;
@@ -197,61 +276,496 @@ public class SchedulerUI {
 
             Facility station = controller.getStationById(stationId);
             if (station == null) {
-                System.out.println("❌ Station with ID '" + stationId + "' not found!");
+                System.out.println("ERROR: Station with ID '" + stationId + "' not found!");
                 System.out.print("Do you want to try again? (y/n): ");
                 String retry = scanner.nextLine().trim().toLowerCase();
                 if (!retry.equals("y") && !retry.equals("yes")) {
                     return null;
                 }
+                System.out.println();
                 continue;
             }
 
             route.add(station);
-            System.out.println("✅ Station " + station.getName() + " (" + stationId + ") added to route.");
+            System.out.println("Station " + station.getName() + " (" + stationId + ") added to route.");
+            System.out.println();
         }
 
         return route;
     }
 
     /**
-     * Collects locomotives from the user.
+     * Collects locomotives from the user (from CSV).
      *
      * @return the list of locomotives
      */
     private List<Locomotive> collectLocomotives() {
         List<Locomotive> selectedLocomotives = new ArrayList<>();
         
-        System.out.println("Enter locomotive IDs (at least 1 locomotive).");
-        System.out.println("Press Enter with empty locomotive ID to finish.");
-        
+        // Ask how many locomotives
+        int numLocomotives = 0;
         while (true) {
-            System.out.print("Locomotive ID (or press Enter to finish): ");
-            String locomotiveId = scanner.nextLine().trim();
+            System.out.println("\nHow many locomotives do you want? (at least 1)");
+            System.out.print("Number of locomotives: ");
+            String numStr = scanner.nextLine().trim();
             
-            if (locomotiveId.isEmpty()) {
-                if (selectedLocomotives.isEmpty()) {
-                    System.out.println("❌ Train must have at least one locomotive.");
+            try {
+                numLocomotives = Integer.parseInt(numStr);
+                if (numLocomotives < 1) {
+                    System.out.println("ERROR: Must have at least 1 locomotive.");
+                    System.out.println();
                     continue;
                 }
                 break;
+            } catch (NumberFormatException e) {
+                System.out.println("ERROR: Invalid number. Please enter a positive integer.");
+                System.out.println();
+            }
+        }
+        
+        System.out.println();
+        if (!locomotives.isEmpty()) {
+            System.out.println("Available Locomotives:");
+            for (Locomotive loco : locomotives) {
+                System.out.printf("  - %s (%s, %.0f km/h, %.0fmm gauge)%n",
+                    loco.getId(), loco.getType(), loco.getMaxSpeedKmH(), loco.getGauge());
+            }
+            System.out.println();
+        }
+        
+        for (int i = 0; i < numLocomotives; i++) {
+            System.out.print("Locomotive " + (i + 1) + " ID: ");
+            String locomotiveId = scanner.nextLine().trim();
+            
+            if (locomotiveId.isEmpty()) {
+                System.out.println("ERROR: Locomotive ID cannot be empty.");
+                i--; // Retry this iteration
+                System.out.println();
+                continue;
             }
 
             Locomotive locomotive = findLocomotiveById(locomotiveId);
             if (locomotive == null) {
-                System.out.println("❌ Locomotive with ID '" + locomotiveId + "' not found!");
+                System.out.println("ERROR: Locomotive with ID '" + locomotiveId + "' not found!");
                 System.out.print("Do you want to try again? (y/n): ");
                 String retry = scanner.nextLine().trim().toLowerCase();
                 if (!retry.equals("y") && !retry.equals("yes")) {
                     return null;
                 }
+                i--; // Retry this iteration
+                System.out.println();
                 continue;
             }
 
             selectedLocomotives.add(locomotive);
-            System.out.println("✅ Locomotive " + locomotive.getId() + " added.");
+            System.out.println("Locomotive " + locomotive.getId() + " added.");
+            System.out.println();
         }
 
         return selectedLocomotives;
+    }
+
+    /**
+     * Collects locomotives from the user with validation to ensure they are not being used by other trains.
+     *
+     * @param existingTrains the list of trains already created
+     * @param departureStation the departure station of the new train
+     * @param departureTimeWrapper array with one element containing the departure time (can be modified if user chooses to change it)
+     * @return the list of selected locomotives, or null if cancelled or if user wants to change departure time
+     */
+    private List<Locomotive> collectLocomotivesWithValidation(List<Train> existingTrains, Facility departureStation, LocalDateTime[] departureTimeWrapper) {
+        List<Locomotive> selectedLocomotives = new ArrayList<>();
+        
+        // Ask how many locomotives
+        int numLocomotives = 0;
+        while (true) {
+            System.out.println("\nHow many locomotives do you want? (at least 1)");
+            System.out.print("Number of locomotives: ");
+            String numStr = scanner.nextLine().trim();
+            
+            try {
+                numLocomotives = Integer.parseInt(numStr);
+                if (numLocomotives < 1) {
+                    System.out.println("ERROR: Must have at least 1 locomotive.");
+                    System.out.println();
+                    continue;
+                }
+                break;
+            } catch (NumberFormatException e) {
+                System.out.println("ERROR: Invalid number. Please enter a positive integer.");
+                System.out.println();
+            }
+        }
+        
+        System.out.println();
+        if (!locomotives.isEmpty()) {
+            System.out.println("Available Locomotives:");
+            for (Locomotive loco : locomotives) {
+                System.out.printf("  - %s (%s, %.0f km/h, %.0fmm gauge)%n",
+                    loco.getId(), loco.getType(), loco.getMaxSpeedKmH(), loco.getGauge());
+            }
+            System.out.println();
+        }
+        
+        for (int i = 0; i < numLocomotives; i++) {
+            while (true) {
+                System.out.print("Locomotive " + (i + 1) + " ID: ");
+                String locomotiveId = scanner.nextLine().trim();
+                
+                if (locomotiveId.isEmpty()) {
+                    System.out.println("ERROR: Locomotive ID cannot be empty.");
+                    System.out.println();
+                    continue;
+                }
+
+                Locomotive locomotive = findLocomotiveById(locomotiveId);
+                if (locomotive == null) {
+                    System.out.println("ERROR: Locomotive with ID '" + locomotiveId + "' not found!");
+                    System.out.print("Do you want to try again? (y/n): ");
+                    String retry = scanner.nextLine().trim().toLowerCase();
+                    if (!retry.equals("y") && !retry.equals("yes")) {
+                        return null;
+                    }
+                    System.out.println();
+                    continue;
+                }
+
+                // Validate locomotive availability
+                String validationError = validateLocomotiveAvailability(locomotive, existingTrains, departureStation, departureTimeWrapper[0]);
+                if (validationError != null) {
+                    System.out.println("ERROR: " + validationError);
+                    System.out.println();
+                    System.out.println("What would you like to do?");
+                    System.out.println("1. Change departure time");
+                    System.out.println("2. Choose a different locomotive");
+                    System.out.print("Select option (1 or 2): ");
+                    String choice = scanner.nextLine().trim();
+                    
+                    if (choice.equals("1")) {
+                        // User wants to change departure time
+                        LocalDateTime newDepartureTime = collectDepartureTime();
+                        if (newDepartureTime == null) {
+                            return null; // User cancelled
+                        }
+                        departureTimeWrapper[0] = newDepartureTime;
+                        // Re-validate with new departure time
+                        validationError = validateLocomotiveAvailability(locomotive, existingTrains, departureStation, departureTimeWrapper[0]);
+                        if (validationError != null) {
+                            System.out.println("ERROR: " + validationError);
+                            System.out.println("The locomotive is still not available at the new departure time.");
+                            System.out.print("Do you want to try again? (y/n): ");
+                            String retry = scanner.nextLine().trim().toLowerCase();
+                            if (!retry.equals("y") && !retry.equals("yes")) {
+                                return null;
+                            }
+                            System.out.println();
+                            continue;
+                        }
+                        // Locomotive is now available with new departure time
+                    } else if (choice.equals("2")) {
+                        // User wants to choose a different locomotive
+                        System.out.println();
+                        continue;
+                    } else {
+                        System.out.println("ERROR: Invalid option. Please choose 1 or 2.");
+                        System.out.println();
+                        continue;
+                    }
+                }
+
+                selectedLocomotives.add(locomotive);
+                System.out.println("Locomotive " + locomotive.getId() + " added.");
+                System.out.println();
+                break;
+            }
+        }
+
+        return selectedLocomotives;
+    }
+
+    /**
+     * Validates if a locomotive is available for use at the specified departure time and station.
+     *
+     * @param locomotive the locomotive to validate
+     * @param existingTrains the list of trains already created
+     * @param departureStation the departure station of the new train
+     * @param departureTime the departure time of the new train
+     * @return null if available, error message if not available
+     */
+    private String validateLocomotiveAvailability(Locomotive locomotive, List<Train> existingTrains, 
+                                                   Facility departureStation, LocalDateTime departureTime) {
+        if (existingTrains == null || existingTrains.isEmpty()) {
+            return null; // No existing trains, locomotive is available
+        }
+
+        TravelCalculationService travelService = controller.getTravelTimeController().getService();
+
+        for (Train existingTrain : existingTrains) {
+            // Check if this locomotive is used in the existing train
+            if (!existingTrain.getLocomotives().contains(locomotive)) {
+                continue; // Locomotive not used in this train
+            }
+
+            // Calculate when the locomotive will be available
+            LocalDateTime locomotiveAvailableTime = calculateLocomotiveAvailableTime(
+                locomotive, existingTrain, departureStation, travelService);
+
+            // Check if departure time is after locomotive becomes available
+            if (departureTime.isBefore(locomotiveAvailableTime)) {
+                return String.format(
+                    "Locomotive %s is already assigned to train %s. " +
+                    "It will be available at %s (after completing its journey and traveling to %s). " +
+                    "Please choose a departure time after %s or select a different locomotive.",
+                    locomotive.getId(),
+                    existingTrain.getTrainId(),
+                    locomotiveAvailableTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")),
+                    departureStation.getId(),
+                    locomotiveAvailableTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))
+                );
+            }
+        }
+
+        return null; // Locomotive is available
+    }
+
+    /**
+     * Calculates when a locomotive will be available at a specific station.
+     * This considers: completion time of current journey + travel time to new departure station.
+     *
+     * @param locomotive the locomotive
+     * @param train the train currently using the locomotive
+     * @param targetStation the station where the locomotive needs to be available
+     * @param travelService the travel calculation service
+     * @return the time when the locomotive will be available at the target station
+     */
+    private LocalDateTime calculateLocomotiveAvailableTime(Locomotive locomotive, Train train,
+                                                           Facility targetStation, TravelCalculationService travelService) {
+        // Get the train's route
+        List<Facility> route = train.getRoute();
+        if (route.isEmpty()) {
+            return train.getDeparturePlannedDateTime(); // Should not happen, but safety check
+        }
+
+        // Calculate total travel time for the train
+        double totalTravelTimeHours = 0.0;
+        for (int i = 0; i < route.size() - 1; i++) {
+            try {
+                double segmentTime = travelService.calculateTravelTime(route.get(i), route.get(i + 1), locomotive);
+                totalTravelTimeHours += segmentTime;
+            } catch (Exception e) {
+                // If calculation fails, use a simple estimate
+                // This shouldn't happen if routes are valid, but handle gracefully
+                return train.getDeparturePlannedDateTime().plusHours(24); // Conservative estimate
+            }
+        }
+
+        // Time when train completes its journey (arrives at final station)
+        LocalDateTime journeyEndTime = train.getDeparturePlannedDateTime().plusMinutes((long)(totalTravelTimeHours * 60));
+
+        // Get the final station of the train's route
+        Facility finalStation = route.get(route.size() - 1);
+
+        // If target station is the same as final station, locomotive is available immediately after journey
+        if (finalStation.getId().equals(targetStation.getId())) {
+            return journeyEndTime;
+        }
+
+        // Calculate travel time from final station to target station
+        double travelTimeToTargetHours = 0.0;
+        try {
+            travelTimeToTargetHours = travelService.calculateTravelTime(finalStation, targetStation, locomotive);
+        } catch (Exception e) {
+            // If stations are not directly connected, try to find a path through the route
+            // If the target station is in the train's route, calculate time to return
+            int targetIndex = -1;
+            for (int i = 0; i < route.size(); i++) {
+                if (route.get(i).getId().equals(targetStation.getId())) {
+                    targetIndex = i;
+                    break;
+                }
+            }
+            
+            if (targetIndex >= 0 && targetIndex < route.size() - 1) {
+                // Target station is in the route, calculate return time
+                // Calculate time from final station back to target station (reverse path)
+                for (int i = route.size() - 1; i > targetIndex; i--) {
+                    try {
+                        double segmentTime = travelService.calculateTravelTime(route.get(i), route.get(i - 1), locomotive);
+                        travelTimeToTargetHours += segmentTime;
+                    } catch (Exception ex) {
+                        // If we can't calculate return path, assume locomotive is already at target
+                        // (it passed through there during the journey)
+                        travelTimeToTargetHours = 0.0;
+                        break;
+                    }
+                }
+            } else {
+                // Target station not in route and not directly connected
+                // Assume locomotive needs to return to departure station (first station of route)
+                // This is a reasonable assumption for most cases
+                if (route.get(0).getId().equals(targetStation.getId())) {
+                    // Target is the departure station, calculate return time
+                    for (int i = route.size() - 1; i > 0; i--) {
+                        try {
+                            double segmentTime = travelService.calculateTravelTime(route.get(i), route.get(i - 1), locomotive);
+                            travelTimeToTargetHours += segmentTime;
+                        } catch (Exception ex) {
+                            // Can't calculate return path, use 0 (shouldn't happen for valid routes)
+                            travelTimeToTargetHours = 0.0;
+                            break;
+                        }
+                    }
+                } else {
+                    // Target station is completely different and not connected
+                    // This shouldn't happen in normal operation, but if it does, 
+                    // assume no additional travel time needed (locomotive stays at final station)
+                    travelTimeToTargetHours = 0.0;
+                }
+            }
+        }
+
+        // Locomotive is available after completing journey + traveling to target station
+        return journeyEndTime.plusMinutes((long)(travelTimeToTargetHours * 60));
+    }
+
+    /**
+     * Validates if a wagon is available for use at the specified departure time and station.
+     *
+     * @param wagon the wagon to validate
+     * @param existingTrains the list of trains already created
+     * @param departureStation the departure station of the new train
+     * @param departureTime the departure time of the new train
+     * @return null if available, error message if not available
+     */
+    private String validateWagonAvailability(Wagon wagon, List<Train> existingTrains, 
+                                             Facility departureStation, LocalDateTime departureTime) {
+        if (existingTrains == null || existingTrains.isEmpty()) {
+            return null; // No existing trains, wagon is available
+        }
+
+        TravelCalculationService travelService = controller.getTravelTimeController().getService();
+
+        for (Train existingTrain : existingTrains) {
+            // Check if this wagon is used in the existing train
+            if (!existingTrain.getWagons().contains(wagon)) {
+                continue; // Wagon not used in this train
+            }
+
+            // Calculate when the wagon will be available
+            // Wagons travel with the train, so we use the primary locomotive for speed calculation
+            LocalDateTime wagonAvailableTime = calculateWagonAvailableTime(
+                wagon, existingTrain, departureStation, travelService);
+
+            // Check if departure time is after wagon becomes available
+            if (departureTime.isBefore(wagonAvailableTime)) {
+                return String.format(
+                    "Wagon %s is already assigned to train %s. " +
+                    "It will be available at %s (after completing its journey and traveling to %s). " +
+                    "Please choose a departure time after %s or select a different wagon.",
+                    wagon.getWagonId(),
+                    existingTrain.getTrainId(),
+                    wagonAvailableTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")),
+                    departureStation.getId(),
+                    wagonAvailableTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))
+                );
+            }
+        }
+
+        return null; // Wagon is available
+    }
+
+    /**
+     * Calculates when a wagon will be available at a specific station.
+     * Wagons travel with the train, so we calculate based on the train's journey.
+     *
+     * @param wagon the wagon
+     * @param train the train currently using the wagon
+     * @param targetStation the station where the wagon needs to be available
+     * @param travelService the travel calculation service
+     * @return the time when the wagon will be available at the target station
+     */
+    private LocalDateTime calculateWagonAvailableTime(Wagon wagon, Train train,
+                                                      Facility targetStation, TravelCalculationService travelService) {
+        // Get the train's route
+        List<Facility> route = train.getRoute();
+        if (route.isEmpty()) {
+            return train.getDeparturePlannedDateTime(); // Should not happen, but safety check
+        }
+
+        // Wagons travel with the train, so we use the train's primary locomotive for speed calculation
+        Locomotive primaryLocomotive = train.getPrimaryLocomotive();
+
+        // Calculate total travel time for the train
+        double totalTravelTimeHours = 0.0;
+        for (int i = 0; i < route.size() - 1; i++) {
+            try {
+                double segmentTime = travelService.calculateTravelTime(route.get(i), route.get(i + 1), primaryLocomotive);
+                totalTravelTimeHours += segmentTime;
+            } catch (Exception e) {
+                // If calculation fails, use a simple estimate
+                return train.getDeparturePlannedDateTime().plusHours(24); // Conservative estimate
+            }
+        }
+
+        // Time when train completes its journey (arrives at final station)
+        LocalDateTime journeyEndTime = train.getDeparturePlannedDateTime().plusMinutes((long)(totalTravelTimeHours * 60));
+
+        // Get the final station of the train's route
+        Facility finalStation = route.get(route.size() - 1);
+
+        // If target station is the same as final station, wagon is available immediately after journey
+        if (finalStation.getId().equals(targetStation.getId())) {
+            return journeyEndTime;
+        }
+
+        // Calculate travel time from final station to target station
+        // Wagons need to be transported back, so we use the locomotive speed
+        double travelTimeToTargetHours = 0.0;
+        try {
+            travelTimeToTargetHours = travelService.calculateTravelTime(finalStation, targetStation, primaryLocomotive);
+        } catch (Exception e) {
+            // If stations are not directly connected, try to find a path through the route
+            int targetIndex = -1;
+            for (int i = 0; i < route.size(); i++) {
+                if (route.get(i).getId().equals(targetStation.getId())) {
+                    targetIndex = i;
+                    break;
+                }
+            }
+            
+            if (targetIndex >= 0 && targetIndex < route.size() - 1) {
+                // Target station is in the route, calculate return time
+                for (int i = route.size() - 1; i > targetIndex; i--) {
+                    try {
+                        double segmentTime = travelService.calculateTravelTime(route.get(i), route.get(i - 1), primaryLocomotive);
+                        travelTimeToTargetHours += segmentTime;
+                    } catch (Exception ex) {
+                        travelTimeToTargetHours = 0.0;
+                        break;
+                    }
+                }
+            } else {
+                // Target station not in route and not directly connected
+                if (route.get(0).getId().equals(targetStation.getId())) {
+                    // Target is the departure station, calculate return time
+                    for (int i = route.size() - 1; i > 0; i--) {
+                        try {
+                            double segmentTime = travelService.calculateTravelTime(route.get(i), route.get(i - 1), primaryLocomotive);
+                            travelTimeToTargetHours += segmentTime;
+                        } catch (Exception ex) {
+                            travelTimeToTargetHours = 0.0;
+                            break;
+                        }
+                    }
+                } else {
+                    // Target station is completely different and not connected
+                    travelTimeToTargetHours = 0.0;
+                }
+            }
+        }
+
+        // Wagon is available after completing journey + traveling to target station
+        return journeyEndTime.plusMinutes((long)(travelTimeToTargetHours * 60));
     }
 
     /**
@@ -262,164 +776,419 @@ public class SchedulerUI {
     private LocalDateTime collectDepartureTime() {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
         
+        System.out.println();
         while (true) {
             System.out.print("Departure Date and Time (format: yyyy-MM-dd HH:mm, e.g., 2025-11-25 08:00): ");
             String dateTimeStr = scanner.nextLine().trim();
             
             if (dateTimeStr.isEmpty()) {
-                System.out.println("❌ Departure time cannot be empty!");
+                System.out.println("ERROR: Departure time cannot be empty!");
+                System.out.println();
                 continue;
             }
 
             try {
                 return LocalDateTime.parse(dateTimeStr, formatter);
             } catch (DateTimeParseException e) {
-                System.out.println("❌ Invalid date/time format! Please use yyyy-MM-dd HH:mm");
+                System.out.println("ERROR: Invalid date/time format! Please use yyyy-MM-dd HH:mm");
                 System.out.print("Do you want to try again? (y/n): ");
                 String retry = scanner.nextLine().trim().toLowerCase();
                 if (!retry.equals("y") && !retry.equals("yes")) {
                     return null;
                 }
+                System.out.println();
             }
         }
     }
 
     /**
-     * Collects the total weight from the user.
+     * Collects wagons from the user (from CSV) with validation to ensure they are not being used by other trains.
      *
-     * @return the total weight in kg
+     * @param existingTrains the list of trains already created
+     * @param departureStation the departure station of the new train
+     * @param departureTimeWrapper array with one element containing the departure time (can be modified if user chooses to change it)
+     * @return the list of selected wagons (can be empty), or null if cancelled
      */
-    private double collectTotalWeight() {
+    private List<Wagon> collectWagonsWithValidation(List<Train> existingTrains, Facility departureStation, LocalDateTime[] departureTimeWrapper) {
+        List<Wagon> selectedWagons = new ArrayList<>();
+        
+        // Ask how many wagons
+        int numWagons = 0;
         while (true) {
-            System.out.print("Total Weight (kg): ");
-            String weightStr = scanner.nextLine().trim();
+            System.out.println("\nHow many wagons do you want? (can be 0)");
+            System.out.print("Number of wagons: ");
+            String numStr = scanner.nextLine().trim();
             
-            if (weightStr.isEmpty()) {
-                return 0.0; // Default weight
-            }
-
             try {
-                double weight = Double.parseDouble(weightStr);
-                if (weight < 0) {
-                    System.out.println("❌ Weight cannot be negative!");
+                numWagons = Integer.parseInt(numStr);
+                if (numWagons < 0) {
+                    System.out.println("ERROR: Number cannot be negative.");
+                    System.out.println();
                     continue;
                 }
-                return weight;
+                break;
             } catch (NumberFormatException e) {
-                System.out.println("❌ Invalid weight format! Please enter a number.");
+                System.out.println("ERROR: Invalid number. Please enter a non-negative integer.");
+                System.out.println();
+            }
+        }
+        
+        if (numWagons == 0) {
+            System.out.println("No wagons selected.");
+            System.out.println();
+            return selectedWagons;
+        }
+        
+        System.out.println();
+        if (!wagons.isEmpty()) {
+            System.out.println("Available Wagons:");
+            for (Wagon wagon : wagons) {
+                System.out.printf("  - %s (empty: %.0f kg, max load: %.0f kg)%n",
+                    wagon.getWagonId(), wagon.getEmptyWeightKg(), wagon.getMaxLoadWeightKg());
+            }
+            System.out.println();
+        }
+        
+        for (int i = 0; i < numWagons; i++) {
+            while (true) {
+                System.out.print("Wagon " + (i + 1) + " ID: ");
+                String wagonId = scanner.nextLine().trim();
+                
+                if (wagonId.isEmpty()) {
+                    System.out.println("ERROR: Wagon ID cannot be empty.");
+                    System.out.println();
+                    continue;
+                }
+
+                Wagon wagon = findWagonById(wagonId);
+                if (wagon == null) {
+                    System.out.println("ERROR: Wagon with ID '" + wagonId + "' not found in CSV!");
+                    System.out.print("Do you want to try again? (y/n): ");
+                    String retry = scanner.nextLine().trim().toLowerCase();
+                    if (!retry.equals("y") && !retry.equals("yes")) {
+                        return null;
+                    }
+                    System.out.println();
+                    continue;
+                }
+
+                // Validate wagon availability
+                String validationError = validateWagonAvailability(wagon, existingTrains, departureStation, departureTimeWrapper[0]);
+                if (validationError != null) {
+                    System.out.println("ERROR: " + validationError);
+                    System.out.println();
+                    System.out.println("What would you like to do?");
+                    System.out.println("1. Change departure time");
+                    System.out.println("2. Choose a different wagon");
+                    System.out.print("Select option (1 or 2): ");
+                    String choice = scanner.nextLine().trim();
+                    
+                    if (choice.equals("1")) {
+                        // User wants to change departure time
+                        LocalDateTime newDepartureTime = collectDepartureTime();
+                        if (newDepartureTime == null) {
+                            return null; // User cancelled
+                        }
+                        departureTimeWrapper[0] = newDepartureTime;
+                        // Re-validate with new departure time
+                        validationError = validateWagonAvailability(wagon, existingTrains, departureStation, departureTimeWrapper[0]);
+                        if (validationError != null) {
+                            System.out.println("ERROR: " + validationError);
+                            System.out.println("The wagon is still not available at the new departure time.");
+                            System.out.print("Do you want to try again? (y/n): ");
+                            String retry = scanner.nextLine().trim().toLowerCase();
+                            if (!retry.equals("y") && !retry.equals("yes")) {
+                                return null;
+                            }
+                            System.out.println();
+                            continue;
+                        }
+                        // Wagon is now available with new departure time
+                    } else if (choice.equals("2")) {
+                        // User wants to choose a different wagon
+                        System.out.println();
+                        continue;
+                    } else {
+                        System.out.println("ERROR: Invalid option. Please choose 1 or 2.");
+                        System.out.println();
+                        continue;
+                    }
+                }
+
+                selectedWagons.add(wagon);
+                System.out.println("Wagon " + wagon.getWagonId() + " added.");
+                System.out.println();
+                break;
+            }
+        }
+
+        return selectedWagons;
+    }
+
+    /**
+     * Collects wagons from the user (from CSV).
+     *
+     * @return the list of selected wagons (can be empty)
+     */
+    private List<Wagon> collectWagons() {
+        List<Wagon> selectedWagons = new ArrayList<>();
+        
+        // Ask how many wagons
+        int numWagons = 0;
+        while (true) {
+            System.out.println("\nHow many wagons do you want? (can be 0)");
+            System.out.print("Number of wagons: ");
+            String numStr = scanner.nextLine().trim();
+            
+            try {
+                numWagons = Integer.parseInt(numStr);
+                if (numWagons < 0) {
+                    System.out.println("ERROR: Number cannot be negative.");
+                    System.out.println();
+                    continue;
+                }
+                break;
+            } catch (NumberFormatException e) {
+                System.out.println("ERROR: Invalid number. Please enter a non-negative integer.");
+                System.out.println();
+            }
+        }
+        
+        if (numWagons == 0) {
+            System.out.println("No wagons selected.");
+            System.out.println();
+            return selectedWagons;
+        }
+        
+        System.out.println();
+        if (!wagons.isEmpty()) {
+            System.out.println("Available Wagons:");
+            for (Wagon wagon : wagons) {
+                System.out.printf("  - %s (empty: %.0f kg, max load: %.0f kg)%n",
+                    wagon.getWagonId(), wagon.getEmptyWeightKg(), wagon.getMaxLoadWeightKg());
+            }
+            System.out.println();
+        }
+        
+        for (int i = 0; i < numWagons; i++) {
+            System.out.print("Wagon " + (i + 1) + " ID: ");
+            String wagonId = scanner.nextLine().trim();
+            
+            if (wagonId.isEmpty()) {
+                System.out.println("ERROR: Wagon ID cannot be empty.");
+                i--; // Retry this iteration
+                System.out.println();
+                continue;
+            }
+
+            Wagon wagon = findWagonById(wagonId);
+            if (wagon == null) {
+                System.out.println("ERROR: Wagon with ID '" + wagonId + "' not found in CSV!");
                 System.out.print("Do you want to try again? (y/n): ");
                 String retry = scanner.nextLine().trim().toLowerCase();
                 if (!retry.equals("y") && !retry.equals("yes")) {
-                    return 0.0;
+                    return null;
                 }
+                i--; // Retry this iteration
+                System.out.println();
+                continue;
             }
+
+            selectedWagons.add(wagon);
+            System.out.println("Wagon " + wagon.getWagonId() + " added.");
+            System.out.println();
         }
+
+        return selectedWagons;
     }
 
     /**
-     * Collects the priority from the user (optional).
+     * Calculates the total weight from selected wagons.
+     * Asks user if wagons are loaded or empty.
      *
-     * @return the priority, or null if not set
+     * @param selectedWagons the list of selected wagons
+     * @return the total weight in kg
      */
-    private Integer collectPriority() {
-        System.out.print("Priority (optional, press Enter to skip): ");
-        String priorityStr = scanner.nextLine().trim();
+    private double calculateTotalWeight(List<Wagon> selectedWagons) {
+        if (selectedWagons.isEmpty()) {
+            return 0.0;
+        }
         
-        if (priorityStr.isEmpty()) {
-            return null;
+        // Calculate empty weight
+        double emptyWeight = selectedWagons.stream()
+            .mapToDouble(Wagon::getEmptyWeightKg)
+            .sum();
+        
+        System.out.println("\nWagon Load Status:");
+        System.out.println("   Empty weight: " + emptyWeight + " kg");
+        System.out.print("Are wagons loaded? (y/n, default: n): ");
+        String loadedStr = scanner.nextLine().trim().toLowerCase();
+        boolean wagonsLoaded = loadedStr.equals("y") || loadedStr.equals("yes");
+        
+        double totalWeight = emptyWeight;
+        if (wagonsLoaded) {
+            // Calculate max load weight
+            double maxLoadWeight = selectedWagons.stream()
+                .mapToDouble(Wagon::getMaxLoadWeightKg)
+                .sum();
+            totalWeight += maxLoadWeight;
+            System.out.println("   Using fully loaded weight: " + totalWeight + " kg");
+        } else {
+            System.out.println("   Using empty weight: " + totalWeight + " kg");
         }
+        System.out.println();
+        
+        return totalWeight;
+    }
 
-        try {
-            return Integer.parseInt(priorityStr);
-        } catch (NumberFormatException e) {
-            System.out.println("⚠️ Invalid priority format. Priority will be set to null.");
-            return null;
-        }
+    /**
+     * Finds a wagon by its ID.
+     *
+     * @param id the wagon ID
+     * @return the wagon or null if not found
+     */
+    private Wagon findWagonById(String id) {
+        return wagons.stream()
+                .filter(wagon -> wagon.getWagonId().equalsIgnoreCase(id))
+                .findFirst()
+                .orElse(null);
     }
 
     /**
      * Displays the dispatch report with schedules, conflicts, and summary.
+     * Format: Train -> Route -> Departure time -> Estimated times per point -> Crossing operations
      *
      * @param report the dispatch report to display
      */
     private void displayDispatchReport(DispatchReport report) {
-        System.out.println("\n" + StringUtils.repeat("=", 60));
+        System.out.println("\n" + StringUtils.repeat("=", 80));
         System.out.println("DISPATCH REPORT");
-        System.out.println(StringUtils.repeat("=", 60));
+        System.out.println(StringUtils.repeat("=", 80));
 
         // Display summary
         DispatchReport.Summary summary = report.getSummary();
-        System.out.println("\n📊 SUMMARY:");
+        System.out.println();
+        System.out.println("SUMMARY:");
         System.out.println("   Total Trains Dispatched: " + summary.getTotalTrainsDispatched());
         System.out.println("   Number of Conflicts: " + summary.getNumberOfConflicts());
         System.out.println("   Resolvable Conflicts: " + summary.getNumberOfResolvableConflicts());
         System.out.println("   Unsolvable Conflicts: " + summary.getNumberOfUnsolvableConflicts());
+        System.out.println();
 
         // Display schedules for each train
-        System.out.println("\n" + StringUtils.repeat("=", 60));
-        System.out.println("TRAIN SCHEDULES");
-        System.out.println(StringUtils.repeat("=", 60));
+        System.out.println("\n" + StringUtils.repeat("=", 80));
+        System.out.println("PLANNED STATE OF EACH TRAIN");
+        System.out.println(StringUtils.repeat("=", 80));
 
-        for (TrainSchedule schedule : report.getTrainSchedules()) {
+        for (DispatchReport.TrainSchedule schedule : report.getTrainSchedules()) {
             displayTrainSchedule(schedule);
         }
 
-        // Display conflicts
+        // Display conflicts in simple lines
         if (!report.getConflicts().isEmpty()) {
-            System.out.println("\n" + StringUtils.repeat("=", 60));
-            System.out.println("CONFLICTS DETECTED");
-            System.out.println(StringUtils.repeat("=", 60));
+            System.out.println("\n" + StringUtils.repeat("=", 80));
+            System.out.println("CROSSING/CONFLICT ALERTS");
+            System.out.println(StringUtils.repeat("=", 80));
 
-            for (Conflict conflict : report.getConflicts()) {
-                displayConflict(conflict);
+            for (DispatchReport.Conflict conflict : report.getConflicts()) {
+                displayConflictSimple(conflict);
             }
         } else {
-            System.out.println("\n✅ No conflicts detected!");
+            System.out.println("\n[INFO] No conflicts detected!");
         }
     }
 
     /**
      * Displays a single train schedule.
+     * Format: Train -> Route -> Departure time -> Estimated times per point
      *
      * @param schedule the train schedule to display
      */
-    private void displayTrainSchedule(TrainSchedule schedule) {
-        System.out.println("\n" + StringUtils.repeat("-", 60));
-        System.out.println("Train: " + schedule.getTrainId());
-        System.out.println("Total Travel Time: " + 
-                         TravelCalculationService.formatTravelTime(schedule.getTotalTravelTimeHours()));
-        System.out.println(StringUtils.repeat("-", 60));
-        System.out.printf("%-15s %-25s %-15s %-10s%n", 
-                         "Station ID", "Station Name", "ETA", "Travel Time");
-        System.out.println(StringUtils.repeat("-", 60));
+    private void displayTrainSchedule(DispatchReport.TrainSchedule schedule) {
+        List<DispatchReport.TrainSchedule.StationETA> routeWithETAs = schedule.getRouteWithETAs();
+        if (routeWithETAs.isEmpty()) {
+            return;
+        }
 
-        for (TrainSchedule.StationETA eta : schedule.getRouteWithETAs()) {
+        // Get departure time (first station ETA)
+        LocalDateTime departureTime = routeWithETAs.get(0).getEta();
+        String departureTimeStr = departureTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
+
+        // Build route string
+        StringBuilder routeStr = new StringBuilder();
+        for (int i = 0; i < routeWithETAs.size(); i++) {
+            if (i > 0) routeStr.append(" -> ");
+            routeStr.append(routeWithETAs.get(i).getStation().getId());
+        }
+
+        System.out.println("\n" + StringUtils.repeat("-", 80));
+        System.out.println("TRAIN: " + schedule.getTrainId());
+        System.out.println("ROUTE: " + routeStr.toString());
+        System.out.println("DEPARTURE TIME: " + departureTimeStr);
+        System.out.println("TOTAL TRAVEL TIME: " + 
+                         TravelCalculationService.formatTravelTime(schedule.getTotalTravelTimeHours()));
+        System.out.println(StringUtils.repeat("-", 80));
+        System.out.println();
+        System.out.println("ESTIMATED PASSAGE TIMES PER POINT:");
+        System.out.println(StringUtils.repeat("-", 80));
+        System.out.printf("%-12s %-30s %-20s %-15s%n", 
+                         "Point", "Station Name", "Estimated Time", "Travel Time");
+        System.out.println(StringUtils.repeat("-", 80));
+
+        for (DispatchReport.TrainSchedule.StationETA eta : routeWithETAs) {
             String stationId = eta.getStation().getId();
             String stationName = eta.getStation().getName();
             String etaStr = eta.getEta().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
             String travelTimeStr = eta.getSegmentId() != null ? 
                 TravelCalculationService.formatTravelTime(eta.getTravelTimeFromPreviousHours()) : "DEPARTURE";
             
-            System.out.printf("%-15s %-25s %-15s %-10s%n", 
+            System.out.printf("%-12s %-30s %-20s %-15s%n", 
                             stationId, stationName, etaStr, travelTimeStr);
         }
     }
 
     /**
-     * Displays a single conflict.
+     * Displays a conflict in a simple line format.
      *
      * @param conflict the conflict to display
      */
-    private void displayConflict(Conflict conflict) {
-        System.out.println("\n" + StringUtils.repeat("-", 60));
-        System.out.println("⚠️ CONFLICT DETECTED");
-        System.out.println(StringUtils.repeat("-", 60));
-        System.out.println("Train 1: " + conflict.getTrain1Id());
-        System.out.println("Train 2: " + conflict.getTrain2Id());
-        System.out.println("Segment: " + conflict.getSegmentId());
-        System.out.println("Type: " + conflict.getConflictType());
-        System.out.println("Suggested Resolution: " + conflict.getResolution());
-        System.out.println("Description: " + conflict.getDescription());
+    private void displayConflictSimple(DispatchReport.Conflict conflict) {
+        System.out.println();
+        System.out.println("[CONFLICT] Train " + conflict.getTrain1Id() + " vs Train " + conflict.getTrain2Id());
+        System.out.println("   Segment: " + conflict.getSegmentId());
+        System.out.println("   Type: " + conflict.getConflictType());
+        
+        // Add resolution info if available
+        if (conflict.hasCrossingDetails()) {
+            if (conflict.getCrossingStationId() != null) {
+                System.out.println("   Crossing Station: " + conflict.getCrossingStationId());
+            }
+            if (conflict.getWaitingTrainId() != null) {
+                System.out.println("   Waiting Train: " + conflict.getWaitingTrainId());
+            }
+            if (conflict.getWaitTimeMinutes() != null) {
+                int hours = (int) (conflict.getWaitTimeMinutes() / 60);
+                int minutes = (int) (conflict.getWaitTimeMinutes() % 60);
+                if (hours > 0) {
+                    System.out.printf("   Wait Time: %dh %dm%n", hours, minutes);
+                } else {
+                    System.out.printf("   Wait Time: %dm%n", minutes);
+                }
+            }
+        }
+        
+        // Show operation details if available
+        if (conflict.hasCrossingDetails()) {
+            System.out.println();
+            if (conflict.getResolution() == DispatchReport.Conflict.ResolutionType.CROSS_AT_STATION_WITH_SIDING) {
+                System.out.println("   Operation: Train " + conflict.getWaitingTrainId() + 
+                                 " must enter the siding at station " + conflict.getCrossingStationId());
+            } else if (conflict.getResolution() == DispatchReport.Conflict.ResolutionType.WAIT_AT_PREVIOUS_STATION) {
+                System.out.println("   Operation: Train " + conflict.getWaitingTrainId() + 
+                                 " must wait at the previous station before entering segment " + 
+                                 conflict.getSegmentId());
+            }
+        }
     }
 
     /**
@@ -450,10 +1219,35 @@ public class SchedulerUI {
         System.out.println("Available Locomotives");
         System.out.println(StringUtils.repeat("-", 60));
         
-        for (Locomotive locomotive : locomotives) {
-            System.out.printf("ID: %s | Type: %s | Max Speed: %.0f km/h | Gauge: %.0fmm%n",
-                             locomotive.getId(), locomotive.getType(), 
-                             locomotive.getMaxSpeedKmH(), locomotive.getGauge());
+        if (locomotives.isEmpty()) {
+            System.out.println("No locomotives loaded.");
+        } else {
+            System.out.printf("Total locomotives: %d%n%n", locomotives.size());
+            for (Locomotive locomotive : locomotives) {
+                System.out.printf("ID: %s | Type: %s | Max Speed: %.0f km/h | Gauge: %.0fmm%n",
+                                 locomotive.getId(), locomotive.getType(),
+                                 locomotive.getMaxSpeedKmH(), locomotive.getGauge());
+            }
+        }
+    }
+
+    /**
+     * Shows all available wagons.
+     */
+    private void showAvailableWagons() {
+        System.out.println("\n" + StringUtils.repeat("-", 60));
+        System.out.println("Available Wagons");
+        System.out.println(StringUtils.repeat("-", 60));
+        
+        if (wagons.isEmpty()) {
+            System.out.println("No wagons loaded from CSV.");
+        } else {
+            System.out.printf("Total wagons: %d%n%n", wagons.size());
+            for (Wagon wagon : wagons) {
+                System.out.printf("ID: %s | Empty Weight: %.0f kg | Max Load: %.0f kg | Total (loaded): %.0f kg%n",
+                                 wagon.getWagonId(), wagon.getEmptyWeightKg(), 
+                                 wagon.getMaxLoadWeightKg(), wagon.getFullyLoadedWeightKg());
+            }
         }
     }
 

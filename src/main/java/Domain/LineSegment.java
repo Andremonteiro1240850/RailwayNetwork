@@ -16,6 +16,7 @@ public class LineSegment {
     private final double lengthKm;
     private final double gauge;
     private final boolean electrified;
+    private final Double speedLimitKmH; // Speed limit of the track segment (null if unlimited)
 
     /**
      * Constructs a new LineSegment with the specified parameters.
@@ -30,32 +31,7 @@ public class LineSegment {
      */
     public LineSegment(String id, Facility startFacility, Facility endFacility,
                        double lengthKm, double gauge, boolean electrified) {
-        if (id == null || id.trim().isEmpty()) {
-            throw new IllegalArgumentException("Line segment ID cannot be null or empty");
-        }
-        if (startFacility == null) {
-            throw new IllegalArgumentException("Start station cannot be null");
-        }
-        if (endFacility == null) {
-            throw new IllegalArgumentException("End station cannot be null");
-        }
-        if (startFacility.equals(endFacility)) {
-            throw new IllegalArgumentException("Start and end stations cannot be the same");
-        }
-        if (lengthKm <= 0) {
-            throw new IllegalArgumentException("Length must be positive");
-        }
-        if (gauge <= 0) {
-            throw new IllegalArgumentException("Gauge must be positive");
-        }
-        
-        this.id = id.trim();
-        this.name = ""; // Default empty name for backward compatibility
-        this.startFacility = startFacility;
-        this.endFacility = endFacility;
-        this.lengthKm = lengthKm;
-        this.gauge = gauge;
-        this.electrified = electrified;
+        this(id, "", startFacility, endFacility, lengthKm, gauge, electrified, null);
     }
 
     /**
@@ -72,6 +48,24 @@ public class LineSegment {
      */
     public LineSegment(String id, String name, Facility startFacility, Facility endFacility,
                        double lengthKm, double gauge, boolean electrified) {
+        this(id, name, startFacility, endFacility, lengthKm, gauge, electrified, null);
+    }
+
+    /**
+     * Constructs a new LineSegment with all parameters including speed limit.
+     *
+     * @param id           the unique identifier for the line segment
+     * @param name         the name of the line segment
+     * @param startFacility the starting station
+     * @param endFacility   the ending station
+     * @param lengthKm     the length of the segment in kilometers
+     * @param gauge        the track gauge in millimeters
+     * @param electrified  whether the segment is electrified
+     * @param speedLimitKmH the speed limit in km/h (null if unlimited)
+     * @throws IllegalArgumentException if parameters are invalid
+     */
+    public LineSegment(String id, String name, Facility startFacility, Facility endFacility,
+                       double lengthKm, double gauge, boolean electrified, Double speedLimitKmH) {
         if (id == null || id.trim().isEmpty()) {
             throw new IllegalArgumentException("Line segment ID cannot be null or empty");
         }
@@ -90,6 +84,9 @@ public class LineSegment {
         if (gauge <= 0) {
             throw new IllegalArgumentException("Gauge must be positive");
         }
+        if (speedLimitKmH != null && speedLimitKmH <= 0) {
+            throw new IllegalArgumentException("Speed limit must be positive if specified");
+        }
         
         this.id = id.trim();
         this.name = name != null ? name.trim() : "";
@@ -98,6 +95,7 @@ public class LineSegment {
         this.lengthKm = lengthKm;
         this.gauge = gauge;
         this.electrified = electrified;
+        this.speedLimitKmH = speedLimitKmH;
     }
 
     /**
@@ -164,6 +162,24 @@ public class LineSegment {
     }
 
     /**
+     * Gets the speed limit of the track segment.
+     *
+     * @return the speed limit in km/h, or null if unlimited
+     */
+    public Double getSpeedLimitKmH() {
+        return speedLimitKmH;
+    }
+
+    /**
+     * Checks if this segment has a speed limit.
+     *
+     * @return true if speed limit is set, false otherwise
+     */
+    public boolean hasSpeedLimit() {
+        return speedLimitKmH != null;
+    }
+
+    /**
      * Checks if this segment connects the two given stations.
      *
      * @param facility1 the first station
@@ -224,14 +240,15 @@ public class LineSegment {
     
     @Override
     public String toString() {
+        String speedLimitStr = hasSpeedLimit() ? String.format(", speed limit: %.0f km/h", speedLimitKmH) : "";
         if (!name.isEmpty()) {
-            return String.format("%s (%s): %s -> %s (%.2f km, %.0fmm gauge, %s)", 
+            return String.format("%s (%s): %s -> %s (%.2f km, %.0fmm gauge, %s%s)", 
                                id, name, startFacility.getName(), endFacility.getName(),
-                               lengthKm, gauge, electrified ? "electrified" : "non-electrified");
+                               lengthKm, gauge, electrified ? "electrified" : "non-electrified", speedLimitStr);
         } else {
-            return String.format("%s: %s -> %s (%.2f km, %.0fmm gauge, %s)", 
+            return String.format("%s: %s -> %s (%.2f km, %.0fmm gauge, %s%s)", 
                                id, startFacility.getName(), endFacility.getName(),
-                               lengthKm, gauge, electrified ? "electrified" : "non-electrified");
+                               lengthKm, gauge, electrified ? "electrified" : "non-electrified", speedLimitStr);
         }
     }
 }

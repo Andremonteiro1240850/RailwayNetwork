@@ -1,12 +1,13 @@
 package Domain;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
  * Represents a train that needs to be dispatched.
  * A train contains route information, locomotives, and scheduling details.
- * This class is used for USPL07 - Train Dispatch Scheduler.
  *
  * @author Development Team
  * @version 1.0
@@ -16,9 +17,9 @@ public class Train {
     private final String trainId;
     private final List<Facility> route;
     private final List<Locomotive> locomotives;
+    private final List<Wagon> wagons;
     private final LocalDateTime departurePlannedDateTime;
     private final double totalWeight;
-    private final Integer priority;
 
     /**
      * Constructs a new Train with the specified parameters.
@@ -26,13 +27,13 @@ public class Train {
      * @param trainId                  the unique identifier for the train
      * @param route                    the ordered list of stations (each pair directly connected)
      * @param locomotives              the list of locomotives (with speed and power)
+     * @param wagons                   the list of wagons (can be empty)
      * @param departurePlannedDateTime the planned departure date and time
      * @param totalWeight              the total weight of the train in kg
-     * @param priority                 the priority of the train (optional, can be null)
      * @throws IllegalArgumentException if parameters are invalid
      */
     public Train(String trainId, List<Facility> route, List<Locomotive> locomotives,
-                 LocalDateTime departurePlannedDateTime, double totalWeight, Integer priority) {
+                 List<Wagon> wagons, LocalDateTime departurePlannedDateTime, double totalWeight) {
         if (trainId == null || trainId.trim().isEmpty()) {
             throw new IllegalArgumentException("Train ID cannot be null or empty");
         }
@@ -42,6 +43,9 @@ public class Train {
         if (locomotives == null || locomotives.isEmpty()) {
             throw new IllegalArgumentException("Train must have at least one locomotive");
         }
+        if (wagons == null) {
+            throw new IllegalArgumentException("Wagons list cannot be null");
+        }
         if (departurePlannedDateTime == null) {
             throw new IllegalArgumentException("Departure planned date time cannot be null");
         }
@@ -50,25 +54,11 @@ public class Train {
         }
         
         this.trainId = trainId.trim();
-        this.route = List.copyOf(route); // Immutable copy
-        this.locomotives = List.copyOf(locomotives); // Immutable copy
+        this.route = Collections.unmodifiableList(new ArrayList<>(route)); // Immutable copy
+        this.locomotives = Collections.unmodifiableList(new ArrayList<>(locomotives)); // Immutable copy
+        this.wagons = Collections.unmodifiableList(new ArrayList<>(wagons)); // Immutable copy
         this.departurePlannedDateTime = departurePlannedDateTime;
         this.totalWeight = totalWeight;
-        this.priority = priority;
-    }
-
-    /**
-     * Constructs a new Train without priority (priority set to null).
-     *
-     * @param trainId                  the unique identifier for the train
-     * @param route                    the ordered list of stations
-     * @param locomotives              the list of locomotives
-     * @param departurePlannedDateTime the planned departure date and time
-     * @param totalWeight              the total weight of the train in kg
-     */
-    public Train(String trainId, List<Facility> route, List<Locomotive> locomotives,
-                 LocalDateTime departurePlannedDateTime, double totalWeight) {
-        this(trainId, route, locomotives, departurePlannedDateTime, totalWeight, null);
     }
 
     /**
@@ -99,6 +89,15 @@ public class Train {
     }
 
     /**
+     * Gets the wagons assigned to this train.
+     *
+     * @return the list of wagons
+     */
+    public List<Wagon> getWagons() {
+        return wagons;
+    }
+
+    /**
      * Gets the primary locomotive (first in the list).
      * This is typically used for travel time calculations.
      *
@@ -126,22 +125,39 @@ public class Train {
         return totalWeight;
     }
 
+
     /**
-     * Gets the priority of the train.
+     * Calculates the effective maximum speed considering all locomotives.
+     * Uses the maximum speed of the fastest locomotive.
      *
-     * @return the priority, or null if not set
+     * @return the effective maximum speed in km/h
      */
-    public Integer getPriority() {
-        return priority;
+    public double getEffectiveMaxSpeedKmH() {
+        return locomotives.stream()
+                .mapToDouble(Locomotive::getMaxSpeedKmH)
+                .max()
+                .orElse(0.0);
     }
 
     /**
-     * Checks if this train has a priority set.
+     * Calculates the effective speed for a given segment, considering:
+     * - Track speed limit
+     * - Locomotive maximum speed
      *
-     * @return true if priority is set, false otherwise
+     * @param segment the line segment to calculate speed for
+     * @return the effective speed in km/h
      */
-    public boolean hasPriority() {
-        return priority != null;
+    public double calculateEffectiveSpeed(LineSegment segment) {
+        // Start with the maximum speed of the fastest locomotive
+        double maxLocomotiveSpeed = getEffectiveMaxSpeedKmH();
+        
+        // Apply track speed limit if present
+        double effectiveSpeed = maxLocomotiveSpeed;
+        if (segment.hasSpeedLimit()) {
+            effectiveSpeed = Math.min(effectiveSpeed, segment.getSpeedLimitKmH());
+        }
+        
+        return Math.max(1.0, effectiveSpeed); // Ensure minimum speed of 1 km/h
     }
 
     @Override
@@ -159,9 +175,8 @@ public class Train {
 
     @Override
     public String toString() {
-        return String.format("Train[%s, Route: %d stations, Locomotives: %d, Departure: %s, Weight: %.0f kg%s]",
-                           trainId, route.size(), locomotives.size(), departurePlannedDateTime,
-                           totalWeight, priority != null ? ", Priority: " + priority : "");
+        return String.format("Train[%s, Route: %d stations, Locomotives: %d, Wagons: %d, Departure: %s, Weight: %.0f kg]",
+                           trainId, route.size(), locomotives.size(), wagons.size(), departurePlannedDateTime, totalWeight);
     }
 }
 

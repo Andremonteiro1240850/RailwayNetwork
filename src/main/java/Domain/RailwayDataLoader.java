@@ -395,4 +395,146 @@ public class RailwayDataLoader {
         
         return null;
     }
+    
+    /**
+     * Loads locomotives from a CSV file.
+     * Expected CSV format: locomotiveId,type,maxSpeedKmH,gauge,powerKW
+     * 
+     * @param filePath the path to the CSV file
+     * @return list of loaded locomotives
+     * @throws IOException if there's an error reading the file
+     */
+    public List<Locomotive> loadLocomotivesFromCSV(String filePath) throws IOException {
+        Path path = Paths.get(filePath);
+        
+        if (!Files.exists(path)) {
+            throw new IOException("File not found: " + filePath);
+        }
+        
+        List<Locomotive> locomotives = new ArrayList<>();
+        
+        try (BufferedReader br = Files.newBufferedReader(path, StandardCharsets.UTF_8)) {
+            String line;
+            boolean firstLine = true;
+            int lineNumber = 0;
+            int loadedCount = 0;
+            
+            while ((line = br.readLine()) != null) {
+                lineNumber++;
+                
+                if (firstLine) {
+                    firstLine = false;
+                    continue; // Skip header
+                }
+                
+                if (line.trim().isEmpty()) {
+                    continue; // Skip empty lines
+                }
+                
+                String[] parts = line.split(",");
+                
+                if (parts.length >= 4) {
+                    try {
+                        String id = parts[0].trim();
+                        String type = parts[1].trim();
+                        String maxSpeedStr = parts[2].trim();
+                        String gaugeStr = parts[3].trim();
+                        
+                        if (!id.isEmpty() && !type.isEmpty() && !maxSpeedStr.isEmpty() && !gaugeStr.isEmpty()) {
+                            double maxSpeed = Double.parseDouble(maxSpeedStr);
+                            double gauge = Double.parseDouble(gaugeStr);
+                            
+                            Locomotive locomotive = new Locomotive(id, type, maxSpeed, gauge);
+                            locomotives.add(locomotive);
+                            loadedCount++;
+                        }
+                    } catch (NumberFormatException e) {
+                        System.err.println("Line " + lineNumber + " rejected: Invalid number format - " + e.getMessage());
+                    } catch (IllegalArgumentException e) {
+                        System.err.println("Line " + lineNumber + " rejected: " + e.getMessage());
+                    } catch (Exception e) {
+                        System.err.println("Line " + lineNumber + " rejected: " + e.getMessage());
+                    }
+                }
+            }
+            
+            System.out.println("Total locomotives loaded: " + loadedCount);
+        }
+        
+        return locomotives;
+    }
+    
+    /**
+     * Loads wagons from a CSV file.
+     * Expected CSV format: wagonId,boxId,sku,qty,expiryDate,receivedAt,emptyWeightKg,maxLoadWeightKg
+     * Note: Only wagonId, emptyWeightKg, and maxLoadWeightKg are used. Type defaults to "freight".
+     * 
+     * @param filePath the path to the CSV file
+     * @return list of loaded wagons
+     * @throws IOException if there's an error reading the file
+     */
+    public List<Wagon> loadWagonsFromCSV(String filePath) throws IOException {
+        Path path = Paths.get(filePath);
+        
+        if (!Files.exists(path)) {
+            throw new IOException("File not found: " + filePath);
+        }
+        
+        List<Wagon> wagons = new ArrayList<>();
+        
+        try (BufferedReader br = Files.newBufferedReader(path, StandardCharsets.UTF_8)) {
+            String line;
+            boolean firstLine = true;
+            int lineNumber = 0;
+            int loadedCount = 0;
+            
+            while ((line = br.readLine()) != null) {
+                lineNumber++;
+                
+                if (firstLine) {
+                    firstLine = false;
+                    continue; // Skip header
+                }
+                
+                if (line.trim().isEmpty()) {
+                    continue; // Skip empty lines
+                }
+                
+                String[] parts = line.split(",");
+                
+                if (parts.length >= 8) {
+                    try {
+                        String wagonId = parts[0].trim();
+                        // parts[1] = boxId (not used)
+                        // parts[2] = sku (not used)
+                        // parts[3] = qty (not used)
+                        // parts[4] = expiryDate (not used)
+                        // parts[5] = receivedAt (not used)
+                        String emptyWeightStr = parts[6].trim();
+                        String maxLoadWeightStr = parts[7].trim();
+                        
+                        if (!wagonId.isEmpty() && !emptyWeightStr.isEmpty() && !maxLoadWeightStr.isEmpty()) {
+                            double emptyWeight = Double.parseDouble(emptyWeightStr);
+                            double maxLoadWeight = Double.parseDouble(maxLoadWeightStr);
+                            
+                            // Use "freight" as default type since it's not in the CSV
+                            Wagon wagon = new Wagon(wagonId, "freight", emptyWeight, maxLoadWeight);
+                            wagons.add(wagon);
+                            loadedCount++;
+                        }
+                    } catch (NumberFormatException e) {
+                        System.err.println("Line " + lineNumber + " rejected: Invalid number format - " + e.getMessage());
+                    } catch (IllegalArgumentException e) {
+                        System.err.println("Line " + lineNumber + " rejected: " + e.getMessage());
+                    } catch (Exception e) {
+                        System.err.println("Line " + lineNumber + " rejected: " + e.getMessage());
+                    }
+                }
+            }
+            
+            System.out.println("Total wagons loaded: " + loadedCount);
+        }
+        
+        return wagons;
+    }
 }
