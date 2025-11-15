@@ -758,13 +758,8 @@ public class SchedulerUI {
                 String validationError = validateWagonAvailability(wagon, existingTrains);
                 if (validationError != null) {
                     System.out.println("ERROR: " + validationError);
-                    System.out.print("Do you want to try again? (y/n): ");
-                    String retry = scanner.nextLine().trim().toLowerCase();
-                    if (!retry.equals("y") && !retry.equals("yes")) {
-                        return null;
-                    }
                     System.out.println();
-                    continue;
+                    continue; // Ask for a new wagon ID directly
                 }
 
                 selectedWagons.add(wagon);
@@ -1006,12 +1001,21 @@ public class SchedulerUI {
      */
     private void displayConflictSimple(DispatchReport.Conflict conflict) {
         System.out.println();
+        System.out.println("=========================");
+        System.out.println("CROSSING/CONFLICT ALERTS");
+        System.out.println("=========================");
+        System.out.println();
         System.out.println("[CONFLICT] Train " + conflict.getTrain1Id() + " vs Train " + conflict.getTrain2Id());
         System.out.println("   Segment: " + conflict.getSegmentId());
         System.out.println("   Type: " + conflict.getConflictType());
+        System.out.println();
+        System.out.println("   Explanation: Both trains are scheduled to use the same segment (single-track line)");
+        System.out.println("   at overlapping times. This creates a conflict because only one train can use");
+        System.out.println("   the segment at a time on a single-track railway.");
         
         // Add resolution info if available
         if (conflict.hasCrossingDetails()) {
+            System.out.println();
             if (conflict.getCrossingStationId() != null) {
                 System.out.println("   Crossing Station: " + conflict.getCrossingStationId());
             }
@@ -1033,14 +1037,20 @@ public class SchedulerUI {
         if (conflict.hasCrossingDetails()) {
             System.out.println();
             if (conflict.getResolution() == DispatchReport.Conflict.ResolutionType.CROSS_AT_STATION_WITH_SIDING) {
-                System.out.println("   Operation: Train " + conflict.getWaitingTrainId() + 
-                                 " must enter the siding at station " + conflict.getCrossingStationId());
+                System.out.println("   Resolution: Train " + conflict.getWaitingTrainId() + 
+                                 " must enter the siding at station " + conflict.getCrossingStationId() +
+                                 " to allow Train " + (conflict.getTrain1Id().equals(conflict.getWaitingTrainId()) ? 
+                                 conflict.getTrain2Id() : conflict.getTrain1Id()) + " to pass first.");
             } else if (conflict.getResolution() == DispatchReport.Conflict.ResolutionType.WAIT_AT_PREVIOUS_STATION) {
-                System.out.println("   Operation: Train " + conflict.getWaitingTrainId() + 
+                System.out.println("   Resolution: Train " + conflict.getWaitingTrainId() + 
                                  " must wait at the previous station before entering segment " + 
-                                 conflict.getSegmentId());
+                                 conflict.getSegmentId() + " until the other train has cleared the segment.");
+            } else if (conflict.getResolution() == DispatchReport.Conflict.ResolutionType.UNSOLVABLE) {
+                System.out.println("   Resolution: UNSOLVABLE - Both trains arrive simultaneously at the segment.");
+                System.out.println("   Manual intervention required to reschedule one of the trains.");
             }
         }
+        System.out.println();
     }
 
     /**

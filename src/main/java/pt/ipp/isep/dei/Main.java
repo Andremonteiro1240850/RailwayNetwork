@@ -187,7 +187,7 @@ public class Main {
                     // After station lookup, return to menu (continue loop)
                     break;
                 case "2":
-                    // Freight Manager -> Train Dispatch Scheduler (USLP07)
+                    // Freight Manager -> Train Dispatch Scheduler
                     freightManager();
                     // After freight manager, return to menu (continue loop)
                     break;
@@ -360,10 +360,10 @@ public class Main {
     }
     
     /**
-     * Freight Manager - Train Dispatch Scheduler (USLP07)
+     * Freight Manager - Train Dispatch Scheduler
      */
     private static void freightManager() {
-        System.out.println("\n=== FREIGHT MANAGER - TRAIN DISPATCH SCHEDULER (USLP07) ===");
+        System.out.println("\n=== FREIGHT MANAGER - TRAIN DISPATCH SCHEDULER ===");
         
         DispatchController controller = new DispatchController();
         SchedulerUI ui = new SchedulerUI(controller);

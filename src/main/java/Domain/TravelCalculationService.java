@@ -149,7 +149,7 @@ public class TravelCalculationService {
 
     /**
      * Calculates the estimated travel time for a train between two stations.
-     * This method implements C3 of USLP07: considers track limitations, combined power of locomotives, and weight.
+     * This method considers track limitations, combined power of locomotives, and weight.
      * <p>
      * The calculation considers:
      * - Track speed limit (if present)
