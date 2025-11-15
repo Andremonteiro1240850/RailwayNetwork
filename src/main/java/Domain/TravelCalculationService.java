@@ -137,6 +137,72 @@ public class TravelCalculationService {
     public boolean areStationsConnected(Facility startFacility, Facility endFacility) {
         return findConnectingSegment(startFacility, endFacility) != null;
     }
+    
+    /**
+     * Finds a path between two stations using BFS (Breadth-First Search).
+     * Returns a list of stations representing the path, or null if no path exists.
+     *
+     * @param startFacility the starting station
+     * @param endFacility   the ending station
+     * @return list of stations representing the path (including start and end), or null if no path exists
+     */
+    public List<Facility> findPath(Facility startFacility, Facility endFacility) {
+        if (startFacility == null || endFacility == null) {
+            return null;
+        }
+        
+        if (startFacility.getId().equals(endFacility.getId())) {
+            return java.util.Arrays.asList(startFacility);
+        }
+        
+        // Check if directly connected first
+        if (areStationsConnected(startFacility, endFacility)) {
+            return java.util.Arrays.asList(startFacility, endFacility);
+        }
+        
+        // BFS to find path
+        java.util.Map<String, Facility> visited = new java.util.HashMap<>();
+        java.util.Map<String, Facility> parent = new java.util.HashMap<>();
+        java.util.Queue<Facility> queue = new java.util.LinkedList<>();
+        
+        queue.add(startFacility);
+        visited.put(startFacility.getId(), startFacility);
+        parent.put(startFacility.getId(), null);
+        
+        while (!queue.isEmpty()) {
+            Facility current = queue.poll();
+            
+            // Find all neighbors (stations directly connected to current)
+            for (LineSegment segment : lineSegments) {
+                Facility neighbor = null;
+                if (segment.getStartStation().getId().equals(current.getId())) {
+                    neighbor = segment.getEndStation();
+                } else if (segment.getEndStation().getId().equals(current.getId())) {
+                    neighbor = segment.getStartStation();
+                }
+                
+                if (neighbor != null && !visited.containsKey(neighbor.getId())) {
+                    visited.put(neighbor.getId(), neighbor);
+                    parent.put(neighbor.getId(), current);
+                    queue.add(neighbor);
+                    
+                    // Found destination
+                    if (neighbor.getId().equals(endFacility.getId())) {
+                        // Reconstruct path
+                        java.util.List<Facility> path = new java.util.ArrayList<>();
+                        Facility node = neighbor;
+                        while (node != null) {
+                            path.add(0, node);
+                            node = parent.get(node.getId());
+                        }
+                        return path;
+                    }
+                }
+            }
+        }
+        
+        return null; // No path found
+    }
 
     /**
      * Gets all available line segments.

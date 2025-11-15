@@ -153,7 +153,7 @@ public class SchedulerService {
             ));
         }
 
-        return new DispatchReport.TrainSchedule(train.getTrainId(), routeWithETAs, segmentTimes, totalTravelTime);
+        return new DispatchReport.TrainSchedule(train.getTrainId(), routeWithETAs, segmentTimes, totalTravelTime, train.getSelectedStations());
     }
 
     /**

@@ -205,12 +205,15 @@ public class SchedulerUI {
      * @return the train object, or null if cancelled
      */
     private Train collectTrainInfo(String trainId, List<Train> existingTrains) {
-        // Collect route
-        List<Facility> route = collectRoute();
-        if (route == null || route.size() < 2) {
+        // Collect route (returns both full route and selected stations)
+        RouteData routeData = collectRoute();
+        if (routeData == null || routeData.fullRoute.size() < 2) {
             System.out.println("\nERROR: Route must contain at least 2 stations.");
             return null;
         }
+        
+        List<Facility> route = routeData.fullRoute;
+        List<Facility> selectedStations = routeData.selectedStations;
 
         // Collect departure time first (needed for locomotive validation)
         LocalDateTime departureTime = collectDepartureTime();
@@ -240,18 +243,33 @@ public class SchedulerUI {
         // Calculate total weight from wagons (empty or loaded)
         double totalWeight = calculateTotalWeight(selectedWagons);
 
-        return new Train(trainId, route, selectedLocomotives, selectedWagons, departureTime, totalWeight);
+        return new Train(trainId, route, selectedStations, selectedLocomotives, selectedWagons, departureTime, totalWeight);
+    }
+    
+    /**
+     * Helper class to store both full route and selected stations.
+     */
+    private static class RouteData {
+        final List<Facility> fullRoute;
+        final List<Facility> selectedStations;
+        
+        RouteData(List<Facility> fullRoute, List<Facility> selectedStations) {
+            this.fullRoute = fullRoute;
+            this.selectedStations = selectedStations;
+        }
     }
 
     /**
      * Collects the route (list of stations) from the user.
      *
-     * @return the list of stations in the route
+     * @return RouteData containing both full route (with intermediates) and selected stations (user choices only)
      */
-    private List<Facility> collectRoute() {
-        List<Facility> route = new ArrayList<>();
+    private RouteData collectRoute() {
+        List<Facility> route = new ArrayList<>(); // Full route with intermediate stations
+        List<Facility> selectedStations = new ArrayList<>(); // Only stations selected by user
         
-        System.out.println("\nEnter route stations (at least 2 stations, each pair must be directly connected).");
+        System.out.println("\nEnter route stations (at least 2 stations).");
+        System.out.println("The system will automatically find intermediate stations if needed.");
         System.out.println("Press Enter with empty station ID to finish route.");
         System.out.println();
         
@@ -260,7 +278,7 @@ public class SchedulerUI {
             String stationId = scanner.nextLine().trim();
             
             if (stationId.isEmpty()) {
-                if (route.size() < 2) {
+                if (selectedStations.size() < 2) {
                     System.out.println("ERROR: Route must contain at least 2 stations.");
                     System.out.println();
                     continue;
@@ -280,12 +298,57 @@ public class SchedulerUI {
                 continue;
             }
 
-            route.add(station);
-            System.out.println("Station " + station.getName() + " (" + stationId + ") added to route.");
+            // Add to selected stations (user choice)
+            selectedStations.add(station);
+
+            // If this is not the first station, check if we need to find a path
+            if (route.isEmpty()) {
+                // First station
+                route.add(station);
+                System.out.println("Station " + station.getName() + " (" + stationId + ") added to route.");
+            } else {
+                Facility previousStation = route.get(route.size() - 1);
+                TravelCalculationService travelService = controller.getTravelTimeController().getService();
+                
+                // Check if directly connected
+                if (!travelService.areStationsConnected(previousStation, station)) {
+                    // Try to find a path
+                    List<Facility> path = travelService.findPath(previousStation, station);
+                    if (path == null || path.size() < 2) {
+                        System.out.println("ERROR: No path found between " + previousStation.getId() + 
+                                         " and " + station.getId() + ".");
+                        selectedStations.remove(selectedStations.size() - 1); // Remove from selected
+                        System.out.print("Do you want to try again? (y/n): ");
+                        String retry = scanner.nextLine().trim().toLowerCase();
+                        if (!retry.equals("y") && !retry.equals("yes")) {
+                            return null;
+                        }
+                        System.out.println();
+                        continue;
+                    }
+                    
+                    // Add intermediate stations (skip first as it's already in route)
+                    System.out.println("Path found: " + path.stream()
+                        .map(f -> f.getId())
+                        .reduce((a, b) -> a + " -> " + b)
+                        .orElse(""));
+                    for (int i = 1; i < path.size(); i++) {
+                        route.add(path.get(i));
+                        if (i == path.size() - 1) {
+                            System.out.println("Station " + path.get(i).getName() + " (" + path.get(i).getId() + ") added to route.");
+                        } else {
+                            System.out.println("Intermediate station " + path.get(i).getName() + " (" + path.get(i).getId() + ") added to route.");
+                        }
+                    }
+                } else {
+                    route.add(station);
+                    System.out.println("Station " + station.getName() + " (" + stationId + ") added to route.");
+                }
+            }
             System.out.println();
         }
 
-        return route;
+        return new RouteData(route, selectedStations);
     }
 
     /**
@@ -953,6 +1016,7 @@ public class SchedulerUI {
      */
     private void displayTrainSchedule(DispatchReport.TrainSchedule schedule) {
         List<DispatchReport.TrainSchedule.StationETA> routeWithETAs = schedule.getRouteWithETAs();
+        List<Facility> selectedStations = schedule.getSelectedStations();
         if (routeWithETAs.isEmpty()) {
             return;
         }
@@ -961,11 +1025,11 @@ public class SchedulerUI {
         LocalDateTime departureTime = routeWithETAs.get(0).getEta();
         String departureTimeStr = departureTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
 
-        // Build route string
+        // Build route string using only selected stations
         StringBuilder routeStr = new StringBuilder();
-        for (int i = 0; i < routeWithETAs.size(); i++) {
+        for (int i = 0; i < selectedStations.size(); i++) {
             if (i > 0) routeStr.append(" -> ");
-            routeStr.append(routeWithETAs.get(i).getStation().getId());
+            routeStr.append(selectedStations.get(i).getId());
         }
 
         System.out.println("\n" + StringUtils.repeat("-", 80));
@@ -982,16 +1046,53 @@ public class SchedulerUI {
                          "Point", "Station Name", "Estimated Time", "Travel Time");
         System.out.println(StringUtils.repeat("-", 80));
 
+        // Create a map of station ID to ETA for quick lookup
+        java.util.Map<String, DispatchReport.TrainSchedule.StationETA> etaMap = new java.util.HashMap<>();
         for (DispatchReport.TrainSchedule.StationETA eta : routeWithETAs) {
-            String stationId = eta.getStation().getId();
-            String stationName = eta.getStation().getName();
+            etaMap.put(eta.getStation().getId(), eta);
+        }
+
+        // Display only selected stations, calculating cumulative travel time
+        LocalDateTime previousEta = null;
+        for (int i = 0; i < selectedStations.size(); i++) {
+            Facility station = selectedStations.get(i);
+            DispatchReport.TrainSchedule.StationETA eta = etaMap.get(station.getId());
+            
+            if (eta == null) {
+                continue; // Skip if not found (shouldn't happen)
+            }
+            
+            String stationId = station.getId();
+            String stationName = station.getName();
             String etaStr = eta.getEta().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
-            String travelTimeStr = eta.getSegmentId() != null ? 
-                TravelCalculationService.formatTravelTime(eta.getTravelTimeFromPreviousHours()) : "DEPARTURE";
+            
+            String travelTimeStr;
+            if (i == 0) {
+                travelTimeStr = "DEPARTURE";
+            } else {
+                // Calculate travel time from previous selected station
+                if (previousEta != null) {
+                    long minutes = java.time.Duration.between(previousEta, eta.getEta()).toMinutes();
+                    int hours = (int) (minutes / 60);
+                    int mins = (int) (minutes % 60);
+                    if (hours > 0) {
+                        travelTimeStr = String.format("%dh %dm", hours, mins);
+                    } else {
+                        travelTimeStr = String.format("%dm", mins);
+                    }
+                } else {
+                    travelTimeStr = "DEPARTURE";
+                }
+            }
             
             System.out.printf("%-12s %-30s %-20s %-15s%n", 
                             stationId, stationName, etaStr, travelTimeStr);
+            
+            previousEta = eta.getEta();
         }
+        
+        System.out.println(StringUtils.repeat("-", 80));
+        System.out.println("TRAIN " + schedule.getTrainId());
     }
 
     /**

@@ -15,7 +15,8 @@ import java.util.List;
 public class Train {
     
     private final String trainId;
-    private final List<Facility> route;
+    private final List<Facility> route; // Full route including intermediate stations
+    private final List<Facility> selectedStations; // Only stations selected by user (without intermediates)
     private final List<Locomotive> locomotives;
     private final List<Wagon> wagons;
     private final LocalDateTime departurePlannedDateTime;
@@ -25,20 +26,25 @@ public class Train {
      * Constructs a new Train with the specified parameters.
      *
      * @param trainId                  the unique identifier for the train
-     * @param route                    the ordered list of stations (each pair directly connected)
+     * @param route                    the ordered list of stations (full route including intermediate stations)
+     * @param selectedStations         the ordered list of stations selected by user (without intermediate stations)
      * @param locomotives              the list of locomotives (with speed and power)
      * @param wagons                   the list of wagons (can be empty)
      * @param departurePlannedDateTime the planned departure date and time
      * @param totalWeight              the total weight of the train in kg
      * @throws IllegalArgumentException if parameters are invalid
      */
-    public Train(String trainId, List<Facility> route, List<Locomotive> locomotives,
-                 List<Wagon> wagons, LocalDateTime departurePlannedDateTime, double totalWeight) {
+    public Train(String trainId, List<Facility> route, List<Facility> selectedStations, 
+                 List<Locomotive> locomotives, List<Wagon> wagons, 
+                 LocalDateTime departurePlannedDateTime, double totalWeight) {
         if (trainId == null || trainId.trim().isEmpty()) {
             throw new IllegalArgumentException("Train ID cannot be null or empty");
         }
         if (route == null || route.size() < 2) {
             throw new IllegalArgumentException("Route must contain at least 2 stations");
+        }
+        if (selectedStations == null || selectedStations.size() < 2) {
+            throw new IllegalArgumentException("Selected stations must contain at least 2 stations");
         }
         if (locomotives == null || locomotives.isEmpty()) {
             throw new IllegalArgumentException("Train must have at least one locomotive");
@@ -55,10 +61,28 @@ public class Train {
         
         this.trainId = trainId.trim();
         this.route = Collections.unmodifiableList(new ArrayList<>(route)); // Immutable copy
+        this.selectedStations = Collections.unmodifiableList(new ArrayList<>(selectedStations)); // Immutable copy
         this.locomotives = Collections.unmodifiableList(new ArrayList<>(locomotives)); // Immutable copy
         this.wagons = Collections.unmodifiableList(new ArrayList<>(wagons)); // Immutable copy
         this.departurePlannedDateTime = departurePlannedDateTime;
         this.totalWeight = totalWeight;
+    }
+    
+    /**
+     * Constructs a new Train with the specified parameters (backward compatibility).
+     * Uses the route as selectedStations if not provided separately.
+     *
+     * @param trainId                  the unique identifier for the train
+     * @param route                    the ordered list of stations
+     * @param locomotives              the list of locomotives (with speed and power)
+     * @param wagons                   the list of wagons (can be empty)
+     * @param departurePlannedDateTime the planned departure date and time
+     * @param totalWeight              the total weight of the train in kg
+     * @throws IllegalArgumentException if parameters are invalid
+     */
+    public Train(String trainId, List<Facility> route, List<Locomotive> locomotives,
+                 List<Wagon> wagons, LocalDateTime departurePlannedDateTime, double totalWeight) {
+        this(trainId, route, route, locomotives, wagons, departurePlannedDateTime, totalWeight);
     }
 
     /**
@@ -71,12 +95,21 @@ public class Train {
     }
 
     /**
-     * Gets the route (ordered list of stations).
+     * Gets the route (ordered list of stations, including intermediate stations).
      *
-     * @return the route
+     * @return the full route
      */
     public List<Facility> getRoute() {
         return route;
+    }
+    
+    /**
+     * Gets the stations selected by the user (without intermediate stations).
+     *
+     * @return the selected stations
+     */
+    public List<Facility> getSelectedStations() {
+        return selectedStations;
     }
 
     /**
