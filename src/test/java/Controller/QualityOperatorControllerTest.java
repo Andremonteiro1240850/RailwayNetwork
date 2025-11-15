@@ -495,35 +495,49 @@ class QualityOperatorControllerTest {
     }
 
     // -----------------------
-    // Constructor with WarehouseManager test
+    // Constructor with WagonsUnloadingController test
     // -----------------------
 
     @Test
-    @DisplayName("constructor with WarehouseManager triggers restock insert in WarehouseManager.stock")
-    void constructorWithWarehouseManager_triggersRestockInsert() throws Exception {
-        java.util.Map<String, Domain.Item> items = new java.util.HashMap<>();
-        java.util.Map<String, java.util.List<Domain.Box>> stock = new java.util.HashMap<>();
-        java.util.List<Domain.Bay> bays = new java.util.ArrayList<>();
-        Domain.WarehouseManager wm = new Domain.WarehouseManager(items, stock, bays);
+    @DisplayName("constructor with WagonsUnloadingController triggers restock insert in BoxRepository")
+    void constructorWithWagonsUnloadingController_triggersRestockInsert() throws Exception {
+        // Create DataLoader with minimal data
+        Domain.DataLoader dataLoader = new Domain.DataLoader();
+        dataLoader.items = new java.util.HashMap<>();
+        dataLoader.bays = new java.util.ArrayList<>();
+        // Add at least one bay so boxes can be assigned
+        dataLoader.bays.add(new Domain.Bay(new Domain.BayId("WH1", 1, 1), 10));
+        dataLoader.boxRepository = new Repository.BoxRepository();
+        
+        // Create WagonsUnloadingController
+        WagonsUnloadingController wagonsController = new WagonsUnloadingController(dataLoader);
 
-        QualityOperatorController ctrlWithWM = new QualityOperatorController(wm);
+        QualityOperatorController ctrlWithWUC = new QualityOperatorController(wagonsController);
 
         Field qField = QualityOperatorController.class.getDeclaredField("quarantineItems");
         qField.setAccessible(true);
         @SuppressWarnings("unchecked")
-        List<Return> qList = (List<Return>) qField.get(ctrlWithWM);
+        List<Return> qList = (List<Return>) qField.get(ctrlWithWUC);
         qList.clear();
         qList.add(new Return("W1", "WM-SKU", 2, "REMORSE", LocalDateTime.now(), null));
 
-        QualityOperatorController.ProcessingResult result = ctrlWithWM.processSingleInspection();
+        QualityOperatorController.ProcessingResult result = ctrlWithWUC.processSingleInspection();
         assertNotNull(result);
         assertEquals("RESTOCK", result.getAction());
 
         @SuppressWarnings("unchecked")
-        List<Return> after = (List<Return>) qField.get(ctrlWithWM);
+        List<Return> after = (List<Return>) qField.get(ctrlWithWUC);
         assertEquals(0, after.size());
 
-        assertTrue(wm.getStock().containsKey("WM-SKU"));
+        // Verify box was inserted into BoxRepository (check for assigned boxes with SKU WM-SKU)
+        Repository.BoxRepository boxRepo = wagonsController.getBoxRepository();
+        java.util.List<Domain.Box> assignedBoxes = boxRepo.getAssignedBoxes("WM-SKU");
+        assertFalse(assignedBoxes.isEmpty(), "Box should be inserted into BoxRepository");
+        
+        // Verify the box has the correct SKU and was assigned to a bay
+        boolean foundBox = assignedBoxes.stream()
+            .anyMatch(box -> box.getSku().equals("WM-SKU") && box.getLocation() != null);
+        assertTrue(foundBox, "Box should be assigned to a bay");
     }
 
 }

@@ -33,14 +33,6 @@ public class TestSKUDedication {
             new Box("BOX005", "SKU002", 30, LocalDate.of(2025, 12, 27), LocalDateTime.now())
         );
         
-        // Create warehouse manager
-        Map<String, Item> items = new HashMap<>();
-        Map<String, List<Box>> stock = new HashMap<>();
-        stock.put("SKU001", new ArrayList<>());
-        stock.put("SKU002", new ArrayList<>());
-        
-        WarehouseManager warehouseManager = new WarehouseManager(items, stock, bays);
-        
         System.out.println("Initial state:");
         printBayStatus(bays);
         

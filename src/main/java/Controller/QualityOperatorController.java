@@ -43,12 +43,12 @@ public class QualityOperatorController {
     }
 
     /**
-     * Instantiates a new Quality operator controller with warehouse manager.
+     * Instantiates a new Quality operator controller with wagons unloading controller.
      *
-     * @param warehouseManager the warehouse manager for inventory operations
+     * @param wagonsUnloadingController the wagons unloading controller for inventory operations
      */
-    public QualityOperatorController(Domain.WarehouseManager warehouseManager) {
-        this.inspectionController = new InspectionController(warehouseManager);
+    public QualityOperatorController(WagonsUnloadingController wagonsUnloadingController) {
+        this.inspectionController = new InspectionController(wagonsUnloadingController);
     }
 
     /**
