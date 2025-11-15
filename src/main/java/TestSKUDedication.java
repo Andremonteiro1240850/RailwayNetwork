@@ -44,7 +44,7 @@ public class TestSKUDedication {
             bays.get(0).insertBox(boxes.get(0));
             System.out.println("✓ BOX001 assigned to " + bays.get(0).getId());
         } catch (Exception e) {
-            System.out.println("❌ Error: " + e.getMessage());
+            System.out.println(" Error: " + e.getMessage());
         }
         printBayStatus(bays);
         
@@ -54,7 +54,7 @@ public class TestSKUDedication {
             bays.get(0).insertBox(boxes.get(1));
             System.out.println("✓ BOX002 assigned to " + bays.get(0).getId());
         } catch (Exception e) {
-            System.out.println("❌ Error: " + e.getMessage());
+            System.out.println(" Error: " + e.getMessage());
         }
         printBayStatus(bays);
         
@@ -64,7 +64,7 @@ public class TestSKUDedication {
             bays.get(0).insertBox(boxes.get(2));
             System.out.println("✓ BOX003 assigned to " + bays.get(0).getId());
         } catch (Exception e) {
-            System.out.println("❌ Error: " + e.getMessage());
+            System.out.println(" Error: " + e.getMessage());
         }
         printBayStatus(bays);
         
@@ -74,7 +74,7 @@ public class TestSKUDedication {
             bays.get(1).insertBox(boxes.get(2));
             System.out.println("✓ BOX003 assigned to " + bays.get(1).getId());
         } catch (Exception e) {
-            System.out.println("❌ Error: " + e.getMessage());
+            System.out.println(" Error: " + e.getMessage());
         }
         printBayStatus(bays);
         
@@ -84,7 +84,7 @@ public class TestSKUDedication {
             bays.get(0).insertBox(boxes.get(3));
             System.out.println("✓ BOX004 assigned to " + bays.get(0).getId());
         } catch (Exception e) {
-            System.out.println("❌ Error: " + e.getMessage());
+            System.out.println(" Error: " + e.getMessage());
         }
         printBayStatus(bays);
         
@@ -101,7 +101,7 @@ public class TestSKUDedication {
             bays.get(0).insertBox(boxes.get(4));
             System.out.println("✓ BOX005 assigned to " + bays.get(0).getId());
         } catch (Exception e) {
-            System.out.println("❌ Error: " + e.getMessage());
+            System.out.println(" Error: " + e.getMessage());
         }
         printBayStatus(bays);
         
