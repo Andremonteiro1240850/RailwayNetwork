@@ -1,6 +1,7 @@
 package Repository;
 
 import Domain.AVL;
+import Domain.BST;
 import Domain.Station;
 import Domain.StationValidator;
 
@@ -37,14 +38,11 @@ public class StationRepository {
         }
     }
     public List<Station> getStationsByTimeZone(String timeZone) {
-        List<Station> stationsByTimeZone = new ArrayList<>();
-        for(Station station : groupCountryTree.inOrder()) {
-            if(station.getTimeZone().equals(timeZone)) {
-                stationsByTimeZone.add(station);
-            }
-        }
-        return stationsByTimeZone;
+        List<Station> result = new ArrayList<>();
+        collectByTimeZone(groupCountryTree.getRoot(), timeZone, result);
+        return result;
     }
+
     public  List<Station> getStationsByCountry(String country) {
         List<Station> stationsByCountry = new ArrayList<>();
         for(Station station : groupCountryTree.inOrder()) {
@@ -54,24 +52,18 @@ public class StationRepository {
         }
         return stationsByCountry;
     }
-    public List<Station> getStationsByLatitude(double latitudeMin,double latitudeMax ) {
-        List<Station> stationsByLat = new ArrayList<>();
-        for(Station station : latitudeTree.inOrder()) {
-            if(station.getLatitude() >= latitudeMin && station.getLatitude() <= latitudeMax) {
-                stationsByLat.add(station);
-            }
-        }
-        return stationsByLat;
+    public List<Station> getStationsByLatitude(double latitudeMin,double latitudeMax) {
+        List<Station> result = new ArrayList<>();
+        collectByLatitude(latitudeTree.getRoot(), latitudeMin, latitudeMax, result);
+        return result;
     }
-    public List<Station> getStationsByLongitude(double longitudeMin,double longitudeMax ) {
-        List<Station> stationsByLon = new ArrayList<>();
-        for(Station station : longitudeTree.inOrder()) {
-            if(station.getLatitude() >= longitudeMin && station.getLatitude() <= longitudeMax) {
-                stationsByLon.add(station);
-            }
-        }
-        return stationsByLon;
+
+    public List<Station> getStationsByLongitude(double longitudeMin, double longitudeMax) {
+        List<Station> result = new ArrayList<>();
+        collectByLongitude(longitudeTree.getRoot(), longitudeMin, longitudeMax, result);
+        return result;
     }
+
     public int totalStations() {
         return latitudeTree.size(); // todas têm o mesmo número
     }
@@ -91,5 +83,55 @@ public class StationRepository {
     public Iterable<Station> getAllStationsOrderedByLongitude() {
         return longitudeTree.inOrder();
     }
+    private void collectByLatitude(BST.Node<Station> node, double min, double max, List<Station> result) {
+        if (node == null) return;
+
+        if (node.getElement().getLatitude() > min)
+            collectByLatitude(node.getLeft(), min, max, result);
+
+        double lat = node.getElement().getLatitude();
+        if (lat >= min && lat <= max)
+            result.add(node.getElement());
+
+        if (node.getElement().getLatitude() < max)
+            collectByLatitude(node.getRight(), min, max, result);
+    }
+    private void collectByLongitude(BST.Node<Station> node, double min, double max, List<Station> result) {
+        if (node == null) return;
+
+        double lon = node.getElement().getLongitude();
+
+        if (lon > min)
+            collectByLongitude(node.getLeft(), min, max, result);
+
+        if (lon >= min && lon <= max)
+            result.add(node.getElement());
+
+        if (lon < max)
+            collectByLongitude(node.getRight(), min, max, result);
+    }
+    private void collectByTimeZone(BST.Node<Station> node, String timeZone, List<Station> result) {
+        if (node == null) return;
+
+        String nodeTimeZone = node.getElement().getTimeZoneGroup();
+        int cmp = nodeTimeZone.compareTo(timeZone);
+
+        // 1. Ir para a esquerda
+        if (cmp >= 0) {
+            collectByTimeZone(node.getLeft(), timeZone, result);
+        }
+
+        // 2. Adicionar nó
+        if (cmp == 0) {
+            result.add(node.getElement());
+        }
+
+        // 3. Ir para a direita
+        if (cmp <= 0) {
+            collectByTimeZone(node.getRight(), timeZone, result);
+        }
+    }
+
+
 
 }

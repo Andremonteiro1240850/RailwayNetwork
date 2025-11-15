@@ -25,7 +25,7 @@ public class Main {
     private static TrolleyRepository trolleyRepository = new TrolleyRepository();
     private static BoxRepository boxRepository;
     private StationRepository stationRepository;
-    private static StationLoader stationLoader;
+    private static StationLoader stationLoader = new StationLoader();
     
     /**
      * Load all data from CSV files once at startup
@@ -284,9 +284,24 @@ public class Main {
         ui.showMainMenu();
     }
     private static void stationLookup() {
-        System.out.println("\n=== STATION LOOKUP ===");
-        StationController controller = new StationController(new StationRepository(stationLoader.loadFromCSV("train_stations_europe.csv")));
-        StationUI ui = new StationUI(controller, scanner);
-        ui.run();
+        try {
+            System.out.println("\n=== STATION LOOKUP ===");
+            System.out.println("Loading stations...");
+
+            StationController controller = new StationController(new StationRepository(stationLoader.loadFromCSV("train_station_dataset/train_stations_europe.csv")));
+
+            System.out.println("Stations loaded successfully!");
+            System.out.println("Starting Station UI...");
+
+
+            StationUI ui = new StationUI(controller, scanner);
+            ui.run();
+
+            System.out.println("Returned from Station UI");
+
+        } catch (Exception e) {
+            System.err.println("ERROR in stationLookup: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 }
