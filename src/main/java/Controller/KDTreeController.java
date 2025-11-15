@@ -4,16 +4,11 @@ import Domain.KDTree;
 import Domain.Station;
 import Repository.StationRepository;
 
-import java.io.FileWriter;
-import java.io.IOException;
-import java.time.Instant;
-import java.time.ZoneOffset;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 /**
  * Controller for KD-tree operations.
- * Handles building balanced KD-trees and generating reports.
+ * Handles building balanced KD-trees and retrieving metrics.
  * 
  * @author Development Team
  * @version 1.0
@@ -128,100 +123,14 @@ public class KDTreeController {
     }
     
     /**
-     * Generates and saves a build report.
+     * Gets all tree metrics.
+     * Returns: Size of the tree, its height, and all distinct bucket sizes.
      *
-     * @param outputPath path to save the report
-     * @return true if report was generated successfully
+     * @return KDTreeMetrics object with all metrics, or null if tree not built
      */
-    public boolean generateReport(String outputPath) {
+    public KDTreeMetrics getAllMetrics() {
         if (!isTreeBuilt()) {
-            return false;
-        }
-        
-        if (outputPath == null || outputPath.isEmpty()) {
-            outputPath = "kdtree_report.txt";
-        }
-        
-        try (FileWriter writer = new FileWriter(outputPath)) {
-            // Build timestamp
-            String timestamp = Instant.now().atOffset(ZoneOffset.UTC)
-                    .format(DateTimeFormatter.ISO_INSTANT);
-            
-            // Get metrics
-            int[] sizeInfo = kdTree.getSize();
-            int numNodes = sizeInfo[0];
-            int numStations = sizeInfo[1];
-            int height = kdTree.height();
-            Map<Integer, Integer> bucketStats = kdTree.getBucketStats();
-            
-            // Write report
-            writer.write("Balanced 2D-tree (KD-tree) Build Report\n");
-            writer.write("========================================\n\n");
-            writer.write("Build Timestamp: " + timestamp + "\n");
-            writer.write("Number of Stations Processed: " + numStations + "\n");
-            writer.write("Number of Nodes: " + numNodes + "\n");
-            writer.write("Tree Height: " + height + "\n\n");
-            
-            writer.write("Distinct Bucket Sizes (sorted descending by count):\n");
-            writer.write("----------------------------------------------------\n");
-            
-            // Sort by count descending, then by bucket size
-            List<Map.Entry<Integer, Integer>> sortedStats = new ArrayList<>(bucketStats.entrySet());
-            sortedStats.sort((a, b) -> {
-                int cmp = b.getValue().compareTo(a.getValue());
-                if (cmp != 0) return cmp;
-                return b.getKey().compareTo(a.getKey());
-            });
-            
-            for (Map.Entry<Integer, Integer> entry : sortedStats) {
-                writer.write("Bucket size " + entry.getKey() + ": " + entry.getValue() + " nodes\n");
-            }
-            
-            writer.write("\n");
-            writer.write("Complexity Analysis:\n");
-            writer.write("-------------------\n");
-            writer.write("Time Complexity: O(n log n)\n");
-            writer.write("  - Sorting: O(n log n) for both latitude and longitude arrays\n");
-            writer.write("  - Bulk build: O(n log n) - each level processes O(n) elements, log n levels\n");
-            writer.write("  - Median selection: O(1) per level (using sorted arrays)\n");
-            writer.write("  - Partitioning: O(n) per level\n");
-            writer.write("  - Overall: O(n log n)\n\n");
-            
-            writer.write("Space Complexity: O(n)\n");
-            writer.write("  - Tree nodes: O(n) in worst case (one node per unique coordinate)\n");
-            writer.write("  - Buckets: O(n) total (all stations stored)\n");
-            writer.write("  - Sorted arrays: O(n) temporary space during build\n");
-            writer.write("  - Overall: O(n)\n\n");
-            
-            writer.write("Tree Height Analysis:\n");
-            writer.write("  - Worst-case height: O(n) if tree is unbalanced (should not occur with median selection)\n");
-            writer.write("  - Expected height: O(log n) for balanced tree with median selection\n");
-            writer.write("  - Actual height: " + height + " (for " + numStations + " stations)\n");
-            if (numStations > 0) {
-                writer.write("  - Optimal height: " + (int)Math.ceil(Math.log(numStations) / Math.log(2)) + " (ceiling of log2(n))\n");
-            }
-            writer.write("\n");
-            
-            writer.write("Determinism:\n");
-            writer.write("  - The algorithm is deterministic: same input produces same tree structure\n");
-            writer.write("  - Uses median selection from sorted arrays\n");
-            writer.write("  - Buckets are sorted by station name (ascending) for consistent ordering\n");
-            
-            return true;
-        } catch (IOException e) {
-            System.err.println("Error writing report: " + e.getMessage());
-            return false;
-        }
-    }
-    
-    /**
-     * Gets a formatted string with tree metrics.
-     *
-     * @return formatted metrics string
-     */
-    public String getMetricsString() {
-        if (!isTreeBuilt()) {
-            return "KD-tree not built yet.";
+            return null;
         }
         
         int[] sizeInfo = kdTree.getSize();
@@ -230,27 +139,20 @@ public class KDTreeController {
         int height = kdTree.height();
         Map<Integer, Integer> bucketStats = kdTree.getBucketStats();
         
-        StringBuilder sb = new StringBuilder();
-        sb.append("KD-Tree Metrics:\n");
-        sb.append("===============\n");
-        sb.append("Number of Stations: ").append(numStations).append("\n");
-        sb.append("Number of Nodes: ").append(numNodes).append("\n");
-        sb.append("Tree Height: ").append(height).append("\n");
-        sb.append("\nDistinct Bucket Sizes:\n");
-        
-        List<Map.Entry<Integer, Integer>> sortedStats = new ArrayList<>(bucketStats.entrySet());
-        sortedStats.sort((a, b) -> {
-            int cmp = b.getValue().compareTo(a.getValue());
-            if (cmp != 0) return cmp;
-            return b.getKey().compareTo(a.getKey());
-        });
-        
-        for (Map.Entry<Integer, Integer> entry : sortedStats) {
-            sb.append("  Bucket size ").append(entry.getKey())
-              .append(": ").append(entry.getValue()).append(" nodes\n");
+        return new KDTreeMetrics(numNodes, numStations, height, bucketStats);
+    }
+    
+    /**
+     * Gets a formatted string with tree metrics.
+     *
+     * @return formatted metrics string
+     */
+    public String getMetricsString() {
+        KDTreeMetrics metrics = getAllMetrics();
+        if (metrics == null) {
+            return "KD-tree not built yet.";
         }
-        
-        return sb.toString();
+        return metrics.toString();
     }
 }
 

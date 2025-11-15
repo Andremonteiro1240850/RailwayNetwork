@@ -175,7 +175,8 @@ public class Main {
             System.out.println("\n=== SPATIAL INDEXING & GEOGRAPHICAL QUERIES ===");
             System.out.println("1. Login as a Planner to lookup for Stations");
             System.out.println("2. Login as a Freight Manager");
-            System.out.println("3. Back");
+            System.out.println("3. Login as Data Engineer");
+            System.out.println("4. Back");
 
             System.out.print("Select option: ");
             String choice = scanner.nextLine().trim();
@@ -192,6 +193,11 @@ public class Main {
                     // After freight manager, return to menu (continue loop)
                     break;
                 case "3":
+                    // Data Engineer -> KD-Tree Operations
+                    dataEngineerMain();
+                    // After data engineer, return to menu (continue loop)
+                    break;
+                case "4":
                     return false; // Back selecionado
                 default:
                     System.out.println("Invalid option!");
@@ -368,5 +374,30 @@ public class Main {
         DispatchController controller = new DispatchController();
         SchedulerUI ui = new SchedulerUI(controller);
         ui.showMainMenu();
+    }
+    
+    /**
+     * Data Engineer - Balanced KD-Tree Operations
+     */
+    private static void dataEngineerMain() {
+        try {
+            System.out.println("\n=== DATA ENGINEER - BALANCED KD-TREE OPERATIONS ===");
+            System.out.println("Loading stations...");
+
+            StationRepository repository = new StationRepository(
+                stationLoader.loadFromCSV("train_station_dataset/train_stations_europe.csv")
+            );
+
+            System.out.println("Stations loaded successfully!");
+            System.out.println("Total stations: " + repository.totalStations());
+
+            KDTreeController kdTreeController = new KDTreeController(repository);
+            KDTreeUI ui = new KDTreeUI(kdTreeController);
+            ui.showMainMenu();
+
+        } catch (Exception e) {
+            System.err.println("ERROR in dataEngineerMain: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 }

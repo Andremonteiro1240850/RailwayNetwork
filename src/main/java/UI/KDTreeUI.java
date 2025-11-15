@@ -1,6 +1,7 @@
 package UI;
 
 import Controller.KDTreeController;
+import Controller.KDTreeMetrics;
 import Repository.StationRepository;
 
 import java.util.Scanner;
@@ -37,8 +38,7 @@ public class KDTreeUI {
             System.out.println("=".repeat(60));
             System.out.println("1. Build KD-Tree");
             System.out.println("2. View Tree Metrics");
-            System.out.println("3. Generate Report");
-            System.out.println("4. Back to Main Menu");
+            System.out.println("3. Back to Main Menu");
             
             System.out.print("\nSelect option: ");
             String choice = scanner.nextLine().trim();
@@ -51,9 +51,6 @@ public class KDTreeUI {
                     viewMetrics();
                     break;
                 case "3":
-                    generateReport();
-                    break;
-                case "4":
                     return;
                 default:
                     System.out.println("❌ Invalid option! Please try again.");
@@ -84,7 +81,26 @@ public class KDTreeUI {
         
         if (success) {
             System.out.println("✓ KD-tree built successfully in " + (endTime - startTime) + " ms.");
-            System.out.println("\nTree built! You can now view metrics or generate a report.");
+            
+            // Show summary immediately after build
+            KDTreeMetrics metrics = controller.getAllMetrics();
+            if (metrics != null) {
+                System.out.println("\n" + "=".repeat(60));
+                System.out.println("KD-Tree Build Summary");
+                System.out.println("=".repeat(60));
+                System.out.println("Total Number of Stations: " + metrics.getNumStations());
+                System.out.println("Total Number of Nodes: " + metrics.getNumNodes());
+                System.out.println("Tree Height: " + metrics.getHeight());
+                System.out.println("\nBucket Size Distribution:");
+                metrics.getBucketStats().entrySet().stream()
+                    .sorted((a, b) -> {
+                        int cmp = b.getValue().compareTo(a.getValue());
+                        return cmp != 0 ? cmp : b.getKey().compareTo(a.getKey());
+                    })
+                    .forEach(entry -> System.out.println("  Bucket size " + entry.getKey() + ": " + entry.getValue() + " node(s)"));
+                
+                System.out.println("\nYou can view detailed metrics.");
+            }
         } else {
             System.out.println("❌ Error building KD-tree. Please check the station repository.");
         }
@@ -116,39 +132,5 @@ public class KDTreeUI {
         scanner.nextLine();
     }
     
-    /**
-     * Generates a build report.
-     */
-    private void generateReport() {
-        System.out.println("\n" + "-".repeat(60));
-        System.out.println("Generate Build Report");
-        System.out.println("-".repeat(60));
-        
-        if (!controller.isTreeBuilt()) {
-            System.out.println("❌ Tree not built yet. Please build the tree first.");
-            System.out.print("\nPress Enter to continue...");
-            scanner.nextLine();
-            return;
-        }
-        
-        System.out.print("Enter output file path (default: kdtree_report.txt): ");
-        String path = scanner.nextLine().trim();
-        
-        if (path.isEmpty()) {
-            path = "kdtree_report.txt";
-        }
-        
-        System.out.println("\n📄 Generating report...");
-        boolean success = controller.generateReport(path);
-        
-        if (success) {
-            System.out.println("✓ Report generated successfully: " + path);
-        } else {
-            System.out.println("❌ Error generating report.");
-        }
-        
-        System.out.print("\nPress Enter to continue...");
-        scanner.nextLine();
-    }
 }
 
