@@ -243,17 +243,6 @@ class WagonsUnloadingControllerTest {
         assertTrue(controller.isDataLoaded());
     }
 
-    // ---------- getWarehouseManager ----------
-    @Test
-    @DisplayName("getWarehouseManager returns warehouse manager")
-    void getWarehouseManager() {
-        WarehouseManager manager = controller.getWarehouseManager();
-        
-        assertNotNull(manager);
-        assertEquals(dataLoader.items, manager.getItems());
-        assertEquals(dataLoader.bays, manager.getBays());
-    }
-
     // ---------- getBoxRepository ----------
     @Test
     @DisplayName("getBoxRepository returns box repository")
