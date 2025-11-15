@@ -228,6 +228,7 @@ public class DispatchReport {
         private final List<StationETA> routeWithETAs;
         private final List<TrainSchedule.SegmentTime> segmentTimes;
         private final double totalTravelTimeHours;
+        private final List<Facility> selectedStations; // Only stations selected by user (without intermediates)
 
         /**
          * Represents an ETA entry for a station in the route.
@@ -408,10 +409,12 @@ public class DispatchReport {
          * @param routeWithETAs        the ordered route with ETAs for each station
          * @param segmentTimes         the list of segment times
          * @param totalTravelTimeHours the total travel time in hours
+         * @param selectedStations     the stations selected by user (without intermediate stations)
          * @throws IllegalArgumentException if parameters are invalid
          */
         public TrainSchedule(String trainId, List<StationETA> routeWithETAs,
-                            List<TrainSchedule.SegmentTime> segmentTimes, double totalTravelTimeHours) {
+                            List<TrainSchedule.SegmentTime> segmentTimes, double totalTravelTimeHours,
+                            List<Facility> selectedStations) {
             if (trainId == null || trainId.trim().isEmpty()) {
                 throw new IllegalArgumentException("Train ID cannot be null or empty");
             }
@@ -424,9 +427,13 @@ public class DispatchReport {
             if (totalTravelTimeHours < 0) {
                 throw new IllegalArgumentException("Total travel time cannot be negative");
             }
+            if (selectedStations == null || selectedStations.isEmpty()) {
+                throw new IllegalArgumentException("Selected stations cannot be null or empty");
+            }
             
             this.trainId = trainId.trim();
             this.routeWithETAs = new ArrayList<>(routeWithETAs);
+            this.selectedStations = new ArrayList<>(selectedStations);
             this.segmentTimes = new ArrayList<>(segmentTimes);
             this.totalTravelTimeHours = totalTravelTimeHours;
         }
@@ -447,6 +454,15 @@ public class DispatchReport {
          */
         public List<StationETA> getRouteWithETAs() {
             return new ArrayList<>(routeWithETAs);
+        }
+        
+        /**
+         * Gets the stations selected by the user (without intermediate stations).
+         *
+         * @return the selected stations
+         */
+        public List<Facility> getSelectedStations() {
+            return new ArrayList<>(selectedStations);
         }
 
         /**
