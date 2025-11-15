@@ -39,7 +39,7 @@ public class StationController {
     public boolean isValidTimeZone(String timeZone) {
         List<Station> stations = stationRepository.getStationsByTimeZone(timeZone);
         for (Station station : stations) {
-            if(station.getTimeZone().equals(timeZone)) {
+            if(station.getTimeZoneGroup().equals(timeZone)) {
                 return true;
             }
         }
