@@ -44,42 +44,50 @@ public class GeographicalSearchController {
     
     /**
      * Searches for stations within a geographical rectangle with optional filters.
-     * Uses KD-tree pruning to avoid scanning the whole dataset.
+     * Uses KD-tree pruning to efficiently find stations without scanning the entire dataset.
+     * 
+     * The search process:
+     * 1. Validates that the geographical boundaries are within valid ranges
+     * 2. Performs a range query on the KD-tree (uses spatial pruning for efficiency)
+     * 3. Applies optional filters (country, city status, main station status) if provided
+     * 4. Returns the filtered and sorted list of matching stations
      *
-     * @param latMin minimum latitude (inclusive)
-     * @param latMax maximum latitude (inclusive)
-     * @param lonMin minimum longitude (inclusive)
-     * @param lonMax maximum longitude (inclusive)
-     * @param filters optional filters (isCity, isMainStation, country)
-     * @return list of matching stations, sorted by name
-     * @throws IllegalArgumentException if range is invalid
+     * @param latMin minimum latitude (inclusive, must be between -90 and 90)
+     * @param latMax maximum latitude (inclusive, must be between -90 and 90)
+     * @param lonMin minimum longitude (inclusive, must be between -180 and 180)
+     * @param lonMax maximum longitude (inclusive, must be between -180 and 180)
+     * @param filters optional filters to refine the search (can be null)
+     * @return list of matching stations, sorted alphabetically by name
+     * @throws IllegalArgumentException if the geographical range is invalid
      */
     public List<Station> searchByGeographicalArea(double latMin, double latMax, 
                                                    double lonMin, double lonMax,
                                                    SearchFilters filters) {
-        // Validate range
         if (latMin < -90 || latMax > 90 || latMin > latMax) {
-            throw new IllegalArgumentException("Invalid latitude range: [" + latMin + ", " + latMax + "]");
+            throw new IllegalArgumentException(
+                "Invalid latitude range: [" + latMin + ", " + latMax + "]. " +
+                "Latitude must be between -90 and 90, and minimum must be <= maximum.");
         }
+        
         if (lonMin < -180 || lonMax > 180 || lonMin > lonMax) {
-            throw new IllegalArgumentException("Invalid longitude range: [" + lonMin + ", " + lonMax + "]");
+            throw new IllegalArgumentException(
+                "Invalid longitude range: [" + lonMin + ", " + lonMax + "]. " +
+                "Longitude must be between -180 and 180, and minimum must be <= maximum.");
         }
         
-        // Perform range query using KD-tree (efficient pruning)
-        List<Station> results = kdTree.rangeQuery(latMin, latMax, lonMin, lonMax);
+        List<Station> stationsInRange = kdTree.rangeQuery(latMin, latMax, lonMin, lonMax);
         
-        // Apply filters if provided
         if (filters != null && filters.hasFilters()) {
-            List<Station> filteredResults = new ArrayList<>();
-            for (Station station : results) {
+            List<Station> filteredStations = new ArrayList<>();
+            for (Station station : stationsInRange) {
                 if (filters.matches(station)) {
-                    filteredResults.add(station);
+                    filteredStations.add(station);
                 }
             }
-            return filteredResults;
+            return filteredStations;
         }
         
-        return results;
+        return stationsInRange;
     }
     
     /**
@@ -97,12 +105,15 @@ public class GeographicalSearchController {
     }
     
     /**
-     * Gets tree statistics for analysis.
+     * Gets tree statistics for analysis and debugging.
+     * Provides information about the KD-tree structure.
      *
-     * @return string with tree size and height
+     * @return formatted string with tree size (number of nodes) and height
      */
     public String getTreeStatistics() {
-        return String.format("KD-Tree: Size=%d, Height=%d", kdTree.size(), kdTree.height());
+        int treeSize = kdTree.size();
+        int treeHeight = kdTree.height();
+        return String.format("Size: %d nodes, Height: %d levels", treeSize, treeHeight);
     }
     
     /**

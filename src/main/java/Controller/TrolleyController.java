@@ -123,4 +123,7 @@ public class TrolleyController {
                 "trolley: " + trolley +
                 '.';
     }
+
+    public void packing() {
+    }
 }

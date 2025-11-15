@@ -11,6 +11,7 @@ import Repository.WarehouseRepository;
 import UI.*;
 import Domain.DataLoader;
 
+import java.util.List;
 import java.util.Scanner;
 
 /**
@@ -174,9 +175,10 @@ public class Main {
         while (true) {
             System.out.println("\n=== SPATIAL INDEXING & GEOGRAPHICAL QUERIES ===");
             System.out.println("1. Login as a Planner to lookup for Stations");
-            System.out.println("2. Login as a Freight Manager");
-            System.out.println("3. Login as Data Engineer");
-            System.out.println("4. Back");
+            System.out.println("2. Login as a Planner - Search by Geographical Area (USEI08)");
+            System.out.println("3. Login as a Freight Manager");
+            System.out.println("4. Login as Data Engineer");
+            System.out.println("5. Back");
 
             System.out.print("Select option: ");
             String choice = scanner.nextLine().trim();
@@ -188,16 +190,21 @@ public class Main {
                     // After station lookup, return to menu (continue loop)
                     break;
                 case "2":
+                    // Planner -> Geographical Search (USEI08)
+                    geographicalSearch();
+                    // After geographical search, return to menu (continue loop)
+                    break;
+                case "3":
                     // Freight Manager -> Train Dispatch Scheduler
                     freightManager();
                     // After freight manager, return to menu (continue loop)
                     break;
-                case "3":
+                case "4":
                     // Data Engineer -> KD-Tree Operations
                     dataEngineerMain();
                     // After data engineer, return to menu (continue loop)
                     break;
-                case "4":
+                case "5":
                     return false; // Back selecionado
                 default:
                     System.out.println("Invalid option!");
@@ -397,6 +404,38 @@ public class Main {
 
         } catch (Exception e) {
             System.err.println("ERROR in dataEngineerMain: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+    
+    /**
+     * Planner - Search by Geographical Area (USEI08)
+     * Allows searching for stations within a geographical rectangle with optional filters.
+     */
+    private static void geographicalSearch() {
+        try {
+            System.out.println("\n=== SEARCH BY GEOGRAPHICAL AREA ===");
+            System.out.println("Loading stations...");
+
+            // Load stations using StationLoader from USEI06
+            List<Domain.Station> stations = stationLoader.loadFromCSV("train_station_dataset/train_stations_europe.csv");
+
+            if (stations == null || stations.isEmpty()) {
+                System.out.println("No stations loaded. Please check the CSV file.");
+                return;
+            }
+
+            System.out.println("Stations loaded successfully! Total: " + stations.size());
+
+            // Create controller and UI
+            GeographicalSearchController controller = new GeographicalSearchController(stations);
+            GeographicalSearchUI ui = new GeographicalSearchUI(controller);
+            
+            // Show main menu
+            ui.showMainMenu();
+
+        } catch (Exception e) {
+            System.err.println("ERROR in geographicalSearch: " + e.getMessage());
             e.printStackTrace();
         }
     }
