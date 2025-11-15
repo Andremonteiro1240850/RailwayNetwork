@@ -32,9 +32,9 @@ public class GeographicalSearchController {
     
     /**
      * Constructs a new GeographicalSearchController with an existing KD-tree.
-     * This allows using a balanced tree built in USEI07.
+     * This allows using a balanced tree.
      *
-     * @param kdTree the KD-tree to use (can be balanced from USEI07)
+     * @param kdTree the KD-tree to use (can be balanced)
      * @param stations list of all stations (for fallback or additional operations)
      */
     public GeographicalSearchController(KDTree kdTree, List<Station> stations) {
@@ -106,7 +106,7 @@ public class GeographicalSearchController {
     }
     
     /**
-     * Gets the KD-tree (for integration with USEI07).
+     * Gets the KD-tree.
      *
      * @return the KD-tree
      */
