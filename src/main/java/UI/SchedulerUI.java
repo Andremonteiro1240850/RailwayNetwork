@@ -231,17 +231,11 @@ public class SchedulerUI {
         // Update departure time in case it was changed during locomotive selection
         departureTime = departureTimeWrapper[0];
 
-        // Use wrapper array to allow modification of departure time during wagon selection
-        LocalDateTime[] departureTimeWrapperForWagons = new LocalDateTime[]{departureTime};
-
         // Collect wagons from CSV with validation
-        List<Wagon> selectedWagons = collectWagonsWithValidation(existingTrains, route.get(0), departureTimeWrapperForWagons);
+        List<Wagon> selectedWagons = collectWagonsWithValidation(existingTrains);
         if (selectedWagons == null) {
             return null;
         }
-
-        // Update departure time in case it was changed during wagon selection
-        departureTime = departureTimeWrapperForWagons[0];
 
         // Calculate total weight from wagons (empty or loaded)
         double totalWeight = calculateTotalWeight(selectedWagons);
@@ -629,44 +623,26 @@ public class SchedulerUI {
     }
 
     /**
-     * Validates if a wagon is available for use at the specified departure time and station.
+     * Validates if a wagon is available for use.
+     * A wagon cannot be assigned to multiple trains - once assigned to a train, it cannot be assigned to another.
      *
      * @param wagon the wagon to validate
      * @param existingTrains the list of trains already created
-     * @param departureStation the departure station of the new train
-     * @param departureTime the departure time of the new train
      * @return null if available, error message if not available
      */
-    private String validateWagonAvailability(Wagon wagon, List<Train> existingTrains, 
-                                             Facility departureStation, LocalDateTime departureTime) {
+    private String validateWagonAvailability(Wagon wagon, List<Train> existingTrains) {
         if (existingTrains == null || existingTrains.isEmpty()) {
             return null; // No existing trains, wagon is available
         }
 
-        TravelCalculationService travelService = controller.getTravelTimeController().getService();
-
         for (Train existingTrain : existingTrains) {
-            // Check if this wagon is used in the existing train
-            if (!existingTrain.getWagons().contains(wagon)) {
-                continue; // Wagon not used in this train
-            }
-
-            // Calculate when the wagon will be available
-            // Wagons travel with the train, so we use the primary locomotive for speed calculation
-            LocalDateTime wagonAvailableTime = calculateWagonAvailableTime(
-                wagon, existingTrain, departureStation, travelService);
-
-            // Check if departure time is after wagon becomes available
-            if (departureTime.isBefore(wagonAvailableTime)) {
+            // Check if this wagon is already assigned to an existing train
+            if (existingTrain.getWagons().contains(wagon)) {
                 return String.format(
                     "Wagon %s is already assigned to train %s. " +
-                    "It will be available at %s (after completing its journey and traveling to %s). " +
-                    "Please choose a departure time after %s or select a different wagon.",
+                    "A wagon cannot be assigned to multiple trains. Please select a different wagon.",
                     wagon.getWagonId(),
-                    existingTrain.getTrainId(),
-                    wagonAvailableTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")),
-                    departureStation.getId(),
-                    wagonAvailableTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))
+                    existingTrain.getTrainId()
                 );
             }
         }
@@ -674,99 +650,6 @@ public class SchedulerUI {
         return null; // Wagon is available
     }
 
-    /**
-     * Calculates when a wagon will be available at a specific station.
-     * Wagons travel with the train, so we calculate based on the train's journey.
-     *
-     * @param wagon the wagon
-     * @param train the train currently using the wagon
-     * @param targetStation the station where the wagon needs to be available
-     * @param travelService the travel calculation service
-     * @return the time when the wagon will be available at the target station
-     */
-    private LocalDateTime calculateWagonAvailableTime(Wagon wagon, Train train,
-                                                      Facility targetStation, TravelCalculationService travelService) {
-        // Get the train's route
-        List<Facility> route = train.getRoute();
-        if (route.isEmpty()) {
-            return train.getDeparturePlannedDateTime(); // Should not happen, but safety check
-        }
-
-        // Wagons travel with the train, so we use the train's primary locomotive for speed calculation
-        Locomotive primaryLocomotive = train.getPrimaryLocomotive();
-
-        // Calculate total travel time for the train
-        double totalTravelTimeHours = 0.0;
-        for (int i = 0; i < route.size() - 1; i++) {
-            try {
-                double segmentTime = travelService.calculateTravelTime(route.get(i), route.get(i + 1), primaryLocomotive);
-                totalTravelTimeHours += segmentTime;
-            } catch (Exception e) {
-                // If calculation fails, use a simple estimate
-                return train.getDeparturePlannedDateTime().plusHours(24); // Conservative estimate
-            }
-        }
-
-        // Time when train completes its journey (arrives at final station)
-        LocalDateTime journeyEndTime = train.getDeparturePlannedDateTime().plusMinutes((long)(totalTravelTimeHours * 60));
-
-        // Get the final station of the train's route
-        Facility finalStation = route.get(route.size() - 1);
-
-        // If target station is the same as final station, wagon is available immediately after journey
-        if (finalStation.getId().equals(targetStation.getId())) {
-            return journeyEndTime;
-        }
-
-        // Calculate travel time from final station to target station
-        // Wagons need to be transported back, so we use the locomotive speed
-        double travelTimeToTargetHours = 0.0;
-        try {
-            travelTimeToTargetHours = travelService.calculateTravelTime(finalStation, targetStation, primaryLocomotive);
-        } catch (Exception e) {
-            // If stations are not directly connected, try to find a path through the route
-            int targetIndex = -1;
-            for (int i = 0; i < route.size(); i++) {
-                if (route.get(i).getId().equals(targetStation.getId())) {
-                    targetIndex = i;
-                    break;
-                }
-            }
-            
-            if (targetIndex >= 0 && targetIndex < route.size() - 1) {
-                // Target station is in the route, calculate return time
-                for (int i = route.size() - 1; i > targetIndex; i--) {
-                    try {
-                        double segmentTime = travelService.calculateTravelTime(route.get(i), route.get(i - 1), primaryLocomotive);
-                        travelTimeToTargetHours += segmentTime;
-                    } catch (Exception ex) {
-                        travelTimeToTargetHours = 0.0;
-                        break;
-                    }
-                }
-            } else {
-                // Target station not in route and not directly connected
-                if (route.get(0).getId().equals(targetStation.getId())) {
-                    // Target is the departure station, calculate return time
-                    for (int i = route.size() - 1; i > 0; i--) {
-                        try {
-                            double segmentTime = travelService.calculateTravelTime(route.get(i), route.get(i - 1), primaryLocomotive);
-                            travelTimeToTargetHours += segmentTime;
-                        } catch (Exception ex) {
-                            travelTimeToTargetHours = 0.0;
-                            break;
-                        }
-                    }
-                } else {
-                    // Target station is completely different and not connected
-                    travelTimeToTargetHours = 0.0;
-                }
-            }
-        }
-
-        // Wagon is available after completing journey + traveling to target station
-        return journeyEndTime.plusMinutes((long)(travelTimeToTargetHours * 60));
-    }
 
     /**
      * Collects the departure time from the user.
@@ -802,14 +685,13 @@ public class SchedulerUI {
     }
 
     /**
-     * Collects wagons from the user (from CSV) with validation to ensure they are not being used by other trains.
+     * Collects wagons from the user (from CSV) with validation to ensure they are not already assigned to other trains.
+     * A wagon cannot be assigned to multiple trains.
      *
      * @param existingTrains the list of trains already created
-     * @param departureStation the departure station of the new train
-     * @param departureTimeWrapper array with one element containing the departure time (can be modified if user chooses to change it)
      * @return the list of selected wagons (can be empty), or null if cancelled
      */
-    private List<Wagon> collectWagonsWithValidation(List<Train> existingTrains, Facility departureStation, LocalDateTime[] departureTimeWrapper) {
+    private List<Wagon> collectWagonsWithValidation(List<Train> existingTrains) {
         List<Wagon> selectedWagons = new ArrayList<>();
         
         // Ask how many wagons
@@ -873,46 +755,16 @@ public class SchedulerUI {
                 }
 
                 // Validate wagon availability
-                String validationError = validateWagonAvailability(wagon, existingTrains, departureStation, departureTimeWrapper[0]);
+                String validationError = validateWagonAvailability(wagon, existingTrains);
                 if (validationError != null) {
                     System.out.println("ERROR: " + validationError);
-                    System.out.println();
-                    System.out.println("What would you like to do?");
-                    System.out.println("1. Change departure time");
-                    System.out.println("2. Choose a different wagon");
-                    System.out.print("Select option (1 or 2): ");
-                    String choice = scanner.nextLine().trim();
-                    
-                    if (choice.equals("1")) {
-                        // User wants to change departure time
-                        LocalDateTime newDepartureTime = collectDepartureTime();
-                        if (newDepartureTime == null) {
-                            return null; // User cancelled
-                        }
-                        departureTimeWrapper[0] = newDepartureTime;
-                        // Re-validate with new departure time
-                        validationError = validateWagonAvailability(wagon, existingTrains, departureStation, departureTimeWrapper[0]);
-                        if (validationError != null) {
-                            System.out.println("ERROR: " + validationError);
-                            System.out.println("The wagon is still not available at the new departure time.");
-                            System.out.print("Do you want to try again? (y/n): ");
-                            String retry = scanner.nextLine().trim().toLowerCase();
-                            if (!retry.equals("y") && !retry.equals("yes")) {
-                                return null;
-                            }
-                            System.out.println();
-                            continue;
-                        }
-                        // Wagon is now available with new departure time
-                    } else if (choice.equals("2")) {
-                        // User wants to choose a different wagon
-                        System.out.println();
-                        continue;
-                    } else {
-                        System.out.println("ERROR: Invalid option. Please choose 1 or 2.");
-                        System.out.println();
-                        continue;
+                    System.out.print("Do you want to try again? (y/n): ");
+                    String retry = scanner.nextLine().trim().toLowerCase();
+                    if (!retry.equals("y") && !retry.equals("yes")) {
+                        return null;
                     }
+                    System.out.println();
+                    continue;
                 }
 
                 selectedWagons.add(wagon);
