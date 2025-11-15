@@ -101,6 +101,32 @@ public class BoxRepository {
     }
 
     /**
+     * Update a box's location (for relocation operations)
+     *
+     * @param box   the box
+     * @param newBayId the new bay id
+     */
+    public void updateBoxLocation(Box box, BayId newBayId) {
+        if (box.getLocation() == null) {
+            throw new IllegalArgumentException("Box " + box.getBoxId() + " is not assigned to any bay");
+        }
+        
+        BayId oldBayId = box.getLocation();
+        String sku = box.getSku();
+        
+        // Remove from old location in assigned boxes
+        List<Box> assignedList = assignedBoxes.get(sku);
+        if (assignedList != null) {
+            // Box is already in the list, just update its location
+            box.setLocation(newBayId);
+        } else {
+            throw new IllegalArgumentException("Box " + box.getBoxId() + " not found in assigned boxes");
+        }
+        
+        // Box location updated silently - debug messages only in UI
+    }
+
+    /**
      * Get all unassigned boxes for a specific SKU
      *
      * @param sku the sku

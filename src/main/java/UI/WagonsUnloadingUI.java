@@ -67,21 +67,60 @@ public class WagonsUnloadingUI {
             return;
         }
         
-        System.out.println("Starting wagon unloading process...");
-        
-        // Show debug information before unloading
+        // Show status before unloading
         Repository.BoxRepository boxRepo = controller.getBoxRepository();
-        Repository.BoxRepository.RepositoryStats stats = boxRepo.getStats();
-        System.out.println("Current repository status:");
-        System.out.println("  Unassigned boxes: " + stats.totalUnassigned + " (SKUs: " + stats.unassignedSkus + ")");
-        System.out.println("  Assigned boxes: " + stats.totalAssigned + " (SKUs: " + stats.assignedSkus + ")");
+        Repository.BoxRepository.RepositoryStats statsBefore = boxRepo.getStats();
+        System.out.println("\nCurrent repository status:");
+        System.out.println("  Unassigned boxes: " + statsBefore.totalUnassigned + " (SKUs: " + statsBefore.unassignedSkus + ")");
+        System.out.println("  Assigned boxes: " + statsBefore.totalAssigned + " (SKUs: " + statsBefore.assignedSkus + ")");
         
+        // Get unassigned boxes to show processing info
+        Map<String, List<Box>> unassignedBoxes = boxRepo.getAllUnassignedBoxes();
+        
+        if (unassignedBoxes.isEmpty()) {
+            System.out.println("\nNo unassigned boxes to process.");
+            return;
+        }
+        
+        System.out.println("\nStarting wagon unloading process...");
+        
+        // Show what will be processed
+        int totalBoxes = unassignedBoxes.values().stream().mapToInt(List::size).sum();
+        System.out.println("Processing " + totalBoxes + " unassigned boxes across " + unassignedBoxes.size() + " SKU(s)...");
+        
+        // Track assignments for feedback
+        Map<String, Integer> assignmentsBySku = new HashMap<>();
+        Map<String, Integer> unassignedBySku = new HashMap<>();
+        
+        for (Map.Entry<String, List<Box>> entry : unassignedBoxes.entrySet()) {
+            String sku = entry.getKey();
+            List<Box> boxes = entry.getValue();
+            assignmentsBySku.put(sku, 0);
+            unassignedBySku.put(sku, boxes.size());
+            
+            System.out.println("\nProcessing " + boxes.size() + " unassigned boxes for SKU: " + sku);
+        }
+        
+        // Execute unloading
         controller.unloadWagons();
         
-        // Show detailed assignment information after unloading
-        System.out.println("\nDETAILED BOX ASSIGNMENTS:");
-        showDetailedAssignments(boxRepo);
+        // Show results
+        Repository.BoxRepository.RepositoryStats statsAfter = boxRepo.getStats();
+        int assignedCount = statsBefore.totalUnassigned - statsAfter.totalUnassigned;
         
+        System.out.println("\n=== UNLOADING COMPLETED ===");
+        System.out.println("Boxes assigned: " + assignedCount);
+        System.out.println("Remaining unassigned: " + statsAfter.totalUnassigned);
+        
+        if (statsAfter.totalUnassigned > 0) {
+            System.out.println("\nWarning: Some boxes could not be assigned (no available bays).");
+        }
+        
+        // Show detailed assignment information after unloading
+        if (statsAfter.totalAssigned > 0) {
+            System.out.println("\n=== DETAILED BOX ASSIGNMENTS ===");
+            showDetailedAssignments(boxRepo);
+        }
     }
 
     /**
@@ -111,7 +150,7 @@ public class WagonsUnloadingUI {
         String sku = scanner.nextLine().trim();
         
         if (!skus.contains(sku)) {
-            System.out.println("Invalid SKU.");
+            System.out.println("Invalid SKU: " + sku + " not found in catalog.");
             return;
         }
         
@@ -124,19 +163,28 @@ public class WagonsUnloadingUI {
                 return;
             }
             
+            System.out.println("\nDispatching " + quantity + " units of SKU " + sku + "...");
             List<Box> dispatchedBoxes = controller.dispatchStock(sku, quantity);
             
             if (dispatchedBoxes.isEmpty()) {
-                System.out.println("No boxes were dispatched.");
+                System.out.println("No boxes were dispatched. Insufficient stock available.");
             } else {
-                System.out.println("Dispatched " + dispatchedBoxes.size() + " boxes:");
+                int totalDispatched = dispatchedBoxes.stream().mapToInt(Box::getQty).sum();
+                System.out.println("\nSuccessfully dispatched " + totalDispatched + " units in " + dispatchedBoxes.size() + " box(es):");
+                
                 for (Box box : dispatchedBoxes) {
-                    System.out.println("  - " + box.getBoxId() + " (qty: " + box.getQty() + ")");
+                    String location = box.getLocation() != null ? " from " + box.getLocation() : "";
+                    String type = box.getBoxId().contains("_PARTIAL") ? " (partial)" : " (full box)";
+                    System.out.println("  - " + box.getBoxId() + type + " - qty: " + box.getQty() + location);
+                }
+                
+                if (totalDispatched < quantity) {
+                    System.out.println("\nWarning: Requested " + quantity + " units, but only " + totalDispatched + " units were available.");
                 }
             }
             
         } catch (NumberFormatException e) {
-            System.out.println("Invalid quantity format.");
+            System.out.println("Invalid quantity format. Please enter a valid number.");
         }
         
     }
@@ -155,7 +203,25 @@ public class WagonsUnloadingUI {
         System.out.print("Enter box ID to relocate: ");
         String boxId = scanner.nextLine().trim();
         
-        System.out.print("Enter target warehouse ID: ");
+        // Check if box exists first
+        Repository.BoxRepository boxRepo = controller.getBoxRepository();
+        Box box = boxRepo.getBoxById(boxId);
+        if (box == null) {
+            System.out.println("Box " + boxId + " not found.");
+            return;
+        }
+        
+        // Show current location
+        Domain.BayId currentLocation = box.getLocation();
+        if (currentLocation == null) {
+            System.out.println("Box " + boxId + " is not assigned to any bay.");
+            return;
+        }
+        
+        System.out.println("Current location: " + currentLocation);
+        System.out.println("Box SKU: " + box.getSku() + " | Quantity: " + box.getQty());
+        
+        System.out.print("\nEnter target warehouse ID: ");
         String warehouseId = scanner.nextLine().trim();
         
         System.out.print("Enter target aisle: ");
@@ -165,16 +231,39 @@ public class WagonsUnloadingUI {
             System.out.print("Enter target bay: ");
             int bay = Integer.parseInt(scanner.nextLine().trim());
             
+            Domain.BayId targetBayId = new Domain.BayId(warehouseId, aisle, bay);
+            
+            // Check if target bay exists
+            Domain.Bay targetBay = controller.getBayMap().get(targetBayId);
+            if (targetBay == null) {
+                System.out.println("Target bay " + targetBayId + " not found.");
+                return;
+            }
+            
+            // Check if target bay is full
+            if (targetBay.isFull()) {
+                System.out.println("Target bay " + targetBayId + " is full (capacity: " + targetBay.getCapacityBoxes() + ").");
+                return;
+            }
+            
+            // Check if target bay can accept this SKU
+            if (!targetBay.canAcceptSku(box.getSku())) {
+                System.out.println("Target bay " + targetBayId + " is dedicated to SKU " + targetBay.getDedicatedSku() + 
+                                 ", cannot accept SKU " + box.getSku() + ".");
+                return;
+            }
+            
+            System.out.println("\nRelocating box " + boxId + " to " + targetBayId + "...");
             boolean success = controller.relocateBox(boxId, warehouseId, aisle, bay);
             
             if (success) {
-                System.out.println("Box relocated successfully!");
+                System.out.println("Box " + boxId + " successfully relocated from " + currentLocation + " to " + targetBayId + "!");
             } else {
-                System.out.println("Failed to relocate box. Check if box exists and target bay is available.");
+                System.out.println("Failed to relocate box. Please check the inputs and try again.");
             }
             
         } catch (NumberFormatException e) {
-            System.out.println("Invalid aisle or bay number.");
+            System.out.println("Invalid aisle or bay number. Please enter valid numbers.");
         }
         
     }
