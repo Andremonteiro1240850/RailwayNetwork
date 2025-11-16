@@ -3,18 +3,19 @@ package UI;
 import Controller.GeographicalSearchController;
 import Domain.Station;
 import Domain.SearchFilters;
+import Domain.KDTree;
 import Domain.ENUM.Country;
 
 import java.util.List;
 import java.util.Scanner;
 
 /**
- * User interface for geographical search operations (USEI08).
- * Allows searching for railway stations within a geographical rectangle
- * with optional filters (isCity, isMainStation, country).
+ * User interface for geographical search operations.
+ * Allows searching for railway stations within a geographical rectangle,
+ * finding nearest neighbors, and radius search with optional filters (isCity, isMainStation, country).
  * 
  * @author Development Team
- * @version 1.0
+ * @version 2.0
  */
 public class GeographicalSearchUI {
     
@@ -32,22 +33,24 @@ public class GeographicalSearchUI {
     }
     
     /**
-     * Shows the main menu for geographical search.
-     * Provides a user-friendly interface for searching railway stations by geographical area.
+     * Shows the main menu for geographical search (legacy method, kept for compatibility).
+     * New menus should use showAreaSearchMenu(), showNearestNSearchMenu(), or showRadiusSearchMenu().
      */
     public void showMainMenu() {
         while (true) {
-            System.out.println("\n" + "=".repeat(70));
-            System.out.println("          GEOGRAPHICAL SEARCH - SEARCH BY AREA (USEI08)");
-            System.out.println("=".repeat(70));
+            System.out.println("\n" + StringUtils.repeat("=", 70));
+            System.out.println("          GEOGRAPHICAL SEARCH");
+            System.out.println(StringUtils.repeat("=", 70));
             System.out.println();
             System.out.println("  What would you like to do?");
             System.out.println();
             System.out.println("  1. Search stations in a geographical area");
-            System.out.println("  2. Search stations with filters (country, city, main station)");
-            System.out.println("  3. View KD-Tree statistics");
-            System.out.println("  4. View sample queries");
-            System.out.println("  5. Back to main menu");
+            System.out.println("  2. Search stations with filters");
+            System.out.println("  3. Find N nearest stations to a point");
+            System.out.println("  4. Find stations within radius");
+            System.out.println("  5. View KD-Tree statistics");
+            System.out.println("  6. View sample queries");
+            System.out.println("  7. Back to main menu");
             System.out.println();
             System.out.print("  Select your option: ");
             
@@ -61,17 +64,22 @@ public class GeographicalSearchUI {
                     searchWithFilters();
                     break;
                 case "3":
-                    showTreeStatistics();
+                    searchNearestN();
                     break;
                 case "4":
-                    showSampleQueries();
+                    searchRadius();
                     break;
                 case "5":
+                    showTreeStatistics();
+                    break;
+                case "6":
+                    showSampleQueries();
+                    break;
+                case "7":
                     System.out.println("\n  Returning to main menu...");
                     return;
                 default:
-                    System.out.println("\n  [ERROR] Invalid option! Please enter a number between 1 and 5.");
-                    pauseForUser();
+                    System.out.println("\n  [ERROR] Invalid option! Please enter a number between 1 and 7.");
             }
         }
     }
@@ -81,9 +89,9 @@ public class GeographicalSearchUI {
      * Guides the user through entering latitude and longitude boundaries.
      */
     private void searchByArea() {
-        System.out.println("\n" + "=".repeat(70));
+        System.out.println("\n" + StringUtils.repeat("=",70));
         System.out.println("                    SEARCH BY GEOGRAPHICAL AREA");
-        System.out.println("=".repeat(70));
+        System.out.println(StringUtils.repeat("=",70));
         System.out.println();
         System.out.println("  Please enter the geographical boundaries for your search:");
         System.out.println("  (Latitude: -90 to 90, Longitude: -180 to 180)");
@@ -97,7 +105,6 @@ public class GeographicalSearchUI {
             if (minimumLatitude > maximumLatitude) {
                 System.out.println("\n  [ERROR] Minimum latitude (" + minimumLatitude + 
                                  ") cannot be greater than maximum latitude (" + maximumLatitude + ")!");
-                pauseForUser();
                 return;
             }
             
@@ -109,7 +116,6 @@ public class GeographicalSearchUI {
             if (minimumLongitude > maximumLongitude) {
                 System.out.println("\n  [ERROR] Minimum longitude (" + minimumLongitude + 
                                  ") cannot be greater than maximum longitude (" + maximumLongitude + ")!");
-                pauseForUser();
                 return;
             }
             
@@ -126,7 +132,6 @@ public class GeographicalSearchUI {
         } catch (Exception e) {
             System.out.println("\n  [ERROR] An error occurred: " + e.getMessage());
             System.out.println("  Please try again with valid coordinates.");
-            pauseForUser();
         }
     }
     
@@ -135,9 +140,9 @@ public class GeographicalSearchUI {
      * Allows users to refine their search by country, city status, or main station status.
      */
     private void searchWithFilters() {
-        System.out.println("\n" + "=".repeat(70));
+        System.out.println("\n" + StringUtils.repeat("=",70));
         System.out.println("              SEARCH WITH FILTERS");
-        System.out.println("=".repeat(70));
+        System.out.println(StringUtils.repeat("=",70));
         System.out.println();
         System.out.println("  First, define the geographical area:");
         System.out.println();
@@ -149,7 +154,6 @@ public class GeographicalSearchUI {
             
             if (minimumLatitude > maximumLatitude) {
                 System.out.println("\n  [ERROR] Invalid latitude range!");
-                pauseForUser();
                 return;
             }
             
@@ -160,7 +164,6 @@ public class GeographicalSearchUI {
             
             if (minimumLongitude > maximumLongitude) {
                 System.out.println("\n  [ERROR] Invalid longitude range!");
-                pauseForUser();
                 return;
             }
             
@@ -178,7 +181,6 @@ public class GeographicalSearchUI {
         } catch (Exception e) {
             System.out.println("\n  [ERROR] An error occurred: " + e.getMessage());
             System.out.println("  Please try again with valid input.");
-            pauseForUser();
         }
     }
     
@@ -190,9 +192,9 @@ public class GeographicalSearchUI {
      */
     private SearchFilters readFilters() {
         System.out.println();
-        System.out.println("  " + "-".repeat(68));
+        System.out.println("  " + StringUtils.repeat("-",68));
         System.out.println("  OPTIONAL FILTERS (Press Enter to skip any filter)");
-        System.out.println("  " + "-".repeat(68));
+        System.out.println("  " + StringUtils.repeat("-",68));
         System.out.println();
         
         System.out.println("  Country Filter:");
@@ -261,9 +263,9 @@ public class GeographicalSearchUI {
     private void displayResults(List<Station> results, double latMin, double latMax, 
                                double lonMin, double lonMax, SearchFilters filters) {
         System.out.println();
-        System.out.println("  " + "=".repeat(68));
+        System.out.println("  " + StringUtils.repeat("=",68));
         System.out.println("                          SEARCH RESULTS");
-        System.out.println("  " + "=".repeat(68));
+        System.out.println("  " + StringUtils.repeat("=",68));
         System.out.println();
         
         System.out.println("  Search Region:");
@@ -277,7 +279,7 @@ public class GeographicalSearchUI {
         }
         
         System.out.println();
-        System.out.println("  " + "-".repeat(68));
+        System.out.println("  " + StringUtils.repeat("-",68));
         System.out.println();
         
         int numberOfResults = results.size();
@@ -296,8 +298,7 @@ public class GeographicalSearchUI {
         }
         
         System.out.println();
-        System.out.println("  " + "=".repeat(68));
-        pauseForUser();
+        System.out.println("  " + StringUtils.repeat("=",68));
     }
     
     /**
@@ -370,9 +371,9 @@ public class GeographicalSearchUI {
      * Displays information about the tree structure and dataset size.
      */
     private void showTreeStatistics() {
-        System.out.println("\n" + "=".repeat(70));
+        System.out.println("\n" + StringUtils.repeat("=",70));
         System.out.println("                    KD-TREE STATISTICS");
-        System.out.println("=".repeat(70));
+        System.out.println(StringUtils.repeat("=",70));
         System.out.println();
         
         String treeStats = controller.getTreeStatistics();
@@ -390,8 +391,7 @@ public class GeographicalSearchUI {
         System.out.println("     This allows for efficient range queries without scanning");
         System.out.println("     the entire dataset.");
         System.out.println();
-        System.out.println("=".repeat(70));
-        pauseForUser();
+        System.out.println(StringUtils.repeat("=",70));
     }
     
     /**
@@ -399,48 +399,48 @@ public class GeographicalSearchUI {
      * Provides users with example queries they can try to understand the system.
      */
     private void showSampleQueries() {
-        System.out.println("\n" + "=".repeat(70));
+        System.out.println("\n" + StringUtils.repeat("=",70));
         System.out.println("                        SAMPLE QUERIES");
-        System.out.println("=".repeat(70));
+        System.out.println(StringUtils.repeat("=",70));
         System.out.println();
         System.out.println("  Here are some example queries you can try:");
         System.out.println();
         
-        System.out.println("  " + "-".repeat(68));
+        System.out.println("  " + StringUtils.repeat("-",68));
         System.out.println("  1. Search all stations in Portugal");
-        System.out.println("  " + "-".repeat(68));
+        System.out.println("  " + StringUtils.repeat("-",68));
         System.out.println("     Latitude:  [36.8, 42.2]");
         System.out.println("     Longitude: [-9.5, -6.2]");
         System.out.println("     Filter: Country = PT");
         System.out.println();
         
-        System.out.println("  " + "-".repeat(68));
+        System.out.println("  " + StringUtils.repeat("-",68));
         System.out.println("  2. Search city stations in Spain");
-        System.out.println("  " + "-".repeat(68));
+        System.out.println("  " + StringUtils.repeat("-",68));
         System.out.println("     Latitude:  [36.0, 43.8]");
         System.out.println("     Longitude: [-9.3, 4.3]");
         System.out.println("     Filters: Country = ES, City = Yes");
         System.out.println();
         
-        System.out.println("  " + "-".repeat(68));
+        System.out.println("  " + StringUtils.repeat("-",68));
         System.out.println("  3. Search main stations in Iberian Peninsula");
-        System.out.println("  " + "-".repeat(68));
+        System.out.println("  " + StringUtils.repeat("-",68));
         System.out.println("     Latitude:  [36.0, 43.8]");
         System.out.println("     Longitude: [-9.5, 4.3]");
         System.out.println("     Filter: Main Station = Yes");
         System.out.println();
         
-        System.out.println("  " + "-".repeat(68));
+        System.out.println("  " + StringUtils.repeat("-",68));
         System.out.println("  4. Search city stations in Portugal");
-        System.out.println("  " + "-".repeat(68));
+        System.out.println("  " + StringUtils.repeat("-",68));
         System.out.println("     Latitude:  [36.8, 42.2]");
         System.out.println("     Longitude: [-9.5, -6.2]");
         System.out.println("     Filters: Country = PT, City = Yes");
         System.out.println();
         
-        System.out.println("  " + "-".repeat(68));
+        System.out.println("  " + StringUtils.repeat("-",68));
         System.out.println("  5. Search all stations in Lisbon area");
-        System.out.println("  " + "-".repeat(68));
+        System.out.println("  " + StringUtils.repeat("-",68));
         System.out.println("     Latitude:  [38.6, 38.9]");
         System.out.println("     Longitude: [-9.3, -9.0]");
         System.out.println("     Filters: None (shows all stations in the area)");
@@ -448,8 +448,7 @@ public class GeographicalSearchUI {
         
         System.out.println("  Tip: You can copy these values when using the search options!");
         System.out.println();
-        System.out.println("=".repeat(70));
-        pauseForUser();
+        System.out.println(StringUtils.repeat("=",70));
     }
     
     /**
@@ -488,12 +487,458 @@ public class GeographicalSearchUI {
     }
     
     /**
-     * Pauses execution and waits for user to press Enter.
-     * Provides a consistent way to pause between operations.
+     * Performs a nearest neighbor search.
+     * Finds the N nearest stations to a target point.
      */
-    private void pauseForUser() {
-        System.out.print("  Press Enter to continue...");
-        scanner.nextLine();
+    private void searchNearestN() {
+        System.out.println("\n" + StringUtils.repeat("=",70));
+        System.out.println("                    FIND N NEAREST STATIONS");
+        System.out.println(StringUtils.repeat("=",70));
+        System.out.println();
+        System.out.println("  Please enter the target point and number of stations to find:");
+        System.out.println();
+        
+        try {
+            double targetLat = readDouble("  Target latitude: ", -90, 90);
+            double targetLon = readDouble("  Target longitude: ", -180, 180);
+            
+            System.out.println();
+            System.out.print("  Number of nearest stations to find: ");
+            String nStr = scanner.nextLine().trim();
+            int n;
+            try {
+                n = Integer.parseInt(nStr);
+                if (n <= 0) {
+                    System.out.println("\n  [ERROR] Number must be positive!");
+                    return;
+                }
+            } catch (NumberFormatException e) {
+                System.out.println("\n  [ERROR] Invalid number format!");
+                return;
+            }
+            
+            System.out.println();
+            System.out.println("  Searching for nearest stations...");
+            
+            List<KDTree.StationDistance> results = controller.findNearestStations(targetLat, targetLon, n);
+            
+            displayNearestResults(results, targetLat, targetLon, n, null);
+            
+        } catch (Exception e) {
+            System.out.println("\n  [ERROR] An error occurred: " + e.getMessage());
+        }
     }
+    
+    /**
+     * Performs a radius search.
+     * Finds all stations within a specified radius of a target point.
+     */
+    private void searchRadius() {
+        System.out.println("\n" + StringUtils.repeat("=",70));
+        System.out.println("                    FIND STATIONS IN RADIUS");
+        System.out.println(StringUtils.repeat("=",70));
+        System.out.println();
+        System.out.println("  Please enter the target point and search radius:");
+        System.out.println();
+        
+        try {
+            double targetLat = readDouble("  Target latitude: ", -90, 90);
+            double targetLon = readDouble("  Target longitude: ", -180, 180);
+            
+            System.out.println();
+            System.out.print("  Search radius (in kilometers): ");
+            String radiusStr = scanner.nextLine().trim();
+            double radiusKm;
+            try {
+                radiusKm = Double.parseDouble(radiusStr);
+                if (radiusKm < 0) {
+                    System.out.println("\n  [ERROR] Radius must be non-negative!");
+                    return;
+                }
+            } catch (NumberFormatException e) {
+                System.out.println("\n  [ERROR] Invalid number format!");
+                return;
+            }
+            
+            System.out.println();
+            System.out.println("  Searching for stations within radius...");
+            
+            List<KDTree.StationDistance> results = controller.findStationsInRadius(targetLat, targetLon, radiusKm);
+            
+            displayRadiusResults(results, targetLat, targetLon, radiusKm, null);
+            
+        } catch (Exception e) {
+            System.out.println("\n  [ERROR] An error occurred: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Displays nearest neighbor search results.
+     *
+     * @param results list of station-distance pairs
+     * @param targetLat target latitude
+     * @param targetLon target longitude
+     * @param n number of stations requested
+     * @param filters filters applied (can be null)
+     */
+    private void displayNearestResults(List<KDTree.StationDistance> results, 
+                                      double targetLat, double targetLon, int n, SearchFilters filters) {
+        System.out.println();
+        System.out.println("  " + StringUtils.repeat("=",68));
+        System.out.println("                          SEARCH RESULTS");
+        System.out.println("  " + StringUtils.repeat("=",68));
+        System.out.println();
+        
+        System.out.println("  Target Point:");
+        System.out.printf("     Latitude:  %.6f\n", targetLat);
+        System.out.printf("     Longitude: %.6f\n", targetLon);
+        System.out.println("     Requested: " + n + " nearest station(s)");
+        
+        if (filters != null && filters.hasFilters()) {
+            System.out.println();
+            System.out.println("  Applied Filters:");
+            System.out.println("     " + formatFiltersForDisplay(filters));
+        }
+        
+        System.out.println();
+        System.out.println("  " + StringUtils.repeat("-",68));
+        System.out.println();
+        
+        if (results.isEmpty()) {
+            System.out.println("  No stations found.");
+        } else {
+            System.out.printf("  Found %d station(s):\n", results.size());
+            System.out.println();
+            
+            for (int index = 0; index < results.size(); index++) {
+                KDTree.StationDistance sd = results.get(index);
+                System.out.printf("  %3d. %s\n", index + 1, formatStationDistance(sd));
+            }
+        }
+        
+        System.out.println();
+        System.out.println("  " + StringUtils.repeat("=",68));
+    }
+    
+    /**
+     * Displays radius search results.
+     *
+     * @param results list of station-distance pairs
+     * @param targetLat target latitude
+     * @param targetLon target longitude
+     * @param radiusKm search radius
+     * @param filters filters applied (can be null)
+     */
+    private void displayRadiusResults(List<KDTree.StationDistance> results, 
+                                     double targetLat, double targetLon, double radiusKm, SearchFilters filters) {
+        System.out.println();
+        System.out.println("  " + StringUtils.repeat("=",68));
+        System.out.println("                          SEARCH RESULTS");
+        System.out.println("  " + StringUtils.repeat("=",68));
+        System.out.println();
+        
+        System.out.println("  Target Point:");
+        System.out.printf("     Latitude:  %.6f\n", targetLat);
+        System.out.printf("     Longitude: %.6f\n", targetLon);
+        System.out.printf("     Radius:    %.2f km\n", radiusKm);
+        
+        if (filters != null && filters.hasFilters()) {
+            System.out.println();
+            System.out.println("  Applied Filters:");
+            System.out.println("     " + formatFiltersForDisplay(filters));
+        }
+        
+        System.out.println();
+        System.out.println("  " + StringUtils.repeat("-",68));
+        System.out.println();
+        
+        if (results.isEmpty()) {
+            System.out.println("  No stations found within the specified radius.");
+        } else {
+            System.out.printf("  Found %d station(s) within %.2f km:\n", results.size(), radiusKm);
+            System.out.println();
+            
+            for (int index = 0; index < results.size(); index++) {
+                KDTree.StationDistance sd = results.get(index);
+                System.out.printf("  %3d. %s\n", index + 1, formatStationDistance(sd));
+            }
+        }
+        
+        System.out.println();
+        System.out.println("  " + StringUtils.repeat("=",68));
+    }
+    
+    /**
+     * Formats a station-distance pair for display.
+     *
+     * @param sd station-distance pair
+     * @return formatted string
+     */
+    private String formatStationDistance(KDTree.StationDistance sd) {
+        Station station = sd.getStation();
+        double distance = sd.getDistance();
+        
+        StringBuilder formatted = new StringBuilder();
+        formatted.append(station.getName());
+        formatted.append(String.format(" | [%.6f, %.6f]", station.getLatitude(), station.getLongitude()));
+        formatted.append(String.format(" | Distance: %.2f km", distance));
+        formatted.append(" | ").append(station.getCountry());
+        
+        if (station.isCity() || station.isMainStation()) {
+            formatted.append(" | ");
+            if (station.isCity()) {
+                formatted.append("City");
+            }
+            if (station.isCity() && station.isMainStation()) {
+                formatted.append(" + ");
+            }
+            if (station.isMainStation()) {
+                formatted.append("Main Station");
+            }
+        }
+        
+        return formatted.toString();
+    }
+    
+    /**
+     * Shows menu for Area Search only.
+     */
+    public void showAreaSearchMenu() {
+        while (true) {
+            System.out.println("\n" + StringUtils.repeat("=",70));
+            System.out.println("                    AREA SEARCH");
+            System.out.println(StringUtils.repeat("=",70));
+            System.out.println();
+            System.out.println("  1. Search stations in a geographical area");
+            System.out.println("  2. Search stations with filters (country, city, main station)");
+            System.out.println("  3. View KD-Tree statistics");
+            System.out.println("  4. View sample queries");
+            System.out.println("  0. Back to main menu");
+            System.out.println();
+            System.out.print("  Select your option: ");
+            
+            String userChoice = scanner.nextLine().trim();
+            
+            switch (userChoice) {
+                case "1":
+                    searchByArea();
+                    break;
+                case "2":
+                    searchWithFilters();
+                    break;
+                case "3":
+                    showTreeStatistics();
+                    break;
+                case "4":
+                    showSampleQueries();
+                    break;
+                case "0":
+                    System.out.println("\n  Returning to main menu...");
+                    return;
+                default:
+                    System.out.println("\n  [ERROR] Invalid option! Please enter a number between 0 and 4.");
+            }
+        }
+    }
+    
+    /**
+     * Shows menu for Nearest-N Search only.
+     */
+    public void showNearestNSearchMenu() {
+        while (true) {
+            System.out.println("\n" + StringUtils.repeat("=",70));
+            System.out.println("                    NEAREST-N SEARCH");
+            System.out.println(StringUtils.repeat("=",70));
+            System.out.println();
+            System.out.println("  1. Find N nearest stations to a point");
+            System.out.println("  2. Find N nearest stations with filters");
+            System.out.println("  3. View KD-Tree statistics");
+            System.out.println("  0. Back to main menu");
+            System.out.println();
+            System.out.print("  Select your option: ");
+            
+            String userChoice = scanner.nextLine().trim();
+            
+            switch (userChoice) {
+                case "1":
+                    searchNearestN();
+                    break;
+                case "2":
+                    searchNearestNWithFilters();
+                    break;
+                case "3":
+                    showTreeStatistics();
+                    break;
+                case "0":
+                    System.out.println("\n  Returning to main menu...");
+                    return;
+                default:
+                    System.out.println("\n  [ERROR] Invalid option! Please enter a number between 0 and 3.");
+            }
+        }
+    }
+    
+    /**
+     * Shows menu for Radius Search & Summary.
+     */
+    public void showRadiusSearchMenu() {
+        while (true) {
+            System.out.println("\n" + StringUtils.repeat("=",70));
+            System.out.println("                    RADIUS SEARCH & SUMMARY");
+            System.out.println(StringUtils.repeat("=",70));
+            System.out.println();
+            System.out.println("  1. Find stations within radius");
+            System.out.println("  2. Find stations within radius with filters");
+            System.out.println("  3. View search summary and statistics");
+            System.out.println("  4. View KD-Tree statistics");
+            System.out.println("  0. Back to main menu");
+            System.out.println();
+            System.out.print("  Select your option: ");
+            
+            String userChoice = scanner.nextLine().trim();
+            
+            switch (userChoice) {
+                case "1":
+                    searchRadius();
+                    break;
+                case "2":
+                    searchRadiusWithFilters();
+                    break;
+                case "3":
+                    showSearchSummary();
+                    break;
+                case "4":
+                    showTreeStatistics();
+                    break;
+                case "0":
+                    System.out.println("\n  Returning to main menu...");
+                    return;
+                default:
+                    System.out.println("\n  [ERROR] Invalid option! Please enter a number between 0 and 4.");
+            }
+        }
+    }
+    
+    /**
+     * Performs a nearest neighbor search with filters.
+     */
+    private void searchNearestNWithFilters() {
+        System.out.println("\n" + StringUtils.repeat("=",70));
+        System.out.println("                    FIND N NEAREST STATIONS WITH FILTERS");
+        System.out.println(StringUtils.repeat("=",70));
+        System.out.println();
+        System.out.println("  Please enter the target point and number of stations to find:");
+        System.out.println();
+        
+        try {
+            double targetLat = readDouble("  Target latitude: ", -90, 90);
+            double targetLon = readDouble("  Target longitude: ", -180, 180);
+            
+            System.out.println();
+            System.out.print("  Number of nearest stations to find: ");
+            String nStr = scanner.nextLine().trim();
+            int n;
+            try {
+                n = Integer.parseInt(nStr);
+                if (n <= 0) {
+                    System.out.println("\n  [ERROR] Number must be positive!");
+                    return;
+                }
+            } catch (NumberFormatException e) {
+                System.out.println("\n  [ERROR] Invalid number format!");
+                return;
+            }
+            
+            System.out.println();
+            SearchFilters filters = readFilters();
+            
+            System.out.println();
+            System.out.println("  Searching for nearest stations...");
+            
+            List<KDTree.StationDistance> results = controller.findNearestStations(targetLat, targetLon, n, filters);
+            
+            displayNearestResults(results, targetLat, targetLon, n, filters);
+            
+        } catch (Exception e) {
+            System.out.println("\n  [ERROR] An error occurred: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Performs a radius search with filters.
+     */
+    private void searchRadiusWithFilters() {
+        System.out.println("\n" + StringUtils.repeat("=",70));
+        System.out.println("                    FIND STATIONS IN RADIUS WITH FILTERS");
+        System.out.println(StringUtils.repeat("=",70));
+        System.out.println();
+        System.out.println("  Please enter the target point and search radius:");
+        System.out.println();
+        
+        try {
+            double targetLat = readDouble("  Target latitude: ", -90, 90);
+            double targetLon = readDouble("  Target longitude: ", -180, 180);
+            
+            System.out.println();
+            System.out.print("  Search radius (in kilometers): ");
+            String radiusStr = scanner.nextLine().trim();
+            double radiusKm;
+            try {
+                radiusKm = Double.parseDouble(radiusStr);
+                if (radiusKm < 0) {
+                    System.out.println("\n  [ERROR] Radius must be non-negative!");
+                    return;
+                }
+            } catch (NumberFormatException e) {
+                System.out.println("\n  [ERROR] Invalid number format!");
+                return;
+            }
+            
+            System.out.println();
+            SearchFilters filters = readFilters();
+            
+            System.out.println();
+            System.out.println("  Searching for stations within radius...");
+            
+            List<KDTree.StationDistance> results = controller.findStationsInRadius(targetLat, targetLon, radiusKm, filters);
+            
+            displayRadiusResults(results, targetLat, targetLon, radiusKm, filters);
+            
+        } catch (Exception e) {
+            System.out.println("\n  [ERROR] An error occurred: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Shows search summary and statistics.
+     */
+    private void showSearchSummary() {
+        System.out.println("\n" + StringUtils.repeat("=",70));
+        System.out.println("                    SEARCH SUMMARY & STATISTICS");
+        System.out.println(StringUtils.repeat("=",70));
+        System.out.println();
+        
+        String treeStats = controller.getTreeStatistics();
+        int totalStations = controller.getStationsCount();
+        
+        System.out.println("  KD-Tree Structure:");
+        System.out.println("     " + treeStats);
+        System.out.println();
+        System.out.println("  Dataset Information:");
+        System.out.println("     Total stations loaded: " + totalStations);
+        System.out.println();
+        System.out.println("  Available Search Operations:");
+        System.out.println("     • Area Search: Search stations within a geographical rectangle");
+        System.out.println("     • Nearest-N Search: Find the N nearest stations to a point");
+        System.out.println("     • Radius Search: Find all stations within a specified radius");
+        System.out.println();
+        System.out.println("  All search operations support optional filters:");
+        System.out.println("     • Country filter (PT, ES)");
+        System.out.println("     • City status filter");
+        System.out.println("     • Main station status filter");
+        System.out.println();
+        System.out.println(StringUtils.repeat("=",70));
+    }
+    
 }
 

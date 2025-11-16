@@ -202,7 +202,7 @@ public class QualityOperatorUI {
 
         System.out.printf("%-12s %-10s %-6s %-15s %-20s %-12s%n",
                 "Return ID", "SKU", "Qty", "Reason", "Timestamp", "Expiry Date");
-        System.out.println("=".repeat(85));
+        System.out.println(StringUtils.repeat("=",85));
 
         for (Return item : quarantineItems) {
             System.out.printf("%-12s %-10s %-6d %-15s %-20s %-12s%n",
@@ -215,7 +215,7 @@ public class QualityOperatorUI {
             );
         }
 
-        System.out.println("=".repeat(85));
+        System.out.println(StringUtils.repeat("=",85));
         System.out.println("Total items in queue: " + quarantineItems.size());
         System.out.println("Use option 2 to process inspections and determine actions");
     }
@@ -247,9 +247,9 @@ public class QualityOperatorUI {
         System.out.println("Remaining items in queue: " + (remainingItems - 1));
         System.out.println("Following USEI05 logic: Last to arrive, first to process");
 
-        System.out.println("\n" + "=".repeat(60));
+        System.out.println("\n" + StringUtils.repeat("=",60));
         System.out.println("PROCESSING SINGLE ITEM");
-        System.out.println("=".repeat(60));
+        System.out.println(StringUtils.repeat("=",60));
         System.out.println("Return ID: " + item.getReturnId());
         System.out.println("SKU: " + item.getSku());
         System.out.println("Quantity: " + item.getQty());
@@ -307,9 +307,9 @@ public class QualityOperatorUI {
                 System.out.print(result.getResultMessage() + "\n");
             }
 
-            System.out.println("\n" + "=".repeat(60));
+            System.out.println("\n" + StringUtils.repeat("=",60));
             System.out.println("INSPECTION COMPLETED");
-            System.out.println("=".repeat(60));
+            System.out.println(StringUtils.repeat("=",60));
             System.out.println("Action: " + result.getAction());
             System.out.println("Remaining items in queue: " + controller.getQuarantineItems().size());
             System.out.println("\nAudit log has been updated with this action.");
@@ -348,9 +348,9 @@ public class QualityOperatorUI {
             itemNumber++;
             Return item = result.getItem();
 
-            System.out.println("\n" + "=".repeat(60));
+            System.out.println("\n" + StringUtils.repeat("=",60));
             System.out.println("Processing Item " + itemNumber + "/" + totalToProcess);
-            System.out.println("=".repeat(60));
+            System.out.println(StringUtils.repeat("=",60));
             System.out.println("Return ID: " + item.getReturnId());
             System.out.println("SKU: " + item.getSku());
             System.out.println("Quantity: " + item.getQty());
@@ -411,9 +411,9 @@ public class QualityOperatorUI {
             }
         }
 
-        System.out.println("\n" + "=".repeat(60));
+        System.out.println("\n" + StringUtils.repeat("=",60));
         System.out.println("ALL INSPECTIONS COMPLETED");
-        System.out.println("=".repeat(60));
+        System.out.println(StringUtils.repeat("=",60));
         System.out.println("Total Processed: " + summary.getProcessedCount());
         System.out.println("Discarded: " + summary.getDiscardedCount());
         System.out.println("Restocked: " + summary.getRestockedCount());

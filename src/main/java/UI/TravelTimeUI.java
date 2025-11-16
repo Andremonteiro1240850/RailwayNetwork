@@ -62,7 +62,7 @@ public class TravelTimeUI {
                 case "4":
                     return;
                 default:
-                    System.out.println("❌ Invalid option! Please try again.");
+                    System.out.println("Invalid option! Please try again.");
             }
         }
     }
@@ -86,7 +86,7 @@ public class TravelTimeUI {
             
             // Check if stations are the same
             if (startFacility.equals(endFacility)) {
-                System.out.println("❌ Start and end stations cannot be the same!");
+                System.out.println("Start and end stations cannot be the same!");
                 return;
             }
             
@@ -101,11 +101,11 @@ public class TravelTimeUI {
             displayResults(startFacility, endFacility, locomotive, travelTimeHours);
             
         } catch (IncompatibleGaugeException e) {
-            System.out.println("❌ " + e.getMessage());
+                System.out.println("Error: " + e.getMessage());
         } catch (IllegalStateException e) {
-            System.out.println("❌ " + e.getMessage());
+                System.out.println("Error: " + e.getMessage());
         } catch (Exception e) {
-            System.out.println("❌ An unexpected error occurred: " + e.getMessage());
+                System.out.println("An unexpected error occurred: " + e.getMessage());
         }
         
     }
@@ -122,7 +122,7 @@ public class TravelTimeUI {
             String stationId = scanner.nextLine().trim();
             
             if (stationId.isEmpty()) {
-                System.out.println("❌ Station ID cannot be empty!");
+                System.out.println("Station ID cannot be empty!");
                 continue;
             }
             
@@ -130,7 +130,7 @@ public class TravelTimeUI {
             if (facility != null) {
                 return facility;
             } else {
-                System.out.println("❌ Station with ID '" + stationId + "' not found!");
+                System.out.println("Station with ID '" + stationId + "' not found!");
                 System.out.print("Do you want to try again? (y/n): ");
                 String retry = scanner.nextLine().trim().toLowerCase();
                 if (!retry.equals("y") && !retry.equals("yes")) {
@@ -151,7 +151,7 @@ public class TravelTimeUI {
             String locomotiveId = scanner.nextLine().trim();
             
             if (locomotiveId.isEmpty()) {
-                System.out.println("❌ Locomotive ID cannot be empty!");
+                System.out.println("Locomotive ID cannot be empty!");
                 continue;
             }
             
@@ -159,7 +159,7 @@ public class TravelTimeUI {
             if (locomotive != null) {
                 return locomotive;
             } else {
-                System.out.println("❌ Locomotive with ID '" + locomotiveId + "' not found!");
+                System.out.println("Locomotive with ID '" + locomotiveId + "' not found!");
                 System.out.print("Do you want to try again? (y/n): ");
                 String retry = scanner.nextLine().trim().toLowerCase();
                 if (!retry.equals("y") && !retry.equals("yes")) {

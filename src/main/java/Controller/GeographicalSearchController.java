@@ -7,13 +7,14 @@ import Domain.ENUM.Country;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
- * Controller for geographical search operations (USEI08).
- * Handles range queries on railway stations using KD-tree for efficient search.
+ * Controller for geographical search operations.
+ * Handles range queries, nearest neighbor search, and radius search on railway stations using KD-tree for efficient search.
  * 
  * @author Development Team
- * @version 1.0
+ * @version 2.0
  */
 public class GeographicalSearchController {
     
@@ -141,6 +142,102 @@ public class GeographicalSearchController {
      */
     public int getStationsCount() {
         return allStations.size();
+    }
+    
+    /**
+     * Finds the N nearest stations to a target point.
+     * Uses KD-tree for efficient nearest neighbor search.
+     *
+     * @param targetLat target latitude (must be between -90 and 90)
+     * @param targetLon target longitude (must be between -180 and 180)
+     * @param n number of nearest stations to find (must be positive)
+     * @param filters optional filters to refine the search (can be null)
+     * @return list of pairs (station, distance in km), sorted by distance (ascending)
+     * @throws IllegalArgumentException if parameters are invalid
+     */
+    public List<KDTree.StationDistance> findNearestStations(double targetLat, double targetLon, 
+                                                           int n, SearchFilters filters) {
+        if (targetLat < -90 || targetLat > 90) {
+            throw new IllegalArgumentException("Latitude must be between -90 and 90");
+        }
+        if (targetLon < -180 || targetLon > 180) {
+            throw new IllegalArgumentException("Longitude must be between -180 and 180");
+        }
+        if (n <= 0) {
+            throw new IllegalArgumentException("n must be positive");
+        }
+        
+        // Get nearest stations from KD-tree
+        List<KDTree.StationDistance> nearestStations = kdTree.nearestN(targetLat, targetLon, n);
+        
+        // Apply filters if provided
+        if (filters != null && filters.hasFilters()) {
+            return nearestStations.stream()
+                .filter(sd -> filters.matches(sd.getStation()))
+                .collect(Collectors.toList());
+        }
+        
+        return nearestStations;
+    }
+    
+    /**
+     * Finds the N nearest stations to a target point without filters.
+     *
+     * @param targetLat target latitude
+     * @param targetLon target longitude
+     * @param n number of nearest stations to find
+     * @return list of pairs (station, distance in km), sorted by distance (ascending)
+     */
+    public List<KDTree.StationDistance> findNearestStations(double targetLat, double targetLon, int n) {
+        return findNearestStations(targetLat, targetLon, n, null);
+    }
+    
+    /**
+     * Finds all stations within a specified radius of a target point.
+     * Uses KD-tree for efficient radius search.
+     *
+     * @param targetLat target latitude (must be between -90 and 90)
+     * @param targetLon target longitude (must be between -180 and 180)
+     * @param radiusKm search radius in kilometers (must be non-negative)
+     * @param filters optional filters to refine the search (can be null)
+     * @return list of pairs (station, distance in km), sorted by distance (ascending)
+     * @throws IllegalArgumentException if parameters are invalid
+     */
+    public List<KDTree.StationDistance> findStationsInRadius(double targetLat, double targetLon, 
+                                                              double radiusKm, SearchFilters filters) {
+        if (targetLat < -90 || targetLat > 90) {
+            throw new IllegalArgumentException("Latitude must be between -90 and 90");
+        }
+        if (targetLon < -180 || targetLon > 180) {
+            throw new IllegalArgumentException("Longitude must be between -180 and 180");
+        }
+        if (radiusKm < 0) {
+            throw new IllegalArgumentException("Radius must be non-negative");
+        }
+        
+        // Get stations in radius from KD-tree
+        List<KDTree.StationDistance> stationsInRadius = kdTree.radiusSearch(targetLat, targetLon, radiusKm);
+        
+        // Apply filters if provided
+        if (filters != null && filters.hasFilters()) {
+            return stationsInRadius.stream()
+                .filter(sd -> filters.matches(sd.getStation()))
+                .collect(Collectors.toList());
+        }
+        
+        return stationsInRadius;
+    }
+    
+    /**
+     * Finds all stations within a specified radius of a target point without filters.
+     *
+     * @param targetLat target latitude
+     * @param targetLon target longitude
+     * @param radiusKm search radius in kilometers
+     * @return list of pairs (station, distance in km), sorted by distance (ascending)
+     */
+    public List<KDTree.StationDistance> findStationsInRadius(double targetLat, double targetLon, double radiusKm) {
+        return findStationsInRadius(targetLat, targetLon, radiusKm, null);
     }
 }
 

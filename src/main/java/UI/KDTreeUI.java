@@ -33,9 +33,9 @@ public class KDTreeUI {
      */
     public void showMainMenu() {
         while (true) {
-            System.out.println("\n" + "=".repeat(60));
+            System.out.println("\n" + StringUtils.repeat("=", 60));
             System.out.println("Balanced KD-Tree Operations");
-            System.out.println("=".repeat(60));
+            System.out.println(StringUtils.repeat("=", 60));
             System.out.println("1. Build KD-Tree");
             System.out.println("2. View Tree Metrics");
             System.out.println("3. Back to Main Menu");
@@ -53,7 +53,7 @@ public class KDTreeUI {
                 case "3":
                     return;
                 default:
-                    System.out.println("❌ Invalid option! Please try again.");
+                    System.out.println("Invalid option! Please try again.");
             }
         }
     }
@@ -62,9 +62,9 @@ public class KDTreeUI {
      * Builds the KD-tree.
      */
     private void buildTree() {
-        System.out.println("\n" + "-".repeat(60));
+        System.out.println("\n" + StringUtils.repeat("-", 60));
         System.out.println("Build Balanced KD-Tree");
-        System.out.println("-".repeat(60));
+        System.out.println(StringUtils.repeat("-", 60));
         
         if (controller.isTreeBuilt()) {
             System.out.print("Tree already built. Rebuild? (y/n): ");
@@ -74,20 +74,20 @@ public class KDTreeUI {
             }
         }
         
-        System.out.println("\n🔨 Building balanced KD-tree...");
+        System.out.println("\nBuilding balanced KD-tree...");
         long startTime = System.currentTimeMillis();
         boolean success = controller.buildTree();
         long endTime = System.currentTimeMillis();
         
         if (success) {
-            System.out.println("✓ KD-tree built successfully in " + (endTime - startTime) + " ms.");
+            System.out.println("KD-tree built successfully in " + (endTime - startTime) + " ms.");
             
             // Show summary immediately after build
             KDTreeMetrics metrics = controller.getAllMetrics();
             if (metrics != null) {
-                System.out.println("\n" + "=".repeat(60));
+                System.out.println("\n" + StringUtils.repeat("=", 60));
                 System.out.println("KD-Tree Build Summary");
-                System.out.println("=".repeat(60));
+                System.out.println(StringUtils.repeat("=", 60));
                 System.out.println("Total Number of Stations: " + metrics.getNumStations());
                 System.out.println("Total Number of Nodes: " + metrics.getNumNodes());
                 System.out.println("Tree Height: " + metrics.getHeight());
@@ -102,34 +102,27 @@ public class KDTreeUI {
                 System.out.println("\nYou can view detailed metrics.");
             }
         } else {
-            System.out.println("❌ Error building KD-tree. Please check the station repository.");
+            System.out.println("Error building KD-tree. Please check the station repository.");
         }
-        
-        System.out.print("\nPress Enter to continue...");
-        scanner.nextLine();
     }
     
     /**
      * Displays tree metrics.
      */
     private void viewMetrics() {
-        System.out.println("\n" + "=".repeat(60));
+        System.out.println("\n" + StringUtils.repeat("=", 60));
         System.out.println("KD-Tree Metrics");
-        System.out.println("=".repeat(60));
+        System.out.println(StringUtils.repeat("=", 60));
         
         if (!controller.isTreeBuilt()) {
-            System.out.println("❌ Tree not built yet. Please build the tree first.");
-            System.out.print("\nPress Enter to continue...");
-            scanner.nextLine();
+            System.out.println("Tree not built yet. Please build the tree first.");
             return;
         }
         
         String metrics = controller.getMetricsString();
         System.out.println(metrics);
         
-        System.out.println("-".repeat(60));
-        System.out.print("Press Enter to continue...");
-        scanner.nextLine();
+        System.out.println(StringUtils.repeat("-", 60));
     }
     
 }
