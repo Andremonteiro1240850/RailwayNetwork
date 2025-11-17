@@ -178,8 +178,9 @@ public class Main {
             System.out.println("2. Build a balanced 2D-Tree on Latitude/Longitude");
             System.out.println("3. Search by Geographical Area");
             System.out.println("4. Proximity Search");
-            System.out.println("5. Schedule Train Dispatches");
-            System.out.println("6. Back");
+            System.out.println("5. Radius Search and Density Summary");
+            System.out.println("6. Schedule Train Dispatches");
+            System.out.println("7. Back");
 
             System.out.print("Select option: ");
             String choice = scanner.nextLine().trim();
@@ -206,11 +207,16 @@ public class Main {
                     // After freight manager, return to menu (continue loop)
                     break;
                 case "5":
+                    // Operations Planner -> Radius Search and Density Summary (USEI10)
+                    radiusSearchMain();
+                    // After radius search, return to menu (continue loop)
+                    break;
+                case "6":
                     // Data Engineer -> KD-Tree Operations
                     freightManager();
                     // After data engineer, return to menu (continue loop)
                     break;
-                case "6":
+                case "7":
                     return false; // Back selecionado
                 default:
                     System.out.println("Invalid option!");
@@ -475,6 +481,32 @@ public class Main {
         } catch (Exception e) {
             System.err.println("ERROR in proximitySearch: " + e.getMessage());
             e.printStackTrace();
+        }
+    }
+    
+    /**
+     * Operations Planner - Radius Search and Density Summary (USEI10)
+     * Allows searching for stations within a radius and viewing summary statistics
+     * by country and isCity.
+     */
+    private static void radiusSearchMain() {
+        try {
+            // Load stations using StationLoader from USEI06
+            List<Domain.Station> stations = stationLoader.loadFromCSV("train_station_dataset/train_stations_europe.csv");
+
+            if (stations == null || stations.isEmpty()) {
+                return;
+            }
+
+            // Create controller and UI
+            RadiusSearchController controller = new RadiusSearchController(stations);
+            RadiusSearchUI ui = new RadiusSearchUI(controller);
+            
+            // Show main menu
+            ui.showMainMenu();
+
+        } catch (Exception e) {
+            // Error handling without prints - UI will handle user feedback
         }
     }
 }
