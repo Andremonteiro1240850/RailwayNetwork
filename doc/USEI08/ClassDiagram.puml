@@ -165,9 +165,10 @@ StationDistance -- Station : references
 SearchFilters -- Country : uses
 
 ' Self-reference: KDNode referencia outros KDNodes para formar a árvore binária
-' left = filho esquerdo, right = filho direito (estrutura de árvore binária)
-KDNode "0..1" -- "0..1" KDNode : left
-KDNode "0..1" -- "0..1" KDNode : right
+' Cada KDNode pode ter 0 ou 1 filho esquerdo (left) e 0 ou 1 filho direito (right)
+' Nota: Um KDNode pode ter 0..1 filho left, e um KDNode pode ser filho left de 0..1 pai
+KDNode -- KDNode : left
+KDNode -- KDNode : right
 
 ' Composition: losango preenchido (parte não pode existir sem o todo)
 KDTree *-- KDNode : contains
