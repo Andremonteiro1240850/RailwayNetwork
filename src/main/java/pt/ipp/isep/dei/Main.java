@@ -86,7 +86,7 @@ public class Main {
             System.out.println("\n=== LOGIN ===");
             System.out.println("1. Cargo Handling & Terminal Operations");
             System.out.println("2. Spatial Indexing & Geographical Queries");
-            System.out.println("3. Back");
+            System.out.println("0. Back");
 
             System.out.print("Select option: ");
             String choice = scanner.nextLine().trim();
@@ -104,7 +104,7 @@ public class Main {
                         continue; // User selected back, return to main login menu
                     }
                     break;
-                case "3":
+                case "0":
                     return false; // Back selecionado
                 default:
                     System.out.println("Invalid option!");
@@ -124,7 +124,7 @@ public class Main {
             System.out.println("4. Login as a Warehouse Planner");
             System.out.println("5. Login as a Terminal Operator");
             System.out.println("6. Login as a Traffic Dispatcher");
-            System.out.println("7. Back");
+            System.out.println("0. Back");
 
             System.out.print("Select option: ");
             String choice = scanner.nextLine().trim();
@@ -160,7 +160,7 @@ public class Main {
                     travelTimeCalculation();
                     // After travel time calculation, return to menu (continue loop)
                     break;
-                case "7":
+                case "0":
                     return false; // Back selecionado
                 default:
                     System.out.println("Invalid option!");
@@ -179,7 +179,7 @@ public class Main {
             System.out.println("3. Search by Geographical Area");
             System.out.println("4. Proximity Search");
             System.out.println("5. Schedule Train Dispatches");
-            System.out.println("6. Back");
+            System.out.println("0. Back");
 
             System.out.print("Select option: ");
             String choice = scanner.nextLine().trim();
@@ -210,7 +210,7 @@ public class Main {
                     freightManager();
                     // After data engineer, return to menu (continue loop)
                     break;
-                case "6":
+                case "0":
                     return false; // Back selecionado
                 default:
                     System.out.println("Invalid option!");
@@ -223,7 +223,7 @@ public class Main {
             System.out.println("\n=== MAIN MENU ===");
             System.out.println("1. Know the development team");
             System.out.println("2. Login");
-            System.out.println("3. Cancel");
+            System.out.println("0. Cancel");
 
             System.out.print("Select option: ");
             String choice = scanner.nextLine().trim();
@@ -238,7 +238,7 @@ public class Main {
                     }
                     // Se showRoleLoginMenu retornar false (Back foi selecionado), continua o loop
                     break;
-                case "3":
+                case "0":
                     System.out.println("Goodbye!");
                     return false;
                 default:

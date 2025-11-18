@@ -44,7 +44,8 @@ public class SchedulerService {
      * 1. Calculates travel times for each segment using TravelCalculationService
      * 2. Accumulates ETAs for each station in each train's route
      * 3. Detects single-track conflicts (overlapping segment time intervals)
-     * 4. Suggests basic resolutions for conflicts
+     * 4. Automatically resolves conflicts by adjusting departure times when trains depart from the same station at the same time
+     * 5. Suggests basic resolutions for remaining conflicts
      *
      * @param trains the list of trains to schedule
      * @return a DispatchReport containing schedules, conflicts, and summary
@@ -55,11 +56,14 @@ public class SchedulerService {
             throw new IllegalArgumentException("Trains list cannot be null or empty");
         }
 
+        // Step 1: Resolve conflicts by adjusting departure times
+        List<Train> adjustedTrains = resolveDepartureTimeConflicts(trains);
+
         List<DispatchReport.TrainSchedule> schedules = new ArrayList<>();
         List<DispatchReport.Conflict> conflicts = new ArrayList<>();
 
-        // Step 1: Calculate schedules for each train
-        for (Train train : trains) {
+        // Step 2: Calculate schedules for each train (with adjusted departure times)
+        for (Train train : adjustedTrains) {
             try {
                 DispatchReport.TrainSchedule schedule = calculateTrainSchedule(train);
                 schedules.add(schedule);
@@ -69,10 +73,10 @@ public class SchedulerService {
             }
         }
 
-        // Step 2: Detect conflicts between trains
+        // Step 3: Detect remaining conflicts between trains
         conflicts.addAll(detectConflicts(schedules));
 
-        // Step 3: Generate summary
+        // Step 4: Generate summary
         DispatchReport.Summary summary = generateSummary(schedules, conflicts);
 
         return new DispatchReport(schedules, conflicts, summary);
@@ -325,6 +329,82 @@ public class SchedulerService {
             waitingTrainId,
             waitTimeMinutes
         );
+    }
+
+    /**
+     * Resolves conflicts by adjusting departure times when trains depart from the same station at the same time.
+     * When multiple trains depart from the same station at the same time, each subsequent train's departure time
+     * is adjusted to after the previous train arrives at the next station.
+     *
+     * @param trains the original list of trains
+     * @return a list of trains with adjusted departure times
+     */
+    private List<Train> resolveDepartureTimeConflicts(List<Train> trains) {
+        List<Train> adjustedTrains = new ArrayList<>(trains);
+        
+        // Group trains by departure station and time
+        // Then process each group to adjust departure times sequentially
+        boolean changed = true;
+        while (changed) {
+            changed = false;
+            
+            // Compare each pair of trains
+            for (int i = 0; i < adjustedTrains.size(); i++) {
+                Train train1 = adjustedTrains.get(i);
+                Facility train1StartStation = train1.getRoute().get(0);
+                LocalDateTime train1Departure = train1.getDeparturePlannedDateTime();
+                
+                for (int j = i + 1; j < adjustedTrains.size(); j++) {
+                    Train train2 = adjustedTrains.get(j);
+                    Facility train2StartStation = train2.getRoute().get(0);
+                    LocalDateTime train2Departure = train2.getDeparturePlannedDateTime();
+                    
+                    // Check if trains depart from the same station at the same time
+                    if (train1StartStation.equals(train2StartStation) && 
+                        train1Departure.equals(train2Departure)) {
+                        
+                        // Calculate when train1 arrives at the next station
+                        if (train1.getRoute().size() >= 2) {
+                            Facility train1NextStation = train1.getRoute().get(1);
+                            
+                            // Calculate travel time for train1 to reach next station
+                            double travelTimeHours = travelCalculationService.calculateTravelTime(
+                                train1StartStation, train1NextStation, train1);
+                            
+                            // Calculate arrival time at next station
+                            long travelTimeMinutes = (long) (travelTimeHours * 60);
+                            LocalDateTime train1ArrivalAtNextStation = train1Departure.plusMinutes(travelTimeMinutes);
+                            
+                            // Adjust train2's departure time to after train1 arrives at next station
+                            LocalDateTime adjustedDepartureTime = train1ArrivalAtNextStation;
+                            
+                            // Create a new Train with adjusted departure time
+                            Train adjustedTrain2 = new Train(
+                                train2.getTrainId(),
+                                train2.getRoute(),
+                                train2.getSelectedStations(),
+                                train2.getLocomotives(),
+                                train2.getWagons(),
+                                adjustedDepartureTime,
+                                train2.getTotalWeight()
+                            );
+                            
+                            // Replace train2 in the list
+                            adjustedTrains.set(j, adjustedTrain2);
+                            changed = true;
+                            
+                            System.out.println(String.format(
+                                "CONFLICT RESOLUTION: Train %s departure time adjusted from %s to %s " +
+                                "(waiting for Train %s to arrive at %s at %s)",
+                                train2.getTrainId(), train2Departure, adjustedDepartureTime,
+                                train1.getTrainId(), train1NextStation.getId(), train1ArrivalAtNextStation));
+                        }
+                    }
+                }
+            }
+        }
+        
+        return adjustedTrains;
     }
 
     /**
