@@ -38,7 +38,7 @@ public class KDTreeUI {
             System.out.println(StringUtils.repeat("=", 60));
             System.out.println("1. Build KD-Tree");
             System.out.println("2. View Tree Metrics");
-            System.out.println("3. Back to Main Menu");
+            System.out.println("0. Back to Main Menu");
             
             System.out.print("\nSelect option: ");
             String choice = scanner.nextLine().trim();
@@ -50,7 +50,7 @@ public class KDTreeUI {
                 case "2":
                     viewMetrics();
                     break;
-                case "3":
+                case "0":
                     return;
                 default:
                     System.out.println("Invalid option! Please try again.");

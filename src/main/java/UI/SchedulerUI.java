@@ -69,7 +69,7 @@ public class SchedulerUI {
             System.out.println("2. View Available Stations");
             System.out.println("3. View Available Locomotives");
             System.out.println("4. View Available Wagons");
-            System.out.println("5. Back to Main Menu");
+            System.out.println("0. Back to Main Menu");
             
             System.out.print("Select option: ");
             String choice = scanner.nextLine().trim();
@@ -87,7 +87,7 @@ public class SchedulerUI {
                 case "4":
                     showAvailableWagons();
                     break;
-                case "5":
+                case "0":
                     return;
                 default:
                     System.out.println("ERROR: Invalid option! Please try again.");

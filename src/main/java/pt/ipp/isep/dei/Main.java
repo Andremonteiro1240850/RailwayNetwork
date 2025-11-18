@@ -207,8 +207,8 @@ public class Main {
                     // After freight manager, return to menu (continue loop)
                     break;
                 case "5":
-                    // Operations Planner -> Radius Search and Density Summary (USEI10)
-                    radiusSearchMain();
+                    // Planner -> Radius Search and Density Summary (USEI10)
+                    radiusSearch();
                     // After radius search, return to menu (continue loop)
                     break;
                 case "6":
@@ -485,20 +485,27 @@ public class Main {
     }
     
     /**
-     * Operations Planner - Radius Search and Density Summary (USEI10)
-     * Allows searching for stations within a radius and viewing summary statistics
-     * by country and isCity.
+     * Planner - Radius Search and Density Summary (USEI10)
+     * Allows searching for stations within a radius R (km) of a target (lat, lon) using the 2D-tree,
+     * and getting a summary by country and by isCity.
      */
-    private static void radiusSearchMain() {
+    private static void radiusSearch() {
         try {
+            System.out.println("\n=== RADIUS SEARCH AND DENSITY SUMMARY ===");
+            System.out.println("Loading stations...");
+
             // Load stations using StationLoader from USEI06
             List<Domain.Station> stations = stationLoader.loadFromCSV("train_station_dataset/train_stations_europe.csv");
 
             if (stations == null || stations.isEmpty()) {
+                System.out.println("No stations loaded. Please check the CSV file.");
                 return;
             }
 
+            System.out.println("Stations loaded successfully! Total: " + stations.size());
+
             // Create controller and UI
+            // The controller will build the KD-tree internally
             RadiusSearchController controller = new RadiusSearchController(stations);
             RadiusSearchUI ui = new RadiusSearchUI(controller);
             
@@ -506,7 +513,8 @@ public class Main {
             ui.showMainMenu();
 
         } catch (Exception e) {
-            // Error handling without prints - UI will handle user feedback
+            System.err.println("ERROR in radiusSearch: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 }
