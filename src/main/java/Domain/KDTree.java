@@ -608,7 +608,7 @@ public class KDTree {
     /**
      * Helper class to store a station with its distance from a target point.
      */
-    public static class StationDistance {
+    public static class StationDistance implements Comparable<StationDistance> {
         private final Station station;
         private final double distance; // in kilometers
         
@@ -623,6 +623,20 @@ public class KDTree {
         
         public double getDistance() {
             return distance;
+        }
+        
+        @Override
+        public int compareTo(StationDistance other) {
+            // First compare by distance (ascending)
+            int distanceCompare = Double.compare(this.distance, other.distance);
+            if (distanceCompare != 0) {
+                return distanceCompare;
+            }
+            
+            // If distances are equal, compare by station name (descending)
+            String name1 = this.station.getName();
+            String name2 = other.station.getName();
+            return name2.compareTo(name1); // Reverse order for descending
         }
         
         @Override
