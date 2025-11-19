@@ -11,6 +11,7 @@ import Repository.WarehouseRepository;
 import UI.*;
 import Domain.DataLoader;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 
@@ -458,26 +459,36 @@ public class Main {
     }
     
     /**
-     * Planner - Proximity Search (Nearest-N with Filters) (USEI09)
+     * Planner - Proximity Search (Nearest-N with Filters)
      * Allows finding the N nearest stations to a target coordinate with optional filters.
+     * Uses the StationRepository created in Station Lookup, without reading CSV again.
      */
     private static void proximitySearch() {
         try {
             System.out.println("\n=== PROXIMITY SEARCH ===");
-            System.out.println("Loading stations...");
-
-            // Load stations using StationLoader
-            List<Domain.Station> stations = stationLoader.loadFromCSV("train_station_dataset/train_stations_europe.csv");
-
-            if (stations == null || stations.isEmpty()) {
-                System.out.println("No stations loaded. Please check the CSV file.");
+            
+            // Use StationRepository from Station Lookup (must be created first)
+            if (stationRepository == null) {
+                System.out.println("ERROR: Station repository not found. Please run Station Lookup first.");
+                System.out.println("The CSV file can only be read in Station Lookup.");
                 return;
             }
+            
+            System.out.println("Using stations from Station Lookup.");
+            System.out.println("Total stations: " + stationRepository.totalStations());
 
-            System.out.println("Stations loaded successfully! Total: " + stations.size());
+            // Build KD-tree from StationRepository
+            Domain.KDTree kdTree = new Domain.KDTree();
+            kdTree.buildKdTree(stationRepository);
+            
+            // Get all stations from repository
+            List<Domain.Station> stations = new ArrayList<>();
+            for (Domain.Station station : stationRepository.getAllStationsOrderedByLatitude()) {
+                stations.add(station);
+            }
 
-            // Create controller and UI
-            GeographicalSearchController controller = new GeographicalSearchController(stations);
+            // Create controller and UI with the KD-tree built from StationRepository
+            GeographicalSearchController controller = new GeographicalSearchController(kdTree, stations);
             GeographicalSearchUI ui = new GeographicalSearchUI(controller);
             
             // Show Nearest-N search menu
