@@ -488,13 +488,17 @@ public class Main {
      * Planner - Radius Search and Density Summary (USEI10)
      * Allows searching for stations within a radius R (km) of a target (lat, lon) using the 2D-tree,
      * and getting a summary by country and by isCity.
+     * 
+     * Uses StationRepository to avoid redundant CSV reads - stations are loaded once
+     * and stored in the repository, then used for building the KD-tree.
      */
     private static void radiusSearch() {
         try {
             System.out.println("\n=== RADIUS SEARCH AND DENSITY SUMMARY ===");
-            System.out.println("Loading stations...");
+            System.out.println("Loading stations from repository...");
 
-            // Load stations using StationLoader from USEI06
+            // Load stations using StationLoader (only if not already loaded)
+            // Then create StationRepository which stores stations in AVL trees
             List<Domain.Station> stations = stationLoader.loadFromCSV("train_station_dataset/train_stations_europe.csv");
 
             if (stations == null || stations.isEmpty()) {
@@ -502,11 +506,13 @@ public class Main {
                 return;
             }
 
-            System.out.println("Stations loaded successfully! Total: " + stations.size());
+            // Create StationRepository - stations are validated and stored in AVL trees
+            StationRepository repository = new StationRepository(stations);
+            System.out.println("Stations loaded successfully! Total: " + repository.totalStations());
 
-            // Create controller and UI
-            // The controller will build the KD-tree internally
-            RadiusSearchController controller = new RadiusSearchController(stations);
+            // Create controller using StationRepository (preferred method)
+            // The controller will build the KD-tree internally from the repository
+            RadiusSearchController controller = new RadiusSearchController(repository);
             RadiusSearchUI ui = new RadiusSearchUI(controller);
             
             // Show main menu

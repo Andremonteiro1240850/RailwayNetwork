@@ -13,8 +13,11 @@ public class StationRepository {
     private AVL<Station> latitudeTree;
     private AVL<Station> longitudeTree;
     private AVL<Station> groupCountryTree;
+    // Armazenamento direto de todas as estações (além das AVL trees)
+    private final List<Station> allStations;
 
     public StationRepository(List<Station> stations) {
+        this.allStations = new ArrayList<>();
         populateTrees(stations);
     }
     public void populateTrees(List<Station> stations) {
@@ -31,9 +34,12 @@ public class StationRepository {
 
         for (Station station : stations) {
             if(StationValidator.isValidStation(station)) {
+                // Guardar nas AVL trees
                 latitudeTree.insert(station);
                 longitudeTree.insert(station);
                 groupCountryTree.insert(station);
+                // Guardar também na lista direta
+                allStations.add(station);
             }
         }
     }
@@ -82,6 +88,17 @@ public class StationRepository {
 
     public Iterable<Station> getAllStationsOrderedByLongitude() {
         return longitudeTree.inOrder();
+    }
+
+    /**
+     * Gets all stations as a List.
+     * Useful for building KD-trees and other operations that need all stations.
+     * Returns the directly stored list (O(1) access) instead of traversing trees.
+     *
+     * @return list of all stations in the repository
+     */
+    public List<Station> getAllStations() {
+        return new ArrayList<>(allStations); // Retorna cópia para evitar modificações
     }
     private void collectByLatitude(BST.Node<Station> node, double min, double max, List<Station> result) {
         if (node == null) return;
