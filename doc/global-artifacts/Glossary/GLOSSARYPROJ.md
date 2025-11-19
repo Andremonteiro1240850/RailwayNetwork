@@ -13,6 +13,7 @@
 | **Boxcar** | **Vagão Coberto** | Enclosed wagon type for general goods protection. |
 | **Capacity** | **Capacidade** | Maximum weight limit for trolleys or storage limit for bays. |
 | **Cargo** | **Carga** | Goods or commodities transported by railway including raw materials and products. |
+| **Cargo Flow** | **Fluxo de Carga** | Movement pattern of cargo through terminals, freight yards, and routes. |
 | **Chemical Tank Car** | **Vagão-tanque Químico** | Specialized tank wagon for chemicals with purity specifications. |
 | **Circulation Lines** | **Linhas de Circulação** | Terminal tracks for wagon movement between areas. |
 | **Complex Route** | **Rota Complexa** | Route that allows transportation of multiple freights together. |
@@ -33,6 +34,7 @@
 | **Freight** | **Carga** | Goods or commodities being transported by rail. |
 | **Freight Car** | **Vagão de Carga** | Railway vehicle designed for transporting goods. |
 | **Freight Manager** | **Gestor de Carga** | User profile overseeing cargo operations and planning. |
+| **Freight Service Plan** | **Plano de Serviço de Carga** | Detailed planned sequence of operations and passage times for a freight movement. |
 | **Freight Yard** | **Pátio de Carga** | Railway facility for loading, unloading, and train assembly. |
 | **Gauge** | **Bitola** | Distance between inner rail sides affecting vehicle compatibility. |
 | **Hopper Car** | **Vagão Graneleiro** | Wagon for bulk materials like coal and grains with bottom discharge. |
@@ -45,6 +47,7 @@
 | **Locomotive** | **Locomotiva** | Powered rail vehicle providing traction for trains. |
 | **Logistical Operator** | **Operador Logístico** | Company managing freight transportation operations. |
 | **Mineral Oil Car** | **Vagão de Óleo Mineral** | Tank wagon for petrochemicals and mineral oils. |
+| **Operational Time Window** | **Janela Operacional** | Defined time interval during which operations or train movements must occur. |
 | **Order** | **Pedido** | Customer request for products with quantities and dates. |
 | **Order Line** | **Linha de Pedido** | Individual order item specifying SKU and quantity. |
 | **Parking Lines** | **Linhas de Estacionamento** | Terminal sidings for temporary wagon storage. |
@@ -66,6 +69,7 @@
 | **SKU (Stock Keeping Unit)** | **SKU** | Unique code identifying specific product type in inventory. |
 | **Sorting** | **Triagem** | Process organizing wagons in freight yards for efficiency. |
 | **Station** | **Estação** | Nodal point in railway network for logistical operations. |
+| **Station Category** | **Categoria de Estação** | Classification grouping stations based on operational relevance (e.g., city, airport, main). |
 | **Station Master** | **Chefe de Estação** | User overseeing facility operations and coordination. |
 | **Station Storage Manager** | **Gestor de Armazenamento** | User responsible for warehouse operations. |
 | **Tank Car** | **Vagão-tanque** | Wagon for liquids, chemicals, and fuels. |

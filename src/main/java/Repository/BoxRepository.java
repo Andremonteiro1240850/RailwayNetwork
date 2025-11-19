@@ -307,7 +307,7 @@ public class BoxRepository {
         System.out.println("\n=== BOX REPOSITORY STATUS ===");
         RepositoryStats stats = getStats();
         System.out.println("📦 Unassigned boxes: " + stats.totalUnassigned + " (SKUs: " + stats.unassignedSkus + ")");
-        System.out.println("✅ Assigned boxes: " + stats.totalAssigned + " (SKUs: " + stats.assignedSkus + ")");
+        System.out.println(" Assigned boxes: " + stats.totalAssigned + " (SKUs: " + stats.assignedSkus + ")");
         System.out.println("📊 Total boxes: " + (stats.totalUnassigned + stats.totalAssigned));
         
         if (!unassignedBoxes.isEmpty()) {

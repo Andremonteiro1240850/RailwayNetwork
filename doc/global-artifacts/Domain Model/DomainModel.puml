@@ -44,9 +44,35 @@ skinparam style strictuml
 
   class Station {
     +stationType : String
+    +numberTracks : int
+    +latitude : double
+    +longitude : double
+    +country : String
+    +timeZone : String
+    +timeZoneGroup: String
+    }
+
+  enum trainState{
+  INTRANSIT
+  STOPPED
+  }
+
+  enum trackState{
+  GREEN
+  YELLOW
+  RED
+  RED(BLINKING)
+  }
+  class systemAdministrator{
+    +administratorId : int
+    +name : String
   }
 
 
+
+  systemAdministrator "1" -- "0..*" Station : manages
+Station "1" -- "1" trainState : has
+Station "1" -- "1" trackState : has
 RailwayNetwork "1" -- "1..*" Line : has
 Line "1" -- "1..*" LineSegment : has
 Line "1..*" -- "*" Station : pass trough
@@ -58,7 +84,7 @@ Station "1" -- "0..1" Terminal : can be
 
 
 
-  class Operator {
+  class TrainOperator {
     +operatorId : int
     +name : String
   }
@@ -103,6 +129,8 @@ Station "1" -- "0..1" Terminal : can be
 
   class Train {
     +trainId : String
+    +departureTime : DateTime
+
   }
 
   class Freight {
@@ -127,8 +155,8 @@ Station "1" -- "0..1" Terminal : can be
     SIMPLE
   }
 
-Operator "1" -- "0..*" Locomotive : belongs
-Operator "1" -- "0..*" Wagon : belongs
+TrainOperator "1" -- "0..*" Locomotive : belongs
+TrainOperator "1" -- "0..*" Wagon : belongs
 Train "1" -- "1..*" Locomotive : composed of
 Train "1" -- "0..*" Wagon : composed of
 Freight "1" -- "1" Path : carry on
@@ -414,18 +442,23 @@ QAAction "1" -- "0..*" ReturnReason : depends
     +pickerId ; int
     +name : String
   }
-
-
+  class StationOperator{
+    +operatorId : int
+    +name : String
+  }
+StationOperator "1" -- "0..*" Station : works at
 TrainDriver "1" -- "1..*" Train : drive
 StationMaster "1" -- "1" Station : supervision
 StationStorageManager "1" -- "1..*" Station : operates in
 StationStorageManager "1" -- "0..*" Freight : manages
 FreightManager "1" -- "0..*" Freight : manages
+FreightManager "1" -- "0..*" Train : dispatches
 Planner "1" -- "0..*" Train : schedules
 WarehousePlanner "1" -- "1..*" Warehouse : manages
 WarehousePlanner "1" -- "0..*" Allocation : atributes
 WarehousePlanner "1" -- "0..*" Order : fulfill
 Picker "1" -- "0..*" PickPath: planes
 Planner "1" -- "0..*" Allocation : pack
+
 
 @enduml

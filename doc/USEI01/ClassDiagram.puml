@@ -2,7 +2,7 @@
 skinparam monochrome true
 skinparam style strictuml
 
-package "UI" {
+
     class WagonsUnloadingUI {
         - controller : WagonsUnloadingController
         - scanner : Scanner
@@ -13,44 +13,31 @@ package "UI" {
         - relocateBox() : void
         - showDetailedAssignments(boxRepo: BoxRepository) : void
     }
-}
 
-package "Controller" {
+
+
     class WagonsUnloadingController {
-        - warehouseManager : WarehouseManager
+        - items : Map<String, Item>
+        - bays : List<Bay>
+        - bayMap : Map<BayId, Bay>
+        - boxRepository : BoxRepository
         - dataLoader : DataLoader
         - dataLoaded : boolean
         + WagonsUnloadingController(dataLoader: DataLoader)
         + unloadWagons() : void
         + dispatchStock(sku: String, quantity: int) : List<Box>
         + relocateBox(boxId: String, warehouseId: String, aisle: int, bay: int) : boolean
+        + insertReturnedBox(boxId: String, sku: String, qty: int, expiryDate: LocalDate, receivedAt: LocalDateTime) : void
         + getAvailableSkus() : List<String>
         + isDataLoaded() : boolean
-        + getWarehouseManager() : WarehouseManager
         + getBoxRepository() : BoxRepository
-    }
-}
-
-package "Domain" {
-    class WarehouseManager {
-        - items : Map<String, Item>
-        - stock : Map<String, List<Box>>
-        - bays : List<Bay>
-        - bayMap : Map<BayId, Bay>
-        - boxRepository : BoxRepository
-        + WarehouseManager(items: Map<String, Item>, stock: Map<String, List<Box>>, bays: List<Bay>)
-        + WarehouseManager(items: Map<String, Item>, stock: Map<String, List<Box>>, bays: List<Bay>, boxRepository: BoxRepository)
-        + unloadWagons() : void
-        + dispatchStock(sku: String, quantity: int) : List<Box>
-        + relocateBox(boxId: String, newBayId: BayId) : boolean
         + getItems() : Map<String, Item>
-        - unloadWagonsWithRepository() : void
-        - unloadWagonsWithStock() : void
+        + getBays() : List<Bay>
+        + getBayMap() : Map<BayId, Bay>
         - assignBoxToBay(box: Box) : void
-        - assignBoxToBayWithRepository(box: Box) : void
-        - findBestBayForBox(box: Box) : Bay
     }
-    
+
+
     class DataLoader {
         + items : Map<String, Item>
         + stock : Map<String, List<Box>>
@@ -77,6 +64,7 @@ package "Domain" {
         + getReceivedAt() : LocalDateTime
         + getLocation() : BayId
         + setQty(qty: int) : void
+        + reduceQty(amount: int) : void
         + setLocation(location: BayId) : void
         + {static} FEFO_COMPARATOR : Comparator<Box>
     }
@@ -141,9 +129,9 @@ package "Domain" {
         + hashCode() : int
         + toString() : String
     }
-}
 
-package "Repository" {
+
+
     class BoxRepository {
         - unassignedBoxes : Map<String, List<Box>>
         - assignedBoxes : Map<String, List<Box>>
@@ -152,27 +140,28 @@ package "Repository" {
         + addUnassignedBox(box: Box) : void
         + assignBoxToBay(box: Box, bayId: BayId) : void
         + removeAssignedBox(box: Box) : void
+        + updateBoxLocation(box: Box, newBayId: BayId) : void
+        + getUnassignedBoxes(sku: String) : List<Box>
+        + getAssignedBoxes(sku: String) : List<Box>
         + getAllUnassignedBoxes() : Map<String, List<Box>>
         + getAllAssignedBoxes() : Map<String, List<Box>>
         + getBoxById(boxId: String) : Box
-        + printStatus() : void
         + getStats() : RepositoryStats
     }
-}
+
 
 WagonsUnloadingUI "1" --> "1" WagonsUnloadingController
-WagonsUnloadingController "1" --> "1" WarehouseManager
 WagonsUnloadingController "1" --> "1" DataLoader
-WarehouseManager "1" --> "0..1" BoxRepository
-WarehouseManager ..> Box
-WarehouseManager ..> Bay
-WarehouseManager ..> Item
+WagonsUnloadingController "1" --> "1" BoxRepository
+WagonsUnloadingController ..> Box
+WagonsUnloadingController ..> Bay
+WagonsUnloadingController ..> Item
+WagonsUnloadingController ..> BayId
 DataLoader "1" --> "1" BoxRepository
 DataLoader ..> Item
 DataLoader ..> Box
 DataLoader ..> Bay
 Box "1" --> "0..1" BayId
-Box "1" --> "1" Item
 Bay "1" --> "1" BayId
 Bay "1" *-- "*" Box
 BoxRepository "1" *-- "*" Box

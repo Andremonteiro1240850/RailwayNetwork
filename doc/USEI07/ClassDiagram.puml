@@ -1,0 +1,130 @@
+@startuml
+'https://plantuml.com/class-diagram
+
+
+    class KDTreeUI {
+        - controller: KDTreeController
+        - scanner: Scanner
+        + void: showMainMenu()
+        - void: buildTree()
+        - void: viewMetrics()
+    }
+
+
+
+    class KDTreeController {
+        - kdTree: KDTree
+        - stationRepository: StationRepository
+        + boolean: buildTree()
+        + boolean: buildTree(stations: List<Station>)
+        + KDTree: getKDTree()
+        + boolean: isTreeBuilt()
+        + int[]: getTreeSize()
+        + int: getTreeHeight()
+        + Map<Integer, Integer>: getBucketStats()
+        + KDTreeMetrics: getAllMetrics()
+        + String: getMetricsString()
+    }
+    
+    class KDTreeMetrics {
+        - numNodes: int
+        - numStations: int
+        - height: int
+        - bucketStats: Map<Integer, Integer>
+        + int: getNumNodes()
+        + int: getNumStations()
+        + int: getHeight()
+        + Map<Integer, Integer>: getBucketStats()
+        + String: toString()
+    }
+
+
+
+    class KDTree {
+        - root: KDNode
+        - numNodes: int
+        - numStations: int
+        + KDTree()
+        + KDTree(stations: List<Station>)
+        + KDNode: buildKdTree(stationRepository: StationRepository)
+        + KDNode: buildKdTree(stations: List<Station>)
+        + int[]: getSize()
+        + int: size()
+        + int: height()
+        + Map<Integer, Integer>: getBucketStats()
+        + List<Station>: rangeQuery(latMin: double, latMax: double, lonMin: double, lonMax: double)
+        + boolean: isEmpty()
+        + KDNode: getRoot()
+        + static double: haversineDistance(lat1: double, lon1: double, lat2: double, lon2: double)
+        - KDNode: bulkBuild(sortedByLat: List<Station>, sortedByLon: List<Station>, depth: int)
+        - boolean: isValidCoordinate(station: Station)
+        - int: countNodes(node: KDNode)
+        - int: countStations(node: KDNode)
+        - int: height(node: KDNode)
+        - void: collectBucketStats(node: KDNode, stats: Map<Integer, Integer>)
+        - void: rangeQueryRecursive(node: KDNode, latMin: double, latMax: double, lonMin: double, lonMax: double, depth: int, results: List<Station>)
+    }
+    
+    class KDNode {
+        - axis: int
+        - splitValue: double
+        - bucket: List<Station>
+        - left: KDNode
+        - right: KDNode
+        + int: getAxis()
+        + double: getSplitValue()
+        + List<Station>: getBucket()
+        + KDNode: getLeft()
+        + KDNode: getRight()
+    }
+    
+    class Station {
+        - name: String
+        - latitude: double
+        - longitude: double
+        - country: String
+        - timeZone: String
+        - timeZoneGroup: String
+        - isCity: boolean
+        - isMainStation: boolean
+        - isAirport: boolean
+        + String: getName()
+        + double: getLatitude()
+        + double: getLongitude()
+        + String: getCountry()
+        + String: getTimeZone()
+        + String: getTimeZoneGroup()
+        + boolean: isCity()
+        + boolean: isMainStation()
+        + boolean: isAirport()
+    }
+
+
+    class StationRepository {
+        - latitudeTree: AVL
+        - longitudeTree: AVL
+        - groupCountryTree: AVL
+        + void: populateTrees(stations: List<Station>)
+        + Iterable<Station>: getAllStationsOrderedByLatitude()
+        + Iterable<Station>: getAllStationsOrderedByLongitude()
+        + int: totalStations()
+    }
+
+
+' --- Relações ---
+KDTreeUI --> KDTreeController : uses
+KDTreeController --* KDTree : manages
+KDTreeController --> StationRepository : uses
+KDTreeController --> KDTreeMetrics : creates
+KDTree "0..*" --> "1" Station : contains
+KDTree *-- KDNode : contains
+KDNode "0..*" --> "1" Station : bucket contains
+KDTree --> StationRepository : uses
+
+' Composição: KDTreeController possui KDTree
+' Cardinalidade: KDTree contém muitas Station através de KDNode buckets
+' KDTree usa StationRepository para obter dados ordenados (USEI06)
+' KDNode é uma classe interna estática de KDTree
+
+@enduml
+

@@ -11,6 +11,7 @@ import Repository.WarehouseRepository;
 import UI.*;
 import Domain.DataLoader;
 
+import java.util.List;
 import java.util.Scanner;
 
 /**
@@ -24,7 +25,7 @@ public class Main {
     private static WarehouseRepository warehouseRepository = new WarehouseRepository();
     private static TrolleyRepository trolleyRepository = new TrolleyRepository();
     private static BoxRepository boxRepository;
-    private StationRepository stationRepository;
+    private static StationRepository stationRepository; // Shared repository for Station Lookup and KD-Tree operations
     private static StationLoader stationLoader = new StationLoader();
     
     /**
@@ -45,7 +46,7 @@ public class Main {
             boxRepository = dataLoader.getBoxRepository();
             
             dataLoaded = true;
-            System.out.println("✓ All data loaded successfully!");
+            System.out.println("All data loaded successfully!");
         } catch (Exception e) {
             System.out.println("Error loading data: " + e.getMessage());
             dataLoaded = false;
@@ -174,8 +175,12 @@ public class Main {
         while (true) {
             System.out.println("\n=== SPATIAL INDEXING & GEOGRAPHICAL QUERIES ===");
             System.out.println("1. Login as a Planner to lookup for Stations");
-            System.out.println("2. Login as a Freight Manager");
-            System.out.println("3. Back");
+            System.out.println("2. Build a balanced 2D-Tree on Latitude/Longitude");
+            System.out.println("3. Search by Geographical Area");
+            System.out.println("4. Proximity Search");
+            System.out.println("5. Radius Search and Density Summary");
+            System.out.println("6. Schedule Train Dispatches");
+            System.out.println("7. Back");
 
             System.out.print("Select option: ");
             String choice = scanner.nextLine().trim();
@@ -187,11 +192,31 @@ public class Main {
                     // After station lookup, return to menu (continue loop)
                     break;
                 case "2":
-                    // Freight Manager -> Train Dispatch Scheduler
-                    freightManager();
-                    // After freight manager, return to menu (continue loop)
+                    // Planner -> Geographical Search (USEI08)
+                    dataEngineerMain();
+                    // After geographical search, return to menu (continue loop)
                     break;
                 case "3":
+                    // Planner -> Proximity Search (USEI09)
+                    geographicalSearch();
+                    // After proximity search, return to menu (continue loop)
+                    break;
+                case "4":
+                    // Freight Manager -> Train Dispatch Scheduler
+                    proximitySearch();
+                    // After freight manager, return to menu (continue loop)
+                    break;
+                case "5":
+                    // Planner -> Radius Search and Density Summary (USEI10)
+                    radiusSearch();
+                    // After radius search, return to menu (continue loop)
+                    break;
+                case "6":
+                    // Data Engineer -> KD-Tree Operations
+                    freightManager();
+                    // After data engineer, return to menu (continue loop)
+                    break;
+                case "7":
                     return false; // Back selecionado
                 default:
                     System.out.println("Invalid option!");
@@ -342,7 +367,9 @@ public class Main {
             System.out.println("\n=== STATION LOOKUP ===");
             System.out.println("Loading stations...");
 
-            StationController controller = new StationController(new StationRepository(stationLoader.loadFromCSV("train_station_dataset/train_stations_europe.csv")));
+            StationRepository repo = new StationRepository(stationLoader.loadFromCSV("train_station_dataset/train_stations_europe.csv"));
+            stationRepository = repo; // Save for KD-Tree operations to use
+            StationController controller = new StationController(repo);
 
             System.out.println("Stations loaded successfully!");
             System.out.println("Starting Station UI...");
@@ -368,5 +395,131 @@ public class Main {
         DispatchController controller = new DispatchController();
         SchedulerUI ui = new SchedulerUI(controller);
         ui.showMainMenu();
+    }
+    
+    /**
+     * Data Engineer - Balanced KD-Tree Operations
+     * Uses the StationRepository created in Station Lookup, without reading CSV again.
+     */
+    private static void dataEngineerMain() {
+        try {
+            System.out.println("\n=== BALANCED KD-TREE OPERATIONS ===");
+            
+            // Use StationRepository from Station Lookup (must be created first)
+            if (stationRepository == null) {
+                System.out.println("ERROR: Station repository not found. Please run Station Lookup first.");
+                System.out.println("The CSV file can only be read in Station Lookup.");
+                return;
+            }
+            
+            System.out.println("Using stations from Station Lookup.");
+            System.out.println("Total stations: " + stationRepository.totalStations());
+
+            KDTreeController kdTreeController = new KDTreeController(stationRepository);
+            KDTreeUI ui = new KDTreeUI(kdTreeController);
+            ui.showMainMenu();
+
+        } catch (Exception e) {
+            System.err.println("ERROR in dataEngineerMain: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+    
+    /**
+     * Planner - Search by Geographical Area (USEI08)
+     * Allows searching for stations within a geographical rectangle with optional filters.
+     */
+    private static void geographicalSearch() {
+        try {
+            System.out.println("\n=== SEARCH BY GEOGRAPHICAL AREA ===");
+            System.out.println("Loading stations...");
+
+            // Load stations using StationLoader
+            List<Domain.Station> stations = stationLoader.loadFromCSV("train_station_dataset/train_stations_europe.csv");
+
+            if (stations == null || stations.isEmpty()) {
+                System.out.println("No stations loaded. Please check the CSV file.");
+                return;
+            }
+
+            System.out.println("Stations loaded successfully! Total: " + stations.size());
+
+            // Create controller and UI
+            GeographicalSearchController controller = new GeographicalSearchController(stations);
+            GeographicalSearchUI ui = new GeographicalSearchUI(controller);
+            
+            // Show main menu
+            ui.showMainMenu();
+
+        } catch (Exception e) {
+            System.err.println("ERROR in geographicalSearch: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+    
+    /**
+     * Planner - Proximity Search (Nearest-N with Filters) (USEI09)
+     * Allows finding the N nearest stations to a target coordinate with optional filters.
+     */
+    private static void proximitySearch() {
+        try {
+            System.out.println("\n=== PROXIMITY SEARCH ===");
+            System.out.println("Loading stations...");
+
+            // Load stations using StationLoader
+            List<Domain.Station> stations = stationLoader.loadFromCSV("train_station_dataset/train_stations_europe.csv");
+
+            if (stations == null || stations.isEmpty()) {
+                System.out.println("No stations loaded. Please check the CSV file.");
+                return;
+            }
+
+            System.out.println("Stations loaded successfully! Total: " + stations.size());
+
+            // Create controller and UI
+            GeographicalSearchController controller = new GeographicalSearchController(stations);
+            GeographicalSearchUI ui = new GeographicalSearchUI(controller);
+            
+            // Show Nearest-N search menu
+            ui.showNearestNSearchMenu();
+
+        } catch (Exception e) {
+            System.err.println("ERROR in proximitySearch: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+    
+    /**
+     * Planner - Radius Search and Density Summary (USEI10)
+     * Allows searching for stations within a radius R (km) of a target (lat, lon) using the 2D-tree,
+     * and getting a summary by country and by isCity.
+     */
+    private static void radiusSearch() {
+        try {
+            System.out.println("\n=== RADIUS SEARCH AND DENSITY SUMMARY ===");
+            System.out.println("Loading stations...");
+
+            // Load stations using StationLoader
+            List<Domain.Station> stations = stationLoader.loadFromCSV("train_station_dataset/train_stations_europe.csv");
+
+            if (stations == null || stations.isEmpty()) {
+                System.out.println("No stations loaded. Please check the CSV file.");
+                return;
+            }
+
+            System.out.println("Stations loaded successfully! Total: " + stations.size());
+
+            // Create controller and UI
+            // The controller will build the KD-tree internally
+            RadiusSearchController controller = new RadiusSearchController(stations);
+            RadiusSearchUI ui = new RadiusSearchUI(controller);
+            
+            // Show main menu
+            ui.showMainMenu();
+
+        } catch (Exception e) {
+            System.err.println("ERROR in radiusSearch: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 }

@@ -64,16 +64,23 @@ public class SearchFilters {
     
     /**
      * Checks if a station matches all active filters.
+     * A station matches if:
+     * - All specified filters are satisfied, OR
+     * - No filters are set (all filters are null)
+     * 
+     * Filter logic:
+     * - Country filter: Station's country must match the specified country
+     * - City filter: Station's city status must match the specified value
+     * - Main station filter: Station's main station status must match the specified value
      *
-     * @param station the station to check
-     * @return true if station matches all filters (or if no filters are set)
+     * @param station the station to check against the filters
+     * @return true if the station matches all active filters, false otherwise
      */
     public boolean matches(Station station) {
         if (station == null) {
             return false;
         }
         
-        // Check country filter
         if (country != null) {
             Country stationCountry = Country.fromString(station.getCountry());
             if (stationCountry != country) {
@@ -81,12 +88,10 @@ public class SearchFilters {
             }
         }
         
-        // Check isCity filter
         if (isCity != null && station.isCity() != isCity) {
             return false;
         }
         
-        // Check isMainStation filter
         if (isMainStation != null && station.isMainStation() != isMainStation) {
             return false;
         }
@@ -103,32 +108,42 @@ public class SearchFilters {
         return isCity != null || isMainStation != null || country != null;
     }
     
+    /**
+     * Returns a human-readable string representation of the filters.
+     * Shows only the active (non-null) filters.
+     *
+     * @return string describing the active filters
+     */
     @Override
     public String toString() {
         if (!hasFilters()) {
-            return "No filters";
+            return "No filters applied";
         }
         
-        StringBuilder sb = new StringBuilder("Filters: ");
-        boolean first = true;
+        StringBuilder description = new StringBuilder("Active filters: ");
+        boolean isFirstFilter = true;
         
         if (country != null) {
-            sb.append("Country=").append(country);
-            first = false;
+            description.append("Country=").append(country);
+            isFirstFilter = false;
         }
         
         if (isCity != null) {
-            if (!first) sb.append(", ");
-            sb.append("isCity=").append(isCity);
-            first = false;
+            if (!isFirstFilter) {
+                description.append(", ");
+            }
+            description.append("City=").append(isCity ? "Yes" : "No");
+            isFirstFilter = false;
         }
         
         if (isMainStation != null) {
-            if (!first) sb.append(", ");
-            sb.append("isMainStation=").append(isMainStation);
+            if (!isFirstFilter) {
+                description.append(", ");
+            }
+            description.append("Main Station=").append(isMainStation ? "Yes" : "No");
         }
         
-        return sb.toString();
+        return description.toString();
     }
 }
 

@@ -7,13 +7,14 @@ import Domain.ENUM.Country;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
- * Controller for geographical search operations (USEI08).
- * Handles range queries on railway stations using KD-tree for efficient search.
+ * Controller for geographical search operations.
+ * Handles range queries, nearest neighbor search, and radius search on railway stations using KD-tree for efficient search.
  * 
  * @author Development Team
- * @version 1.0
+ * @version 2.0
  */
 public class GeographicalSearchController {
     
@@ -32,9 +33,9 @@ public class GeographicalSearchController {
     
     /**
      * Constructs a new GeographicalSearchController with an existing KD-tree.
-     * This allows using a balanced tree built in USEI07.
+     * This allows using a balanced tree.
      *
-     * @param kdTree the KD-tree to use (can be balanced from USEI07)
+     * @param kdTree the KD-tree to use (can be balanced)
      * @param stations list of all stations (for fallback or additional operations)
      */
     public GeographicalSearchController(KDTree kdTree, List<Station> stations) {
@@ -44,42 +45,50 @@ public class GeographicalSearchController {
     
     /**
      * Searches for stations within a geographical rectangle with optional filters.
-     * Uses KD-tree pruning to avoid scanning the whole dataset.
+     * Uses KD-tree pruning to efficiently find stations without scanning the entire dataset.
+     * 
+     * The search process:
+     * 1. Validates that the geographical boundaries are within valid ranges
+     * 2. Performs a range query on the KD-tree (uses spatial pruning for efficiency)
+     * 3. Applies optional filters (country, city status, main station status) if provided
+     * 4. Returns the filtered and sorted list of matching stations
      *
-     * @param latMin minimum latitude (inclusive)
-     * @param latMax maximum latitude (inclusive)
-     * @param lonMin minimum longitude (inclusive)
-     * @param lonMax maximum longitude (inclusive)
-     * @param filters optional filters (isCity, isMainStation, country)
-     * @return list of matching stations, sorted by name
-     * @throws IllegalArgumentException if range is invalid
+     * @param latMin minimum latitude (inclusive, must be between -90 and 90)
+     * @param latMax maximum latitude (inclusive, must be between -90 and 90)
+     * @param lonMin minimum longitude (inclusive, must be between -180 and 180)
+     * @param lonMax maximum longitude (inclusive, must be between -180 and 180)
+     * @param filters optional filters to refine the search (can be null)
+     * @return list of matching stations, sorted alphabetically by name
+     * @throws IllegalArgumentException if the geographical range is invalid
      */
     public List<Station> searchByGeographicalArea(double latMin, double latMax, 
                                                    double lonMin, double lonMax,
                                                    SearchFilters filters) {
-        // Validate range
         if (latMin < -90 || latMax > 90 || latMin > latMax) {
-            throw new IllegalArgumentException("Invalid latitude range: [" + latMin + ", " + latMax + "]");
+            throw new IllegalArgumentException(
+                "Invalid latitude range: [" + latMin + ", " + latMax + "]. " +
+                "Latitude must be between -90 and 90, and minimum must be <= maximum.");
         }
+        
         if (lonMin < -180 || lonMax > 180 || lonMin > lonMax) {
-            throw new IllegalArgumentException("Invalid longitude range: [" + lonMin + ", " + lonMax + "]");
+            throw new IllegalArgumentException(
+                "Invalid longitude range: [" + lonMin + ", " + lonMax + "]. " +
+                "Longitude must be between -180 and 180, and minimum must be <= maximum.");
         }
         
-        // Perform range query using KD-tree (efficient pruning)
-        List<Station> results = kdTree.rangeQuery(latMin, latMax, lonMin, lonMax);
+        List<Station> stationsInRange = kdTree.rangeQuery(latMin, latMax, lonMin, lonMax);
         
-        // Apply filters if provided
         if (filters != null && filters.hasFilters()) {
-            List<Station> filteredResults = new ArrayList<>();
-            for (Station station : results) {
+            List<Station> filteredStations = new ArrayList<>();
+            for (Station station : stationsInRange) {
                 if (filters.matches(station)) {
-                    filteredResults.add(station);
+                    filteredStations.add(station);
                 }
             }
-            return filteredResults;
+            return filteredStations;
         }
         
-        return results;
+        return stationsInRange;
     }
     
     /**
@@ -97,16 +106,19 @@ public class GeographicalSearchController {
     }
     
     /**
-     * Gets tree statistics for analysis.
+     * Gets tree statistics for analysis and debugging.
+     * Provides information about the KD-tree structure.
      *
-     * @return string with tree size and height
+     * @return formatted string with tree size (number of nodes) and height
      */
     public String getTreeStatistics() {
-        return String.format("KD-Tree: Size=%d, Height=%d", kdTree.size(), kdTree.height());
+        int treeSize = kdTree.size();
+        int treeHeight = kdTree.height();
+        return String.format("Size: %d nodes, Height: %d levels", treeSize, treeHeight);
     }
     
     /**
-     * Gets the KD-tree (for integration with USEI07).
+     * Gets the KD-tree.
      *
      * @return the KD-tree
      */
@@ -130,6 +142,102 @@ public class GeographicalSearchController {
      */
     public int getStationsCount() {
         return allStations.size();
+    }
+    
+    /**
+     * Finds the N nearest stations to a target point.
+     * Uses KD-tree for efficient nearest neighbor search.
+     *
+     * @param targetLat target latitude (must be between -90 and 90)
+     * @param targetLon target longitude (must be between -180 and 180)
+     * @param n number of nearest stations to find (must be positive)
+     * @param filters optional filters to refine the search (can be null)
+     * @return list of pairs (station, distance in km), sorted by distance (ascending)
+     * @throws IllegalArgumentException if parameters are invalid
+     */
+    public List<KDTree.StationDistance> findNearestStations(double targetLat, double targetLon, 
+                                                           int n, SearchFilters filters) {
+        if (targetLat < -90 || targetLat > 90) {
+            throw new IllegalArgumentException("Latitude must be between -90 and 90");
+        }
+        if (targetLon < -180 || targetLon > 180) {
+            throw new IllegalArgumentException("Longitude must be between -180 and 180");
+        }
+        if (n <= 0) {
+            throw new IllegalArgumentException("n must be positive");
+        }
+        
+        // Get nearest stations from KD-tree
+        List<KDTree.StationDistance> nearestStations = kdTree.nearestN(targetLat, targetLon, n);
+        
+        // Apply filters if provided
+        if (filters != null && filters.hasFilters()) {
+            return nearestStations.stream()
+                .filter(sd -> filters.matches(sd.getStation()))
+                .collect(Collectors.toList());
+        }
+        
+        return nearestStations;
+    }
+    
+    /**
+     * Finds the N nearest stations to a target point without filters.
+     *
+     * @param targetLat target latitude
+     * @param targetLon target longitude
+     * @param n number of nearest stations to find
+     * @return list of pairs (station, distance in km), sorted by distance (ascending)
+     */
+    public List<KDTree.StationDistance> findNearestStations(double targetLat, double targetLon, int n) {
+        return findNearestStations(targetLat, targetLon, n, null);
+    }
+    
+    /**
+     * Finds all stations within a specified radius of a target point.
+     * Uses KD-tree for efficient radius search.
+     *
+     * @param targetLat target latitude (must be between -90 and 90)
+     * @param targetLon target longitude (must be between -180 and 180)
+     * @param radiusKm search radius in kilometers (must be non-negative)
+     * @param filters optional filters to refine the search (can be null)
+     * @return list of pairs (station, distance in km), sorted by distance (ascending)
+     * @throws IllegalArgumentException if parameters are invalid
+     */
+    public List<KDTree.StationDistance> findStationsInRadius(double targetLat, double targetLon, 
+                                                              double radiusKm, SearchFilters filters) {
+        if (targetLat < -90 || targetLat > 90) {
+            throw new IllegalArgumentException("Latitude must be between -90 and 90");
+        }
+        if (targetLon < -180 || targetLon > 180) {
+            throw new IllegalArgumentException("Longitude must be between -180 and 180");
+        }
+        if (radiusKm < 0) {
+            throw new IllegalArgumentException("Radius must be non-negative");
+        }
+        
+        // Get stations in radius from KD-tree
+        List<KDTree.StationDistance> stationsInRadius = kdTree.radiusSearch(targetLat, targetLon, radiusKm);
+        
+        // Apply filters if provided
+        if (filters != null && filters.hasFilters()) {
+            return stationsInRadius.stream()
+                .filter(sd -> filters.matches(sd.getStation()))
+                .collect(Collectors.toList());
+        }
+        
+        return stationsInRadius;
+    }
+    
+    /**
+     * Finds all stations within a specified radius of a target point without filters.
+     *
+     * @param targetLat target latitude
+     * @param targetLon target longitude
+     * @param radiusKm search radius in kilometers
+     * @return list of pairs (station, distance in km), sorted by distance (ascending)
+     */
+    public List<KDTree.StationDistance> findStationsInRadius(double targetLat, double targetLon, double radiusKm) {
+        return findStationsInRadius(targetLat, targetLon, radiusKm, null);
     }
 }
 

@@ -68,48 +68,6 @@ public class TravelCalculationService {
     }
 
     /**
-     * Calculates the estimated travel time using a specific line segment and locomotive.
-     * This method is useful when the line segment is already known.
-     *
-     * @param startFacility the starting station
-     * @param endFacility   the ending station
-     * @param locomotive   the locomotive to use for the calculation
-     * @param segment      the specific line segment to use
-     * @return the travel time in hours
-     * @throws IllegalArgumentException   if any parameter is null
-     * @throws IncompatibleGaugeException if locomotive gauge is incompatible with segment gauge
-     * @throws IllegalStateException      if the segment doesn't connect the specified stations
-     */
-    public double calculateTravelTime(Facility startFacility, Facility endFacility,
-                                      Locomotive locomotive, LineSegment segment) {
-        if (startFacility == null) {
-            throw new IllegalArgumentException("Start station cannot be null");
-        }
-        if (endFacility == null) {
-            throw new IllegalArgumentException("End station cannot be null");
-        }
-        if (locomotive == null) {
-            throw new IllegalArgumentException("Locomotive cannot be null");
-        }
-        if (segment == null) {
-            throw new IllegalArgumentException("Line segment cannot be null");
-        }
-        
-        // Verify the segment connects the specified stations
-        if (!segment.connectsStations(startFacility, endFacility)) {
-            throw new IllegalStateException("Line segment does not connect the specified stations");
-        }
-        
-        // Check gauge compatibility
-        if (!locomotive.isGaugeCompatible(segment.getGauge())) {
-            throw new IncompatibleGaugeException(locomotive.getGauge(), segment.getGauge());
-        }
-        
-        // Calculate travel time: distance / speed
-        return segment.getLengthKm() / locomotive.getMaxSpeedKmH();
-    }
-
-    /**
      * Finds a line segment that connects the two specified stations.
      *
      * @param startFacility the starting station
