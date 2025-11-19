@@ -68,9 +68,9 @@ public class KDTree {
     
     /**
      * Builds a balanced KD-tree from a list of stations using StationRepository.
-     * This method uses the StationRepository to obtain sorted sequences by latitude and longitude.
+     * Uses the directly stored list from the repository for better performance.
      * 
-     * @param stationRepository the StationRepository instance that provides sorted data
+     * @param stationRepository the StationRepository instance that provides stations
      * @return the root node of the built tree
      */
     public KDNode buildKdTree(StationRepository stationRepository) {
@@ -78,16 +78,19 @@ public class KDTree {
             return null;
         }
         
-        // Get all stations (already validated)
-        List<Station> allStations = new ArrayList<>();
-        for (Station station : stationRepository.getAllStationsOrderedByLatitude()) {
-            // Re-validate defensively
-            if (isValidCoordinate(station)) {
-                allStations.add(station);
+        // Get all stations from the directly stored list (O(1) access)
+        // This is more efficient than traversing AVL trees
+        List<Station> allStations = stationRepository.getAllStations();
+        
+        // Filter and validate stations
+        List<Station> validStations = new ArrayList<>();
+        for (Station station : allStations) {
+            if (isValidCoordinate(station) && station.getName() != null && !station.getName().trim().isEmpty()) {
+                validStations.add(station);
             }
         }
         
-        return buildKdTree(allStations);
+        return buildKdTree(validStations);
     }
     
     /**

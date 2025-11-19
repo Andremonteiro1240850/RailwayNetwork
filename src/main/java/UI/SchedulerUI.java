@@ -69,6 +69,7 @@ public class SchedulerUI {
             System.out.println("2. View Available Stations");
             System.out.println("3. View Available Locomotives");
             System.out.println("4. View Available Wagons");
+            System.out.println("5. View Line Scheme");
             System.out.println("0. Back to Main Menu");
             
             System.out.print("Select option: ");
@@ -86,6 +87,9 @@ public class SchedulerUI {
                     break;
                 case "4":
                     showAvailableWagons();
+                    break;
+                case "5":
+                    showLineScheme();
                     break;
                 case "0":
                     return;
@@ -263,6 +267,9 @@ public class SchedulerUI {
     private RouteData collectRoute() {
         List<Facility> route = new ArrayList<>(); // Full route with intermediate stations
         List<Facility> selectedStations = new ArrayList<>(); // Only stations selected by user
+        
+        // Show line scheme before collecting route
+        displayLineScheme();
         
         System.out.println("\nEnter route stations (at least 2 stations).");
         System.out.println("The system will automatically find intermediate stations if needed.");
@@ -1235,6 +1242,119 @@ public class SchedulerUI {
                 .filter(locomotive -> locomotive.getId().equalsIgnoreCase(id))
                 .findFirst()
                 .orElse(null);
+    }
+
+    /**
+     * Displays the line scheme table (used internally, without header).
+     * The data is reloaded from the file each time to ensure it's always up to date.
+     */
+    private void displayLineScheme() {
+        try {
+            // Reload line segments from CSV to ensure data is up to date
+            RailwayDataLoader loader = new RailwayDataLoader();
+            loader.loadStations("train_station_dataset/facility.csv");
+            loader.loadLineSegments("train_station_dataset/line.csv");
+            
+            List<LineSegment> lineSegments = loader.getLineSegments();
+            List<Facility> stations = loader.getStations();
+            
+            if (lineSegments.isEmpty()) {
+                return;
+            }
+            
+            // Display line segments in order
+            // Calculate total table width: 5 + 1 + 40 + 1 + 12 + 1 + 12 + 1 + 12 + 1 + 10 = 96
+            int tableWidth = 5 + 1 + 40 + 1 + 12 + 1 + 12 + 1 + 12 + 1 + 10;
+            System.out.println(StringUtils.repeat("-", tableWidth));
+            System.out.println("LINE SEGMENTS:");
+            System.out.println(StringUtils.repeat("-", tableWidth));
+            System.out.printf("%-5s %-40s %-12s %-12s %-12s %-10s%n", 
+                            "ID", "Name", "Start ID", "End ID", "Length (km)", "Gauge (mm)");
+            System.out.println(StringUtils.repeat("-", tableWidth));
+            
+            for (LineSegment segment : lineSegments) {
+                String name = segment.getName();
+                if (name.length() > 40) {
+                    name = name.substring(0, 37) + "...";
+                }
+                System.out.printf("%-5s %-40s %-12s %-12s %-12.2f %-10.0f%n",
+                                segment.getId(),
+                                name,
+                                segment.getStartStation().getId(),
+                                segment.getEndStation().getId(),
+                                segment.getLengthKm(),
+                                segment.getGauge());
+            }
+            
+            System.out.println(StringUtils.repeat("-", tableWidth));
+            System.out.println();
+            
+        } catch (Exception e) {
+            // Silently fail - don't show error when displaying scheme before route selection
+        }
+    }
+
+    /**
+     * Shows the line scheme (network diagram) loaded from line.csv.
+     * The data is reloaded from the file each time to ensure it's always up to date.
+     */
+    private void showLineScheme() {
+        System.out.println("\n" + StringUtils.repeat("=", 80));
+        System.out.println("RAILWAY LINE SCHEME");
+        System.out.println(StringUtils.repeat("=", 80));
+        System.out.println("(Data loaded from line.csv)");
+        System.out.println();
+        
+        try {
+            // Reload line segments from CSV to ensure data is up to date
+            RailwayDataLoader loader = new RailwayDataLoader();
+            loader.loadStations("train_station_dataset/facility.csv");
+            loader.loadLineSegments("train_station_dataset/line.csv");
+            
+            List<LineSegment> lineSegments = loader.getLineSegments();
+            List<Facility> stations = loader.getStations();
+            
+            if (lineSegments.isEmpty()) {
+                System.out.println("No line segments found in line.csv.");
+                System.out.println();
+                return;
+            }
+            
+            System.out.println("Total line segments: " + lineSegments.size());
+            System.out.println("Total stations: " + stations.size());
+            System.out.println();
+            
+            // Display line segments in order
+            // Calculate total table width: 5 + 1 + 40 + 1 + 12 + 1 + 12 + 1 + 12 + 1 + 10 = 96
+            int tableWidth = 5 + 1 + 40 + 1 + 12 + 1 + 12 + 1 + 12 + 1 + 10;
+            System.out.println(StringUtils.repeat("-", tableWidth));
+            System.out.println("LINE SEGMENTS:");
+            System.out.println(StringUtils.repeat("-", tableWidth));
+            System.out.printf("%-5s %-40s %-12s %-12s %-12s %-10s%n", 
+                            "ID", "Name", "Start ID", "End ID", "Length (km)", "Gauge (mm)");
+            System.out.println(StringUtils.repeat("-", tableWidth));
+            
+            for (LineSegment segment : lineSegments) {
+                String name = segment.getName();
+                if (name.length() > 40) {
+                    name = name.substring(0, 37) + "...";
+                }
+                System.out.printf("%-5s %-40s %-12s %-12s %-12.2f %-10.0f%n",
+                                segment.getId(),
+                                name,
+                                segment.getStartStation().getId(),
+                                segment.getEndStation().getId(),
+                                segment.getLengthKm(),
+                                segment.getGauge());
+            }
+            
+            System.out.println(StringUtils.repeat("-", tableWidth));
+            
+        } catch (Exception e) {
+            System.out.println("ERROR: Failed to load line scheme from line.csv: " + e.getMessage());
+            System.out.println("Please ensure the file exists and is properly formatted.");
+            System.out.println();
+        }
     }
 
     /**

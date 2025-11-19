@@ -5,6 +5,7 @@ import Domain.Station;
 import Domain.StationDistanceComparator;
 import Domain.RadiusSearchSummary;
 import Domain.AVL;
+import Repository.StationRepository;
 
 import java.util.*;
 
@@ -33,8 +34,31 @@ public class RadiusSearchController {
     }
     
     /**
+     * Constructs a new RadiusSearchController from a StationRepository.
+     * This is the preferred constructor as it uses the repository that was
+     * populated once from the CSV, avoiding redundant CSV reads.
+     * Builds the KD-tree internally from the repository.
+     *
+     * @param stationRepository the StationRepository containing all stations
+     */
+    public RadiusSearchController(StationRepository stationRepository) {
+        if (stationRepository == null) {
+            throw new IllegalArgumentException("StationRepository cannot be null");
+        }
+        
+        // Get all stations from repository
+        this.allStations = stationRepository.getAllStations();
+        
+        // Build KD-tree from repository (uses sorted sequences efficiently)
+        this.kdTree = new KDTree();
+        this.kdTree.buildKdTree(stationRepository);
+    }
+    
+    /**
      * Constructs a new RadiusSearchController from a list of stations.
      * Builds the KD-tree internally.
+     * Note: This constructor is kept for backward compatibility, but
+     * prefer using the StationRepository constructor to avoid redundant CSV reads.
      *
      * @param stations list of stations to build the tree from
      */
