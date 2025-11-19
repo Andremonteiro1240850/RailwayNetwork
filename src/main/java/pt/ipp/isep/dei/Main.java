@@ -26,6 +26,7 @@ public class Main {
     private static TrolleyRepository trolleyRepository = new TrolleyRepository();
     private static BoxRepository boxRepository;
     private static StationRepository stationRepository; // Armazenado para uso na opção 2
+    private static KDTreeController kdTreeController; // Armazenado para uso na opção 4 (Proximity Search)
     private static StationLoader stationLoader = new StationLoader();
     
     /**
@@ -416,7 +417,8 @@ public class Main {
             System.out.println("Using AVL trees from option 1...");
             System.out.println("Total stations in AVL: " + stationRepository.totalStations());
 
-            KDTreeController kdTreeController = new KDTreeController(stationRepository);
+            // Armazenar o controller para uso na opção 4
+            kdTreeController = new KDTreeController(stationRepository);
             KDTreeUI ui = new KDTreeUI(kdTreeController);
             ui.showMainMenu();
 
@@ -461,31 +463,35 @@ public class Main {
     }
     
     /**
-     * Planner - Proximity Search (Nearest-N with Filters) (USEI09)
+     * Planner - Proximity Search (Nearest-N with Filters)
      * Allows finding the N nearest stations to a target coordinate with optional filters.
+     * Uses the 2D-tree built in option 2 - does NOT read CSV
      */
     private static void proximitySearch() {
+        // Verificar se a 2D-tree foi construída na opção 2 ANTES de mostrar qualquer coisa
+        if (kdTreeController == null || !kdTreeController.isTreeBuilt()) {
+            System.err.println("\n[ERROR] 2D-tree is not available.");
+            System.err.println("Please complete option 2 (Build a balanced 2D-Tree on Latitude/Longitude) first.");
+            System.err.println("The 2D-tree must be built before performing proximity search.");
+            return;
+        }
+
         try {
             System.out.println("\n=== PROXIMITY SEARCH ===");
-            System.out.println("Loading stations...");
-
-            // Load stations using StationLoader from USEI06
-            List<Domain.Station> stations = stationLoader.loadFromCSV("train_station_dataset/train_stations_europe.csv");
-
-            if (stations == null || stations.isEmpty()) {
-                System.out.println("No stations loaded. Please check the CSV file.");
-                return;
-            }
-
-            System.out.println("Stations loaded successfully! Total: " + stations.size());
-
-            // Create controller and UI
-            GeographicalSearchController controller = new GeographicalSearchController(stations);
-            GeographicalSearchUI ui = new GeographicalSearchUI(controller);
+            System.out.println("Using 2D-tree from option 2...");
             
-            // Show Nearest-N search menu
-            ui.showNearestNSearchMenu();
+            // Get the KD-tree built in option 2
+            Domain.KDTree tree = kdTreeController.getKDTree();
+            
+            // Create controller and UI using the existing 2D-tree
+            ProximitySearchController controller = new ProximitySearchController(tree, stationRepository);
+            ProximitySearchUI ui = new ProximitySearchUI(controller);
+            
+            // Show main menu
+            ui.showMainMenu();
 
+        } catch (IllegalStateException e) {
+            System.err.println("\n[ERROR] " + e.getMessage());
         } catch (Exception e) {
             System.err.println("ERROR in proximitySearch: " + e.getMessage());
             e.printStackTrace();
