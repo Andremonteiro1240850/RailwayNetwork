@@ -25,7 +25,7 @@ public class Main {
     private static WarehouseRepository warehouseRepository = new WarehouseRepository();
     private static TrolleyRepository trolleyRepository = new TrolleyRepository();
     private static BoxRepository boxRepository;
-    private StationRepository stationRepository;
+    private static StationRepository stationRepository; // Shared repository for Station Lookup and KD-Tree operations
     private static StationLoader stationLoader = new StationLoader();
     
     /**
@@ -367,7 +367,9 @@ public class Main {
             System.out.println("\n=== STATION LOOKUP ===");
             System.out.println("Loading stations...");
 
-            StationController controller = new StationController(new StationRepository(stationLoader.loadFromCSV("train_station_dataset/train_stations_europe.csv")));
+            StationRepository repo = new StationRepository(stationLoader.loadFromCSV("train_station_dataset/train_stations_europe.csv"));
+            stationRepository = repo; // Save for KD-Tree operations to use
+            StationController controller = new StationController(repo);
 
             System.out.println("Stations loaded successfully!");
             System.out.println("Starting Station UI...");
@@ -397,20 +399,23 @@ public class Main {
     
     /**
      * Data Engineer - Balanced KD-Tree Operations
+     * Uses the StationRepository created in Station Lookup, without reading CSV again.
      */
     private static void dataEngineerMain() {
         try {
             System.out.println("\n=== BALANCED KD-TREE OPERATIONS ===");
-            System.out.println("Loading stations...");
+            
+            // Use StationRepository from Station Lookup (must be created first)
+            if (stationRepository == null) {
+                System.out.println("ERROR: Station repository not found. Please run Station Lookup first.");
+                System.out.println("The CSV file can only be read in Station Lookup.");
+                return;
+            }
+            
+            System.out.println("Using stations from Station Lookup.");
+            System.out.println("Total stations: " + stationRepository.totalStations());
 
-            StationRepository repository = new StationRepository(
-                stationLoader.loadFromCSV("train_station_dataset/train_stations_europe.csv")
-            );
-
-            System.out.println("Stations loaded successfully!");
-            System.out.println("Total stations: " + repository.totalStations());
-
-            KDTreeController kdTreeController = new KDTreeController(repository);
+            KDTreeController kdTreeController = new KDTreeController(stationRepository);
             KDTreeUI ui = new KDTreeUI(kdTreeController);
             ui.showMainMenu();
 
@@ -429,7 +434,7 @@ public class Main {
             System.out.println("\n=== SEARCH BY GEOGRAPHICAL AREA ===");
             System.out.println("Loading stations...");
 
-            // Load stations using StationLoader from USEI06
+            // Load stations using StationLoader
             List<Domain.Station> stations = stationLoader.loadFromCSV("train_station_dataset/train_stations_europe.csv");
 
             if (stations == null || stations.isEmpty()) {
@@ -461,7 +466,7 @@ public class Main {
             System.out.println("\n=== PROXIMITY SEARCH ===");
             System.out.println("Loading stations...");
 
-            // Load stations using StationLoader from USEI06
+            // Load stations using StationLoader
             List<Domain.Station> stations = stationLoader.loadFromCSV("train_station_dataset/train_stations_europe.csv");
 
             if (stations == null || stations.isEmpty()) {
@@ -494,7 +499,7 @@ public class Main {
             System.out.println("\n=== RADIUS SEARCH AND DENSITY SUMMARY ===");
             System.out.println("Loading stations...");
 
-            // Load stations using StationLoader from USEI06
+            // Load stations using StationLoader
             List<Domain.Station> stations = stationLoader.loadFromCSV("train_station_dataset/train_stations_europe.csv");
 
             if (stations == null || stations.isEmpty()) {
