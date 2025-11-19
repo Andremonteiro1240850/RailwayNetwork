@@ -1,6 +1,15 @@
 package Domain;
 
+/**
+ * The type Station validator.
+ */
 public class StationValidator {
+    /**
+     * Is valid station boolean.
+     *
+     * @param station the station
+     * @return the boolean
+     */
     public static boolean isValidStation(Station station) {
         if (station == null) {
             return false;

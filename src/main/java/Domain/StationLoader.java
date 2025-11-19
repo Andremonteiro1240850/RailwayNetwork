@@ -2,7 +2,16 @@ package Domain;
 import java.io.*;
 import java.util.*;
 
+/**
+ * The type Station loader.
+ */
 public class StationLoader {
+    /**
+     * Load from csv list.
+     *
+     * @param filePath the file path
+     * @return the list
+     */
     public List<Station> loadFromCSV(String filePath) {
         List<Station> stations = new ArrayList<>();
         int lineNumber = 0;
