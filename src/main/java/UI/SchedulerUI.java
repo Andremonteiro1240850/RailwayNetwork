@@ -69,6 +69,7 @@ public class SchedulerUI {
             System.out.println("2. View Available Stations");
             System.out.println("3. View Available Locomotives");
             System.out.println("4. View Available Wagons");
+            System.out.println("5. View Line Scheme");
             System.out.println("0. Back to Main Menu");
             
             System.out.print("Select option: ");
@@ -87,10 +88,13 @@ public class SchedulerUI {
                 case "4":
                     showAvailableWagons();
                     break;
+                case "5":
+                    showLineScheme();
+                    break;
                 case "0":
                     return;
                 default:
-                    System.out.println("ERROR: Invalid option! Please try again.");
+                    System.out.println("ERROR: Invalid option!");
             }
         }
     }
@@ -182,12 +186,8 @@ public class SchedulerUI {
                     }
                 } catch (Exception e) {
                     System.out.println("\nERROR: Error creating train: " + e.getMessage());
-                    System.out.print("Do you want to try again? (y/n): ");
-                    String retry = scanner.nextLine().trim().toLowerCase();
-                    if (!retry.equals("y") && !retry.equals("yes")) {
-                        System.out.println("Skipping this train. Continuing with next train...");
-                        break;
-                    }
+                    System.out.println("Skipping this train. Continuing with next train...");
+                    break;
                 }
             }
         }
@@ -268,6 +268,9 @@ public class SchedulerUI {
         List<Facility> route = new ArrayList<>(); // Full route with intermediate stations
         List<Facility> selectedStations = new ArrayList<>(); // Only stations selected by user
         
+        // Show line scheme before collecting route
+        displayLineScheme();
+        
         System.out.println("\nEnter route stations (at least 2 stations).");
         System.out.println("The system will automatically find intermediate stations if needed.");
         System.out.println("Press Enter with empty station ID to finish route.");
@@ -288,12 +291,8 @@ public class SchedulerUI {
 
             Facility station = controller.getStationById(stationId);
             if (station == null) {
-                System.out.println("ERROR: Station with ID '" + stationId + "' not found!");
-                System.out.print("Do you want to try again? (y/n): ");
-                String retry = scanner.nextLine().trim().toLowerCase();
-                if (!retry.equals("y") && !retry.equals("yes")) {
-                    return null;
-                }
+                System.out.println("ERROR: Station with ID '" + stationId + "' does not exist in facility.csv!");
+                System.out.println("Please enter another station ID.");
                 System.out.println();
                 continue;
             }
@@ -318,11 +317,7 @@ public class SchedulerUI {
                         System.out.println("ERROR: No path found between " + previousStation.getId() + 
                                          " and " + station.getId() + ".");
                         selectedStations.remove(selectedStations.size() - 1); // Remove from selected
-                        System.out.print("Do you want to try again? (y/n): ");
-                        String retry = scanner.nextLine().trim().toLowerCase();
-                        if (!retry.equals("y") && !retry.equals("yes")) {
-                            return null;
-                        }
+                        System.out.println("Please enter another station ID.");
                         System.out.println();
                         continue;
                     }
@@ -478,11 +473,7 @@ public class SchedulerUI {
                 Locomotive locomotive = findLocomotiveById(locomotiveId);
                 if (locomotive == null) {
                     System.out.println("ERROR: Locomotive with ID '" + locomotiveId + "' not found!");
-                    System.out.print("Do you want to try again? (y/n): ");
-                    String retry = scanner.nextLine().trim().toLowerCase();
-                    if (!retry.equals("y") && !retry.equals("yes")) {
-                        return null;
-                    }
+                    System.out.println("Please enter another locomotive ID.");
                     System.out.println();
                     continue;
                 }
@@ -510,11 +501,7 @@ public class SchedulerUI {
                         if (validationError != null) {
                             System.out.println("ERROR: " + validationError);
                             System.out.println("The locomotive is still not available at the new departure time.");
-                            System.out.print("Do you want to try again? (y/n): ");
-                            String retry = scanner.nextLine().trim().toLowerCase();
-                            if (!retry.equals("y") && !retry.equals("yes")) {
-                                return null;
-                            }
+                            System.out.println("Please enter a different departure time.");
                             System.out.println();
                             continue;
                         }
@@ -808,11 +795,7 @@ public class SchedulerUI {
                 Wagon wagon = findWagonById(wagonId);
                 if (wagon == null) {
                     System.out.println("ERROR: Wagon with ID '" + wagonId + "' not found in CSV!");
-                    System.out.print("Do you want to try again? (y/n): ");
-                    String retry = scanner.nextLine().trim().toLowerCase();
-                    if (!retry.equals("y") && !retry.equals("yes")) {
-                        return null;
-                    }
+                    System.out.println("Please enter another wagon ID.");
                     System.out.println();
                     continue;
                 }
@@ -894,11 +877,7 @@ public class SchedulerUI {
             Wagon wagon = findWagonById(wagonId);
             if (wagon == null) {
                 System.out.println("ERROR: Wagon with ID '" + wagonId + "' not found in CSV!");
-                System.out.print("Do you want to try again? (y/n): ");
-                String retry = scanner.nextLine().trim().toLowerCase();
-                if (!retry.equals("y") && !retry.equals("yes")) {
-                    return null;
-                }
+                System.out.println("Please enter another wagon ID.");
                 i--; // Retry this iteration
                 System.out.println();
                 continue;
@@ -1001,7 +980,7 @@ public class SchedulerUI {
             System.out.println(StringUtils.repeat("=", 80));
 
             for (DispatchReport.Conflict conflict : report.getConflicts()) {
-                displayConflictSimple(conflict);
+                displayConflictSimple(conflict, report);
             }
         } else {
             System.out.println("\n[INFO] No conflicts detected!");
@@ -1099,15 +1078,28 @@ public class SchedulerUI {
      * Displays a conflict in a simple line format.
      *
      * @param conflict the conflict to display
+     * @param report the dispatch report to get station information from
      */
-    private void displayConflictSimple(DispatchReport.Conflict conflict) {
-        System.out.println();
-        System.out.println("=========================");
-        System.out.println("CROSSING/CONFLICT ALERTS");
-        System.out.println("=========================");
+    private void displayConflictSimple(DispatchReport.Conflict conflict, DispatchReport report) {
         System.out.println();
         System.out.println("[CONFLICT] Train " + conflict.getTrain1Id() + " vs Train " + conflict.getTrain2Id());
-        System.out.println("   Segment: " + conflict.getSegmentId());
+        
+        // Find station name from segment ID
+        String stationName = conflict.getSegmentId(); // Default to segment ID if not found
+        for (DispatchReport.TrainSchedule schedule : report.getTrainSchedules()) {
+            for (DispatchReport.TrainSchedule.SegmentTime segmentTime : schedule.getSegmentTimes()) {
+                if (segmentTime.getSegmentId().equals(conflict.getSegmentId())) {
+                    // Use the end station name (where the conflict occurs)
+                    stationName = segmentTime.getEndStation().getName();
+                    break;
+                }
+            }
+            if (!stationName.equals(conflict.getSegmentId())) {
+                break; // Found the station name
+            }
+        }
+        
+        System.out.println("   Station: " + stationName);
         System.out.println("   Type: " + conflict.getConflictType());
         System.out.println();
         System.out.println("   Explanation: Both trains are scheduled to use the same segment (single-track line)");
@@ -1119,6 +1111,13 @@ public class SchedulerUI {
             System.out.println();
             if (conflict.getCrossingStationId() != null) {
                 System.out.println("   Crossing Station: " + conflict.getCrossingStationId());
+            }
+        }
+        
+        // Always show waiting train and wait time if available
+        if (conflict.getWaitingTrainId() != null || conflict.getWaitTimeMinutes() != null) {
+            if (!conflict.hasCrossingDetails()) {
+                System.out.println();
             }
             if (conflict.getWaitingTrainId() != null) {
                 System.out.println("   Waiting Train: " + conflict.getWaitingTrainId());
@@ -1143,9 +1142,27 @@ public class SchedulerUI {
                                  " to allow Train " + (conflict.getTrain1Id().equals(conflict.getWaitingTrainId()) ? 
                                  conflict.getTrain2Id() : conflict.getTrain1Id()) + " to pass first.");
             } else if (conflict.getResolution() == DispatchReport.Conflict.ResolutionType.WAIT_AT_PREVIOUS_STATION) {
+                // Find the previous station name for the waiting train
+                String previousStationName = "the previous station"; // Default
+                if (conflict.getWaitingTrainId() != null) {
+                    for (DispatchReport.TrainSchedule schedule : report.getTrainSchedules()) {
+                        if (schedule.getTrainId().equals(conflict.getWaitingTrainId())) {
+                            // Find the segment where the conflict occurs
+                            for (DispatchReport.TrainSchedule.SegmentTime segmentTime : schedule.getSegmentTimes()) {
+                                if (segmentTime.getSegmentId().equals(conflict.getSegmentId())) {
+                                    // The previous station is the start station of this segment
+                                    previousStationName = segmentTime.getStartStation().getName();
+                                    break;
+                                }
+                            }
+                            break;
+                        }
+                    }
+                }
                 System.out.println("   Resolution: Train " + conflict.getWaitingTrainId() + 
-                                 " must wait at the previous station before entering segment " + 
-                                 conflict.getSegmentId() + " until the other train has cleared the segment.");
+                                 " must wait at station " + previousStationName + 
+                                 " before entering segment " + conflict.getSegmentId() + 
+                                 " until the other train has cleared the segment.");
             } else if (conflict.getResolution() == DispatchReport.Conflict.ResolutionType.UNSOLVABLE) {
                 System.out.println("   Resolution: UNSOLVABLE - Both trains arrive simultaneously at the segment.");
                 System.out.println("   Manual intervention required to reschedule one of the trains.");
@@ -1225,6 +1242,119 @@ public class SchedulerUI {
                 .filter(locomotive -> locomotive.getId().equalsIgnoreCase(id))
                 .findFirst()
                 .orElse(null);
+    }
+
+    /**
+     * Displays the line scheme table (used internally, without header).
+     * The data is reloaded from the file each time to ensure it's always up to date.
+     */
+    private void displayLineScheme() {
+        try {
+            // Reload line segments from CSV to ensure data is up to date
+            RailwayDataLoader loader = new RailwayDataLoader();
+            loader.loadStations("train_station_dataset/facility.csv");
+            loader.loadLineSegments("train_station_dataset/line.csv");
+            
+            List<LineSegment> lineSegments = loader.getLineSegments();
+            List<Facility> stations = loader.getStations();
+            
+            if (lineSegments.isEmpty()) {
+                return;
+            }
+            
+            // Display line segments in order
+            // Calculate total table width: 5 + 1 + 40 + 1 + 12 + 1 + 12 + 1 + 12 + 1 + 10 = 96
+            int tableWidth = 5 + 1 + 40 + 1 + 12 + 1 + 12 + 1 + 12 + 1 + 10;
+            System.out.println(StringUtils.repeat("-", tableWidth));
+            System.out.println("LINE SEGMENTS:");
+            System.out.println(StringUtils.repeat("-", tableWidth));
+            System.out.printf("%-5s %-40s %-12s %-12s %-12s %-10s%n", 
+                            "ID", "Name", "Start ID", "End ID", "Length (km)", "Gauge (mm)");
+            System.out.println(StringUtils.repeat("-", tableWidth));
+            
+            for (LineSegment segment : lineSegments) {
+                String name = segment.getName();
+                if (name.length() > 40) {
+                    name = name.substring(0, 37) + "...";
+                }
+                System.out.printf("%-5s %-40s %-12s %-12s %-12.2f %-10.0f%n",
+                                segment.getId(),
+                                name,
+                                segment.getStartStation().getId(),
+                                segment.getEndStation().getId(),
+                                segment.getLengthKm(),
+                                segment.getGauge());
+            }
+            
+            System.out.println(StringUtils.repeat("-", tableWidth));
+            System.out.println();
+            
+        } catch (Exception e) {
+            // Silently fail - don't show error when displaying scheme before route selection
+        }
+    }
+
+    /**
+     * Shows the line scheme (network diagram) loaded from line.csv.
+     * The data is reloaded from the file each time to ensure it's always up to date.
+     */
+    private void showLineScheme() {
+        System.out.println("\n" + StringUtils.repeat("=", 80));
+        System.out.println("RAILWAY LINE SCHEME");
+        System.out.println(StringUtils.repeat("=", 80));
+        System.out.println("(Data loaded from line.csv)");
+        System.out.println();
+        
+        try {
+            // Reload line segments from CSV to ensure data is up to date
+            RailwayDataLoader loader = new RailwayDataLoader();
+            loader.loadStations("train_station_dataset/facility.csv");
+            loader.loadLineSegments("train_station_dataset/line.csv");
+            
+            List<LineSegment> lineSegments = loader.getLineSegments();
+            List<Facility> stations = loader.getStations();
+            
+            if (lineSegments.isEmpty()) {
+                System.out.println("No line segments found in line.csv.");
+                System.out.println();
+                return;
+            }
+            
+            System.out.println("Total line segments: " + lineSegments.size());
+            System.out.println("Total stations: " + stations.size());
+            System.out.println();
+            
+            // Display line segments in order
+            // Calculate total table width: 5 + 1 + 40 + 1 + 12 + 1 + 12 + 1 + 12 + 1 + 10 = 96
+            int tableWidth = 5 + 1 + 40 + 1 + 12 + 1 + 12 + 1 + 12 + 1 + 10;
+            System.out.println(StringUtils.repeat("-", tableWidth));
+            System.out.println("LINE SEGMENTS:");
+            System.out.println(StringUtils.repeat("-", tableWidth));
+            System.out.printf("%-5s %-40s %-12s %-12s %-12s %-10s%n", 
+                            "ID", "Name", "Start ID", "End ID", "Length (km)", "Gauge (mm)");
+            System.out.println(StringUtils.repeat("-", tableWidth));
+            
+            for (LineSegment segment : lineSegments) {
+                String name = segment.getName();
+                if (name.length() > 40) {
+                    name = name.substring(0, 37) + "...";
+                }
+                System.out.printf("%-5s %-40s %-12s %-12s %-12.2f %-10.0f%n",
+                                segment.getId(),
+                                name,
+                                segment.getStartStation().getId(),
+                                segment.getEndStation().getId(),
+                                segment.getLengthKm(),
+                                segment.getGauge());
+            }
+            
+            System.out.println(StringUtils.repeat("-", tableWidth));
+            
+        } catch (Exception e) {
+            System.out.println("ERROR: Failed to load line scheme from line.csv: " + e.getMessage());
+            System.out.println("Please ensure the file exists and is properly formatted.");
+            System.out.println();
+        }
     }
 
     /**

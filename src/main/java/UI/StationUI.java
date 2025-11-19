@@ -3,10 +3,19 @@ package UI;
 import Controller.StationController;
 import java.util.Scanner;
 
+/**
+ * The type Station ui.
+ */
 public class StationUI implements Runnable {
     private final StationController stationController;
     private final Scanner scanner;
 
+    /**
+     * Instantiates a new Station ui.
+     *
+     * @param stationController the station controller
+     * @param scanner           the scanner
+     */
     public StationUI(StationController stationController, Scanner scanner) {
         this.stationController = stationController;
         this.scanner = scanner;
