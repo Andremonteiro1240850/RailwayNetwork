@@ -68,29 +68,88 @@ public class KDTree {
     
     /**
      * Builds a balanced KD-tree from a list of stations using StationRepository.
-     * Uses the directly stored list from the repository for better performance.
+     * Uses the AVL trees (latitudeTree and longitudeTree) to get
+     * stations already sorted by latitude and longitude.
      * 
      * @param stationRepository the StationRepository instance that provides stations
      * @return the root node of the built tree
+     * @throws IllegalStateException if the AVL trees are not populated
      */
     public KDNode buildKdTree(StationRepository stationRepository) {
         if (stationRepository == null) {
-            return null;
+            throw new IllegalArgumentException("StationRepository cannot be null");
         }
         
-        // Get all stations from the directly stored list (O(1) access)
-        // This is more efficient than traversing AVL trees
-        List<Station> allStations = stationRepository.getAllStations();
+        // Verify that AVL trees are populated
+        if (stationRepository.totalStations() == 0) {
+            throw new IllegalStateException(
+                "Cannot build KD-tree: AVL trees are empty. " +
+                "Please populate the StationRepository with stations first (complete option 1)."
+            );
+        }
         
-        // Filter and validate stations
-        List<Station> validStations = new ArrayList<>();
-        for (Station station : allStations) {
+        // Get stations from AVL trees - already sorted by latitude and longitude
+        List<Station> sortedByLat = new ArrayList<>();
+        List<Station> sortedByLon = new ArrayList<>();
+        
+        // Collect valid stations from latitude AVL tree (already sorted by latitude)
+        for (Station station : stationRepository.getAllStationsOrderedByLatitude()) {
             if (isValidCoordinate(station) && station.getName() != null && !station.getName().trim().isEmpty()) {
-                validStations.add(station);
+                sortedByLat.add(station);
             }
         }
         
-        return buildKdTree(validStations);
+        // Collect valid stations from longitude AVL tree (already sorted by longitude)
+        for (Station station : stationRepository.getAllStationsOrderedByLongitude()) {
+            if (isValidCoordinate(station) && station.getName() != null && !station.getName().trim().isEmpty()) {
+                sortedByLon.add(station);
+            }
+        }
+        
+        if (sortedByLat.isEmpty() || sortedByLon.isEmpty()) {
+            throw new IllegalStateException(
+                "Cannot build KD-tree: No valid stations found in AVL trees. " +
+                "Please ensure option 1 has been completed and stations are properly validated."
+            );
+        }
+        
+        // Ensure both lists contain the same stations (intersection of valid stations)
+        Set<Station> validStationsSet = new HashSet<>(sortedByLat);
+        validStationsSet.retainAll(new HashSet<>(sortedByLon));
+        
+        // Rebuild both lists with only the common valid stations, maintaining order from AVL trees
+        List<Station> finalSortedByLat = new ArrayList<>();
+        List<Station> finalSortedByLon = new ArrayList<>();
+        
+        for (Station station : stationRepository.getAllStationsOrderedByLatitude()) {
+            if (validStationsSet.contains(station)) {
+                finalSortedByLat.add(station);
+            }
+        }
+        
+        for (Station station : stationRepository.getAllStationsOrderedByLongitude()) {
+            if (validStationsSet.contains(station)) {
+                finalSortedByLon.add(station);
+            }
+        }
+        
+        // Sort by secondary criteria to ensure deterministic ordering for stations with same primary coordinate
+        finalSortedByLat.sort(Comparator.comparingDouble(Station::getLatitude)
+                .thenComparingDouble(Station::getLongitude)
+                .thenComparing(Station::getName));
+        
+        finalSortedByLon.sort(Comparator.comparingDouble(Station::getLongitude)
+                .thenComparingDouble(Station::getLatitude)
+                .thenComparing(Station::getName));
+        
+        // Build tree using bulk-build algorithm
+        this.root = bulkBuild(finalSortedByLat, finalSortedByLon, 0);
+        
+        // Calculate metrics
+        this.numNodes = countNodes(this.root);
+        this.numStations = countStations(this.root);
+        
+        return this.root;
     }
     
     /**

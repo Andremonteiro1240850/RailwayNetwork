@@ -25,7 +25,7 @@ public class Main {
     private static WarehouseRepository warehouseRepository = new WarehouseRepository();
     private static TrolleyRepository trolleyRepository = new TrolleyRepository();
     private static BoxRepository boxRepository;
-    private StationRepository stationRepository;
+    private static StationRepository stationRepository; // Armazenado para uso na opção 2
     private static StationLoader stationLoader = new StationLoader();
     
     /**
@@ -367,7 +367,10 @@ public class Main {
             System.out.println("\n=== STATION LOOKUP ===");
             System.out.println("Loading stations...");
 
-            StationController controller = new StationController(new StationRepository(stationLoader.loadFromCSV("train_station_dataset/train_stations_europe.csv")));
+            // Criar e armazenar o StationRepository (USEI06) - será usado na opção 2
+            stationRepository = new StationRepository(stationLoader.loadFromCSV("train_station_dataset/train_stations_europe.csv"));
+
+            StationController controller = new StationController(stationRepository);
 
             System.out.println("Stations loaded successfully!");
             System.out.println("Starting Station UI...");
@@ -397,23 +400,28 @@ public class Main {
     
     /**
      * Data Engineer - Balanced KD-Tree Operations
+     * Uses the StationRepository created in option 1 - does NOT read CSV
      */
     private static void dataEngineerMain() {
+        // Verificar se o StationRepository foi criado na opção 1 ANTES de mostrar qualquer coisa
+        if (stationRepository == null || stationRepository.totalStations() == 0) {
+            System.err.println("\n[ERROR] AVL trees are not available.");
+            System.err.println("Please complete option 1 (Login as a Planner to lookup for Stations) first.");
+            System.err.println("The AVL trees must be populated before building the 2D-tree.");
+            return;
+        }
+
         try {
             System.out.println("\n=== BALANCED KD-TREE OPERATIONS ===");
-            System.out.println("Loading stations...");
+            System.out.println("Using AVL trees from option 1...");
+            System.out.println("Total stations in AVL: " + stationRepository.totalStations());
 
-            StationRepository repository = new StationRepository(
-                stationLoader.loadFromCSV("train_station_dataset/train_stations_europe.csv")
-            );
-
-            System.out.println("Stations loaded successfully!");
-            System.out.println("Total stations: " + repository.totalStations());
-
-            KDTreeController kdTreeController = new KDTreeController(repository);
+            KDTreeController kdTreeController = new KDTreeController(stationRepository);
             KDTreeUI ui = new KDTreeUI(kdTreeController);
             ui.showMainMenu();
 
+        } catch (IllegalStateException e) {
+            System.err.println("\n[ERROR] " + e.getMessage());
         } catch (Exception e) {
             System.err.println("ERROR in dataEngineerMain: " + e.getMessage());
             e.printStackTrace();

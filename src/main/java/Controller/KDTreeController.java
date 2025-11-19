@@ -30,11 +30,13 @@ public class KDTreeController {
     
     /**
      * Builds a balanced KD-tree from the station repository.
+     * Uses AVL trees from USEI06 - does NOT read CSV.
      *
      * @return true if build was successful
      */
     public boolean buildTree() {
         if (stationRepository == null) {
+            System.err.println("[ERROR] StationRepository is null. Cannot build KD-tree.");
             return false;
         }
         
@@ -42,8 +44,11 @@ public class KDTreeController {
             this.kdTree = new KDTree();
             this.kdTree.buildKdTree(stationRepository);
             return true;
+        } catch (IllegalStateException e) {
+            System.err.println("[ERROR] " + e.getMessage());
+            return false;
         } catch (Exception e) {
-            System.err.println("Error building KD-tree: " + e.getMessage());
+            System.err.println("[ERROR] Error building KD-tree: " + e.getMessage());
             return false;
         }
     }
