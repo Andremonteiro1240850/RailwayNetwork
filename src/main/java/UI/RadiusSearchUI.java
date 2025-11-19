@@ -36,16 +36,12 @@ public class RadiusSearchUI {
      * Shows the main menu for radius search operations.
      */
     public void showMainMenu() {
-        System.out.println("\n=== RADIUS SEARCH AND DENSITY SUMMARY ===");
-        
+        // Stations já foram carregadas no Main, não é necessário carregar novamente
         List<Station> stations = controller.getAllStations();
         if (stations == null || stations.isEmpty()) {
             System.out.println("No stations loaded. Please check the CSV file.");
             return;
         }
-        
-        System.out.println("Loading stations...");
-        System.out.println("Stations loaded successfully! Total: " + stations.size());
         
         while (true) {
             System.out.println("\n" + StringUtils.repeat("=", 70));

@@ -70,10 +70,35 @@ public class StationLoader {
             Double latitude = parseDoubleSafe(parts[4]);
             Double longitude = parseDoubleSafe(parts[5]);
 
+            // VALIDAÇÃO COMPLETA conforme requisitos:
+            // - name, country, timeZoneGroup → não vazios (já validado em isValidLine)
+            // - latitude ∈ [-90, 90]
+            // - longitude ∈ [-180, 180]
+            // Rejeitar linhas inválidas
+            
+            // Validar que as coordenadas não são nulas
+            if (latitude == null || longitude == null) {
+                System.err.println("[WARN] Linha " + lineNumber + ": Coordenadas inválidas (latitude ou longitude nulas)");
+                return null;
+            }
+            
+            // Validar range de latitude: latitude ∈ [-90, 90]
+            if (latitude < -90.0 || latitude > 90.0) {
+                System.err.println("[WARN] Linha " + lineNumber + ": Latitude fora do range válido [-90, 90]: " + latitude);
+                return null;
+            }
+            
+            // Validar range de longitude: longitude ∈ [-180, 180]
+            if (longitude < -180.0 || longitude > 180.0) {
+                System.err.println("[WARN] Linha " + lineNumber + ": Longitude fora do range válido [-180, 180]: " + longitude);
+                return null;
+            }
+
             boolean isCity = Boolean.parseBoolean(parts[6].trim());
             boolean isMainStation = Boolean.parseBoolean(parts[7].trim());
             boolean isAirport = Boolean.parseBoolean(parts[8].trim());
 
+            // Todas as validações passaram, criar Station
             return new Station(
                     stationName,
                     latitude,
@@ -118,10 +143,20 @@ public class StationLoader {
         }
     }
 
+    /**
+     * Valida que os campos obrigatórios não estão vazios.
+     * Valida: name, country, timeZoneGroup → não vazios
+     * 
+     * @param parts array de partes da linha CSV
+     * @return true se todos os campos obrigatórios são não vazios
+     */
     private boolean isValidLine(String[] parts) {
-        // Validar campos obrigatórios não vazios
+        // Validar campos obrigatórios não vazios conforme requisitos:
+        // - name (station name) → não vazio
+        // - country → não vazio
+        // - timeZoneGroup → não vazio
         return !parts[0].trim().isEmpty() &&  // country
-                !parts[1].trim().isEmpty() &&  // timezone
+                !parts[1].trim().isEmpty() &&  // timezone (raw)
                 !parts[2].trim().isEmpty() &&  // timezone group
                 !parts[3].trim().isEmpty();    // station name
     }

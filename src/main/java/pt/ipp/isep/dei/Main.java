@@ -11,6 +11,7 @@ import Repository.WarehouseRepository;
 import UI.*;
 import Domain.DataLoader;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 
@@ -25,11 +26,15 @@ public class Main {
     private static WarehouseRepository warehouseRepository = new WarehouseRepository();
     private static TrolleyRepository trolleyRepository = new TrolleyRepository();
     private static BoxRepository boxRepository;
-    private StationRepository stationRepository;
+    private static StationRepository stationRepository; // Repository partilhado - carregado uma vez no início
     private static StationLoader stationLoader = new StationLoader();
     
     /**
-     * Load all data from CSV files once at startup
+     * Load all data from CSV files once at startup.
+     * 1. Lê o CSV uma única vez
+     * 2. Cria as stations apenas para linhas válidas (validação no StationLoader)
+     * 3. Adiciona ao StationRepository (que guarda na lista allStations e nas AVL trees)
+     * 4. Todas as funcionalidades usam este repository já populado
      */
     private static void loadAllData() {
         System.out.println("Loading data from CSV files...");
@@ -45,10 +50,27 @@ public class Main {
 
             boxRepository = dataLoader.getBoxRepository();
             
+            // 1. Ler CSV uma única vez
+            // 2. StationLoader cria stations apenas para linhas válidas (validação já feita)
+            // 3. StationRepository guarda na lista allStations e nas AVL trees
+            System.out.println("Loading stations from CSV...");
+            List<Domain.Station> stations = stationLoader.loadFromCSV("train_station_dataset/train_stations_europe.csv");
+            
+            if (stations == null || stations.isEmpty()) {
+                System.err.println("[WARN] Nenhuma estação carregada do CSV!");
+                stationRepository = new StationRepository(new ArrayList<>());
+            } else {
+                // 3. Criar StationRepository com stations válidas
+                // O repository valida novamente e guarda na lista allStations e nas AVL trees
+                stationRepository = new StationRepository(stations);
+                System.out.println("Stations loaded successfully! Total: " + stationRepository.totalStations());
+            }
+            
             dataLoaded = true;
             System.out.println("All data loaded successfully!");
         } catch (Exception e) {
             System.out.println("Error loading data: " + e.getMessage());
+            e.printStackTrace();
             dataLoaded = false;
         }
     }
@@ -365,13 +387,15 @@ public class Main {
     private static void stationLookup() {
         try {
             System.out.println("\n=== STATION LOOKUP ===");
-            System.out.println("Loading stations...");
 
-            StationController controller = new StationController(new StationRepository(stationLoader.loadFromCSV("train_station_dataset/train_stations_europe.csv")));
+            // Usa repository já carregado no início (loadAllData)
+            if (stationRepository == null || stationRepository.totalStations() == 0) {
+                System.out.println("No stations loaded. Please check the CSV file.");
+                return;
+            }
 
-            System.out.println("Stations loaded successfully!");
+            StationController controller = new StationController(stationRepository);
             System.out.println("Starting Station UI...");
-
 
             StationUI ui = new StationUI(controller, scanner);
             ui.run();
@@ -401,16 +425,16 @@ public class Main {
     private static void dataEngineerMain() {
         try {
             System.out.println("\n=== BALANCED KD-TREE OPERATIONS ===");
-            System.out.println("Loading stations...");
 
-            StationRepository repository = new StationRepository(
-                stationLoader.loadFromCSV("train_station_dataset/train_stations_europe.csv")
-            );
+            // Usa repository já carregado no início (loadAllData)
+            if (stationRepository == null || stationRepository.totalStations() == 0) {
+                System.out.println("No stations loaded. Please check the CSV file.");
+                return;
+            }
 
-            System.out.println("Stations loaded successfully!");
-            System.out.println("Total stations: " + repository.totalStations());
+            System.out.println("Total stations: " + stationRepository.totalStations());
 
-            KDTreeController kdTreeController = new KDTreeController(repository);
+            KDTreeController kdTreeController = new KDTreeController(stationRepository);
             KDTreeUI ui = new KDTreeUI(kdTreeController);
             ui.showMainMenu();
 
@@ -427,16 +451,15 @@ public class Main {
     private static void geographicalSearch() {
         try {
             System.out.println("\n=== SEARCH BY GEOGRAPHICAL AREA ===");
-            System.out.println("Loading stations...");
 
-            // Load stations using StationLoader from USEI06
-            List<Domain.Station> stations = stationLoader.loadFromCSV("train_station_dataset/train_stations_europe.csv");
-
-            if (stations == null || stations.isEmpty()) {
+            // Usa repository já carregado no início (loadAllData)
+            if (stationRepository == null || stationRepository.totalStations() == 0) {
                 System.out.println("No stations loaded. Please check the CSV file.");
                 return;
             }
 
+            // Obtém stations do repository (da lista allStations)
+            List<Domain.Station> stations = stationRepository.getAllStations();
             System.out.println("Stations loaded successfully! Total: " + stations.size());
 
             // Create controller and UI
@@ -459,16 +482,15 @@ public class Main {
     private static void proximitySearch() {
         try {
             System.out.println("\n=== PROXIMITY SEARCH ===");
-            System.out.println("Loading stations...");
 
-            // Load stations using StationLoader from USEI06
-            List<Domain.Station> stations = stationLoader.loadFromCSV("train_station_dataset/train_stations_europe.csv");
-
-            if (stations == null || stations.isEmpty()) {
+            // Usa repository já carregado no início (loadAllData)
+            if (stationRepository == null || stationRepository.totalStations() == 0) {
                 System.out.println("No stations loaded. Please check the CSV file.");
                 return;
             }
 
+            // Obtém stations do repository (da lista allStations)
+            List<Domain.Station> stations = stationRepository.getAllStations();
             System.out.println("Stations loaded successfully! Total: " + stations.size());
 
             // Create controller and UI
@@ -488,25 +510,27 @@ public class Main {
      * Planner - Radius Search and Density Summary (USEI10)
      * Allows searching for stations within a radius R (km) of a target (lat, lon) using the 2D-tree,
      * and getting a summary by country and by isCity.
+     * 
+     * Uses StationRepository to avoid redundant CSV reads - stations are loaded once
+     * and stored in the repository, then used for building the KD-tree.
      */
     private static void radiusSearch() {
         try {
             System.out.println("\n=== RADIUS SEARCH AND DENSITY SUMMARY ===");
-            System.out.println("Loading stations...");
 
-            // Load stations using StationLoader from USEI06
-            List<Domain.Station> stations = stationLoader.loadFromCSV("train_station_dataset/train_stations_europe.csv");
-
-            if (stations == null || stations.isEmpty()) {
+            // Usa repository já carregado no início (loadAllData)
+            // USEI10 vai buscar as estruturas (lista allStations, AVL trees) que estão no repository
+            if (stationRepository == null || stationRepository.totalStations() == 0) {
                 System.out.println("No stations loaded. Please check the CSV file.");
                 return;
             }
 
-            System.out.println("Stations loaded successfully! Total: " + stations.size());
+            System.out.println("Stations loaded successfully! Total: " + stationRepository.totalStations());
 
-            // Create controller and UI
-            // The controller will build the KD-tree internally
-            RadiusSearchController controller = new RadiusSearchController(stations);
+            // Create controller using StationRepository
+            // O controller constrói o KD-tree internamente a partir do repository
+            // O KD-tree usa stationRepository.getAllStations() (a lista allStations)
+            RadiusSearchController controller = new RadiusSearchController(stationRepository);
             RadiusSearchUI ui = new RadiusSearchUI(controller);
             
             // Show main menu
