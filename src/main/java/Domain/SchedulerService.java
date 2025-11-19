@@ -56,11 +56,15 @@ public class SchedulerService {
             throw new IllegalArgumentException("Trains list cannot be null or empty");
         }
 
-        // Step 1: Resolve conflicts by adjusting departure times
+        // Step 1: Resolve conflicts by adjusting departure times and detect departure conflicts
         List<Train> adjustedTrains = resolveDepartureTimeConflicts(trains);
+        List<DispatchReport.Conflict> departureConflicts = detectDepartureTimeConflicts(trains, adjustedTrains);
 
         List<DispatchReport.TrainSchedule> schedules = new ArrayList<>();
         List<DispatchReport.Conflict> conflicts = new ArrayList<>();
+        
+        // Add departure conflicts first
+        conflicts.addAll(departureConflicts);
 
         // Step 2: Calculate schedules for each train (with adjusted departure times)
         for (Train train : adjustedTrains) {
@@ -74,7 +78,29 @@ public class SchedulerService {
         }
 
         // Step 3: Detect remaining conflicts between trains
-        conflicts.addAll(detectConflicts(schedules));
+        // Filter out conflicts that are already covered by departure time conflicts
+        // A departure conflict covers the case where trains depart from the same station at the same time
+        // and one train's departure is adjusted. We don't need to show a segment conflict for the same train pair
+        // if it's already covered by a departure conflict (which has the correct wait time).
+        List<DispatchReport.Conflict> segmentConflicts = detectConflicts(schedules);
+        for (DispatchReport.Conflict segmentConflict : segmentConflicts) {
+            // Check if this conflict is already covered by a departure conflict
+            boolean isDuplicate = false;
+            for (DispatchReport.Conflict departureConflict : departureConflicts) {
+                // If both conflicts involve the same two trains, skip the segment conflict
+                // (the departure conflict already has the correct wait time and better describes the situation)
+                if ((segmentConflict.getTrain1Id().equals(departureConflict.getTrain1Id()) &&
+                     segmentConflict.getTrain2Id().equals(departureConflict.getTrain2Id())) ||
+                    (segmentConflict.getTrain1Id().equals(departureConflict.getTrain2Id()) &&
+                     segmentConflict.getTrain2Id().equals(departureConflict.getTrain1Id()))) {
+                    isDuplicate = true;
+                    break;
+                }
+            }
+            if (!isDuplicate) {
+                conflicts.add(segmentConflict);
+            }
+        }
 
         // Step 4: Generate summary
         DispatchReport.Summary summary = generateSummary(schedules, conflicts);
@@ -95,10 +121,7 @@ public class SchedulerService {
         List<DispatchReport.TrainSchedule.SegmentTime> segmentTimes = new ArrayList<>();
         
         LocalDateTime currentTime = train.getDeparturePlannedDateTime();
-        Locomotive primaryLocomotive = train.getPrimaryLocomotive();
         List<Facility> route = train.getRoute();
-        
-        double totalTravelTime = 0.0;
 
         // Add departure station (first station)
         routeWithETAs.add(new DispatchReport.TrainSchedule.StationETA(
@@ -125,8 +148,6 @@ public class SchedulerService {
             // Use the enhanced method that considers all factors
             double travelTimeHours = travelCalculationService.calculateTravelTime(
                 startStation, endStation, train);
-
-            totalTravelTime += travelTimeHours;
 
             // Calculate segment start and end times
             LocalDateTime segmentStartTime = currentTime;
@@ -157,7 +178,14 @@ public class SchedulerService {
             ));
         }
 
-        return new DispatchReport.TrainSchedule(train.getTrainId(), routeWithETAs, segmentTimes, totalTravelTime, train.getSelectedStations());
+        // Calculate total travel time based on actual arrival time to ensure consistency
+        // This ensures the displayed total travel time matches the actual time difference
+        LocalDateTime departureTime = routeWithETAs.get(0).getEta();
+        LocalDateTime arrivalTime = routeWithETAs.get(routeWithETAs.size() - 1).getEta();
+        long totalMinutesActual = java.time.Duration.between(departureTime, arrivalTime).toMinutes();
+        double totalTravelTimeActual = totalMinutesActual / 60.0;
+
+        return new DispatchReport.TrainSchedule(train.getTrainId(), routeWithETAs, segmentTimes, totalTravelTimeActual, train.getSelectedStations());
     }
 
     /**
@@ -263,6 +291,20 @@ public class SchedulerService {
         DispatchReport.Conflict.ResolutionType resolution;
         String description;
 
+        // Get arrival times at previous stations to calculate wait time correctly
+        // If previous station is the departure station, use segment start time (when train enters the segment)
+        LocalDateTime train1ArrivalAtPreviousStation = getArrivalTimeAtStation(schedule1, previousStation1);
+        if (train1ArrivalAtPreviousStation == null) {
+            // If station not found in route, use segment start time
+            train1ArrivalAtPreviousStation = segmentTime1.getSegmentStartTime();
+        }
+        
+        LocalDateTime train2ArrivalAtPreviousStation = getArrivalTimeAtStation(schedule2, previousStation2);
+        if (train2ArrivalAtPreviousStation == null) {
+            // If station not found in route, use segment start time
+            train2ArrivalAtPreviousStation = segmentTime2.getSegmentStartTime();
+        }
+
         if (train1ArrivesFirst) {
             // Train 1 arrives first, train 2 should wait
             if (previousStation2.hasSiding()) {
@@ -271,9 +313,9 @@ public class SchedulerService {
                 waitingTrainId = train2Id;
                 resolution = DispatchReport.Conflict.ResolutionType.CROSS_AT_STATION_WITH_SIDING;
                 
-                // Calculate wait time: train 2 should wait until train 1 passes
+                // Calculate wait time: train 2 should wait from arrival at previous station until train 1 passes
                 long minutesBetween = java.time.Duration.between(
-                    segmentTime2.getSegmentStartTime(), 
+                    train2ArrivalAtPreviousStation, 
                     segmentTime1.getSegmentEndTime()
                 ).toMinutes();
                 waitTimeMinutes = Math.max(0, minutesBetween);
@@ -285,6 +327,14 @@ public class SchedulerService {
                 // No siding available, train 2 must wait at previous station
                 waitingTrainId = train2Id;
                 resolution = DispatchReport.Conflict.ResolutionType.WAIT_AT_PREVIOUS_STATION;
+                
+                // Calculate wait time: train 2 should wait from arrival at previous station until train 1 passes
+                long minutesBetween = java.time.Duration.between(
+                    train2ArrivalAtPreviousStation, 
+                    segmentTime1.getSegmentEndTime()
+                ).toMinutes();
+                waitTimeMinutes = Math.max(0, minutesBetween);
+                
                 description = String.format(
                     "Train %s arrives first at segment %s. Train %s should wait at previous station %s (no siding available).",
                     train1Id, segmentId, train2Id, previousStation2.getId());
@@ -297,9 +347,10 @@ public class SchedulerService {
                 waitingTrainId = train1Id;
                 resolution = DispatchReport.Conflict.ResolutionType.CROSS_AT_STATION_WITH_SIDING;
                 
-                // Calculate wait time: train 1 should wait until train 2 passes
+                // Calculate wait time: train 1 should wait from arrival at previous station until train 2 passes
+                // Wait time = when train 2 finishes - when train 1 arrives at previous station
                 long minutesBetween = java.time.Duration.between(
-                    segmentTime1.getSegmentStartTime(), 
+                    train1ArrivalAtPreviousStation, 
                     segmentTime2.getSegmentEndTime()
                 ).toMinutes();
                 waitTimeMinutes = Math.max(0, minutesBetween);
@@ -311,6 +362,15 @@ public class SchedulerService {
                 // No siding available, train 1 must wait at previous station
                 waitingTrainId = train1Id;
                 resolution = DispatchReport.Conflict.ResolutionType.WAIT_AT_PREVIOUS_STATION;
+                
+                // Calculate wait time: train 1 should wait from arrival at previous station until train 2 passes
+                // Wait time = when train 2 finishes - when train 1 arrives at previous station
+                long minutesBetween = java.time.Duration.between(
+                    train1ArrivalAtPreviousStation, 
+                    segmentTime2.getSegmentEndTime()
+                ).toMinutes();
+                waitTimeMinutes = Math.max(0, minutesBetween);
+                
                 description = String.format(
                     "Train %s arrives first at segment %s. Train %s should wait at previous station %s (no siding available).",
                     train2Id, segmentId, train1Id, previousStation1.getId());
@@ -329,6 +389,22 @@ public class SchedulerService {
             waitingTrainId,
             waitTimeMinutes
         );
+    }
+
+    /**
+     * Gets the arrival time at a specific station from a train schedule.
+     *
+     * @param schedule the train schedule
+     * @param station the station to get arrival time for
+     * @return the arrival time at the station, or null if station not found
+     */
+    private LocalDateTime getArrivalTimeAtStation(DispatchReport.TrainSchedule schedule, Facility station) {
+        for (DispatchReport.TrainSchedule.StationETA eta : schedule.getRouteWithETAs()) {
+            if (eta.getStation().equals(station)) {
+                return eta.getEta();
+            }
+        }
+        return null;
     }
 
     /**
@@ -405,6 +481,138 @@ public class SchedulerService {
         }
         
         return adjustedTrains;
+    }
+
+    /**
+     * Detects conflicts when trains depart from the same station at the same time.
+     * Creates conflict objects with wait time information for trains that had their departure times adjusted.
+     *
+     * @param originalTrains the original list of trains
+     * @param adjustedTrains the list of trains with adjusted departure times
+     * @return a list of conflicts related to simultaneous departures
+     */
+    private List<DispatchReport.Conflict> detectDepartureTimeConflicts(List<Train> originalTrains, List<Train> adjustedTrains) {
+        List<DispatchReport.Conflict> conflicts = new ArrayList<>();
+        
+        // Create a map of train IDs to original trains for quick lookup
+        java.util.Map<String, Train> originalTrainMap = new java.util.HashMap<>();
+        for (Train train : originalTrains) {
+            originalTrainMap.put(train.getTrainId(), train);
+        }
+        
+        // Create a map of train IDs to adjusted trains for quick lookup
+        java.util.Map<String, Train> adjustedTrainMap = new java.util.HashMap<>();
+        for (Train train : adjustedTrains) {
+            adjustedTrainMap.put(train.getTrainId(), train);
+        }
+        
+        // Compare each adjusted train with its original to find departure time changes
+        for (Train adjustedTrain : adjustedTrains) {
+            Train originalTrain = originalTrainMap.get(adjustedTrain.getTrainId());
+            if (originalTrain == null) {
+                continue; // Skip if train not found in original list
+            }
+            
+            LocalDateTime originalDeparture = originalTrain.getDeparturePlannedDateTime();
+            LocalDateTime adjustedDeparture = adjustedTrain.getDeparturePlannedDateTime();
+            
+            // If departure time was adjusted, find which train caused the adjustment
+            if (!originalDeparture.equals(adjustedDeparture)) {
+                // Find the train that caused this adjustment (the one that departed first from the same station)
+                Facility departureStation = adjustedTrain.getRoute().get(0);
+                String departureStationId = departureStation.getId();
+                
+                // Find the first train in the original list that departed from the same station at the same time
+                // This is the train that caused the adjustment (based on the logic in resolveDepartureTimeConflicts)
+                // In resolveDepartureTimeConflicts, train1 (earlier in list) causes train2 (later in list) to wait
+                Train causingTrain = null;
+                for (Train otherOriginalTrain : originalTrains) {
+                    if (otherOriginalTrain.getTrainId().equals(adjustedTrain.getTrainId())) {
+                        continue; // Skip self
+                    }
+                    
+                    // Check if route is not empty
+                    if (otherOriginalTrain.getRoute().isEmpty()) {
+                        continue;
+                    }
+                    
+                    Facility otherDepartureStation = otherOriginalTrain.getRoute().get(0);
+                    String otherDepartureStationId = otherDepartureStation.getId();
+                    LocalDateTime otherDeparture = otherOriginalTrain.getDeparturePlannedDateTime();
+                    
+                    // Check if this train departed from the same station at the same time
+                    // Use station ID comparison to ensure it works even if Facility objects are different instances
+                    if (departureStationId.equals(otherDepartureStationId) && 
+                        originalDeparture.equals(otherDeparture)) {
+                        
+                        // Find the adjusted version of this train
+                        Train otherAdjustedTrain = adjustedTrainMap.get(otherOriginalTrain.getTrainId());
+                        
+                        // The causing train is the first one we find that either:
+                        // 1. Wasn't adjusted (kept original departure time), OR
+                        // 2. Was adjusted but still departs before the current train's adjusted time
+                        // This matches the logic in resolveDepartureTimeConflicts where train1 (earlier in list) causes train2 to wait
+                        boolean isCausingTrain = false;
+                        if (otherAdjustedTrain != null) {
+                            LocalDateTime otherAdjustedDeparture = otherAdjustedTrain.getDeparturePlannedDateTime();
+                            // If the other train wasn't adjusted or departs before this train's adjusted time,
+                            // it's the one that caused the adjustment
+                            if (otherAdjustedDeparture.equals(otherDeparture) || 
+                                otherAdjustedDeparture.isBefore(adjustedDeparture)) {
+                                isCausingTrain = true;
+                            }
+                        } else {
+                            // If we can't find the adjusted train, assume it's the causing train
+                            isCausingTrain = true;
+                        }
+                        
+                        if (isCausingTrain) {
+                            causingTrain = otherOriginalTrain;
+                            break; // Found the train that caused the adjustment
+                        }
+                    }
+                }
+                
+                if (causingTrain != null) {
+                    // Calculate wait time in minutes
+                    long waitTimeMinutes = java.time.Duration.between(originalDeparture, adjustedDeparture).toMinutes();
+                    
+                    // Get the first segment ID for the conflict (departure station to next station)
+                    String segmentId = "DEPARTURE";
+                    if (adjustedTrain.getRoute().size() >= 2) {
+                        Facility nextStation = adjustedTrain.getRoute().get(1);
+                        LineSegment segment = findConnectingSegment(departureStation, nextStation);
+                        if (segment != null) {
+                            segmentId = segment.getId();
+                        }
+                    }
+                    
+                    // Create conflict
+                    String description = String.format(
+                        "Trains %s and %s were scheduled to depart from station %s at the same time (%s). " +
+                        "Train %s departure time was adjusted to %s to avoid conflict.",
+                        causingTrain.getTrainId(), adjustedTrain.getTrainId(), 
+                        departureStation.getId(), originalDeparture,
+                        adjustedTrain.getTrainId(), adjustedDeparture);
+                    
+                    DispatchReport.Conflict conflict = new DispatchReport.Conflict(
+                        causingTrain.getTrainId(),
+                        adjustedTrain.getTrainId(),
+                        segmentId,
+                        DispatchReport.Conflict.ConflictType.OVERLAPPING_SEGMENT,
+                        DispatchReport.Conflict.ResolutionType.WAIT_AT_PREVIOUS_STATION,
+                        description,
+                        null, // No crossing station
+                        adjustedTrain.getTrainId(), // The waiting train
+                        waitTimeMinutes
+                    );
+                    
+                    conflicts.add(conflict);
+                }
+            }
+        }
+        
+        return conflicts;
     }
 
     /**
