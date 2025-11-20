@@ -6,6 +6,7 @@ import Domain.StationDistanceComparator;
 import Domain.RadiusSearchSummary;
 import Domain.AVL;
 import Repository.StationRepository;
+import Controller.KDTreeController;
 
 import java.util.*;
 
@@ -23,48 +24,31 @@ public class RadiusSearchController {
     private final List<Station> allStations;
     
     /**
-     * Constructs a new RadiusSearchController with a KD-tree.
+     * Constructs a new RadiusSearchController from a KDTreeController.
+     * Uses the 2D-tree built in USEI07 - does NOT build a new tree.
+     * This is the preferred constructor for USEI10.
      *
-     * @param kdTree the KD-tree to use for spatial queries
-     * @param stations list of all stations (for summary calculations)
+     * @param kdTreeController the KDTreeController from USEI07 (must have tree built)
+     * @param stationRepository the StationRepository to get station list
      */
-    public RadiusSearchController(KDTree kdTree, List<Station> stations) {
-        this.kdTree = kdTree;
-        this.allStations = new ArrayList<>(stations);
-    }
-    
-    /**
-     * Constructs a new RadiusSearchController from a StationRepository.
-     * This is the preferred constructor as it uses the repository that was
-     * populated once from the CSV, avoiding redundant CSV reads.
-     * Builds the KD-tree internally from the repository.
-     *
-     * @param stationRepository the StationRepository containing all stations
-     */
-    public RadiusSearchController(StationRepository stationRepository) {
+    public RadiusSearchController(KDTreeController kdTreeController, StationRepository stationRepository) {
+        if (kdTreeController == null) {
+            throw new IllegalArgumentException("KDTreeController cannot be null");
+        }
         if (stationRepository == null) {
             throw new IllegalArgumentException("StationRepository cannot be null");
         }
+        if (!kdTreeController.isTreeBuilt()) {
+            throw new IllegalStateException(
+                "KD-tree not built yet. Please build the KD-tree in USEI07 (option 2) first."
+            );
+        }
+        
+        // Use the existing KD-tree from USEI07
+        this.kdTree = kdTreeController.getKDTree();
         
         // Get all stations from repository
         this.allStations = stationRepository.getAllStations();
-        
-        // Build KD-tree from repository (uses sorted sequences efficiently)
-        this.kdTree = new KDTree();
-        this.kdTree.buildKdTree(stationRepository);
-    }
-    
-    /**
-     * Constructs a new RadiusSearchController from a list of stations.
-     * Builds the KD-tree internally.
-     * Note: This constructor is kept for backward compatibility, but
-     * prefer using the StationRepository constructor to avoid redundant CSV reads.
-     *
-     * @param stations list of stations to build the tree from
-     */
-    public RadiusSearchController(List<Station> stations) {
-        this.allStations = new ArrayList<>(stations);
-        this.kdTree = new KDTree(stations);
     }
     
     /**

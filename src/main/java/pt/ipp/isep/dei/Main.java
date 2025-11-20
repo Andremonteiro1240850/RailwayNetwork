@@ -503,25 +503,30 @@ public class Main {
      * Planner - Radius Search and Density Summary (USEI10)
      * Allows searching for stations within a radius R (km) of a target (lat, lon) using the 2D-tree,
      * and getting a summary by country and by isCity.
+     * 
+     * Uses the existing KD-tree built in USEI07 (does not re-read CSV or build a new tree).
      */
     private static void radiusSearch() {
         try {
             System.out.println("\n=== RADIUS SEARCH AND DENSITY SUMMARY ===");
-            System.out.println("Loading stations...");
-
-            // Load stations using StationLoader from USEI06
-            List<Domain.Station> stations = stationLoader.loadFromCSV("train_station_dataset/train_stations_europe.csv");
-
-            if (stations == null || stations.isEmpty()) {
-                System.out.println("No stations loaded. Please check the CSV file.");
+            
+            if (stationRepository == null) {
+                System.out.println("Station repository not initialized.");
+                System.out.println("Please run option 1 (Station Lookup) first to load stations and build the AVL trees.");
                 return;
             }
+            
+            if (kdTreeController == null || !kdTreeController.isTreeBuilt()) {
+                System.out.println("KD-tree not built yet.");
+                System.out.println("Please run option 2 (Build KD-Tree) first to build the balanced 2D-tree.");
+                return;
+            }
+            
+            System.out.println("Using KD-tree from USEI07.");
+            System.out.println("Total stations: " + stationRepository.totalStations());
 
-            System.out.println("Stations loaded successfully! Total: " + stations.size());
-
-            // Create controller and UI
-            // The controller will build the KD-tree internally
-            RadiusSearchController controller = new RadiusSearchController(stations);
+            // Create controller and UI using KD-tree from USEI07
+            RadiusSearchController controller = new RadiusSearchController(kdTreeController, stationRepository);
             RadiusSearchUI ui = new RadiusSearchUI(controller);
             
             // Show main menu
