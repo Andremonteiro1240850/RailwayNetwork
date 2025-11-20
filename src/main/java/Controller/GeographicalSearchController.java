@@ -25,12 +25,40 @@ public class GeographicalSearchController {
     
     /**
      * Constructs a new GeographicalSearchController with a KD-tree.
+     * Note: This constructor builds a new tree using KDTreeRepository.
+     * For USEI08, prefer using the constructor that accepts KDTreeRepository
+     * to use the tree built in USEI07.
+     *
+     * @param stations list of stations to build the tree from
+     * @param stationRepository the StationRepository (can be null if not needed for tree building)
+     */
+    public GeographicalSearchController(List<Station> stations, StationRepository stationRepository) {
+        if (stations == null || stations.isEmpty()) {
+            throw new IllegalArgumentException("Stations list cannot be null or empty");
+        }
+        this.allStations = new ArrayList<>(stations);
+        // Build tree using KDTreeRepository
+        // Note: This creates a new tree, not using the one from USEI07
+        if (stationRepository != null) {
+            Repository.KDTreeRepository tempRepo = new Repository.KDTreeRepository(stationRepository);
+            this.kdTree = tempRepo.buildTree(stations);
+        } else {
+            // Fallback: create empty tree if no repository provided
+            // This should not be used in production
+            this.kdTree = new KDTree();
+        }
+    }
+    
+    /**
+     * Constructs a new GeographicalSearchController with a KD-tree.
+     * @deprecated Use constructor with StationRepository parameter instead.
+     * For USEI08, use constructor that accepts KDTreeRepository.
      *
      * @param stations list of stations to build the tree from
      */
+    @Deprecated
     public GeographicalSearchController(List<Station> stations) {
-        this.allStations = new ArrayList<>(stations);
-        this.kdTree = new KDTree(stations);
+        this(stations, null);
     }
     
     /**
@@ -117,7 +145,13 @@ public class GeographicalSearchController {
         }
         
         // Use the existing KD-tree from USEI07 (directly from repository)
-        this.kdTree = kdTreeRepository.getCachedTree();
+        KDTree tree = kdTreeRepository.getCachedTree();
+        if (tree == null || tree.isEmpty()) {
+            throw new IllegalStateException(
+                "KD-tree is null or empty. Please build the KD-tree in USEI07 (option 2) first."
+            );
+        }
+        this.kdTree = tree;
         
         // Get all stations from repository
         this.allStations = stationRepository.getAllStations();
