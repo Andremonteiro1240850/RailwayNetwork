@@ -1,19 +1,20 @@
 package Domain;
 
-import Repository.StationRepository;
-
+import java.io.Serializable;
 import java.util.*;
 
 /**
  * Balanced 2D-tree (KD-tree with k=2) for efficient geographical range queries.
  * 
- * This implementation provides a deterministic bulk-build algorithm that produces a balanced tree.
+ * This class contains only query logic and statistics.
+ * Tree construction is handled by KDTreeRepository.
  * Stations with identical coordinates are stored in buckets sorted by station name (ascending).
  * 
  * @author Development Team
- * @version 2.0
+ * @version 3.0
  */
-public class KDTree {
+public class KDTree implements Serializable {
+    private static final long serialVersionUID = 1L;
     
     private KDNode root;
     private int numNodes;
@@ -23,7 +24,8 @@ public class KDTree {
      * Internal node class for the KD-tree.
      * Each node stores a bucket of stations (for duplicate coordinates) and split information.
      */
-    public static class KDNode {
+    public static class KDNode implements Serializable {
+        private static final long serialVersionUID = 1L;
         private int axis; // 0 for latitude, 1 for longitude
         private double splitValue; // The coordinate value used for splitting
         private List<Station> bucket; // Stations at this coordinate (sorted by name)
@@ -43,12 +45,13 @@ public class KDTree {
         public List<Station> getBucket() { return new ArrayList<>(bucket); }
         public KDNode getLeft() { return left; }
         public KDNode getRight() { return right; }
-        void setLeft(KDNode left) { this.left = left; }
-        void setRight(KDNode right) { this.right = right; }
+        public void setLeft(KDNode left) { this.left = left; }
+        public void setRight(KDNode right) { this.right = right; }
     }
     
     /**
      * Constructs an empty KD-tree.
+     * Tree construction should be done via KDTreeRepository.
      */
     public KDTree() {
         this.root = null;
@@ -57,261 +60,22 @@ public class KDTree {
     }
     
     /**
-     * Constructs a KD-tree from a list of stations using balanced bulk-build.
-     *
-     * @param stations list of stations to build from
-     */
-    public KDTree(List<Station> stations) {
-        this();
-        buildKdTree(stations);
-    }
-    
-    /**
-     * Builds a balanced KD-tree from a list of stations using StationRepository.
-     * Uses the AVL trees (latitudeTree and longitudeTree) to get
-     * stations already sorted by latitude and longitude.
+     * Constructs a KD-tree with a pre-built root node.
+     * This constructor should only be used by KDTreeRepository.
      * 
-     * @param stationRepository the StationRepository instance that provides stations
-     * @return the root node of the built tree
-     * @throws IllegalStateException if the AVL trees are not populated
+     * @param root the root node of the tree
      */
-    public KDNode buildKdTree(StationRepository stationRepository) {
-        if (stationRepository == null) {
-            throw new IllegalArgumentException("StationRepository cannot be null");
-        }
-        
-        // Verify that AVL trees are populated
-        if (stationRepository.totalStations() == 0) {
-            throw new IllegalStateException(
-                "Cannot build KD-tree: AVL trees are empty. " +
-                "Please populate the StationRepository with stations first (complete option 1)."
-            );
-        }
-        
-        // Get stations from AVL trees - already sorted by latitude and longitude
-        List<Station> sortedByLat = new ArrayList<>();
-        List<Station> sortedByLon = new ArrayList<>();
-        
-        // Collect valid stations from latitude AVL tree (already sorted by latitude)
-        for (Station station : stationRepository.getAllStationsOrderedByLatitude()) {
-            if (isValidCoordinate(station) && station.getName() != null && !station.getName().trim().isEmpty()) {
-                sortedByLat.add(station);
-            }
-        }
-        
-        // Collect valid stations from longitude AVL tree (already sorted by longitude)
-        for (Station station : stationRepository.getAllStationsOrderedByLongitude()) {
-            if (isValidCoordinate(station) && station.getName() != null && !station.getName().trim().isEmpty()) {
-                sortedByLon.add(station);
-            }
-        }
-        
-        if (sortedByLat.isEmpty() || sortedByLon.isEmpty()) {
-            throw new IllegalStateException(
-                "Cannot build KD-tree: No valid stations found in AVL trees. " +
-                "Please ensure option 1 has been completed and stations are properly validated."
-            );
-        }
-        
-        // Ensure both lists contain the same stations (intersection of valid stations)
-        Set<Station> validStationsSet = new HashSet<>(sortedByLat);
-        validStationsSet.retainAll(new HashSet<>(sortedByLon));
-        
-        // Rebuild both lists with only the common valid stations, maintaining order from AVL trees
-        List<Station> finalSortedByLat = new ArrayList<>();
-        List<Station> finalSortedByLon = new ArrayList<>();
-        
-        for (Station station : stationRepository.getAllStationsOrderedByLatitude()) {
-            if (validStationsSet.contains(station)) {
-                finalSortedByLat.add(station);
-            }
-        }
-        
-        for (Station station : stationRepository.getAllStationsOrderedByLongitude()) {
-            if (validStationsSet.contains(station)) {
-                finalSortedByLon.add(station);
-            }
-        }
-        
-        // Sort by secondary criteria to ensure deterministic ordering for stations with same primary coordinate
-        finalSortedByLat.sort(Comparator.comparingDouble(Station::getLatitude)
-                .thenComparingDouble(Station::getLongitude)
-                .thenComparing(Station::getName));
-        
-        finalSortedByLon.sort(Comparator.comparingDouble(Station::getLongitude)
-                .thenComparingDouble(Station::getLatitude)
-                .thenComparing(Station::getName));
-        
-        // Build tree using bulk-build algorithm
-        this.root = bulkBuild(finalSortedByLat, finalSortedByLon, 0);
-        
-        // Calculate metrics
-        this.numNodes = countNodes(this.root);
-        this.numStations = countStations(this.root);
-        
-        return this.root;
-    }
-    
-    /**
-     * Builds a balanced KD-tree from a list of stations.
-     * Uses deterministic bulk-build algorithm with median selection.
-     * 
-     * @param stations list of stations to build from
-     * @return the root node of the built tree
-     */
-    public KDNode buildKdTree(List<Station> stations) {
-        if (stations == null || stations.isEmpty()) {
+    public KDTree(KDNode root) {
+        if (root == null) {
             this.root = null;
             this.numNodes = 0;
             this.numStations = 0;
-            return null;
-        }
-        
-        // Filter out invalid stations
-        List<Station> validStations = new ArrayList<>();
-        for (Station station : stations) {
-            if (isValidCoordinate(station) && station.getName() != null && !station.getName().trim().isEmpty()) {
-                validStations.add(station);
-            }
-        }
-        
-        if (validStations.isEmpty()) {
-            this.root = null;
-            this.numNodes = 0;
-            this.numStations = 0;
-            return null;
-        }
-        
-        // Create sorted arrays by latitude and longitude
-        List<Station> sortedByLat = new ArrayList<>(validStations);
-        List<Station> sortedByLon = new ArrayList<>(validStations);
-        
-        sortedByLat.sort(Comparator.comparingDouble(Station::getLatitude)
-                .thenComparingDouble(Station::getLongitude)
-                .thenComparing(Station::getName));
-        
-        sortedByLon.sort(Comparator.comparingDouble(Station::getLongitude)
-                .thenComparingDouble(Station::getLatitude)
-                .thenComparing(Station::getName));
-        
-        // Build tree using bulk-build algorithm
-        this.root = bulkBuild(sortedByLat, sortedByLon, 0);
-        
-        // Calculate metrics
-        this.numNodes = countNodes(this.root);
-        this.numStations = countStations(this.root);
-        
-        return this.root;
-    }
-    
-    /**
-     * Recursive bulk-build algorithm that creates a balanced tree.
-     * Uses median selection for deterministic balancing.
-     * 
-     * @param sortedByLat stations sorted by latitude
-     * @param sortedByLon stations sorted by longitude
-     * @param depth current depth (determines which axis to split on)
-     * @return the root node of the subtree
-     */
-    private KDNode bulkBuild(List<Station> sortedByLat, List<Station> sortedByLon, int depth) {
-        if (sortedByLat.isEmpty() || sortedByLon.isEmpty()) {
-            return null;
-        }
-        
-        int axis = depth % 2; // 0 for latitude, 1 for longitude
-        List<Station> sortedByAxis = (axis == 0) ? sortedByLat : sortedByLon;
-        
-        // Select median
-        int medianIndex = sortedByAxis.size() / 2;
-        Station medianStation = sortedByAxis.get(medianIndex);
-        double medianValue = (axis == 0) ? medianStation.getLatitude() : medianStation.getLongitude();
-        
-        // Collect all stations with the exact same (lat, lon) as median
-        List<Station> bucket = new ArrayList<>();
-        List<Station> leftByAxis = new ArrayList<>();
-        List<Station> rightByAxis = new ArrayList<>();
-        
-        double medianLat = medianStation.getLatitude();
-        double medianLon = medianStation.getLongitude();
-        
-        for (Station station : sortedByAxis) {
-            double coord = (axis == 0) ? station.getLatitude() : station.getLongitude();
-            int cmp = Double.compare(coord, medianValue);
-            
-            // Check if exact same (lat, lon) pair
-            boolean exactMatch = Double.compare(station.getLatitude(), medianLat) == 0 &&
-                                 Double.compare(station.getLongitude(), medianLon) == 0;
-            
-            if (exactMatch) {
-                bucket.add(station);
-            } else if (cmp < 0) {
-                leftByAxis.add(station);
-            } else {
-                // cmp >= 0 but not exact match
-                rightByAxis.add(station);
-            }
-        }
-        
-        // Sort bucket by name (ascending)
-        bucket.sort(Comparator.comparing(Station::getName));
-        
-        // Partition the other array (excluding stations in bucket)
-        List<Station> leftByOther = new ArrayList<>();
-        List<Station> rightByOther = new ArrayList<>();
-        List<Station> sortedByOther = (axis == 0) ? sortedByLon : sortedByLat;
-        
-        // Create a set of (lat, lon) pairs for bucket stations (not using equals which includes name)
-        Set<String> bucketCoords = new HashSet<>();
-        for (Station s : bucket) {
-            bucketCoords.add(s.getLatitude() + "," + s.getLongitude());
-        }
-        
-        for (Station station : sortedByOther) {
-            // Check if this station has the same coordinates as bucket stations
-            String stationCoord = station.getLatitude() + "," + station.getLongitude();
-            if (bucketCoords.contains(stationCoord)) {
-                continue; // Skip stations in bucket (same coordinates)
-            }
-            
-            // Partition based on the split axis coordinate
-            double coord = (axis == 0) ? station.getLatitude() : station.getLongitude();
-            int cmp = Double.compare(coord, medianValue);
-            
-            if (cmp < 0) {
-                leftByOther.add(station);
-            } else {
-                rightByOther.add(station);
-            }
-        }
-        
-        // Create node
-        KDNode node = new KDNode(axis, medianValue, bucket);
-        
-        // Recursively build left and right subtrees
-        if (axis == 0) {
-            node.setLeft(bulkBuild(leftByAxis, leftByOther, depth + 1));
-            node.setRight(bulkBuild(rightByAxis, rightByOther, depth + 1));
         } else {
-            node.setLeft(bulkBuild(leftByOther, leftByAxis, depth + 1));
-            node.setRight(bulkBuild(rightByOther, rightByAxis, depth + 1));
+            this.root = root;
+            // Calculate metrics
+            this.numNodes = countNodes(this.root);
+            this.numStations = countStations(this.root);
         }
-        
-        return node;
-    }
-    
-    /**
-     * Validates that a station has valid coordinates.
-     * 
-     * @param station the station to validate
-     * @return true if coordinates are valid
-     */
-    private boolean isValidCoordinate(Station station) {
-        if (station == null) {
-            return false;
-        }
-        double lat = station.getLatitude();
-        double lon = station.getLongitude();
-        return lat >= -90.0 && lat <= 90.0 && lon >= -180.0 && lon <= 180.0;
     }
     
     /**

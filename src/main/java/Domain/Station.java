@@ -1,11 +1,13 @@
 package Domain;
 
+import java.io.Serializable;
 import java.util.Objects;
 
 /**
  * The type Station.
  */
-public class Station implements Comparable<Station> {
+public class Station implements Comparable<Station>, Serializable {
+    private static final long serialVersionUID = 1L;
     @Override
     public int compareTo(Station o) {
         int cmp = this.name.compareTo(o.name);
