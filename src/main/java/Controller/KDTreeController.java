@@ -174,15 +174,5 @@ public class KDTreeController {
         }
         return metrics.toString();
     }
-    
-    /**
-     * Gets the KDTreeRepository used by this controller.
-     * Allows direct access to the repository for advanced operations.
-     *
-     * @return the KDTreeRepository instance
-     */
-    public KDTreeRepository getRepository() {
-        return kdTreeRepository;
-    }
 }
 
