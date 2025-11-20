@@ -45,9 +45,9 @@ public class ProximitySearchController {
     
     /**
      * Constructs a new ProximitySearchController from an existing KD-tree.
-     * Uses the 2D-tree built in option 2 - does NOT build a new tree.
+     * Uses the 2D-tree built in USEI07 - does NOT build a new tree.
      *
-     * @param kdTree the KD-tree built in option 2
+     * @param kdTree the KD-tree built in USEI07
      * @param stationRepository the StationRepository to get station list
      */
     public ProximitySearchController(KDTree kdTree, StationRepository stationRepository) {
@@ -58,8 +58,36 @@ public class ProximitySearchController {
             throw new IllegalArgumentException("StationRepository cannot be null");
         }
         
-        // Use the existing KD-tree from option 2
+        // Use the existing KD-tree from USEI07
         this.kdTree = kdTree;
+        
+        // Get all stations from repository
+        this.allStations = stationRepository.getAllStations();
+    }
+    
+    /**
+     * Constructs a new ProximitySearchController from a KDTreeController.
+     * Uses the 2D-tree built in USEI07 - does NOT build a new tree.
+     * This is the preferred constructor for USEI09.
+     *
+     * @param kdTreeController the KDTreeController from USEI07 (must have tree built)
+     * @param stationRepository the StationRepository to get station list
+     */
+    public ProximitySearchController(KDTreeController kdTreeController, StationRepository stationRepository) {
+        if (kdTreeController == null) {
+            throw new IllegalArgumentException("KDTreeController cannot be null");
+        }
+        if (stationRepository == null) {
+            throw new IllegalArgumentException("StationRepository cannot be null");
+        }
+        if (!kdTreeController.isTreeBuilt()) {
+            throw new IllegalStateException(
+                "KD-tree not built yet. Please build the KD-tree in USEI07 (option 2) first."
+            );
+        }
+        
+        // Use the existing KD-tree from USEI07
+        this.kdTree = kdTreeController.getKDTree();
         
         // Get all stations from repository
         this.allStations = stationRepository.getAllStations();

@@ -27,6 +27,7 @@ public class Main {
     private static BoxRepository boxRepository;
     private static StationRepository stationRepository;
     private static StationLoader stationLoader = new StationLoader();
+    private static KDTreeController kdTreeController;
     
     /**
      * Load all data from CSV files once at startup
@@ -419,7 +420,7 @@ public class Main {
             System.out.println("Using stations from AVL repository.");
             System.out.println("Total stations: " + stationRepository.totalStations());
             
-            KDTreeController kdTreeController = new KDTreeController(stationRepository);
+            kdTreeController = new KDTreeController(stationRepository);
             KDTreeUI ui = new KDTreeUI(kdTreeController);
             ui.showMainMenu();
 
@@ -464,31 +465,36 @@ public class Main {
     /**
      * Planner - Proximity Search (Nearest-N with Filters) (USEI09)
      * Allows finding the N nearest stations to a target coordinate with optional filters.
+     * Uses the KD-tree built in USEI07.
      */
     private static void proximitySearch() {
         try {
             System.out.println("\n=== PROXIMITY SEARCH ===");
-            System.out.println("Loading stations...");
-
-            // Load stations using StationLoader from USEI06
-            List<Domain.Station> stations = stationLoader.loadFromCSV("train_station_dataset/train_stations_europe.csv");
-
-            if (stations == null || stations.isEmpty()) {
-                System.out.println("No stations loaded. Please check the CSV file.");
+            
+            if (stationRepository == null) {
+                System.out.println("Station repository not initialized.");
+                System.out.println("Please run option 1 (Station Lookup) first to load stations and build the AVL trees.");
                 return;
             }
-
-            System.out.println("Stations loaded successfully! Total: " + stations.size());
-
-            // Create controller and UI
-            GeographicalSearchController controller = new GeographicalSearchController(stations);
-            GeographicalSearchUI ui = new GeographicalSearchUI(controller);
             
-            // Show Nearest-N search menu
-            ui.showNearestNSearchMenu();
+            if (kdTreeController == null || !kdTreeController.isTreeBuilt()) {
+                System.out.println("KD-tree not built yet.");
+                System.out.println("Please run option 2 (Build KD-Tree) first to build the balanced 2D-tree.");
+                return;
+            }
+            
+            System.out.println("Using KD-tree.");
+            System.out.println("Total stations: " + stationRepository.totalStations());
+
+            // Create controller and UI using KD-tree from USEI07
+            ProximitySearchController controller = new ProximitySearchController(kdTreeController, stationRepository);
+            ProximitySearchUI ui = new ProximitySearchUI(controller);
+            
+            // Show main menu
+            ui.showMainMenu();
 
         } catch (Exception e) {
-            System.err.println("ERROR in proximitySearch: " + e.getMessage());
+            System.err.println("ERROR: " + e.getMessage());
             e.printStackTrace();
         }
     }
