@@ -5,6 +5,7 @@ import Domain.StationLoader;
 import Domain.Warehouse;
 import Domain.ENUM.ReturnReason;
 import Repository.BoxRepository;
+import Repository.KDTreeRepository;
 import Repository.StationRepository;
 import Repository.TrolleyRepository;
 import Repository.WarehouseRepository;
@@ -451,11 +452,12 @@ public class Main {
                 return;
             }
             
-            System.out.println("Using KD-tree from USEI07.");
+            System.out.println("Using KD-tree from USEI07 (via KDTreeRepository).");
             System.out.println("Total stations: " + stationRepository.totalStations());
 
-            // Create controller and UI using KD-tree from USEI07
-            GeographicalSearchController controller = new GeographicalSearchController(kdTreeController, stationRepository);
+            // Create controller and UI using KD-tree from USEI07 (via KDTreeRepository)
+            KDTreeRepository kdTreeRepository = kdTreeController.getRepository();
+            GeographicalSearchController controller = new GeographicalSearchController(kdTreeRepository, stationRepository);
             GeographicalSearchUI ui = new GeographicalSearchUI(controller);
             
             // Show main menu
