@@ -433,24 +433,29 @@ public class Main {
     /**
      * Planner - Search by Geographical Area (USEI08)
      * Allows searching for stations within a geographical rectangle with optional filters.
+     * Uses the KD-tree built in USEI07 - does NOT read CSV.
      */
     private static void geographicalSearch() {
         try {
             System.out.println("\n=== SEARCH BY GEOGRAPHICAL AREA ===");
-            System.out.println("Loading stations...");
-
-            // Load stations using StationLoader from USEI06
-            List<Domain.Station> stations = stationLoader.loadFromCSV("train_station_dataset/train_stations_europe.csv");
-
-            if (stations == null || stations.isEmpty()) {
-                System.out.println("No stations loaded. Please check the CSV file.");
+            
+            if (stationRepository == null) {
+                System.out.println("Station repository not initialized.");
+                System.out.println("Please run option 1 (Station Lookup) first to load stations and build the AVL trees.");
                 return;
             }
+            
+            if (kdTreeController == null || !kdTreeController.isTreeBuilt()) {
+                System.out.println("KD-tree not built yet.");
+                System.out.println("Please run option 2 (Build KD-Tree) first to build the balanced 2D-tree.");
+                return;
+            }
+            
+            System.out.println("Using KD-tree from USEI07.");
+            System.out.println("Total stations: " + stationRepository.totalStations());
 
-            System.out.println("Stations loaded successfully! Total: " + stations.size());
-
-            // Create controller and UI
-            GeographicalSearchController controller = new GeographicalSearchController(stations);
+            // Create controller and UI using KD-tree from USEI07
+            GeographicalSearchController controller = new GeographicalSearchController(kdTreeController, stationRepository);
             GeographicalSearchUI ui = new GeographicalSearchUI(controller);
             
             // Show main menu

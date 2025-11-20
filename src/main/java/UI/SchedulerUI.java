@@ -1021,8 +1021,8 @@ public class SchedulerUI {
         System.out.println();
         System.out.println("ESTIMATED PASSAGE TIMES PER POINT:");
         System.out.println(StringUtils.repeat("-", 80));
-        System.out.printf("%-12s %-30s %-20s %-15s%n", 
-                         "Point", "Station Name", "Estimated Time", "Travel Time");
+        System.out.printf("%-12s %-30s %-20s %-15s %-15s%n", 
+                         "Point", "Station Name", "Estimated Time", "Travel Time", "Distance");
         System.out.println(StringUtils.repeat("-", 80));
 
         // Create a map of station ID to ETA for quick lookup
@@ -1030,9 +1030,10 @@ public class SchedulerUI {
         for (DispatchReport.TrainSchedule.StationETA eta : routeWithETAs) {
             etaMap.put(eta.getStation().getId(), eta);
         }
-
-        // Display only selected stations, calculating cumulative travel time
+        
+        // Display only selected stations, calculating cumulative travel time and distance
         LocalDateTime previousEta = null;
+        Facility previousStation = null;
         for (int i = 0; i < selectedStations.size(); i++) {
             Facility station = selectedStations.get(i);
             DispatchReport.TrainSchedule.StationETA eta = etaMap.get(station.getId());
@@ -1064,14 +1065,156 @@ public class SchedulerUI {
                 }
             }
             
-            System.out.printf("%-12s %-30s %-20s %-15s%n", 
-                            stationId, stationName, etaStr, travelTimeStr);
+            // Calculate distance from previous station (summing all segments including intermediates)
+            String distanceStr;
+            if (i == 0) {
+                distanceStr = "-";
+            } else if (previousStation != null) {
+                double totalDistanceKm = calculateDistanceBetweenStations(
+                    previousStation, station, routeWithETAs);
+                
+                distanceStr = totalDistanceKm > 0 ? formatDistance(totalDistanceKm) : "N/A";
+            } else {
+                distanceStr = "-";
+            }
+            
+            System.out.printf("%-12s %-30s %-20s %-15s %-15s%n", 
+                            stationId, stationName, etaStr, travelTimeStr, distanceStr);
             
             previousEta = eta.getEta();
+            previousStation = station;
         }
         
         System.out.println(StringUtils.repeat("-", 80));
         System.out.println("TRAIN " + schedule.getTrainId());
+        
+        double totalRouteDistanceKm = calculateTotalRouteDistance(routeWithETAs);
+        if (totalRouteDistanceKm > 0) {
+            System.out.println("TOTAL DISTANCE: " + formatDistance(totalRouteDistanceKm));
+        } else {
+            System.out.println("TOTAL DISTANCE: N/A");
+        }
+    }
+
+    /**
+     * Calculates the total distance between two stations by summing all segment distances
+     * in the route, including intermediate stations.
+     *
+     * @param startStation the starting station (selected)
+     * @param endStation the ending station (selected)
+     * @param routeWithETAs the full route with all stations (including intermediates)
+     * @return total distance in kilometers, or 0 if not found
+     */
+    private double calculateDistanceBetweenStations(
+            Facility startStation, Facility endStation,
+            List<DispatchReport.TrainSchedule.StationETA> routeWithETAs) {
+        
+        // Find the indices of start and end stations in the full route
+        int startIndex = -1;
+        int endIndex = -1;
+        
+        for (int i = 0; i < routeWithETAs.size(); i++) {
+            Facility station = routeWithETAs.get(i).getStation();
+            if (station.getId().equals(startStation.getId())) {
+                startIndex = i;
+            }
+            if (station.getId().equals(endStation.getId())) {
+                endIndex = i;
+            }
+        }
+        
+        // If stations not found in route, return 0
+        if (startIndex == -1 || endIndex == -1 || startIndex >= endIndex) {
+            return 0.0;
+        }
+        
+        // Sum distances of all segments between start and end stations
+        double totalDistanceKm = 0.0;
+        TravelCalculationService service = controller.getTravelTimeController().getService();
+        
+        for (int i = startIndex; i < endIndex; i++) {
+            Facility currentStation = routeWithETAs.get(i).getStation();
+            Facility nextStation = routeWithETAs.get(i + 1).getStation();
+            
+            try {
+                LineSegment segment = service.findConnectingSegment(currentStation, nextStation);
+                if (segment != null) {
+                    totalDistanceKm += segment.getLengthKm();
+                    continue;
+                }
+            } catch (Exception e) {
+                // Fall through to haversine
+            }
+            
+            // If segment not found, try haversine distance (straight-line)
+            if (currentStation.getLatitude() != null && currentStation.getLongitude() != null &&
+                nextStation.getLatitude() != null && nextStation.getLongitude() != null) {
+                double haversineDist = KDTree.haversineDistance(
+                    currentStation.getLatitude(), currentStation.getLongitude(),
+                    nextStation.getLatitude(), nextStation.getLongitude()
+                );
+                totalDistanceKm += haversineDist;
+            }
+        }
+        
+        return totalDistanceKm;
+    }
+
+    /**
+     * Calculates the total distance of the complete route (all segments).
+     *
+     * @param routeWithETAs full route with all stations
+     * @return total distance in kilometers
+     */
+    private double calculateTotalRouteDistance(List<DispatchReport.TrainSchedule.StationETA> routeWithETAs) {
+        if (routeWithETAs == null || routeWithETAs.size() < 2) {
+            return 0.0;
+        }
+        
+        double totalDistanceKm = 0.0;
+        TravelCalculationService service = controller.getTravelTimeController().getService();
+        
+        for (int i = 0; i < routeWithETAs.size() - 1; i++) {
+            Facility currentStation = routeWithETAs.get(i).getStation();
+            Facility nextStation = routeWithETAs.get(i + 1).getStation();
+            
+            try {
+                LineSegment segment = service.findConnectingSegment(currentStation, nextStation);
+                if (segment != null) {
+                    totalDistanceKm += segment.getLengthKm();
+                    continue;
+                }
+            } catch (Exception e) {
+                // Fall through to haversine
+            }
+            
+            if (currentStation.getLatitude() != null && currentStation.getLongitude() != null &&
+                nextStation.getLatitude() != null && nextStation.getLongitude() != null) {
+                double haversineDist = KDTree.haversineDistance(
+                    currentStation.getLatitude(), currentStation.getLongitude(),
+                    nextStation.getLatitude(), nextStation.getLongitude()
+                );
+                totalDistanceKm += haversineDist;
+            }
+        }
+        
+        return totalDistanceKm;
+    }
+
+    /**
+     * Formats a distance value in kilometers for display.
+     *
+     * @param distanceKm the distance in kilometers
+     * @return formatted string
+     */
+    private String formatDistance(double distanceKm) {
+        if (distanceKm <= 0) {
+            return "N/A";
+        }
+        if (distanceKm < 1.0) {
+            return String.format("%.0f m", distanceKm * 1000);
+        }
+        return String.format("%.1f km", distanceKm);
     }
 
     /**

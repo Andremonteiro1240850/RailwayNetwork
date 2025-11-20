@@ -3,6 +3,7 @@ package Controller;
 import Domain.Station;
 import Domain.KDTree;
 import Domain.SearchFilters;
+import Repository.KDTreeRepository;
 import Repository.StationRepository;
 
 import java.util.ArrayList;
@@ -23,12 +24,17 @@ public class ProximitySearchController {
     
     /**
      * Constructs a new ProximitySearchController with a KD-tree.
+     * Builds the tree using KDTreeRepository.
      *
      * @param stations list of stations to build the tree from
      */
     public ProximitySearchController(List<Station> stations) {
         this.allStations = new ArrayList<>(stations);
-        this.kdTree = new KDTree(stations);
+        
+        // Build KD-tree using KDTreeRepository
+        StationRepository tempRepo = new StationRepository(stations);
+        KDTreeRepository kdTreeRepository = new KDTreeRepository(tempRepo);
+        this.kdTree = kdTreeRepository.buildTree(stations);
     }
     
     /**

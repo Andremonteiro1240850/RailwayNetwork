@@ -2,6 +2,7 @@ package Controller;
 
 import Domain.KDTree;
 import Domain.Station;
+import Repository.KDTreeRepository;
 import Repository.StationRepository;
 
 import java.util.*;
@@ -9,14 +10,14 @@ import java.util.*;
 /**
  * Controller for KD-tree operations.
  * Handles building balanced KD-trees and retrieving metrics.
+ * Uses KDTreeRepository for tree construction, caching, and persistence.
  * 
  * @author Development Team
- * @version 1.0
+ * @version 2.0
  */
 public class KDTreeController {
     
-    private KDTree kdTree;
-    private StationRepository stationRepository;
+    private KDTreeRepository kdTreeRepository;
     
     /**
      * Constructs a new KDTreeController.
@@ -24,25 +25,22 @@ public class KDTreeController {
      * @param stationRepository the station repository to use
      */
     public KDTreeController(StationRepository stationRepository) {
-        this.stationRepository = stationRepository;
-        this.kdTree = null;
+        if (stationRepository == null) {
+            throw new IllegalArgumentException("StationRepository cannot be null");
+        }
+        this.kdTreeRepository = new KDTreeRepository(stationRepository);
     }
     
     /**
      * Builds a balanced KD-tree from the station repository.
      * Uses AVL trees from USEI06 - does NOT read CSV.
+     * The tree is cached in the repository.
      *
      * @return true if build was successful
      */
     public boolean buildTree() {
-        if (stationRepository == null) {
-            System.err.println("[ERROR] StationRepository is null. Cannot build KD-tree.");
-            return false;
-        }
-        
         try {
-            this.kdTree = new KDTree();
-            this.kdTree.buildKdTree(stationRepository);
+            kdTreeRepository.buildTree();
             return true;
         } catch (IllegalStateException e) {
             System.err.println("[ERROR] " + e.getMessage());
@@ -55,6 +53,7 @@ public class KDTreeController {
     
     /**
      * Builds a balanced KD-tree from a list of stations.
+     * The tree is cached in the repository.
      *
      * @param stations list of stations
      * @return true if build was successful
@@ -65,7 +64,7 @@ public class KDTreeController {
         }
         
         try {
-            this.kdTree = new KDTree(stations);
+            kdTreeRepository.buildTree(stations);
             return true;
         } catch (Exception e) {
             System.err.println("Error building KD-tree: " + e.getMessage());
@@ -74,21 +73,33 @@ public class KDTreeController {
     }
     
     /**
-     * Gets the KD-tree.
+     * Gets the KD-tree from the repository.
+     * Returns the cached tree if available, otherwise null.
      *
      * @return the KD-tree, or null if not built
      */
     public KDTree getKDTree() {
-        return kdTree;
+        return kdTreeRepository.getCachedTree();
     }
     
     /**
-     * Checks if the tree has been built.
+     * Gets or builds the KD-tree.
+     * If a tree is cached, returns it. Otherwise, builds a new one.
+     *
+     * @return the KD-tree
+     * @throws IllegalStateException if building fails
+     */
+    public KDTree getOrBuildTree() {
+        return kdTreeRepository.getOrBuildTree();
+    }
+    
+    /**
+     * Checks if the tree has been built and cached.
      *
      * @return true if tree exists
      */
     public boolean isTreeBuilt() {
-        return kdTree != null && !kdTree.isEmpty();
+        return kdTreeRepository.hasCachedTree();
     }
     
     /**
@@ -97,10 +108,11 @@ public class KDTreeController {
      * @return array with [numNodes, numStations], or null if tree not built
      */
     public int[] getTreeSize() {
-        if (!isTreeBuilt()) {
+        KDTree tree = getKDTree();
+        if (tree == null || tree.isEmpty()) {
             return null;
         }
-        return kdTree.getSize();
+        return tree.getSize();
     }
     
     /**
@@ -109,10 +121,11 @@ public class KDTreeController {
      * @return tree height, or -1 if tree not built
      */
     public int getTreeHeight() {
-        if (!isTreeBuilt()) {
+        KDTree tree = getKDTree();
+        if (tree == null || tree.isEmpty()) {
             return -1;
         }
-        return kdTree.height();
+        return tree.height();
     }
     
     /**
@@ -121,10 +134,11 @@ public class KDTreeController {
      * @return map of bucket size to count, or null if tree not built
      */
     public Map<Integer, Integer> getBucketStats() {
-        if (!isTreeBuilt()) {
+        KDTree tree = getKDTree();
+        if (tree == null || tree.isEmpty()) {
             return null;
         }
-        return kdTree.getBucketStats();
+        return tree.getBucketStats();
     }
     
     /**
@@ -134,15 +148,16 @@ public class KDTreeController {
      * @return KDTreeMetrics object with all metrics, or null if tree not built
      */
     public KDTreeMetrics getAllMetrics() {
-        if (!isTreeBuilt()) {
+        KDTree tree = getKDTree();
+        if (tree == null || tree.isEmpty()) {
             return null;
         }
         
-        int[] sizeInfo = kdTree.getSize();
+        int[] sizeInfo = tree.getSize();
         int numNodes = sizeInfo[0];
         int numStations = sizeInfo[1];
-        int height = kdTree.height();
-        Map<Integer, Integer> bucketStats = kdTree.getBucketStats();
+        int height = tree.height();
+        Map<Integer, Integer> bucketStats = tree.getBucketStats();
         
         return new KDTreeMetrics(numNodes, numStations, height, bucketStats);
     }
