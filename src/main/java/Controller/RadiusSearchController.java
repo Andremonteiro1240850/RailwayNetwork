@@ -6,7 +6,7 @@ import Domain.StationDistanceComparator;
 import Domain.RadiusSearchSummary;
 import Domain.AVL;
 import Repository.StationRepository;
-import Controller.KDTreeController;
+import Repository.KDTreeRepository;
 
 import java.util.*;
 
@@ -24,28 +24,28 @@ public class RadiusSearchController {
     private final List<Station> allStations;
     
     /**
-     * Constructs a new RadiusSearchController from a KDTreeController.
-     * Uses the 2D-tree built in USEI07 - does NOT build a new tree.
+     * Constructs a new RadiusSearchController from a KDTreeRepository.
+     * Uses the 2D-tree built in USEI07 and cached in the repository - does NOT build a new tree.
      * This is the preferred constructor for USEI10.
      *
-     * @param kdTreeController the KDTreeController from USEI07 (must have tree built)
+     * @param kdTreeRepository the KDTreeRepository from USEI07 (must have tree built and cached)
      * @param stationRepository the StationRepository to get station list
      */
-    public RadiusSearchController(KDTreeController kdTreeController, StationRepository stationRepository) {
-        if (kdTreeController == null) {
-            throw new IllegalArgumentException("KDTreeController cannot be null");
+    public RadiusSearchController(KDTreeRepository kdTreeRepository, StationRepository stationRepository) {
+        if (kdTreeRepository == null) {
+            throw new IllegalArgumentException("KDTreeRepository cannot be null");
         }
         if (stationRepository == null) {
             throw new IllegalArgumentException("StationRepository cannot be null");
         }
-        if (!kdTreeController.isTreeBuilt()) {
+        if (!kdTreeRepository.hasCachedTree()) {
             throw new IllegalStateException(
                 "KD-tree not built yet. Please build the KD-tree in USEI07 (option 2) first."
             );
         }
         
-        // Use the existing KD-tree from USEI07
-        this.kdTree = kdTreeController.getKDTree();
+        // Use the existing KD-tree from KDTreeRepository (built in USEI07)
+        this.kdTree = kdTreeRepository.getCachedTree();
         
         // Get all stations from repository
         this.allStations = stationRepository.getAllStations();

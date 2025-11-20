@@ -527,11 +527,14 @@ public class Main {
                 return;
             }
             
-            System.out.println("Using KD-tree from USEI07.");
+            System.out.println("Using KD-tree from USEI07 (KDTreeRepository).");
             System.out.println("Total stations: " + stationRepository.totalStations());
 
-            // Create controller and UI using KD-tree from USEI07
-            RadiusSearchController controller = new RadiusSearchController(kdTreeController, stationRepository);
+            // Create controller and UI using KD-tree from KDTreeRepository (built in USEI07)
+            RadiusSearchController controller = new RadiusSearchController(
+                kdTreeController.getKDTreeRepository(), 
+                stationRepository
+            );
             RadiusSearchUI ui = new RadiusSearchUI(controller);
             
             // Show main menu
