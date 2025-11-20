@@ -25,7 +25,7 @@ public class Main {
     private static WarehouseRepository warehouseRepository = new WarehouseRepository();
     private static TrolleyRepository trolleyRepository = new TrolleyRepository();
     private static BoxRepository boxRepository;
-    private StationRepository stationRepository;
+    private static StationRepository stationRepository;
     private static StationLoader stationLoader = new StationLoader();
     
     /**
@@ -365,11 +365,19 @@ public class Main {
     private static void stationLookup() {
         try {
             System.out.println("\n=== STATION LOOKUP ===");
-            System.out.println("Loading stations...");
-
-            StationController controller = new StationController(new StationRepository(stationLoader.loadFromCSV("train_station_dataset/train_stations_europe.csv")));
-
-            System.out.println("Stations loaded successfully!");
+            if (stationRepository == null) {
+                System.out.println("Loading stations...");
+                stationRepository = new StationRepository(
+                    stationLoader.loadFromCSV("train_station_dataset/train_stations_europe.csv")
+                );
+                System.out.println("Stations loaded successfully!");
+                System.out.println("Total stations: " + stationRepository.totalStations());
+            } else {
+                System.out.println("Reusing stations loaded previously (AVL trees already built).");
+                System.out.println("Total stations: " + stationRepository.totalStations());
+            }
+            
+            StationController controller = new StationController(stationRepository);
             System.out.println("Starting Station UI...");
 
 
@@ -401,21 +409,22 @@ public class Main {
     private static void dataEngineerMain() {
         try {
             System.out.println("\n=== BALANCED KD-TREE OPERATIONS ===");
-            System.out.println("Loading stations...");
-
-            StationRepository repository = new StationRepository(
-                stationLoader.loadFromCSV("train_station_dataset/train_stations_europe.csv")
-            );
-
-            System.out.println("Stations loaded successfully!");
-            System.out.println("Total stations: " + repository.totalStations());
-
-            KDTreeController kdTreeController = new KDTreeController(repository);
+            
+            if (stationRepository == null) {
+                System.out.println("Station repository not initialized.");
+                System.out.println("Please run option 1 (Station Lookup) first to load stations and build the AVL trees.");
+                return;
+            }
+            
+            System.out.println("Using stations from AVL repository.");
+            System.out.println("Total stations: " + stationRepository.totalStations());
+            
+            KDTreeController kdTreeController = new KDTreeController(stationRepository);
             KDTreeUI ui = new KDTreeUI(kdTreeController);
             ui.showMainMenu();
 
         } catch (Exception e) {
-            System.err.println("ERROR in dataEngineerMain: " + e.getMessage());
+            System.err.println("ERROR: " + e.getMessage());
             e.printStackTrace();
         }
     }
