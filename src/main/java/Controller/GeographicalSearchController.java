@@ -5,6 +5,7 @@ import Domain.KDTree;
 import Domain.SearchFilters;
 import Domain.ENUM.Country;
 import Repository.StationRepository;
+import Repository.KDTreeRepository;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -69,7 +70,7 @@ public class GeographicalSearchController {
     /**
      * Constructs a new GeographicalSearchController from a KDTreeController.
      * Uses the 2D-tree built in USEI07 - does NOT build a new tree.
-     * This is the preferred constructor for USEI08.
+     * This constructor delegates to KDTreeRepository internally.
      *
      * @param kdTreeController the KDTreeController from USEI07 (must have tree built)
      * @param stationRepository the StationRepository to get station list
@@ -87,8 +88,36 @@ public class GeographicalSearchController {
             );
         }
         
-        // Use the existing KD-tree from USEI07
+        // Use the existing KD-tree from USEI07 (obtained from KDTreeRepository via controller)
         this.kdTree = kdTreeController.getKDTree();
+        
+        // Get all stations from repository
+        this.allStations = stationRepository.getAllStations();
+    }
+    
+    /**
+     * Constructs a new GeographicalSearchController from a KDTreeRepository.
+     * Uses the 2D-tree built in USEI07 - does NOT build a new tree.
+     * This is the preferred constructor for USEI08 as it directly uses the repository.
+     *
+     * @param kdTreeRepository the KDTreeRepository from USEI07 (must have tree built)
+     * @param stationRepository the StationRepository to get station list
+     */
+    public GeographicalSearchController(KDTreeRepository kdTreeRepository, StationRepository stationRepository) {
+        if (kdTreeRepository == null) {
+            throw new IllegalArgumentException("KDTreeRepository cannot be null");
+        }
+        if (stationRepository == null) {
+            throw new IllegalArgumentException("StationRepository cannot be null");
+        }
+        if (!kdTreeRepository.hasCachedTree()) {
+            throw new IllegalStateException(
+                "KD-tree not built yet. Please build the KD-tree in USEI07 (option 2) first."
+            );
+        }
+        
+        // Use the existing KD-tree from USEI07 (directly from repository)
+        this.kdTree = kdTreeRepository.getCachedTree();
         
         // Get all stations from repository
         this.allStations = stationRepository.getAllStations();
