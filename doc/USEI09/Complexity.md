@@ -22,40 +22,43 @@ public List<StationDistance> nearestN(double targetLat, double targetLon, int n)
 - **Initialization**: O(1)
   - Explanation: Creating the priority queue and validating parameters takes constant time.
 
-- **Recursive traversal (`nearestNRecursive`)**: O(√n + n log k) average case, O(n log k) worst case
+- **Recursive traversal (`nearestNRecursive`)**: O(√N + N log k) average case, O(N log k) worst case
   - Explanation: 
+    - Let N = total number of stations in the tree, k = parameter n (number of nearest neighbors desired)
     - The algorithm uses branch-and-bound pruning to avoid exploring unnecessary subtrees.
-    - In the average case, with a balanced KD-tree, the algorithm explores approximately O(√n) nodes.
+    - In the average case, with a balanced KD-tree, the algorithm explores approximately O(√N) nodes.
     - For each node visited, it processes all stations in the bucket. For each station, it:
       - Calculates the Haversine distance: O(1)
-      - Performs priority queue operations (offer/poll): O(log k) where k ≤ n is the maximum size of the priority queue
-    - The total number of stations processed across all visited nodes is at most n (each station appears in exactly one bucket).
-    - Therefore, the total cost of priority queue operations during traversal is O(n log k).
-    - In the worst case (unbalanced tree or all stations very close), it may need to visit O(n) nodes, but the total stations processed remains O(n).
+      - Performs priority queue operations (offer/poll): O(log k) where k is the maximum size of the priority queue (the parameter n)
+    - The total number of stations processed across all visited nodes is at most N (each station appears in exactly one bucket).
+    - Therefore, the total cost of priority queue operations during traversal is O(N log k), where each of the N stations may require O(log k) operations on the priority queue.
+    - In the worst case (unbalanced tree or all stations very close), it may need to visit O(N) nodes, but the total stations processed remains O(N).
 
-- **Final sorting**: O(k log k) where k ≤ n
+- **Final sorting**: O(k log k) where k is the parameter n (number of nearest neighbors)
   - Explanation: Sorting the final list of k nearest stations by distance takes O(k log k) time.
 
-**Overall Time Complexity for `nearestN`**: O(√n + n log k + k log k) average case, O(n log k + k log k) worst case
-- **Explanation**: The dominant operations are:
-  - Tree traversal: O(√n) nodes visited in average case, O(n) in worst case
-  - Priority queue operations during traversal: O(n log k) (processing n stations, each with O(log k) operations)
-  - Final sorting: O(k log k)
-- **Simplified**: Since k ≤ n and typically k << n, the complexity is dominated by O(n log k) in practice. In the worst case where k = n, this becomes O(n log n).
+**Overall Time Complexity for `nearestN`**: O(√N + N log k + k log k) average case, O(N log k + k log k) worst case
+- **Explanation**: Let N = total number of stations in the tree, k = parameter n (number of nearest neighbors desired)
+  - The dominant operations are:
+    - Tree traversal: O(√N) nodes visited in average case, O(N) in worst case
+    - Priority queue operations during traversal: O(N log k) (processing N stations, each with O(log k) operations on a priority queue of size at most k)
+    - Final sorting: O(k log k)
+  - In the average case, the O(N log k) term dominates since N >> k typically.
+  - In the worst case, the complexity is O(N log k + k log k). Since k ≤ N, this simplifies to O(N log k) when k << N, or O(N log N) when k = N.
 
 **Space Complexity Analysis:**
 
-- **Priority queue**: O(k) where k ≤ n
+- **Priority queue**: O(k) where k is the parameter n (number of nearest neighbors)
   - Explanation: The priority queue stores at most k nearest stations.
 
-- **Recursion stack**: O(log n)
-  - Explanation: The maximum depth of recursion is proportional to the height of the tree, which is O(log n) for a balanced tree.
+- **Recursion stack**: O(log N) where N is the total number of stations
+  - Explanation: The maximum depth of recursion is proportional to the height of the tree, which is O(log N) for a balanced tree.
 
 - **Result list**: O(k)
   - Explanation: The final sorted list contains k stations.
 
-**Overall Space Complexity for `nearestN`**: O(k + log n)
-- **Explanation**: The space is dominated by the priority queue and recursion stack.
+**Overall Space Complexity for `nearestN`**: O(k + log N)
+- **Explanation**: The space is dominated by the priority queue (O(k)) and recursion stack (O(log N)), where N is the total number of stations and k is the parameter (number of nearest neighbors desired).
 
 ## `KDTree.radiusSearch(double targetLat, double targetLon, double radiusKm)`
 
@@ -77,38 +80,41 @@ public List<StationDistance> radiusSearch(double targetLat, double targetLon, do
 - **Initialization**: O(1)
   - Explanation: Creating the results list and validating parameters takes constant time.
 
-- **Recursive traversal (`radiusSearchRecursive`)**: O(√n + n) average case, O(n) worst case
+- **Recursive traversal (`radiusSearchRecursive`)**: O(√N + N) average case, O(N) worst case
   - Explanation:
+    - Let N = total number of stations in the tree, k = number of stations within radius (results)
     - The algorithm uses spatial pruning to avoid exploring subtrees that cannot contain stations within the radius.
-    - In the average case, with a balanced KD-tree and reasonable radius, the algorithm explores approximately O(√n) nodes.
+    - In the average case, with a balanced KD-tree and reasonable radius, the algorithm explores approximately O(√N) nodes.
     - For each node visited, it processes all stations in the bucket. For each station, it:
       - Calculates the Haversine distance: O(1)
       - Conditionally adds to results list: O(1) amortized
-    - The total number of stations processed across all visited nodes is at most n (each station appears in exactly one bucket).
-    - Therefore, the total cost of processing stations during traversal is O(n).
-    - The number of results k depends on the radius and station density, but k ≤ n.
-    - In the worst case (very large radius or all stations within radius), it may need to visit O(n) nodes, but the total stations processed remains O(n).
+    - The total number of stations processed across all visited nodes is at most N (each station appears in exactly one bucket).
+    - Therefore, the total cost of processing stations during traversal is O(N).
+    - The number of results k depends on the radius and station density, but k ≤ N.
+    - In the worst case (very large radius or all stations within radius), it may need to visit O(N) nodes, but the total stations processed remains O(N).
 
 - **Final sorting**: O(k log k) where k is the number of results
   - Explanation: Sorting the final list of k stations by distance takes O(k log k) time.
 
-**Overall Time Complexity for `radiusSearch`**: O(√n + n + k log k) average case, O(n + k log k) worst case
-- **Explanation**: The dominant operations are:
-  - Tree traversal: O(√n) nodes visited in average case, O(n) in worst case
-  - Station processing during traversal: O(n) (processing n stations, each with O(1) operations)
-  - Final sorting: O(k log k)
-- **Simplified**: Since the tree traversal and station processing are both O(n) in the worst case, and k ≤ n, the complexity is O(n + k log k). In the worst case where k = n, this becomes O(n log n), dominated by the sorting operation. This is scientifically precise.
+**Overall Time Complexity for `radiusSearch`**: O(√N + N + k log k) average case, O(N + k log k) worst case
+- **Explanation**: Let N = total number of stations in the tree, k = number of stations within radius (results)
+  - The dominant operations are:
+    - Tree traversal: O(√N) nodes visited in average case, O(N) in worst case
+    - Station processing during traversal: O(N) (processing N stations, each with O(1) operations)
+    - Final sorting: O(k log k)
+  - In the average case, the O(N) term dominates the tree traversal cost.
+  - In the worst case, the complexity is O(N + k log k). Since k ≤ N, this simplifies to O(N) when k << N, or O(N log N) when k = N (dominated by the sorting operation).
 
 **Space Complexity Analysis:**
 
 - **Results list**: O(k) where k is the number of stations within radius
   - Explanation: The list stores all stations found within the radius.
 
-- **Recursion stack**: O(log n)
-  - Explanation: The maximum depth of recursion is proportional to the height of the tree, which is O(log n) for a balanced tree.
+- **Recursion stack**: O(log N) where N is the total number of stations
+  - Explanation: The maximum depth of recursion is proportional to the height of the tree, which is O(log N) for a balanced tree.
 
-**Overall Space Complexity for `radiusSearch`**: O(k + log n)
-- **Explanation**: The space is dominated by the results list and recursion stack.
+**Overall Space Complexity for `radiusSearch`**: O(k + log N)
+- **Explanation**: The space is dominated by the results list (O(k)) and recursion stack (O(log N)), where N is the total number of stations and k is the number of results.
 
 ## `KDTree.haversineDistance(double lat1, double lon1, double lat2, double lon2)`
 
@@ -123,23 +129,26 @@ This static method calculates the great-circle distance between two points on Ea
 ## Comparison with Naive Approach
 
 **Naive Approach (linear search):**
-- **Time Complexity**: O(n) for both nearest neighbor and radius search
-- **Space Complexity**: O(k) for results
+- **Time Complexity**: O(N) for both nearest neighbor and radius search, where N is the total number of stations
+- **Space Complexity**: O(k) for results, where k is the number of results
 
 **KD-tree Approach:**
 - **Time Complexity**: 
-  - `nearestN`: O(√n + n log k + k log k) average case, O(n log k + k log k) worst case
-  - `radiusSearch`: O(√n + n + k log k) average case, O(n + k log k) worst case
-- **Space Complexity**: O(k + log n)
+  - `nearestN`: O(√N + N log k + k log k) average case, O(N log k + k log k) worst case
+    - Where N = total number of stations, k = parameter n (number of nearest neighbors desired)
+  - `radiusSearch`: O(√N + N + k log k) average case, O(N + k log k) worst case
+    - Where N = total number of stations, k = number of stations within radius (results)
+- **Space Complexity**: O(k + log N)
+  - Where N = total number of stations, k = number of results
 
 **Advantages:**
-- For large datasets (n >> k), the KD-tree approach is significantly faster than linear search.
+- For large datasets (N >> k), the KD-tree approach is significantly faster than linear search.
 - Spatial pruning allows skipping large portions of the dataset that are guaranteed to be outside the search region.
 - The logarithmic space overhead is negligible compared to the time savings.
 
 **When KD-tree is less efficient:**
-- For very small datasets (n < 100), the overhead of tree traversal may outweigh the benefits.
-- When k ≈ n (e.g., finding all nearest neighbors or very large radius), the algorithm approaches O(n log n) complexity, dominated by the sorting operation, which is similar to the naive approach with sorting.
+- For very small datasets (N < 100), the overhead of tree traversal may outweigh the benefits.
+- When k ≈ N (e.g., finding all nearest neighbors or very large radius), the algorithm approaches O(N log N) complexity, dominated by the sorting operation, which is similar to the naive approach with sorting.
 
 ## Notes on Pruning Efficiency
 
@@ -152,4 +161,14 @@ The efficiency of both algorithms depends on the quality of spatial pruning:
 3. **Query point location**: Queries near the center of the dataset distribution may explore more nodes than queries near the edges.
 
 4. **Station distribution**: Clustered distributions may reduce pruning effectiveness compared to uniform distributions.
+
+## Notes on Filtering
+
+When filters are applied to the results (e.g., timezone filters), the complexity analysis remains the same:
+
+- **Filtering step**: O(k) where k is the number of results from the KD-tree search
+  - Explanation: Filtering is a linear pass through the k results, checking each station against the filter criteria.
+  - This adds O(k) to the overall complexity, which is already dominated by the O(N log k) or O(N) terms in the search phase.
+
+- **Overall complexity with filters**: The same as without filters, since O(k) is dominated by the search operations.
 

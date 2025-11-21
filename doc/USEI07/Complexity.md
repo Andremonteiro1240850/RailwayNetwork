@@ -97,8 +97,8 @@ public KDNode buildKdTree(List<Station> stations) {
 ```text
     this.root = bulkBuild(sortedByLat, sortedByLon, 0);
 ```
-- Complexity: O(n log n) average case, O(n² log n) worst case (patological)
-- Explanation: The bulk-build algorithm is a divide-and-conquer algorithm. In the average case with spatially distributed data (like railway stations), the complexity is O(n log n). However, in the worst pathological case where all stations share the same coordinates, the complexity degrades to O(n² log n) due to the bucket sorting operation. See detailed analysis in the bulkBuild section below.
+- Complexity: O(n log n) average case, O(n log n) worst case (pathological)
+- Explanation: The bulk-build algorithm is a divide-and-conquer algorithm. In the average case with spatially distributed data (like railway stations), the complexity is O(n log n). In the worst pathological case where all stations share the same coordinates, all n stations go into a single bucket at the root level, which is sorted in O(n log n) time, and then the recursion terminates with empty partitions. See detailed analysis in the bulkBuild section below.
 
 ```text
     this.numNodes = countNodes(this.root);
@@ -107,8 +107,8 @@ public KDNode buildKdTree(List<Station> stations) {
 - Complexity: O(n)
 - Explanation: Both countNodes and countStations traverse the entire tree, visiting each of the n nodes once, taking O(n) time.
 
-**Overall Time Complexity: O(n log n) average case, O(n² log n) worst case (patological)**
-**Explanation: The overall time complexity is dominated by the sorting operations (O(n log n)) and the bulk-build algorithm. In the average case with spatially distributed data, the bulk-build takes O(n log n) time, resulting in overall O(n log n). In the worst pathological case where all stations share the same coordinates, the bulk-build degrades to O(n² log n), dominating the overall complexity.**
+**Overall Time Complexity: O(n log n) average case, O(n log n) worst case (pathological)**
+**Explanation: The overall time complexity is dominated by the sorting operations (O(n log n)) and the bulk-build algorithm. In the average case with spatially distributed data, the bulk-build takes O(n log n) time, resulting in overall O(n log n). In the worst pathological case where all stations share the same coordinates, the bulk-build also takes O(n log n) time (all stations go into a single bucket at the root, which is sorted in O(n log n), then recursion terminates), resulting in overall O(n log n).**
 
 **Space Complexity Analysis:**
 
@@ -274,30 +274,37 @@ private KDNode bulkBuild(List<Station> sortedByLat, List<Station> sortedByLon, i
     node.setLeft(bulkBuild(leftByAxis, leftByOther, depth + 1));
     node.setRight(bulkBuild(rightByAxis, rightByOther, depth + 1));
 ```
-- Complexity: O(n log n) average case, O(n² log n) worst case (patological)
+- Complexity: O(n log n) average case, O(n log n) worst case (pathological)
 - Explanation: The recursive calls process the left and right partitions. The algorithm is a divide-and-conquer algorithm whose complexity critically depends on how the problem is divided.
 
 **Scientific Analysis of bulkBuild:**
 
 **Ideal Case (Perfectly Balanced Tree):**
 - At each recursive level, the list of n elements is partitioned into two lists of ~n/2 elements.
-- The work at each level (excluding recursive calls) is dominated by the loops that traverse sortedByAxis and sortedByOther, i.e., O(n).
+- The work at each level (excluding recursive calls) is dominated by:
+  - The loop that traverses `sortedByAxis` (O(n)) to partition stations into bucket, leftByAxis, and rightByAxis
+  - The loop that traverses `sortedByOther` (O(n)) to partition stations into leftByOther and rightByOther
+  - The bucket sort operation, which in the average case with spatially distributed data is O(b log b) where b is small (typically O(1) or O(log n))
+- Therefore, the work per level is O(n).
 - The height of a perfectly balanced tree is log₂(n).
 - The recurrence relation is: **T(n) = 2T(n/2) + O(n)**
-- By the Master Theorem (Case 2), this recurrence directly resolves to **O(n log n)**.
+  - This means: to solve a problem of size n, we solve two subproblems of size n/2, plus O(n) work to partition the data
+  - By the Master Theorem (Case 2), where a = 2, b = 2, and f(n) = O(n), we have f(n) = Θ(n^log_b(a)) = Θ(n^1) = Θ(n)
+  - Therefore, T(n) = Θ(n log n), which is **O(n log n)**
 
 **Worst Pathological Case (All Stations Share Same Coordinates):**
 - If all n stations share the same coordinates, the bucket at the root will have size n.
 - The `bucket.sort(...)` operation becomes O(n log n) at the root level.
-- After this, all partitions will be empty, so the process terminates.
-- The total cost is dominated by the sort of the root bucket: **O(n² log n)**.
+- After this, all partitions (leftByAxis, rightByAxis, leftByOther, rightByOther) will be empty, so the recursion terminates immediately.
+- The total cost is dominated by the sort of the root bucket: **O(n log n)**.
+- This pathological case does not exceed O(n log n) because the cost is dominated by sorting the root bucket, which is O(n log n), and no further recursive work is performed.
 
 **Average/Expected Case (Spatially Distributed Data):**
 - With spatially distributed data (like railway stations), overlap is minimal (b is small).
 - The complexity maintains **O(n log n)**.
 
-**Overall Time Complexity: O(n log n) average case, O(n² log n) worst case (patological)**
-**Explanation: In the average case with spatially distributed data, the bulk-build algorithm has O(n log n) complexity following the recurrence relation T(n) = 2T(n/2) + O(n). In the worst pathological case where all stations share the same coordinates, the complexity degrades to O(n² log n) due to the bucket sorting operation at the root level.**
+**Overall Time Complexity: O(n log n) average case, O(n log n) worst case (pathological)**
+**Explanation: In the average case with spatially distributed data, the bulk-build algorithm has O(n log n) complexity following the recurrence relation T(n) = 2T(n/2) + O(n). In the worst pathological case where all stations share the same coordinates, all n stations go into a single bucket at the root level, which is sorted in O(n log n) time, and then the recursion terminates with empty partitions, resulting in overall O(n log n) complexity.**
 
 **Space Complexity Analysis:**
 
@@ -328,10 +335,15 @@ private KDNode bulkBuild(List<Station> sortedByLat, List<Station> sortedByLon, i
 
 **Persistent Data Structure:** The final KD-tree stores n nodes. Each node contains a constant amount of data (axis value, bucket of stations, pointers), plus the bucket. The sum of the sizes of all buckets is n. Therefore, the tree itself occupies Θ(n) space.
 
-**Construction Cost:** During construction, the algorithm creates temporary lists (leftByAxis, rightByAxis, etc.). However, at any given level, the sum of the sizes of these lists is O(n). While the levels are recursive, as long as the lists are passed to recursive calls and then become eligible for garbage collection, the working memory space can be maintained at O(n). The worst-case memory usage during the process is, in fact, O(n).
+**Construction Cost:** During construction, the algorithm creates temporary lists (leftByAxis, rightByAxis, leftByOther, rightByOther) at each recursive level. The key insight is that with the copy strategy used in the code, the active lists at any given moment sum geometrically:
+  - At level 0 (root): we have lists totaling n elements
+  - At level 1: we have two sets of lists (left and right subtrees), each totaling at most n/2 elements, so together at most n elements
+  - At level 2: we have four sets of lists, each totaling at most n/4 elements, so together at most n elements
+  - This pattern continues: at level d, we have 2^d sets of lists, each of size at most n/2^d, totaling at most n elements
+- Since the lists are passed to recursive calls and become eligible for garbage collection after the recursive call completes, the peak memory usage is O(n), not O(n log n). The geometric sum of active lists across all levels is bounded by O(n).
 
 **Overall Space Complexity: O(n)**
-**Explanation: The overall space complexity is O(n) for storing the tree nodes, buckets, and temporary arrays during the recursive build process. The persistent data structure stores n nodes with buckets summing to n stations, occupying Θ(n) space. During construction, temporary lists are created, but the total space used across all recursive levels is bounded by O(n).**
+**Explanation: The overall space complexity is O(n) for storing the tree nodes, buckets, and temporary arrays during the recursive build process. The persistent data structure stores n nodes with buckets summing to n stations, occupying Θ(n) space. During construction, temporary lists are created at each recursive level, but due to the geometric sum property (active lists at level d total at most n elements), the peak memory usage is O(n), not O(n log n). This is because lists become eligible for garbage collection after their recursive calls complete, and the sum of all active lists across all levels is geometrically bounded by O(n).**
 
 ```java
 public List<Station> rangeQuery(double latMin, double latMax, double lonMin, double lonMax) {
