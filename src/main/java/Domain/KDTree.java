@@ -194,6 +194,22 @@ public class KDTree implements Serializable {
     }
     
     /**
+     * Performs a range query without sorting the results.
+     * Useful when results will be filtered before sorting to reduce complexity.
+     *
+     * @param latMin minimum latitude (inclusive)
+     * @param latMax maximum latitude (inclusive)
+     * @param lonMin minimum longitude (inclusive)
+     * @param lonMax maximum longitude (inclusive)
+     * @return list of stations in the range, NOT sorted
+     */
+    public List<Station> rangeQueryUnsorted(double latMin, double latMax, double lonMin, double lonMax) {
+        List<Station> results = new ArrayList<>();
+        rangeQueryRecursive(this.root, latMin, latMax, lonMin, lonMax, 0, results);
+        return results;
+    }
+    
+    /**
      * Recursive range query helper.
      * 
      * @param node current node
@@ -365,6 +381,28 @@ public class KDTree implements Serializable {
         // Sort by distance (ascending)
         results.sort(Comparator.comparing(StationDistance::getDistance));
         
+        return results;
+    }
+    
+    /**
+     * Finds all stations within a specified radius without sorting the results.
+     * Useful when results will be filtered before sorting to reduce complexity.
+     *
+     * @param targetLat target latitude
+     * @param targetLon target longitude
+     * @param radiusKm search radius in kilometers
+     * @return list of pairs (station, distance in km), NOT sorted
+     */
+    public List<StationDistance> radiusSearchUnsorted(double targetLat, double targetLon, double radiusKm) {
+        if (radiusKm < 0) {
+            throw new IllegalArgumentException("Radius must be non-negative");
+        }
+        if (root == null) {
+            return new ArrayList<>();
+        }
+        
+        List<StationDistance> results = new ArrayList<>();
+        radiusSearchRecursive(root, targetLat, targetLon, radiusKm, 0, results);
         return results;
     }
     
