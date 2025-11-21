@@ -1,67 +1,77 @@
-    .section .text
+.section .text
     .align  2
     .global sort_array
 
 # int sort_array(int* vec, int length, char order)
 # a0 = vec, a1 = length, a2 = order
-# return a0 = 1 (success) or 0 (error)
+# returns a0 = 1 (success) or 0 (error)
 
 sort_array:
-    addi    sp, sp, -8
-    sw      ra, 4(sp)
-    
-    # Validação de parâmetros
-    beqz    a0, error         # vec == NULL?
-    blez    a1, error         # length <= 0?
+    addi    sp, sp, -16
+    sw      ra, 12(sp)
+
+    # Parameter validation
+    beqz    a0, error
+    blez    a1, error
     li      t0, 1
-    bgt     a2, t0, error     # order > 1?
-    blt     a2, zero, error   # order < 0?
-    
-    # Bubble sort otimizado
-    addi    t0, a1, -1        # i_max = length-1
+    bgt     a2, t0, error
+    blt     a2, zero, error
+
+    # Bubble sort with proper bounds: j = 0 to j < (length - i - 1)
+    addi    t0, a1, -1        # i_max = length - 1
     li      t1, 0             # i = 0
-    
+
 outer_loop:
-    bge     t1, t0, success   # i >= i_max? done
-    li      t2, 0             # j = 0
-    sub     t3, t0, t1        # j_max = i_max - i
-    
+    bge     t1, t0, success   # i >= length-1? done
+
+    # Calculate end pointer for this pass: vec + (length - i - 1) * 4
+    sub     t3, a1, t1        # length - i
+    addi    t3, t3, -1        # length - i - 1
+    slli    t3, t3, 2         # byte offset = (length - i - 1) * 4
+    add     t3, a0, t3        # end_ptr = vec + (length - i - 1) * 4
+
+    # Setup current pointer
+    mv      t2, a0            # current_ptr = vec
+    li      t9, 0             # swap_flag = 0
+
 inner_loop:
-    bge     t2, t3, next_outer
-    slli    t4, t2, 2         # j * 4
-    add     t5, a0, t4        # &vec[j]
-    lw      t6, 0(t5)         # vec[j]
-    lw      t7, 4(t5)         # vec[j+1]
-    
-    # Verificar se precisa swap
+    # Compare current_ptr[0] and current_ptr[1]
+    lw      t6, 0(t2)         # vec[j]
+    lw      t7, 4(t2)         # vec[j+1]
+
+    # Check swap condition
     beqz    a2, descending
-    bgt     t6, t7, do_swap   # Ascending: swap if vec[j] > vec[j+1]
+    bgt     t6, t7, do_swap   # Ascending: swap if greater
     j       no_swap
-    
+
 descending:
-    blt     t6, t7, do_swap   # Descending: swap if vec[j] < vec[j+1]
+    blt     t6, t7, do_swap   # Descending: swap if less
     j       no_swap
-    
+
 do_swap:
-    sw      t7, 0(t5)
-    sw      t6, 4(t5)
-    
+    sw      t7, 0(t2)
+    sw      t6, 4(t2)
+    li      t9, 1             # swap occurred
+
 no_swap:
-    addi    t2, t2, 1         # j++
-    j       inner_loop
-    
+    addi    t2, t2, 4         # current_ptr += 4
+    blt     t2, t3, inner_loop # Continue until current_ptr < end_ptr
+
+check_swaps:
+    beqz    t9, success       # Early exit if no swaps
+
 next_outer:
     addi    t1, t1, 1         # i++
     j       outer_loop
-    
+
 success:
     li      a0, 1
     j       exit
-    
+
 error:
     li      a0, 0
-    
+
 exit:
-    lw      ra, 4(sp)
-    addi    sp, sp, 8
+    lw      ra, 12(sp)
+    addi    sp, sp, 16
     ret
