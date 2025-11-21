@@ -8,6 +8,7 @@ import Repository.StationRepository;
 import Repository.KDTreeRepository;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 /**
@@ -169,8 +170,8 @@ public class GeographicalSearchController {
      * Time Complexity (Worst Case):
      * - Without filters: O(√n + k log k) where n = total stations, k = results
      *   (KD-tree range query with spatial pruning)
-     * - With filters: O(√n + k) where k = results in range
-     *   (Filtering applied during collection, avoiding intermediate list creation)
+     * - With filters: O(√n + m log m) where k = results in range, m ≤ k = filtered results
+     *   (Optimized: filter before sort, reducing sorting from O(k log k) to O(m log m))
      *
      * @param latMin minimum latitude (inclusive, must be between -90 and 90)
      * @param latMax maximum latitude (inclusive, must be between -90 and 90)
@@ -203,8 +204,9 @@ public class GeographicalSearchController {
             int estimatedCapacity = Math.max(16, (int)(allStations.size() * 0.15));
             List<Station> filteredResults = new ArrayList<>(estimatedCapacity);
             
-            // Get all stations in range and filter immediately
-            List<Station> stationsInRange = kdTree.rangeQuery(latMin, latMax, lonMin, lonMax);
+            // Get all stations in range WITHOUT sorting first (optimization)
+            // Filter first, then sort only the filtered results
+            List<Station> stationsInRange = kdTree.rangeQueryUnsorted(latMin, latMax, lonMin, lonMax);
             
             // Filter during single pass - O(k) where k = results in range
             for (Station station : stationsInRange) {
@@ -213,7 +215,9 @@ public class GeographicalSearchController {
                 }
             }
             
-            // Results are already sorted by name from rangeQuery
+            // Sort only the filtered results - O(m log m) where m = filtered results (m ≤ k)
+            // This is better than O(k log k) when m << k
+            filteredResults.sort(Comparator.comparing(Station::getName));
             return filteredResults;
         }
         
@@ -342,10 +346,10 @@ public class GeographicalSearchController {
      * Uses KD-tree for efficient radius search.
      * 
      * Time Complexity (Worst Case):
-     * - Without filters: O(√n + k log k) where n = total stations, k = results in radius
+     * - Without filters: O(n + k log k) where n = total stations, k = results in radius
      *   (KD-tree radius search with spatial pruning)
-     * - With filters: O(√n + k) where k = results in radius
-     *   (Filtering applied with direct loop, avoiding stream overhead)
+     * - With filters: O(n + m log m) where k = results in radius, m ≤ k = filtered results
+     *   (Optimized: filter before sort, reducing sorting from O(k log k) to O(m log m))
      *
      * @param targetLat target latitude (must be between -90 and 90)
      * @param targetLon target longitude (must be between -180 and 180)
@@ -366,12 +370,13 @@ public class GeographicalSearchController {
             throw new IllegalArgumentException("Radius must be non-negative");
         }
         
-        // Get stations in radius from KD-tree - O(√n + k log k)
-        List<KDTree.StationDistance> stationsInRadius = kdTree.radiusSearch(targetLat, targetLon, radiusKm);
-        
         // Optimized: Apply filters with direct loop instead of stream to reduce overhead
         // This avoids stream pipeline creation and intermediate operations
         if (filters != null && filters.hasFilters()) {
+            // Get stations in radius WITHOUT sorting first (optimization)
+            // Filter first, then sort only the filtered results
+            List<KDTree.StationDistance> stationsInRadius = kdTree.radiusSearchUnsorted(targetLat, targetLon, radiusKm);
+            
             // Pre-allocate with estimated capacity to reduce reallocations
             // Estimate: typically 50-80% of stations in radius match filters
             int estimatedCapacity = Math.max(16, (int)(stationsInRadius.size() * 0.7));
@@ -384,10 +389,14 @@ public class GeographicalSearchController {
                 }
             }
             
+            // Sort only the filtered results - O(m log m) where m = filtered results (m ≤ k)
+            // This is better than O(k log k) when m << k
+            filteredResults.sort(Comparator.comparing(KDTree.StationDistance::getDistance));
             return filteredResults;
         }
         
-        return stationsInRadius;
+        // No filters: direct radius search - O(n + k log k)
+        return kdTree.radiusSearch(targetLat, targetLon, radiusKm);
     }
     
     /**
