@@ -3,67 +3,65 @@
     .global sort_array
 
 # int sort_array(int* vec, int length, char order)
-# a0 = vec
-# a1 = length
-# a2 = order
-# return a0 = 1 (ok) or 0 (error)
+# a0 = vec, a1 = length, a2 = order
+# return a0 = 1 (success) or 0 (error)
 
 sort_array:
-    addi    sp, sp, -16
-    sw      ra, 12(sp)
-    sw      s0, 8(sp)
-    mv      s0, sp
-
-    beqz    a0, err
-    blez    a1, err
-
-    # outer i = 0 .. length-2
-    addi    t0, zero, 0         # i = 0
-    addi    t1, a1, -1          # limit = length-1
-
-outer:
-    bge     t0, t1, done
-    addi    t2, zero, 0         # j = 0
-    sub     t3, t1, t0          # inner limit = length-1-i
-
-inner:
+    addi    sp, sp, -8
+    sw      ra, 4(sp)
+    
+    # Validação de parâmetros
+    beqz    a0, error         # vec == NULL?
+    blez    a1, error         # length <= 0?
+    li      t0, 1
+    bgt     a2, t0, error     # order > 1?
+    blt     a2, zero, error   # order < 0?
+    
+    # Bubble sort otimizado
+    addi    t0, a1, -1        # i_max = length-1
+    li      t1, 0             # i = 0
+    
+outer_loop:
+    bge     t1, t0, success   # i >= i_max? done
+    li      t2, 0             # j = 0
+    sub     t3, t0, t1        # j_max = i_max - i
+    
+inner_loop:
     bge     t2, t3, next_outer
-    slli    t4, t2, 2           # offset j*4
-    add     t5, a0, t4          # &vec[j]
-    lw      t6, 0(t5)           # vj
-    lw      t7, 4(t5)           # vj1
-
-    # if order==1 ascending: swap if vj > vj1
-    beqz    a2, check_desc
-    bge     t6, t7, swap
+    slli    t4, t2, 2         # j * 4
+    add     t5, a0, t4        # &vec[j]
+    lw      t6, 0(t5)         # vec[j]
+    lw      t7, 4(t5)         # vec[j+1]
+    
+    # Verificar se precisa swap
+    beqz    a2, descending
+    bgt     t6, t7, do_swap   # Ascending: swap if vec[j] > vec[j+1]
     j       no_swap
-
-check_desc:
-    # descending: swap if vj < vj1
-    ble     t6, t7, swap
+    
+descending:
+    blt     t6, t7, do_swap   # Descending: swap if vec[j] < vec[j+1]
     j       no_swap
-
-swap:
+    
+do_swap:
     sw      t7, 0(t5)
     sw      t6, 4(t5)
-
+    
 no_swap:
-    addi    t2, t2, 1
-    j       inner
-
+    addi    t2, t2, 1         # j++
+    j       inner_loop
+    
 next_outer:
-    addi    t0, t0, 1
-    j       outer
-
-done:
+    addi    t1, t1, 1         # i++
+    j       outer_loop
+    
+success:
     li      a0, 1
-    j       finish
-
-err:
+    j       exit
+    
+error:
     li      a0, 0
-
-finish:
-    lw      ra, 12(sp)
-    lw      s0, 8(sp)
-    addi    sp, sp, 16
+    
+exit:
+    lw      ra, 4(sp)
+    addi    sp, sp, 8
     ret
