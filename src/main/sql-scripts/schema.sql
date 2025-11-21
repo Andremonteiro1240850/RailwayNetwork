@@ -1,162 +1,208 @@
-CREATE TABLE Diesel_Locomotive (
-                                   LocomotiveModellocomotive_model_id varchar2(255) NOT NULL,
-                                   fuelCapacity                       number(10) NOT NULL);
-CREATE TABLE Electric_Locomotive (
-                                     LocomotiveModellocomotive_model_id varchar2(255) NOT NULL,
-                                     Voltage                            number(10) NOT NULL);
-CREATE TABLE Facility (
-                          facility_id          number(10) ,
-                          name                 varchar2(120) NOT NULL UNIQUE,
-                          Facility_typetype_id number(10) NOT NULL,
-                          CONSTRAINT pk_station
-                              PRIMARY KEY (facility_id),
-                          CONSTRAINT ck_station_type
-                              CHECK (Facility_typetype_id IN ('TERMINAL','REGULAR')));
-CREATE TABLE Facility_type (
-                               type_id number(10) ,
-                               name    number(10) NOT NULL UNIQUE,
-                               PRIMARY KEY (type_id));
-CREATE TABLE Freight (
-                         freight_id                   number(10) ,
-                         cargoType                    varchar2(255) NOT NULL,
-                         Traintrain_id                number(10) NOT NULL,
-                         TrainLocomotivelocomotive_id number(10) NOT NULL,
-                         TrainWagon_id                number(10) NOT NULL,
-                         PRIMARY KEY (freight_id));
-CREATE TABLE Gauge (
-                       code  number(10) ,
-                       width number(10) NOT NULL,
-                       CONSTRAINT pk_gauge
-                           PRIMARY KEY (code),
-                       CONSTRAINT ck_gauge_width
-                           CHECK (width BETWEEN 500 AND 2000));
-CREATE TABLE Line (
-                      line_id           number(10) ,
-                      start_facility_id number(10) NOT NULL,
-                      end_facility_id   number(10) NOT NULL,
-                      name              varchar2(255) NOT NULL UNIQUE,
-                      owner_id          varchar2(255) NOT NULL,
-                      Gaugecode         number(10) NOT NULL,
-                      CONSTRAINT pk_line
-                          PRIMARY KEY (line_id),
-                      CONSTRAINT ck_line_terminals
-                          CHECK (start_facility_id <> end_facility_id));
-CREATE TABLE Locomotive (
-                            locomotive_id       number(10) ,
-                            operator_id         varchar2(255) NOT NULL,
-                            entry_year          number(4) NOT NULL,
-                            locomotive_model_id varchar2(255) NOT NULL,
-                            Gaugecode           number(10) NOT NULL,
-                            CONSTRAINT pk_locomotive
-                                PRIMARY KEY (locomotive_id),
-                            CONSTRAINT ck_loco_year
-                                CHECK (entry_year IS NULL OR (entry_year BETWEEN 1900 AND 2100)));
+CREATE TABLE FACILITY_TYPE (
+  TYPE_ID NUMBER(10),
+  NAME    NUMBER(10) NOT NULL UNIQUE,
+  CONSTRAINT PK_FACILITY_TYPE PRIMARY KEY (TYPE_ID)
+);
 
-CREATE TABLE LocomotiveModel (
-                                 locomotive_model_id varchar2(255) NOT NULL,
-                                 power               number(10) NOT NULL,
-                                 acelaration         number(10) NOT NULL,
-                                 make                varchar2(255) NOT NULL,
-                                 lenght              number(10) NOT NULL,
-                                 weight              number(10) NOT NULL,
-                                 heigth              number(10) NOT NULL,
-                                 max_speed           number(10) NOT NULL,
-                                 bogies_number       number(10) NOT NULL,
-                                 PRIMARY KEY (locomotive_model_id));
-CREATE TABLE Operator (
-                          operator_id   varchar2(255) NOT NULL,
-                          name          varchar2(255) NOT NULL,
-                          Traintrain_id number(10) NOT NULL,
-                          CONSTRAINT pk_operator
-                              PRIMARY KEY (operator_id));
-CREATE TABLE Owner (
-                       owner_id varchar2(255) NOT NULL,
-                       name     varchar2(120) NOT NULL,
-                       PRIMARY KEY (owner_id));
-CREATE TABLE Segment (
-                         segment_id             number(10) ,
-                         line_id                number(10) NOT NULL UNIQUE,
-                         length_m               number(10) NOT NULL,
-                         segment_order          number(10) NOT NULL UNIQUE,
-                         electrified_flag       char(1) NOT NULL,
-                         SegmentTypetrackNumber number(10) NOT NULL,
-                         CONSTRAINT pk_segment
-                             PRIMARY KEY (segment_id),
-                         CONSTRAINT ck_seg_length
-                             CHECK (length_m > 0),
-                         CONSTRAINT ck_seg_electr
-                             CHECK (electrified_flag IN ('Y','N')));
+CREATE TABLE GAUGE (
+  CODE  NUMBER(10),
+  WIDTH NUMBER(10) NOT NULL,
+  CONSTRAINT PK_GAUGE PRIMARY KEY (CODE),
+  CONSTRAINT CK_GAUGE_WIDTH CHECK (WIDTH BETWEEN 500 AND 2000)
+);
 
-CREATE TABLE SegmentType (
-                             trackNumber     number(10) ,
-                             number_of_traks varchar2(255) NOT NULL,
-                             PRIMARY KEY (trackNumber));
-CREATE TABLE Train (
-                       train_id                number(10) ,
-                       Locomotivelocomotive_id number(10) NOT NULL,
-                       Wagon_id                number(10) NOT NULL,
-                       operator_id             varchar2(255) NOT NULL,
-                       "date"                  number(10),
-                       time                    number(10),
-                       PRIMARY KEY (train_id));
-CREATE TABLE Train_route (
-                             Facility_id number(10) NOT NULL,
-                             Train_id    number(10) NOT NULL,
-                             "Order"     number(10) NOT NULL,
-                             PRIMARY KEY (Facility_id,
-                                          Train_id));
-CREATE TABLE Wagon (
-                       wagon_id          number(10) ,
-                       operator_id       varchar2(255) NOT NULL,
-                       service_year      number(10) NOT NULL,
-                       WagonModelmodelID number(10) NOT NULL,
-                       Gaugecode         number(10) NOT NULL,
-                       CONSTRAINT pk_wagon
-                           PRIMARY KEY (wagon_id));
-CREATE TABLE Wagon_Freight (
-                               Wagon_id   number(10) NOT NULL,
-                               Freight_id number(10) NOT NULL,
-                               PRIMARY KEY (Wagon_id,
-                                            Freight_id));
-CREATE TABLE WagonModel (
-                            modelID       number(10) ,
-                            name          varchar2(255) NOT NULL,
-                            maker         varchar2(255) NOT NULL,
-                            bogies_number number(10) NOT NULL,
-                            lenght        number(10) NOT NULL,
-                            height        number(10) NOT NULL,
-                            width         number(10) NOT NULL,
-                            weight_t      number(10) NOT NULL,
-                            max_speed     number(10) NOT NULL,
-                            payload       number(10) NOT NULL,
-                            volume        number(10) NOT NULL,
-                            CONSTRAINT pk_wagontype
-                                PRIMARY KEY (modelID),
-                            CONSTRAINT ck_wtype_wgt
-                                CHECK (weight_t > 0),
-                            CONSTRAINT ck_wtype_vol
-                                CHECK (volume > 0));
+CREATE TABLE OWNER (
+  OWNER_ID VARCHAR2(255) NOT NULL,
+  NAME     VARCHAR2(120) NOT NULL,
+  CONSTRAINT PK_OWNER PRIMARY KEY (OWNER_ID)
+);
 
-ALTER TABLE Locomotive ADD CONSTRAINT FKLocomotive501990 FOREIGN KEY (operator_id) REFERENCES Operator (operator_id);
-ALTER TABLE Locomotive ADD CONSTRAINT FKLocomotive52346 FOREIGN KEY (locomotive_model_id) REFERENCES LocomotiveModel (locomotive_model_id);
-ALTER TABLE Train ADD CONSTRAINT FKTrain159120 FOREIGN KEY (Locomotivelocomotive_id) REFERENCES Locomotive (locomotive_id);
-ALTER TABLE Line ADD CONSTRAINT FKLine692292 FOREIGN KEY (owner_id) REFERENCES Owner (owner_id);
-ALTER TABLE Train ADD CONSTRAINT FKTrain508917 FOREIGN KEY (Wagon_id) REFERENCES Wagon (wagon_id);
-ALTER TABLE Wagon ADD CONSTRAINT FKWagon928453 FOREIGN KEY (operator_id) REFERENCES Operator (operator_id);
-ALTER TABLE Segment ADD CONSTRAINT FKSegment159053 FOREIGN KEY (SegmentTypetrackNumber) REFERENCES SegmentType (trackNumber);
-ALTER TABLE Segment ADD CONSTRAINT FKSegment419961 FOREIGN KEY (line_id) REFERENCES Line (line_id);
-ALTER TABLE Locomotive ADD CONSTRAINT FKLocomotive917003 FOREIGN KEY (Gaugecode) REFERENCES Gauge (code);
-ALTER TABLE Wagon ADD CONSTRAINT FKWagon415380 FOREIGN KEY (WagonModelmodelID) REFERENCES WagonModel (modelID);
-ALTER TABLE Line ADD CONSTRAINT FKLine520403 FOREIGN KEY (Gaugecode) REFERENCES Gauge (code);
-ALTER TABLE Line ADD CONSTRAINT FKLine468673 FOREIGN KEY (start_facility_id) REFERENCES Facility (facility_id);
-ALTER TABLE Train ADD CONSTRAINT FKTrain198524 FOREIGN KEY (operator_id) REFERENCES Operator (operator_id);
-ALTER TABLE Diesel_Locomotive ADD CONSTRAINT FKDiesel_Loc890141 FOREIGN KEY (LocomotiveModellocomotive_model_id) REFERENCES LocomotiveModel (locomotive_model_id);
-ALTER TABLE Electric_Locomotive ADD CONSTRAINT FKElectric_L109895 FOREIGN KEY (LocomotiveModellocomotive_model_id) REFERENCES LocomotiveModel (locomotive_model_id);
-ALTER TABLE Wagon ADD CONSTRAINT FKWagon490540 FOREIGN KEY (Gaugecode) REFERENCES Gauge (code);
-ALTER TABLE Facility ADD CONSTRAINT FKFacility132103 FOREIGN KEY (Facility_typetype_id) REFERENCES Facility_type (type_id);
-ALTER TABLE Freight ADD CONSTRAINT FKFreight390491 FOREIGN KEY (Traintrain_id) REFERENCES Train (train_id);
-ALTER TABLE Train_route ADD CONSTRAINT FKTrain_rout123748 FOREIGN KEY (Facility_id) REFERENCES Facility (facility_id);
-ALTER TABLE Train_route ADD CONSTRAINT FKTrain_rout870091 FOREIGN KEY (Train_id) REFERENCES Train (train_id);
-ALTER TABLE Wagon_Freight ADD CONSTRAINT FKWagon_Frei453527 FOREIGN KEY (Wagon_id) REFERENCES Wagon (wagon_id);
-ALTER TABLE Wagon_Freight ADD CONSTRAINT FKWagon_Frei909305 FOREIGN KEY (Freight_id) REFERENCES Freight (freight_id);
-ALTER TABLE Line ADD CONSTRAINT end_facility   FOREIGN KEY (end_facility_id)   REFERENCES FACILITY(facility_id);
+CREATE TABLE WAGONTYPE (
+  TYPE_ID   NUMBER(10),
+  TYPE_NAME VARCHAR2(255) NOT NULL,
+  CONSTRAINT PK_WAGONTYPE PRIMARY KEY (TYPE_ID)
+);
+
+CREATE TABLE BUILDINGTYPE (
+  ID   NUMBER(10),
+  NAME VARCHAR2(255) NOT NULL UNIQUE,
+  CONSTRAINT PK_BUILDINGTYPE PRIMARY KEY (ID)
+);
+
+CREATE TABLE FACILITY (
+  FACILITY_ID          NUMBER(10),
+  NAME                 VARCHAR2(120) NOT NULL,
+  FACILITY_TYPETYPE_ID NUMBER(10) NOT NULL,
+  CONSTRAINT PK_FACILITY PRIMARY KEY (FACILITY_ID),
+  CONSTRAINT UQ_FACILITY_NAME UNIQUE (NAME),
+  CONSTRAINT FK_FACILITY_TYPE FOREIGN KEY (FACILITY_TYPETYPE_ID)
+    REFERENCES FACILITY_TYPE (TYPE_ID)
+);
+
+CREATE TABLE LINE (
+  LINE_ID           NUMBER(10),
+  START_FACILITY_ID NUMBER(10) NOT NULL,
+  END_FACILITY_ID   NUMBER(10) NOT NULL,
+  NAME              VARCHAR2(255) NOT NULL,
+  OWNER_ID          VARCHAR2(255) NOT NULL,
+  GAUGECODE         NUMBER(10) NOT NULL,
+  CONSTRAINT PK_LINE PRIMARY KEY (LINE_ID),
+  CONSTRAINT UQ_LINE_NAME UNIQUE (NAME),
+  CONSTRAINT CK_LINE_TERMINALS CHECK (START_FACILITY_ID <> END_FACILITY_ID),
+  CONSTRAINT FK_LINE_OWNER  FOREIGN KEY (OWNER_ID)  REFERENCES OWNER (OWNER_ID),
+  CONSTRAINT FK_LINE_GAUGE  FOREIGN KEY (GAUGECODE) REFERENCES GAUGE (CODE),
+  CONSTRAINT FK_LINE_START  FOREIGN KEY (START_FACILITY_ID) REFERENCES FACILITY (FACILITY_ID),
+  CONSTRAINT FK_LINE_END    FOREIGN KEY (END_FACILITY_ID)   REFERENCES FACILITY (FACILITY_ID)
+);
+
+CREATE TABLE SEGMENTTYPE (
+  TRACKNUMBER     NUMBER(10),
+  NUMBER_OF_TRAKS VARCHAR2(255) NOT NULL,
+  CONSTRAINT PK_SEGMENTTYPE PRIMARY KEY (TRACKNUMBER)
+);
+
+CREATE TABLE SEGMENT (
+  SEGMENT_ID             NUMBER(10),
+  LINE_ID                NUMBER(10) NOT NULL,
+  LENGTH_M               NUMBER(10) NOT NULL,
+  SEGMENT_ORDER          NUMBER(10) NOT NULL,
+  ELECTRIFIED_FLAG       CHAR(1)    NOT NULL,
+  SEGMENTTYPETRACKNUMBER NUMBER(10) NOT NULL,
+  CONSTRAINT PK_SEGMENT PRIMARY KEY (SEGMENT_ID),
+  CONSTRAINT CK_SEG_LENGTH CHECK (LENGTH_M > 0),
+  CONSTRAINT CK_SEG_ELECTR  CHECK (ELECTRIFIED_FLAG IN ('Y','N')),
+  CONSTRAINT UQ_SEGMENT_ORDER UNIQUE (SEGMENT_ORDER),
+  CONSTRAINT FK_SEG_LINE FOREIGN KEY (LINE_ID) REFERENCES LINE (LINE_ID),
+  CONSTRAINT FK_SEG_TYPE FOREIGN KEY (SEGMENTTYPETRACKNUMBER) REFERENCES SEGMENTTYPE (TRACKNUMBER)
+);
+
+CREATE TABLE OPERATOR (
+  OPERATOR_ID   VARCHAR2(255) NOT NULL,
+  NAME          VARCHAR2(255) NOT NULL,
+  CONSTRAINT PK_OPERATOR PRIMARY KEY (OPERATOR_ID)
+);
+
+CREATE TABLE LOCOMOTIVEMODEL (
+  LOCOMOTIVE_MODEL_ID VARCHAR2(255) NOT NULL,
+  POWER               NUMBER(10) NOT NULL,
+  ACELARATION         NUMBER(10) NOT NULL,
+  MAKE                VARCHAR2(255) NOT NULL,
+  LENGHT              NUMBER(10) NOT NULL,
+  WEIGHT              NUMBER(10) NOT NULL,
+  HEIGTH              NUMBER(10) NOT NULL,
+  MAX_SPEED           NUMBER(10) NOT NULL,
+  BOGIES_NUMBER       NUMBER(10) NOT NULL,
+  CONSTRAINT PK_LOCOMOTIVEMODEL PRIMARY KEY (LOCOMOTIVE_MODEL_ID)
+);
+
+CREATE TABLE LOCOMOTIVE (
+  LOCOMOTIVE_ID       NUMBER(10),
+  OPERATOR_ID         VARCHAR2(255) NOT NULL,
+  ENTRY_YEAR          NUMBER(4) NOT NULL,
+  LOCOMOTIVE_MODEL_ID VARCHAR2(255) NOT NULL,
+  GAUGECODE           NUMBER(10) NOT NULL,
+  CONSTRAINT PK_LOCOMOTIVE PRIMARY KEY (LOCOMOTIVE_ID),
+  CONSTRAINT CK_LOCO_YEAR CHECK (ENTRY_YEAR BETWEEN 1900 AND 2100),
+  CONSTRAINT FK_LOCO_OPERATOR FOREIGN KEY (OPERATOR_ID)         REFERENCES OPERATOR (OPERATOR_ID),
+  CONSTRAINT FK_LOCO_MODEL    FOREIGN KEY (LOCOMOTIVE_MODEL_ID) REFERENCES LOCOMOTIVEMODEL (LOCOMOTIVE_MODEL_ID),
+  CONSTRAINT FK_LOCO_GAUGE    FOREIGN KEY (GAUGECODE)           REFERENCES GAUGE (CODE)
+);
+
+CREATE TABLE ELECTRIC_LOCOMOTIVE (
+  LOCOMOTIVEMODELLOCOMOTIVE_MODEL_ID VARCHAR2(255) NOT NULL,
+  VOLTAGE                            NUMBER(10) NOT NULL,
+  CONSTRAINT FK_EL_MODEL FOREIGN KEY (LOCOMOTIVEMODELLOCOMOTIVE_MODEL_ID)
+    REFERENCES LOCOMOTIVEMODEL (LOCOMOTIVE_MODEL_ID)
+);
+
+CREATE TABLE DIESEL_LOCOMOTIVE (
+  LOCOMOTIVEMODELLOCOMOTIVE_MODEL_ID VARCHAR2(255) NOT NULL,
+  FUELCAPACITY                       NUMBER(10) NOT NULL,
+  CONSTRAINT FK_DL_MODEL FOREIGN KEY (LOCOMOTIVEMODELLOCOMOTIVE_MODEL_ID)
+    REFERENCES LOCOMOTIVEMODEL (LOCOMOTIVE_MODEL_ID)
+);
+
+CREATE TABLE WAGONMODEL (
+  MODELID          NUMBER(10),
+  NAME             VARCHAR2(255) NOT NULL,
+  MAKER            VARCHAR2(255) NOT NULL,
+  BOGIES_NUMBER    NUMBER(10) NOT NULL,
+  LENGHT           NUMBER(10) NOT NULL,
+  HEIGHT           NUMBER(10) NOT NULL,
+  WIDTH            NUMBER(10) NOT NULL,
+  WEIGHT_T         NUMBER(10) NOT NULL,
+  MAX_SPEED        NUMBER(10) NOT NULL,
+  PAYLOAD          NUMBER(10) NOT NULL,
+  VOLUME           NUMBER(10) NOT NULL,
+  WAGONTYPETYPE_ID NUMBER(10) NOT NULL,
+  CONSTRAINT PK_WAGONMODEL PRIMARY KEY (MODELID),
+  CONSTRAINT CK_WTYPE_WGT CHECK (WEIGHT_T > 0),
+  CONSTRAINT CK_WTYPE_VOL CHECK (VOLUME > 0),
+  CONSTRAINT FK_WMODEL_TYPE FOREIGN KEY (WAGONTYPETYPE_ID) REFERENCES WAGONTYPE (TYPE_ID)
+);
+
+CREATE TABLE WAGON (
+  WAGON_ID          NUMBER(10),
+  OPERATOR_ID       VARCHAR2(255) NOT NULL,
+  SERVICE_YEAR      NUMBER(10) NOT NULL,
+  WAGONMODELMODELID NUMBER(10) NOT NULL,
+  GAUGECODE         NUMBER(10) NOT NULL,
+  CONSTRAINT PK_WAGON PRIMARY KEY (WAGON_ID),
+  CONSTRAINT FK_WAGON_OPERATOR FOREIGN KEY (OPERATOR_ID)       REFERENCES OPERATOR (OPERATOR_ID),
+  CONSTRAINT FK_WAGON_MODEL    FOREIGN KEY (WAGONMODELMODELID) REFERENCES WAGONMODEL (MODELID),
+  CONSTRAINT FK_WAGON_GAUGE    FOREIGN KEY (GAUGECODE)         REFERENCES GAUGE (CODE)
+);
+
+CREATE TABLE TRAIN (
+  TRAIN_ID                 NUMBER(10),
+  LOCOMOTIVELOCOMOTIVE_ID  NUMBER(10) NOT NULL,
+  WAGON_ID                 NUMBER(10) NOT NULL,
+  OPERATOR_ID              VARCHAR2(255) NOT NULL,
+  "DATE"                   NUMBER(10),
+  TIME                     NUMBER(10),
+  CONSTRAINT PK_TRAIN PRIMARY KEY (TRAIN_ID),
+  CONSTRAINT FK_TRAIN_LOCO     FOREIGN KEY (LOCOMOTIVELOCOMOTIVE_ID) REFERENCES LOCOMOTIVE (LOCOMOTIVE_ID),
+  CONSTRAINT FK_TRAIN_WAGON    FOREIGN KEY (WAGON_ID)                 REFERENCES WAGON (WAGON_ID),
+  CONSTRAINT FK_TRAIN_OPERATOR FOREIGN KEY (OPERATOR_ID)              REFERENCES OPERATOR (OPERATOR_ID)
+);
+
+CREATE TABLE FREIGHT (
+  FREIGHT_ID                   NUMBER(10),
+  CARGOTYPE                    VARCHAR2(255) NOT NULL,
+  TRAINTRAIN_ID                NUMBER(10) NOT NULL,
+  TRAINLOCOMOTIVELOCOMOTIVE_ID NUMBER(10) NOT NULL,
+  TRAINWAGON_ID                NUMBER(10) NOT NULL,
+  CONSTRAINT PK_FREIGHT PRIMARY KEY (FREIGHT_ID),
+  CONSTRAINT FK_FREIGHT_TRAIN  FOREIGN KEY (TRAINTRAIN_ID)                REFERENCES TRAIN (TRAIN_ID),
+  CONSTRAINT FK_FREIGHT_LOCO   FOREIGN KEY (TRAINLOCOMOTIVELOCOMOTIVE_ID) REFERENCES LOCOMOTIVE (LOCOMOTIVE_ID),
+  CONSTRAINT FK_FREIGHT_WAGON  FOREIGN KEY (TRAINWAGON_ID)                REFERENCES WAGON (WAGON_ID)
+);
+
+CREATE TABLE WAGON_FREIGHT (
+  WAGON_ID   NUMBER(10) NOT NULL,
+  FREIGHT_ID NUMBER(10) NOT NULL,
+  CONSTRAINT PK_WAGON_FREIGHT PRIMARY KEY (WAGON_ID, FREIGHT_ID),
+  CONSTRAINT FK_WF_WAGON   FOREIGN KEY (WAGON_ID)   REFERENCES WAGON (WAGON_ID),
+  CONSTRAINT FK_WF_FREIGHT FOREIGN KEY (FREIGHT_ID) REFERENCES FREIGHT (FREIGHT_ID)
+);
+
+CREATE TABLE TRAIN_ROUTE (
+  FACILITY_ID NUMBER(10) NOT NULL,
+  TRAIN_ID    NUMBER(10) NOT NULL,
+  "ORDER"     NUMBER(10) NOT NULL,
+  CONSTRAINT PK_TRAIN_ROUTE PRIMARY KEY (FACILITY_ID, TRAIN_ID),
+  CONSTRAINT FK_TR_FACILITY FOREIGN KEY (FACILITY_ID) REFERENCES FACILITY (FACILITY_ID),
+  CONSTRAINT FK_TR_TRAIN    FOREIGN KEY (TRAIN_ID)    REFERENCES TRAIN (TRAIN_ID)
+);
+
+CREATE TABLE BUILDING (
+  ID                   NUMBER(10),
+  NAME                 VARCHAR2(255) NOT NULL,
+  BUILDING_NUMBER      NUMBER(10) NOT NULL,
+  BUILDINGTYPEID       NUMBER(10) NOT NULL,
+  FACILITYFACILITY_ID  NUMBER(10) NOT NULL,
+  CONSTRAINT PK_BUILDING PRIMARY KEY (ID),
+  CONSTRAINT UQ_BUILDING_NAME UNIQUE (NAME),
+  CONSTRAINT FK_BUILDING_TYPE     FOREIGN KEY (BUILDINGTYPEID)      REFERENCES BUILDINGTYPE (ID),
+  CONSTRAINT FK_BUILDING_FACILITY FOREIGN KEY (FACILITYFACILITY_ID) REFERENCES FACILITY (FACILITY_ID)
+);

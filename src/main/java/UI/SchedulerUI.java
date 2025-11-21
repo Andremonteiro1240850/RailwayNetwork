@@ -1011,19 +1011,21 @@ public class SchedulerUI {
             routeStr.append(selectedStations.get(i).getId());
         }
 
-        System.out.println("\n" + StringUtils.repeat("-", 80));
+        // Table width: 12 + 1 + 30 + 1 + 20 + 1 + 15 + 1 + 15 = 96 characters
+        int tableWidth = 96;
+        System.out.println("\n" + StringUtils.repeat("-", tableWidth));
         System.out.println("TRAIN: " + schedule.getTrainId());
         System.out.println("ROUTE: " + routeStr.toString());
         System.out.println("DEPARTURE TIME: " + departureTimeStr);
         System.out.println("TOTAL TRAVEL TIME: " + 
                          TravelCalculationService.formatTravelTime(schedule.getTotalTravelTimeHours()));
-        System.out.println(StringUtils.repeat("-", 80));
+        System.out.println(StringUtils.repeat("-", tableWidth));
         System.out.println();
         System.out.println("ESTIMATED PASSAGE TIMES PER POINT:");
-        System.out.println(StringUtils.repeat("-", 80));
+        System.out.println(StringUtils.repeat("-", tableWidth));
         System.out.printf("%-12s %-30s %-20s %-15s %-15s%n", 
                          "Point", "Station Name", "Estimated Time", "Travel Time", "Distance");
-        System.out.println(StringUtils.repeat("-", 80));
+        System.out.println(StringUtils.repeat("-", tableWidth));
 
         // Create a map of station ID to ETA for quick lookup
         java.util.Map<String, DispatchReport.TrainSchedule.StationETA> etaMap = new java.util.HashMap<>();
@@ -1085,7 +1087,7 @@ public class SchedulerUI {
             previousStation = station;
         }
         
-        System.out.println(StringUtils.repeat("-", 80));
+        System.out.println(StringUtils.repeat("-", tableWidth));
         System.out.println("TRAIN " + schedule.getTrainId());
         
         double totalRouteDistanceKm = calculateTotalRouteDistance(routeWithETAs);
@@ -1280,17 +1282,47 @@ public class SchedulerUI {
         if (conflict.hasCrossingDetails()) {
             System.out.println();
             if (conflict.getResolution() == DispatchReport.Conflict.ResolutionType.CROSS_AT_STATION_WITH_SIDING) {
+                // Find the other train and its destination station
+                String otherTrainId = conflict.getTrain1Id().equals(conflict.getWaitingTrainId()) 
+                    ? conflict.getTrain2Id() 
+                    : conflict.getTrain1Id();
+                String otherTrainDestinationStationName = "the destination station"; // Default
+                
+                // Find the destination station for the other train
+                for (DispatchReport.TrainSchedule schedule : report.getTrainSchedules()) {
+                    if (schedule.getTrainId().equals(otherTrainId)) {
+                        // Find the segment where the conflict occurs for the other train
+                        for (DispatchReport.TrainSchedule.SegmentTime segmentTime : schedule.getSegmentTimes()) {
+                            if (segmentTime.getSegmentId().equals(conflict.getSegmentId())) {
+                                // The destination station is the end station of this segment
+                                otherTrainDestinationStationName = segmentTime.getEndStation().getName();
+                                break;
+                            }
+                        }
+                        break;
+                    }
+                }
+                
                 System.out.println("   Resolution: Train " + conflict.getWaitingTrainId() + 
                                  " must enter the siding at station " + conflict.getCrossingStationId() +
-                                 " to allow Train " + (conflict.getTrain1Id().equals(conflict.getWaitingTrainId()) ? 
-                                 conflict.getTrain2Id() : conflict.getTrain1Id()) + " to pass first.");
+                                 " until Train " + otherTrainId + 
+                                 " arrives at station " + otherTrainDestinationStationName + ".");
             } else if (conflict.getResolution() == DispatchReport.Conflict.ResolutionType.WAIT_AT_PREVIOUS_STATION) {
-                // Find the previous station name for the waiting train
+                // Find the previous station name for the waiting train and the destination station for the other train
                 String previousStationName = "the previous station"; // Default
+                String otherTrainId = null;
+                String otherTrainDestinationStationName = "the destination station"; // Default
+                
                 if (conflict.getWaitingTrainId() != null) {
+                    // Find the other train (the one that is not waiting)
+                    otherTrainId = conflict.getTrain1Id().equals(conflict.getWaitingTrainId()) 
+                        ? conflict.getTrain2Id() 
+                        : conflict.getTrain1Id();
+                    
+                    // Find the waiting train's previous station and the other train's destination station
                     for (DispatchReport.TrainSchedule schedule : report.getTrainSchedules()) {
                         if (schedule.getTrainId().equals(conflict.getWaitingTrainId())) {
-                            // Find the segment where the conflict occurs
+                            // Find the segment where the conflict occurs for the waiting train
                             for (DispatchReport.TrainSchedule.SegmentTime segmentTime : schedule.getSegmentTimes()) {
                                 if (segmentTime.getSegmentId().equals(conflict.getSegmentId())) {
                                     // The previous station is the start station of this segment
@@ -1298,14 +1330,23 @@ public class SchedulerUI {
                                     break;
                                 }
                             }
-                            break;
+                        } else if (schedule.getTrainId().equals(otherTrainId)) {
+                            // Find the segment where the conflict occurs for the other train
+                            for (DispatchReport.TrainSchedule.SegmentTime segmentTime : schedule.getSegmentTimes()) {
+                                if (segmentTime.getSegmentId().equals(conflict.getSegmentId())) {
+                                    // The destination station is the end station of this segment
+                                    otherTrainDestinationStationName = segmentTime.getEndStation().getName();
+                                    break;
+                                }
+                            }
                         }
                     }
                 }
+                
                 System.out.println("   Resolution: Train " + conflict.getWaitingTrainId() + 
                                  " must wait at station " + previousStationName + 
-                                 " before entering segment " + conflict.getSegmentId() + 
-                                 " until the other train has cleared the segment.");
+                                 " until Train " + otherTrainId + 
+                                 " arrives at station " + otherTrainDestinationStationName + ".");
             } else if (conflict.getResolution() == DispatchReport.Conflict.ResolutionType.UNSOLVABLE) {
                 System.out.println("   Resolution: UNSOLVABLE - Both trains arrive simultaneously at the segment.");
                 System.out.println("   Manual intervention required to reschedule one of the trains.");
