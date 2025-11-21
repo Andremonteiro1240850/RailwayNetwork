@@ -48,9 +48,11 @@
         - trainId: String
         - locomotives: List<Locomotive>
         - wagons: List<Wagon>
+        + TrainConfiguration(trainId: String, locomotives: List<Locomotive>, wagons: List<Wagon>)
         + String: getTrainId()
         + List<Locomotive>: getLocomotives()
         + List<Wagon>: getWagons()
+        + String: toString()
     }
     
     class TravelTimeController {
@@ -77,6 +79,7 @@
         - departurePlannedDateTime: LocalDateTime
         - totalWeight: double
         + Train(trainId: String, route: List<Facility>, selectedStations: List<Facility>, locomotives: List<Locomotive>, wagons: List<Wagon>, departurePlannedDateTime: LocalDateTime, totalWeight: double)
+        + Train(trainId: String, route: List<Facility>, locomotives: List<Locomotive>, wagons: List<Wagon>, departurePlannedDateTime: LocalDateTime, totalWeight: double)
         + String: getTrainId()
         + List<Facility>: getRoute()
         + List<Facility>: getSelectedStations()
@@ -87,6 +90,9 @@
         + double: getTotalWeight()
         + double: getEffectiveMaxSpeedKmH()
         + double: calculateEffectiveSpeed(segment: LineSegment)
+        + boolean: equals(obj: Object)
+        + int: hashCode()
+        + String: toString()
     }
     
     class SchedulerService {
@@ -96,6 +102,8 @@
         + DispatchReport: scheduleTrains(trains: List<Train>)
         - DispatchReport.TrainSchedule: calculateTrainSchedule(train: Train)
         - List<DispatchReport.Conflict>: detectConflicts(schedules: List<DispatchReport.TrainSchedule>)
+        - List<Train>: resolveDepartureTimeConflicts(trains: List<Train>)
+        - List<DispatchReport.Conflict>: detectDepartureTimeConflicts(originalTrains: List<Train>, adjustedTrains: List<Train>)
         - DispatchReport.Summary: generateSummary(schedules: List<DispatchReport.TrainSchedule>, conflicts: List<DispatchReport.Conflict>)
         - LineSegment: findConnectingSegment(startStation: Facility, endStation: Facility)
     }
@@ -116,6 +124,7 @@
         - segmentTimes: List<SegmentTime>
         - selectedStations: List<Facility>
         - totalTravelTimeHours: double
+        + TrainSchedule(trainId: String, routeWithETAs: List<StationETA>, segmentTimes: List<SegmentTime>, selectedStations: List<Facility>, totalTravelTimeHours: double)
         + String: getTrainId()
         + List<StationETA>: getRouteWithETAs()
         + List<SegmentTime>: getSegmentTimes()
@@ -126,12 +135,14 @@
     class "DispatchReport.TrainSchedule.StationETA" as StationETA {
         - station: Facility
         - eta: LocalDateTime
-        - travelTimeHours: double
+        - travelTimeFromPreviousHours: double
         - segmentId: String
+        + StationETA(station: Facility, eta: LocalDateTime, travelTimeFromPreviousHours: double, segmentId: String)
         + Facility: getStation()
         + LocalDateTime: getEta()
-        + double: getTravelTimeHours()
+        + double: getTravelTimeFromPreviousHours()
         + String: getSegmentId()
+        + String: toString()
     }
     
     class "DispatchReport.TrainSchedule.SegmentTime" as SegmentTime {
@@ -139,14 +150,16 @@
         - startStation: Facility
         - endStation: Facility
         - travelTimeHours: double
-        - startTime: LocalDateTime
-        - endTime: LocalDateTime
+        - segmentStartTime: LocalDateTime
+        - segmentEndTime: LocalDateTime
+        + SegmentTime(segmentId: String, startStation: Facility, endStation: Facility, travelTimeHours: double, segmentStartTime: LocalDateTime, segmentEndTime: LocalDateTime)
         + String: getSegmentId()
         + Facility: getStartStation()
         + Facility: getEndStation()
         + double: getTravelTimeHours()
-        + LocalDateTime: getStartTime()
-        + LocalDateTime: getEndTime()
+        + LocalDateTime: getSegmentStartTime()
+        + LocalDateTime: getSegmentEndTime()
+        + String: toString()
     }
     
     class "DispatchReport.Conflict" as Conflict {
@@ -159,8 +172,10 @@
         - crossingStationId: String
         - waitingTrainId: String
         - waitTimeMinutes: Long
-        + enum ConflictType
-        + enum ResolutionType
+        + enum ConflictType {OVERLAPPING_SEGMENT, UNSOLVABLE}
+        + enum ResolutionType {WAIT_AT_PREVIOUS_STATION, CROSS_AT_STATION_WITH_SIDING, REVERSE_ORDER, UNSOLVABLE, NONE}
+        + Conflict(train1Id: String, train2Id: String, segmentId: String, conflictType: ConflictType, resolution: ResolutionType, description: String)
+        + Conflict(train1Id: String, train2Id: String, segmentId: String, conflictType: ConflictType, resolution: ResolutionType, description: String, crossingStationId: String, waitingTrainId: String, waitTimeMinutes: Long)
         + String: getTrain1Id()
         + String: getTrain2Id()
         + String: getSegmentId()
@@ -171,6 +186,9 @@
         + String: getWaitingTrainId()
         + Long: getWaitTimeMinutes()
         + boolean: hasCrossingDetails()
+        + boolean: equals(obj: Object)
+        + int: hashCode()
+        + String: toString()
     }
     
     class "DispatchReport.Summary" as Summary {
@@ -225,6 +243,11 @@
         + String: getLocation()
         + Double: getLatitude()
         + Double: getLongitude()
+        + Country: getCountry()
+        + Boolean: isCity()
+        + Boolean: isMainStation()
+        + String: getTimeZone()
+        + String: getTimeZoneGroup()
     }
     
     class LineSegment {
@@ -303,12 +326,16 @@ RailwayDataLoader --> LineSegment : creates
 
 ' Composição: DispatchController possui SchedulerService
 ' TravelTimeController possui TravelCalculationService
-' DispatchReport contém TrainSchedule, Conflict e Summary (classes internas)
-' TrainSchedule contém StationETA e SegmentTime (classes internas)
+' DispatchReport contém TrainSchedule, Conflict e Summary (classes internas estáticas)
+' TrainSchedule contém StationETA e SegmentTime (classes internas estáticas)
+' DispatchController contém TrainConfiguration (classe interna estática)
 ' Cardinalidade: Train contém muitas Locomotive e Wagon
-' Train tem uma rota (List<Facility>) e uma data/hora de partida planeada
+' Train tem uma rota completa (route) e estações selecionadas (selectedStations)
+' Train tem uma data/hora de partida planeada (departurePlannedDateTime)
 ' SchedulerService usa TravelCalculationService para calcular tempos de viagem
+' SchedulerService resolve conflitos de partida automaticamente ajustando horários
 ' Conflict representa conflitos entre dois trains no mesmo segmento (single-track)
+' Conflict pode incluir detalhes de crossing operations (crossingStationId, waitingTrainId, waitTimeMinutes)
 ' RailwayDataLoader carrega dados de CSV (locomotives, wagons, stations, line segments)
 
 @enduml
