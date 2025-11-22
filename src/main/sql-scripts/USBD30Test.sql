@@ -1,24 +1,39 @@
+SET SERVEROUTPUT ON;
+
 DECLARE
   v_cur           SYS_REFCURSOR;
-  v_facility_id   FACILITY.FACILITY_ID%TYPE;
-  v_facility_name FACILITY.NAME%TYPE;
-  v_facility_type FACILITY_TYPE.NAME%TYPE;
+  v_id            facility.facility_id%TYPE;
+  v_name          facility.name%TYPE;
+  v_type          facility_type.name%TYPE;
+
+  v_count   PLS_INTEGER := 0;
+  has_8     BOOLEAN := FALSE;
+  has_14    BOOLEAN := FALSE;
+  has_17    BOOLEAN := FALSE;
 BEGIN
-  v_cur := fn_usbd30_facilities_silos_sem_warehouses();
+  v_cur := fn_usbd30_facilities_silos_sem_warehouses;
 
   LOOP
-    FETCH v_cur INTO v_facility_id, v_facility_name, v_facility_type;
+    FETCH v_cur INTO v_id, v_name, v_type;
     EXIT WHEN v_cur%NOTFOUND;
 
-    DBMS_OUTPUT.PUT_LINE('Facility ID: ' || v_facility_id ||
-                         ' | Nome: ' || v_facility_name ||
-                         ' | Tipo: ' || v_facility_type);
-  END LOOP;
+    v_count := v_count + 1;
 
+    IF v_id = 8  THEN has_8  := TRUE; END IF;
+    IF v_id = 14 THEN has_14 := TRUE; END IF;
+    IF v_id = 17 THEN has_17 := TRUE; END IF; -- should remain FALSE
+  END LOOP;
   CLOSE v_cur;
 
-EXCEPTION
-  WHEN OTHERS THEN
-    DBMS_OUTPUT.PUT_LINE('Erro: ' || SQLERRM);
+  IF v_count >= 1 AND has_8 AND has_14 AND NOT has_17 THEN
+    DBMS_OUTPUT.PUT_LINE('USBD30 TEST: OK  (rows=' || v_count || ')');
+  ELSE
+    DBMS_OUTPUT.PUT_LINE(
+      'USBD30 TEST: FAIL -> rows=' || v_count ||
+      ', has_8='  || CASE WHEN has_8  THEN 'Y' ELSE 'N' END ||
+      ', has_14=' || CASE WHEN has_14 THEN 'Y' ELSE 'N' END ||
+      ', has_17=' || CASE WHEN has_17 THEN 'Y' ELSE 'N' END
+    );
+  END IF;
 END;
 /
