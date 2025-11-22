@@ -1,26 +1,29 @@
-CREATE OR REPLACE FUNCTION function_usbd25_list_facilities_without_stop
-RETURN SYS_REFCURSOR
+CREATE OR REPLACE FUNCTION FUNCTION_USBD25_LIST_FACILITIES_WITHOUT_STOP
+    RETURN SYS_REFCURSOR
 AS
-    cursor_train_route_facilities_without_stop SYS_REFCURSOR;
-    automatically_selected_train_identifier NUMBER;
+    CURSOR_TRAIN_ROUTE_FACILITIES_WITHOUT_STOP SYS_REFCURSOR;
+    AUTOMATICALLY_SELECTED_TRAIN_IDENTIFIER NUMBER;
 BEGIN
-SELECT train_id
-INTO automatically_selected_train_identifier
-FROM Train
-ORDER BY "date" DESC, time DESC
-    FETCH FIRST 1 ROWS ONLY;
+    -- Seleciona o último TRAIN pelo campo "DATE" e TIME
+    SELECT TRAIN.TRAIN_ID
+    INTO AUTOMATICALLY_SELECTED_TRAIN_IDENTIFIER
+    FROM TRAIN
+    ORDER BY TRAIN."DATE" DESC, TRAIN.TIME DESC
+        FETCH FIRST 1 ROWS ONLY;
 
-OPEN cursor_train_route_facilities_without_stop FOR
-SELECT
-    Facility.facility_id,
-    Facility.name,
-    Train_route."Order"
-FROM Train_route
-         INNER JOIN Facility
-                    ON Facility.facility_id = Train_route.Facility_id
-WHERE Train_route.Train_id = automatically_selected_train_identifier
-ORDER BY Train_route."Order";
+    -- Abre o cursor com a lista de facilities do TRAIN selecionado
+    OPEN CURSOR_TRAIN_ROUTE_FACILITIES_WITHOUT_STOP FOR
+        SELECT
+            FACILITY.FACILITY_ID,
+            FACILITY.NAME,
+            TRAIN_ROUTE."ORDER"
+        FROM TRAIN_ROUTE
+                 INNER JOIN FACILITY
+                            ON FACILITY.FACILITY_ID = TRAIN_ROUTE.FACILITY_ID
+        WHERE TRAIN_ROUTE.TRAIN_ID = AUTOMATICALLY_SELECTED_TRAIN_IDENTIFIER
+        ORDER BY TRAIN_ROUTE."ORDER";
 
-RETURN cursor_train_route_facilities_without_stop;
+    RETURN CURSOR_TRAIN_ROUTE_FACILITIES_WITHOUT_STOP;
 END;
 /
+
