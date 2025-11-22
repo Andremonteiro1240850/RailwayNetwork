@@ -387,13 +387,16 @@ class StationTest {
     }
 
     @Test
-    void testToString_EmptyOrNullFields() {
-        Station s = new Station(null, 0.0, 0.0, null, null, null, false, false, false);
+    void testToString_WithEmptyStringFields() {
+        // Testa toString com strings vazias (válido) ao invés de null (inválido)
+        Station s = new Station("", 0.0, 0.0, "", "", "", false, false, false);
         String result = s.toString();
 
-        assertNotNull(result, "toString deve funcionar com campos null");
-        assertTrue(result.contains("name=null"),
-                "toString deve representar campos null");
+        assertNotNull(result, "toString deve funcionar com campos vazios");
+        assertTrue(result.contains("name=''"),
+                "toString deve representar campos vazios");
+        assertTrue(result.contains("country=''"),
+                "toString deve representar país vazio");
     }
 
     @Test

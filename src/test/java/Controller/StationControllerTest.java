@@ -2,6 +2,7 @@ package Controller;
 
 import Domain.Station;
 import Repository.StationRepository;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -16,17 +17,33 @@ import static org.junit.jupiter.api.Assertions.*;
 class StationControllerTest {
 
     private StationController controller;
-    private StationRepository repository;
-    private static final String CSV_FILE_PATH = "src/test/resources/stations.csv"; // Ajusta o caminho conforme necessário
+
+    // Repository compartilhado entre TODOS os testes
+    private static StationRepository sharedRepository;
+
+    private static final String CSV_FILE_PATH = "train_station_dataset/train_stations_europe.csv";
+
+    @BeforeAll
+    static void loadCSVOnce() {
+        long start = System.currentTimeMillis();
+
+        // Carrega CSV (354ms)
+        List<Station> stations = loadStationsFromCSV();
+
+        // Cria repository UMA ÚNICA VEZ (134s)
+        sharedRepository = new StationRepository(stations);
+
+        long totalTime = System.currentTimeMillis() - start;
+        System.out.println("✓ Setup completo: " + totalTime + "ms (" + stations.size() + " estações)");
+    }
 
     @BeforeEach
     void setUp() {
-        List<Station> stations = loadStationsFromCSV();
-        repository = new StationRepository(stations);
-        controller = new StationController(repository);
+        // Reutiliza o repository existente - INSTANTÂNEO!
+        controller = new StationController(sharedRepository);
     }
 
-    private List<Station> loadStationsFromCSV() {
+    private static List<Station> loadStationsFromCSV() {
         List<Station> stations = new ArrayList<>();
 
         try (BufferedReader br = new BufferedReader(new FileReader(CSV_FILE_PATH))) {
@@ -34,18 +51,15 @@ class StationControllerTest {
             boolean isFirstLine = true;
 
             while ((line = br.readLine()) != null) {
-                // Ignorar header
                 if (isFirstLine) {
                     isFirstLine = false;
                     continue;
                 }
 
-                // Parse CSV considerando campos com vírgulas entre aspas
                 String[] values = parseCSVLine(line);
 
-                // Validar que tem todos os campos necessários
                 if (values.length < 9) {
-                    continue; // Ignora linhas incompletas
+                    continue;
                 }
 
                 try {
@@ -59,7 +73,6 @@ class StationControllerTest {
                     boolean isMainStation = Boolean.parseBoolean(values[7].trim());
                     boolean isAirport = Boolean.parseBoolean(values[8].trim());
 
-                    // Ignora linhas com coordenadas vazias ou inválidas
                     if (latStr.isEmpty() || lonStr.isEmpty()) {
                         continue;
                     }
@@ -67,13 +80,11 @@ class StationControllerTest {
                     double latitude = Double.parseDouble(latStr);
                     double longitude = Double.parseDouble(lonStr);
 
-                    // Criar Station com todos os campos
                     Station station = new Station(stationName, latitude, longitude, country,
                             timeZone, timeZoneGroup, isCity, isMainStation, isAirport);
                     stations.add(station);
 
                 } catch (NumberFormatException e) {
-                    // Ignora linhas com coordenadas inválidas
                     continue;
                 }
             }
@@ -84,7 +95,7 @@ class StationControllerTest {
         return stations;
     }
 
-    private String[] parseCSVLine(String line) {
+    private static String[] parseCSVLine(String line) {
         List<String> result = new ArrayList<>();
         boolean inQuotes = false;
         StringBuilder currentField = new StringBuilder();
@@ -150,7 +161,6 @@ class StationControllerTest {
 
     @Test
     void getStationByLatitude_ValidRange_ReturnsStations() {
-        // Range que inclui estações francesas do CSV (latitude ~43-44)
         Iterable<Station> result = controller.getStationByLatitude(43.0, 45.0);
 
         List<Station> stations = new ArrayList<>();
@@ -190,7 +200,6 @@ class StationControllerTest {
 
     @Test
     void getStationByLongitude_ValidRange_ReturnsStations() {
-        // Range que inclui estações francesas do CSV (longitude ~-0.25 a 7.5)
         Iterable<Station> result = controller.getStationByLongitude(-1.0, 8.0);
 
         List<Station> stations = new ArrayList<>();
@@ -352,14 +361,11 @@ class StationControllerTest {
 
     @Test
     void loadStationsFromCSV_IgnoresInvalidLines() {
-        // Verifica que o carregamento não falha com linhas inválidas
-        // e que pelo menos algumas estações válidas foram carregadas
-        int totalStations = repository.totalStations();
+        int totalStations = sharedRepository.totalStations();
 
         assertTrue(totalStations > 0, "Devem existir estações carregadas do CSV");
 
-        // Verifica que todas as estações carregadas têm coordenadas válidas
-        Iterable<Station> allStations = repository.getAllStationsOrderedByLatitude();
+        Iterable<Station> allStations = sharedRepository.getAllStationsOrderedByLatitude();
         for (Station s : allStations) {
             assertTrue(s.getLatitude() >= -90 && s.getLatitude() <= 90,
                     "Latitude deve estar no range válido");
@@ -370,24 +376,29 @@ class StationControllerTest {
 
     @Test
     void loadStationsFromCSV_ValidData() {
-        // Verifica que estações específicas do CSV foram carregadas corretamente
-        List<Station> stations = repository.getStationsByCountry("FR");
+        List<Station> stations = sharedRepository.getStationsByCountry("FR");
         assertFalse(stations.isEmpty(), "Devem existir estações da França");
 
-        // Verifica que estação específica existe
+        // Verifica que estação específica existe e tem dados válidos
         boolean hasMenton = stations.stream()
                 .anyMatch(s -> s.getName().equals("Menton"));
         assertTrue(hasMenton, "Deve existir a estação Menton");
 
-        // Verifica que estação com coordenadas inválidas foi ignorada
-        boolean hasVievola = stations.stream()
-                .anyMatch(s -> s.getName().equals("Vievola"));
-        assertFalse(hasVievola, "Estação Vievola (sem coordenadas) não deve ter sido carregada");
+        // Verifica que todas as estações carregadas têm coordenadas válidas
+        for (Station s : stations) {
+            assertNotNull(s.getLatitude(), "Latitude não deve ser nula");
+            assertNotNull(s.getLongitude(), "Longitude não deve ser nula");
+            assertTrue(s.getLatitude() >= -90 && s.getLatitude() <= 90,
+                    "Latitude deve estar no range [-90, 90]");
+            assertTrue(s.getLongitude() >= -180 && s.getLongitude() <= 180,
+                    "Longitude deve estar no range [-180, 180]");
+            assertFalse(s.getName().isEmpty(), "Nome não deve estar vazio");
+            assertFalse(s.getCountry().isEmpty(), "País não deve estar vazio");
+        }
     }
 
     @Test
     void getStationByLatitude_EmptyRange_ReturnsEmpty() {
-        // Range válido mas que não contém estações
         Iterable<Station> result = controller.getStationByLatitude(-90, -89);
 
         List<Station> stations = new ArrayList<>();
@@ -398,7 +409,6 @@ class StationControllerTest {
 
     @Test
     void getStationByLongitude_EmptyRange_ReturnsEmpty() {
-        // Range válido mas que não contém estações
         Iterable<Station> result = controller.getStationByLongitude(170, 180);
 
         List<Station> stations = new ArrayList<>();
