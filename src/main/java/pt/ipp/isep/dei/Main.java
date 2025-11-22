@@ -181,7 +181,7 @@ public class Main {
             System.out.println("3. Search by Geographical Area");
             System.out.println("4. Proximity Search");
             System.out.println("5. Radius Search and Density Summary");
-            System.out.println("6. Schedule Train Dispatches");
+            System.out.println("6. Train Dispatcher");
             System.out.println("7. Back");
 
             System.out.print("Select option: ");

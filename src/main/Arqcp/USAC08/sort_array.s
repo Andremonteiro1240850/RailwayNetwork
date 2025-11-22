@@ -4,64 +4,61 @@
 
 # int sort_array(int* vec, int length, char order)
 # a0 = vec, a1 = length, a2 = order
-# returns a0 = 1 (success) or 0 (error)
 
 sort_array:
     addi    sp, sp, -16
     sw      ra, 12(sp)
 
-    # Parameter validation
+    # validar parâmetros
     beqz    a0, error
     blez    a1, error
     li      t0, 1
-    bgt     a2, t0, error
-    blt     a2, zero, error
+    bgt     a2, t0, error     # order > 1
+    blt     a2, zero, error   # order < 0
 
-    # Bubble sort with proper bounds: j = 0 to j < (length - i - 1)
     addi    t0, a1, -1        # i_max = length - 1
     li      t1, 0             # i = 0
 
 outer_loop:
-    bge     t1, t0, success   # i >= length-1? done
+    bge     t1, t0, success
 
-    # Calculate end pointer for this pass: vec + (length - i - 1) * 4
+    # end_ptr = vec + (length - i - 1)*4
     sub     t3, a1, t1        # length - i
     addi    t3, t3, -1        # length - i - 1
-    slli    t3, t3, 2         # byte offset = (length - i - 1) * 4
-    add     t3, a0, t3        # end_ptr = vec + (length - i - 1) * 4
+    slli    t3, t3, 2
+    add     t3, a0, t3        # end_ptr
 
-    # Setup current pointer
     mv      t2, a0            # current_ptr = vec
-    li      t9, 0             # swap_flag = 0
+    li      t4, 0             # swap_flag = 0   (t4 substitui t9)
 
 inner_loop:
-    # Compare current_ptr[0] and current_ptr[1]
-    lw      t6, 0(t2)         # vec[j]
-    lw      t7, 4(t2)         # vec[j+1]
+    lw      t5, 0(t2)         # vec[j]
+    lw      t6, 4(t2)         # vec[j+1]
 
-    # Check swap condition
     beqz    a2, descending
-    bgt     t6, t7, do_swap   # Ascending: swap if greater
+
+    # ASCENDING
+    bgt     t5, t6, do_swap
     j       no_swap
 
 descending:
-    blt     t6, t7, do_swap   # Descending: swap if less
-    j       no_swap
-
-do_swap:
-    sw      t7, 0(t2)
-    sw      t6, 4(t2)
-    li      t9, 1             # swap occurred
+    blt     t5, t6, do_swap
 
 no_swap:
-    addi    t2, t2, 4         # current_ptr += 4
-    blt     t2, t3, inner_loop # Continue until current_ptr < end_ptr
+    addi    t2, t2, 4
+    blt     t2, t3, inner_loop
+    j       check_swaps
+
+do_swap:
+    sw      t6, 0(t2)
+    sw      t5, 4(t2)
+    li      t4, 1
+    addi    t2, t2, 4
+    blt     t2, t3, inner_loop
 
 check_swaps:
-    beqz    t9, success       # Early exit if no swaps
-
-next_outer:
-    addi    t1, t1, 1         # i++
+    beqz    t4, success
+    addi    t1, t1, 1
     j       outer_loop
 
 success:

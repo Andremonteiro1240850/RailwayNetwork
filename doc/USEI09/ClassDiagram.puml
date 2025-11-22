@@ -3,34 +3,31 @@
 
 ' --- Pacotes para organização ---
 
-class GeographicalSearchUI {
-    - controller: GeographicalSearchController
+class ProximitySearchUI {
+    - controller: ProximitySearchController
     - scanner: Scanner
+    + ProximitySearchUI(controller: ProximitySearchController)
     + void: showMainMenu()
-    - void: searchByArea()
-    - void: searchWithFilters()
     - void: searchNearestN()
-    - void: searchRadius()
+    - void: searchNearestNWithFilters()
+    - void: showTreeStatistics()
     - void: displayNearestResults(results: List<StationDistance>, targetLat: double, targetLon: double, n: int, filters: SearchFilters)
-    - void: displayRadiusResults(results: List<StationDistance>, targetLat: double, targetLon: double, radiusKm: double, filters: SearchFilters)
     - String: formatStationDistance(sd: StationDistance)
+    - String: formatFiltersForDisplay(filters: SearchFilters)
     - SearchFilters: readFilters()
     - double: readDouble(prompt: String, min: double, max: double)
-    - void: pauseForUser()
 }
 
 
-class GeographicalSearchController {
+class ProximitySearchController {
     - kdTree: KDTree
     - allStations: List<Station>
-    + GeographicalSearchController(stations: List<Station>)
-    + GeographicalSearchController(kdTree: KDTree, stations: List<Station>)
-    + List<Station>: searchByGeographicalArea(latMin: double, latMax: double, lonMin: double, lonMax: double, filters: SearchFilters)
-    + List<Station>: searchByGeographicalArea(latMin: double, latMax: double, lonMin: double, lonMax: double)
+    + ProximitySearchController(stations: List<Station>)
+    + ProximitySearchController(kdTree: KDTree, stations: List<Station>)
+    + ProximitySearchController(kdTree: KDTree, stationRepository: StationRepository)
+    + ProximitySearchController(kdTreeController: KDTreeController, stationRepository: StationRepository)
     + List<StationDistance>: findNearestStations(targetLat: double, targetLon: double, n: int, filters: SearchFilters)
     + List<StationDistance>: findNearestStations(targetLat: double, targetLon: double, n: int)
-    + List<StationDistance>: findStationsInRadius(targetLat: double, targetLon: double, radiusKm: double, filters: SearchFilters)
-    + List<StationDistance>: findStationsInRadius(targetLat: double, targetLon: double, radiusKm: double)
     + String: getTreeStatistics()
     + KDTree: getKDTree()
     + List<Station>: getAllStations()
@@ -43,12 +40,10 @@ class KDTree {
     - numNodes: int
     - numStations: int
     + KDTree()
-    + KDTree(stations: List<Station>)
-    + KDNode: buildKdTree(stationRepository: StationRepository)
-    + KDNode: buildKdTree(stations: List<Station>)
-    + List<Station>: rangeQuery(latMin: double, latMax: double, lonMin: double, lonMax: double)
+    + KDTree(root: KDNode)
     + List<StationDistance>: nearestN(targetLat: double, targetLon: double, n: int)
     + List<StationDistance>: radiusSearch(targetLat: double, targetLon: double, radiusKm: double)
+    + List<StationDistance>: radiusSearchUnsorted(targetLat: double, targetLon: double, radiusKm: double)
     + int[]: getSize()
     + int: size()
     + int: height()
@@ -56,17 +51,17 @@ class KDTree {
     + boolean: isEmpty()
     + KDNode: getRoot()
     + static double: haversineDistance(lat1: double, lon1: double, lat2: double, lon2: double)
-    - KDNode: bulkBuild(sortedByLat: List<Station>, sortedByLon: List<Station>, depth: int)
     - void: nearestNRecursive(node: KDNode, targetLat: double, targetLon: double, n: int, depth: int, nearestQueue: PriorityQueue<StationDistance>)
     - void: radiusSearchRecursive(node: KDNode, targetLat: double, targetLon: double, radiusKm: double, depth: int, results: List<StationDistance>)
-    - void: rangeQueryRecursive(node: KDNode, latMin: double, latMax: double, lonMin: double, lonMax: double, depth: int, results: List<Station>)
 }
 
 class "KDTree.StationDistance" as StationDistance {
     - station: Station
     - distance: double
+    + StationDistance(station: Station, distance: double)
     + Station: getStation()
     + double: getDistance()
+    + int: compareTo(other: StationDistance)
     + String: toString()
 }
 
@@ -76,18 +71,21 @@ class "KDTree.KDNode" as KDNode {
     - bucket: List<Station>
     - left: KDNode
     - right: KDNode
+    + KDNode(axis: int, splitValue: double, bucket: List<Station>)
     + int: getAxis()
     + double: getSplitValue()
     + List<Station>: getBucket()
     + KDNode: getLeft()
     + KDNode: getRight()
+    + void: setLeft(left: KDNode)
+    + void: setRight(right: KDNode)
 }
 
 class Station {
     - name: String
     - latitude: double
     - longitude: double
-    - country: Country
+    - country: String
     - timeZone: String
     - timeZoneGroup: String
     - isCity: boolean
@@ -96,9 +94,12 @@ class Station {
     + String: getName()
     + double: getLatitude()
     + double: getLongitude()
-    + Country: getCountry()
+    + String: getCountry()
+    + String: getTimeZone()
+    + String: getTimeZoneGroup()
     + boolean: isCity()
     + boolean: isMainStation()
+    + boolean: isAirport()
 }
 
 class SearchFilters {
@@ -112,23 +113,27 @@ class SearchFilters {
     + Country: getCountry()
     + boolean: hasFilters()
     + boolean: matches(station: Station)
+    + String: toString()
 }
 
 ' --- Relações ---
-GeographicalSearchUI --> GeographicalSearchController : uses
-GeographicalSearchController --> KDTree : uses
+ProximitySearchUI --> ProximitySearchController : uses
+ProximitySearchController --> KDTree : uses
+ProximitySearchController --> KDTreeController : uses (optional)
+ProximitySearchController --> StationRepository : uses (optional)
+ProximitySearchController --> SearchFilters : uses
 KDTree *-- KDNode : contains
 KDTree +-- StationDistance : contains
 KDTree "0..*" --> "1" Station : contains
 StationDistance --> Station : references
 SearchFilters --> Station : validates
-GeographicalSearchController --> SearchFilters : uses
 
-' Composição: KDTree contém KDNode e StationDistance (classes internas)
+' Composição: KDTree contém KDNode e StationDistance (classes internas estáticas)
 ' Cardinalidade: KDTree contém muitas Station através de KDNode buckets
-' StationDistance armazena uma Station com sua distância do ponto alvo
-' GeographicalSearchController usa KDTree para realizar buscas eficientes
-' SearchFilters permite filtrar resultados por país, cidade, estação principal
+' StationDistance armazena uma Station com sua distância do ponto alvo (Haversine)
+' ProximitySearchController usa KDTree (construída em USEI07) para realizar buscas de proximidade
+' SearchFilters permite filtrar resultados por país, cidade, estação principal (timezone)
+' ProximitySearchController pode ser construído a partir de KDTreeController (USEI07) ou KDTree diretamente
 
 @enduml
 
