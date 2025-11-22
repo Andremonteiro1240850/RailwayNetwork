@@ -34,12 +34,13 @@ public List<Station> searchByGeographicalArea(double latMin, double latMax,
     // Validation: O(1)
     if (filters != null && filters.hasFilters()) {
         List<Station> filteredResults = new ArrayList<>(estimatedCapacity);
-        List<Station> stationsInRange = kdTree.rangeQuery(latMin, latMax, lonMin, lonMax);
+        List<Station> stationsInRange = kdTree.rangeQueryUnsorted(latMin, latMax, lonMin, lonMax);
         for (Station station : stationsInRange) {
             if (filters.matches(station)) {
                 filteredResults.add(station);
             }
         }
+        filteredResults.sort(Comparator.comparing(Station::getName));
         return filteredResults;
     }
     return kdTree.rangeQuery(latMin, latMax, lonMin, lonMax);
@@ -55,14 +56,14 @@ Validation checks
 - Explanation: Comparing numeric values and creating exception messages are constant time operations.
 
 ```text
-kdTree.rangeQuery(latMin, latMax, lonMin, lonMax)
+kdTree.rangeQueryUnsorted(latMin, latMax, lonMin, lonMax)
 ```
-- Complexity: O(√n + k log k)
+- Complexity: O(√n + k)
 - Explanation: 
-  - Tree traversal: In the worst case, a KD-tree range query visits O(√n) nodes due to spatial pruning.
-  - Station processing: Processes all stations in visited nodes, at most n stations total.
-  - Result sorting: The method sorts k results by name, which takes O(k log k) time.
-  - Total: O(√n + k log k), where n is total stations and k is number of results.
+  - Tree traversal: In the worst case, a KD-tree range query visits O(√n) nodes due to spatial pruning (where n is total stations).
+  - Station processing: Processes all stations in visited nodes. In worst case, all k stations in range are processed.
+  - No sorting: This method does NOT sort results (optimization for filter-before-sort).
+  - Total: O(√n + k), where n is total stations and k is number of results in range.
 
 ```text
 Filtering loop (optimized)
@@ -71,17 +72,27 @@ Filtering loop (optimized)
 - Explanation: 
   - Single pass through k results with pre-allocated ArrayList
   - Each filters.matches() call is O(1) (constant time comparisons)
-  - Pre-allocation reduces ArrayList reallocations from O(k log k) to O(k)
+  - Pre-allocation reduces ArrayList reallocations
   - Total: O(k) where k is number of results in range
 
-**Overall Time Complexity: O(√n + m log m) where m ≤ k**
+```text
+filteredResults.sort(Comparator.comparing(Station::getName))
+```
+- Complexity: O(m log m)
 - Explanation: 
-  - The range query operation collects results without sorting: O(√n + k) where k is number of results
+  - Sorts only the m filtered results (m ≤ k)
+  - Standard comparison-based sort takes O(m log m) time
+  - Total: O(m log m) where m is number of filtered results
+
+**Overall Time Complexity: O(√n + k + m log m) where m ≤ k**
+- Explanation: 
+  - The range query operation collects results without sorting: O(√n + k) where k is number of results in range
   - Filtering: O(k) to filter k results
   - Sorting: O(m log m) where m is the number of filtered results (m ≤ k)
   - **OPTIMIZATION**: By filtering before sorting, we sort only m results instead of k results
-  - In the worst case: O(√n + m log m) where n is total stations, k is results in range, m is filtered results
-  - When m << k, this is significantly better than O(√n + k log k)
+  - In the worst case: O(√n + k + m log m) where n is total stations, k is results in range, m is filtered results
+  - When m << k, this is significantly better than O(√n + k log k) (the original approach)
+  - Note: The k term is necessary because we must process all k stations in range to filter them
 
 **Optimizations Applied:**
 1. Pre-allocated ArrayList with estimated capacity (reduces reallocations)
@@ -145,13 +156,14 @@ Validation checks
 ```text
 kdTree.nearestN(targetLat, targetLon, n)
 ```
-- Complexity: O(N log k + k log k) worst case, where N is total stations and k is the parameter n
+- Complexity: O(n log k + k log k) worst case, where n is total stations and k is the parameter n
 - Explanation:
-  - Tree traversal: With branch-and-bound pruning, visits O(N) nodes in worst case where N is total stations
-  - Priority queue operations: For each of the N stations processed, performs O(log k) operations where k is the parameter (max queue size)
+  - Tree traversal: With branch-and-bound pruning, visits O(n) nodes in worst case where n is total stations
+  - Station processing: Processes all stations in visited nodes. In worst case, processes all n stations.
+  - Priority queue operations: For each station processed, performs O(log k) operations where k is the parameter (max queue size). In worst case, processes n stations, each with O(log k) operations.
   - Result sorting: Sorting k results by distance takes O(k log k) time
-  - Total worst case: O(N log k + k log k), where N is total stations and k is the parameter n
-  - Note: In average case with balanced tree, traversal is O(√N), giving O(√N + N log k + k log k)
+  - Total worst case: O(n log k + k log k), where n is total stations and k is the parameter n
+  - Note: In average case with balanced tree and good pruning, traversal is O(√n), giving O(√n + n log k + k log k), but worst case is O(n log k + k log k)
 
 ```text
 Filtering loop (optimized)
@@ -164,11 +176,12 @@ Filtering loop (optimized)
   - Direct loop avoids stream pipeline overhead
   - Total: O(m) where m ≤ k
 
-**Overall Time Complexity: O(N log k + k log k + m) worst case, where N is total stations, k is parameter, m is filtered results**
+**Overall Time Complexity: O(n log k + k log k + m) worst case, where n is total stations, k is parameter, m is filtered results**
 - Explanation:
-  - The nearestN operation is O(N log k + k log k) in worst case
-  - Filtering adds O(m) which is dominated by the O(k log k) sorting when m ≈ k
-  - In worst case: O(N log k + k log k) where N is total stations and k is the parameter n
+  - The nearestN operation is O(n log k + k log k) in worst case
+  - Filtering adds O(m) where m ≤ k, which is dominated by the O(k log k) sorting when m ≈ k
+  - In worst case: O(n log k + k log k) where n is total stations and k is the parameter n
+  - Note: The m term is O(k) at most, so it doesn't change the asymptotic complexity
 
 **Optimizations Applied:**
 1. Pre-allocated ArrayList with exact size (eliminates reallocations)
@@ -190,10 +203,10 @@ public List<KDTree.StationDistance> findNearestStations(double targetLat, double
 ```text
 return findNearestStations(targetLat, targetLon, n, null);
 ```
-- Complexity: O(N log k + k log k) worst case, where N is total stations and k is the parameter n
+- Complexity: O(n log k + k log k) worst case, where n is total stations and k is the parameter n
 - Explanation: Direct nearest neighbor search without filtering. Same complexity as nearestN method.
 
-**Overall Time Complexity: O(N log k + k log k) worst case, where N is total stations and k is the parameter n**
+**Overall Time Complexity: O(n log k + k log k) worst case, where n is total stations and k is the parameter n**
 - Explanation: No change from original - this is already optimal.
 
 ---
@@ -204,18 +217,21 @@ return findNearestStations(targetLat, targetLon, n, null);
 public List<KDTree.StationDistance> findStationsInRadius(double targetLat, double targetLon, 
                                                               double radiusKm, SearchFilters filters) {
     // Validation: O(1)
-    List<KDTree.StationDistance> stationsInRadius = kdTree.radiusSearch(targetLat, targetLon, radiusKm);
-    
     if (filters != null && filters.hasFilters()) {
+        // Get stations in radius WITHOUT sorting first (optimization)
+        // Filter first, then sort only the filtered results
+        List<KDTree.StationDistance> stationsInRadius = kdTree.radiusSearchUnsorted(targetLat, targetLon, radiusKm);
+        
         List<KDTree.StationDistance> filteredResults = new ArrayList<>(estimatedCapacity);
         for (KDTree.StationDistance sd : stationsInRadius) {
             if (filters.matches(sd.getStation())) {
                 filteredResults.add(sd);
             }
         }
+        filteredResults.sort(Comparator.comparing(KDTree.StationDistance::getDistance));
         return filteredResults;
     }
-    return stationsInRadius;
+    return kdTree.radiusSearch(targetLat, targetLon, radiusKm);
 }
 ```
 
@@ -228,15 +244,16 @@ Validation checks
 - Explanation: Comparing numeric values and creating exception messages are constant time operations.
 
 ```text
-kdTree.radiusSearch(targetLat, targetLon, radiusKm)
+kdTree.radiusSearchUnsorted(targetLat, targetLon, radiusKm)
 ```
-- Complexity: O(n + k log k) worst case, where n is total stations and k is number of results
+- Complexity: O(n + k) worst case, where n is total stations and k is number of results
 - Explanation:
-  - Tree traversal: With spatial pruning, visits O(√n) nodes in average case, but O(n) nodes in worst case
-  - Station processing: Processes all stations in visited nodes, at most n stations total, each with O(1) distance calculation
-  - Result sorting: Sorting k results by distance takes O(k log k) time
-  - Total worst case: O(n + k log k), where n is total stations and k is number of results within radius
-  - Note: In average case with balanced tree and reasonable radius, traversal is O(√n), giving O(√n + n + k log k)
+  - Tree traversal: With spatial pruning, visits O(√n) nodes in average case, but O(n) nodes in worst case (when radius is very large)
+  - Station processing: Processes all stations in visited nodes. In worst case (very large radius), processes all n stations, each with O(1) distance calculation.
+  - Result collection: Collects k results within radius
+  - No sorting: This method does NOT sort results (optimization for filter-before-sort)
+  - Total worst case: O(n + k), where n is total stations and k is number of results within radius
+  - Note: In average case with balanced tree and reasonable radius, traversal is O(√n), giving O(√n + k)
 
 ```text
 Filtering loop (optimized)
@@ -249,14 +266,15 @@ Filtering loop (optimized)
   - Direct loop avoids stream pipeline overhead
   - Total: O(k) where k is number of results in radius
 
-**Overall Time Complexity: O(n + m log m) worst case, where n is total stations, k is results, m ≤ k is filtered results**
+**Overall Time Complexity: O(n + k + m log m) worst case, where n is total stations, k is results, m ≤ k is filtered results**
 - Explanation:
   - The radius search operation collects results without sorting: O(n + k) in worst case (processes all n stations, collects k results)
   - Filtering: O(k) to filter k results
   - Sorting: O(m log m) where m is the number of filtered results (m ≤ k)
   - **OPTIMIZATION**: By filtering before sorting, we sort only m results instead of k results
-  - In worst case: O(n + m log m) where n is total stations, k is results in radius, m is filtered results
-  - When m << k, this is significantly better than O(n + k log k)
+  - In worst case: O(n + k + m log m) where n is total stations, k is results in radius, m is filtered results
+  - When m << k, this is significantly better than O(n + k log k) (the original approach)
+  - Note: The k term is necessary because we must process all k stations in radius to filter them
 
 **Optimizations Applied:**
 1. Pre-allocated ArrayList with estimated capacity (reduces reallocations)
@@ -309,9 +327,9 @@ return findStationsInRadius(targetLat, targetLon, radiusKm, null);
 
 | Method | Worst Case Complexity | Notes |
 |--------|----------------------|-------|
-| `searchByGeographicalArea` (with filters) | O(√n + m log m) | n = total stations, k = results, m ≤ k = filtered results. Optimized: filter before sort. |
-| `findNearestStations` (with filters) | O(N log k + k log k + m) | N = total stations, k = parameter n, m = filtered results. Cannot optimize further. |
-| `findStationsInRadius` (with filters) | O(n + m log m) | n = total stations, k = results, m ≤ k = filtered results. Optimized: filter before sort. |
+| `searchByGeographicalArea` (with filters) | O(√n + k + m log m) | n = total stations, k = results in range, m ≤ k = filtered results. Optimized: filter before sort. |
+| `findNearestStations` (with filters) | O(n log k + k log k + m) | n = total stations, k = parameter n, m ≤ k = filtered results. Cannot optimize further. |
+| `findStationsInRadius` (with filters) | O(n + k + m log m) | n = total stations, k = results in radius, m ≤ k = filtered results. Optimized: filter before sort. |
 
 ### Notes:
 
@@ -321,6 +339,6 @@ return findStationsInRadius(targetLat, targetLon, radiusKm, null);
 - Direct loops provide better performance than streams for simple filtering operations
 - **Important**: When m << k (few results pass filters), the filter-before-sort optimization provides significant improvement
 - **Notation**: 
-  - n or N = total number of stations in the tree
+  - n = total number of stations in the tree
   - k = number of results returned (for rangeQuery/radiusSearch) or parameter n (for nearestN)
   - m = number of filtered results (≤ k)
