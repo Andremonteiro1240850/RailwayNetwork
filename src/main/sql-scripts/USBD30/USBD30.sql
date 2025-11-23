@@ -30,7 +30,6 @@ BEGIN
 
 EXCEPTION
   WHEN OTHERS THEN
-    -- Em erro, devolve cursor vazio (padrão das aulas)
     OPEN v_cur FOR SELECT 1 AS dummy FROM dual WHERE 1 = 0;
     RETURN v_cur;
 END;

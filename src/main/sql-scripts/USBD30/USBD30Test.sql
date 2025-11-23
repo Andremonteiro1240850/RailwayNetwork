@@ -21,7 +21,7 @@ BEGIN
 
     IF v_id = 8  THEN has_8  := TRUE; END IF;
     IF v_id = 14 THEN has_14 := TRUE; END IF;
-    IF v_id = 17 THEN has_17 := TRUE; END IF; -- should remain FALSE
+    IF v_id = 17 THEN has_17 := TRUE; END IF;
   END LOOP;
   CLOSE v_cur;
 
