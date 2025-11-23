@@ -123,7 +123,7 @@ ProximitySearchController --> KDTreeController : uses (optional)
 ProximitySearchController --> StationRepository : uses (optional)
 ProximitySearchController --> SearchFilters : uses
 KDTree *-- KDNode : contains
-KDTree +-- StationDistance : contains
+KDTree *-- StationDistance : contains
 KDTree "0..*" --> "1" Station : contains
 StationDistance --> Station : references
 SearchFilters --> Station : validates
