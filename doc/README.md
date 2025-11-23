@@ -54,17 +54,7 @@ All class diagrams are in PlantUML format (`.puml`) with SVG exports for visuali
 
 Complexity documentation includes:
 - Time complexity analysis (best case, average case, worst case)
-- Space complexity analysis (where applicable)
 - Algorithm descriptions
-- Justifications and assumptions
-
-### Implementation Details
-
-Each user story folder may contain:
-- Algorithm descriptions
-- Design decisions
-- Implementation notes
-- Usage examples
 
 ---
 
@@ -73,11 +63,13 @@ Each user story folder may contain:
 ### User Stories
 
 Navigate to the specific USEI folder:
+- `doc/USEI01-USEI05/` - Warehouse management
 - `doc/USEI06/` - AVL trees
 - `doc/USEI07/` - KD-tree construction
 - `doc/USEI08/` - Geographical search
 - `doc/USEI09/` - Proximity search
 - `doc/USEI10/` - Radius search
+- `doc/USLP07/` - Train Dispatcher
 
 ### Models
 
@@ -89,25 +81,6 @@ Navigate to the specific USEI folder:
 
 - Project Glossary: `doc/global-artifacts/Glossary/GLOSSARYPROJ.md`
 - BDAD Glossary: `doc/global-artifacts/Glossary/GLOSSARYBDAD.md`
-
----
-
-## Viewing Diagrams
-
-### PlantUML Files
-
-PlantUML files (`.puml`) can be viewed:
-- In IDEs with PlantUML plugins (IntelliJ IDEA, VS Code)
-- Online at [plantuml.com](https://plantuml.com)
-- Using PlantUML command-line tool
-
-### SVG Files
-
-SVG files can be viewed in any web browser or image viewer.
-
-### VPP Files
-
-VPP files (Visual Paradigm) require Visual Paradigm software to open.
 
 ---
 

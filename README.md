@@ -28,7 +28,7 @@ This project implements a train station management system with the following mai
 - **Proximity Search**: Nearest neighbor and radius search algorithms with branch-and-bound optimization
 - **Warehouse Management**: Inventory management, picking plans, and quality control
 - **Freight Management**: Train configuration, dispatch operations, and route planning
-- **Database Integration**: PostgreSQL database with comprehensive schema and SQL scripts
+- **Database Integration**: SQL database with comprehensive schema and SQL scripts
 - **Assembly Code**: Low-level assembly implementations for performance-critical operations
 
 ---
@@ -53,95 +53,25 @@ This project implements a train station management system with the following mai
 │   │   │   ├── Domain/            # Domain models and business logic
 │   │   │   ├── Repository/        # Data access layer
 │   │   │   ├── UI/                # User interfaces
-│   │   │   └── pt/ipp/isep/dei/  # Main application entry point
+│   │   │   └── pt/ipp/isep/dei/   # Main application entry point
 │   │   ├── Arqcp/                 # Assembly code (RISC-V)
 │   │   │   ├── asm.h              # Assembly function declarations
-│   │   │   └── USAC01-USAC09/    # User story assembly implementations
+│   │   │   └── USAC01-USAC09/     # User story assembly implementations
 │   │   ├── sql-scripts/           # Database scripts
-│   │   │   ├── InitialSchema/    # Schema and initial data
-│   │   │   └── USBD08-USBD30/    # User story database scripts
+│   │   │   ├── InitialSchema/     # Schema and initial data
+│   │   │   └── USBD08-USBD30/     # User story database scripts
 │   │   └── resources/             # Configuration files
 │   └── test/                      # Test code
-│       └── java/                   # JUnit test classes
-├── train_station_dataset/          # Sample datasets (CSV files)
+│       └── java/                  # JUnit test classes
+├── train_station_dataset/         # Sample datasets (CSV files)
 ├── pom.xml                        # Maven configuration
 └── README.md                      # This file
 ```
 
 ---
 
-## Technologies
 
-### Core Technologies
-- **Java 11**: Core programming language
-- **Maven 3.6+**: Build and dependency management
-- **JUnit 5.10.0**: Unit testing framework
-- **PostgreSQL**: Database management system
 
-### Development Tools
-- **PlantUML**: UML diagram generation
-- **GNU Assembler**: Assembly code compilation (RISC-V)
-- **Git**: Version control
-
-### Data Structures & Algorithms
-- **AVL Trees**: Self-balancing binary search trees (USEI06)
-- **KD-Trees**: 2D spatial data structures (USEI07)
-- **Priority Queues**: For nearest neighbor search (USEI09)
-- **Branch-and-Bound**: Spatial pruning algorithms
-
----
-
-## Getting Started
-
-### Prerequisites
-
-- **Java 11** or higher
-- **Maven 3.6+**
-- **PostgreSQL 12+** (for database features)
-- **RISC-V toolchain** (for assembly code compilation)
-- **IDE** (IntelliJ IDEA, Eclipse, or VS Code recommended)
-
-### Installation
-
-1. **Clone the repository:**
-   ```bash
-   git clone <repository-url>
-   cd sem3-pi-25-26-g044-repo
-   ```
-
-2. **Build the project:**
-   ```bash
-   mvn clean compile
-   ```
-
-3. **Run tests:**
-   ```bash
-   mvn test
-   ```
-
-4. **Execute the application:**
-   ```bash
-   mvn exec:java -Dexec.mainClass="pt.ipp.isep.dei.Main"
-   ```
-
-### Database Setup
-
-1. **Create PostgreSQL database:**
-   ```sql
-   CREATE DATABASE train_station_db;
-   ```
-
-2. **Run schema script:**
-   ```bash
-   psql -d train_station_db -f src/main/sql-scripts/InitialSchema/schema.sql
-   ```
-
-3. **Load initial data:**
-   ```bash
-   psql -d train_station_db -f src/main/sql-scripts/InitialSchema/initial_data.sql
-   ```
-
----
 
 ## Documentation
 
@@ -240,37 +170,6 @@ Each USEI folder contains:
 
 ---
 
-## Testing
-
-The project uses **JUnit 5** for testing. Test files are located in `src/test/java/`.
-
-### Running Tests
-
-**Run all tests:**
-```bash
-mvn test
-```
-
-**Run specific test class:**
-```bash
-mvn test -Dtest=KDTreeRepositoryTest
-```
-
-**Run tests with coverage:**
-```bash
-mvn test jacoco:report
-```
-
-### Test Structure
-
-- **Unit Tests**: Individual component testing
-- **Integration Tests**: Component interaction testing
-- **Repository Tests**: Data access layer testing
-
-See [`src/test/Readme.md`](src/test/Readme.md) for more details.
-
----
-
 ## Datasets
 
 Sample datasets are provided in `train_station_dataset/`:
@@ -324,11 +223,6 @@ See [`train_station_dataset/README.md`](train_station_dataset/README.md) for com
 
 ---
 
-## License
-
-This project is part of an academic course and is for educational purposes only.
-
----
 
 ## Architecture
 
@@ -338,14 +232,8 @@ The project follows a **layered architecture**:
 - **Controller Layer**: Business logic and coordination
 - **Domain Layer**: Core business models and algorithms
 - **Repository Layer**: Data access and persistence
-- **Database Layer**: PostgreSQL database
+- **Database Layer**: SQL database
 
-### Design Patterns
-
-- **MVC (Model-View-Controller)**: Separation of concerns
-- **Repository Pattern**: Data access abstraction
-- **Strategy Pattern**: Algorithm selection (e.g., path strategies)
-- **Factory Pattern**: Object creation
 
 ---
 
@@ -365,32 +253,4 @@ The project follows a **layered architecture**:
 
 See individual USEI complexity documentation for detailed analysis.
 
----
 
-## Development
-
-### Code Style
-- Follow Java naming conventions
-- Use meaningful variable and method names
-- Include JavaDoc comments for public methods
-- Maintain consistent code formatting
-
-### Contributing
-1. Create a feature branch
-2. Make your changes
-3. Write/update tests
-4. Ensure all tests pass
-5. Submit a pull request
-
----
-
-## Support
-
-For questions or issues, please refer to:
-- Project documentation in `doc/` folder
-- Individual README files in component folders
-- Class diagrams and complexity analysis
-
----
-
-**Last Updated**: 2025-2026 Academic Year
