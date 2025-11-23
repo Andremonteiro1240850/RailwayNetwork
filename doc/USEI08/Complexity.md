@@ -10,11 +10,11 @@
 
 ## Tipo de Algoritmos
 
-Os algoritmos de busca implementados (range query, nearest neighbor, radius search) são **não determinísticos**, pois têm passos que podem não ser executados dependendo dos valores nas estruturas de dados (poda espacial e branch-and-bound).
+Os algoritmos de busca na KD-tree (range query, nearest neighbor, radius search) são **não determinísticos**, pois têm passos que podem não ser executados dependendo dos valores nas estruturas de dados. Por exemplo, quando a busca percorre a árvore, pode decidir não explorar certos ramos se verificar que não contêm resultados relevantes. As operações de filtragem e ordenação são **determinísticas** - sempre executam os mesmos passos.
 
 Para algoritmos não determinísticos, a análise de complexidade considera:
-- **Worst case (Pior caso)**: Upper bound - caso que causa o máximo número de operações (quando a poda não funciona efetivamente)
-- **Best case (Melhor caso)**: Lower bound - caso que causa o mínimo número de operações (quando a poda funciona de forma ótima)
+- **Worst case (Pior caso)**: Upper bound - caso que causa o máximo número de operações (quando todos os ramos da árvore precisam ser explorados)
+- **Best case (Melhor caso)**: Lower bound - caso que causa o mínimo número de operações (quando muitos ramos podem ser ignorados)
 - **Average case (Caso médio)**: Tempo esperado considerando todos os possíveis inputs e caminhos de execução
 
 Esta análise foca no **pior caso** para garantir limites superiores de performance.
@@ -26,6 +26,8 @@ Esta análise foca no **pior caso** para garantir limites superiores de performa
 ```java
 public GeographicalSearchController(KDTreeRepository kdTreeRepository, StationRepository stationRepository)
 ```
+
+**Tipo**: Determinístico
 
 **Complexidade Temporal: O(N)**
 
@@ -44,24 +46,26 @@ public List<Station> searchByGeographicalArea(double latMin, double latMax,
                                                SearchFilters filters)
 ```
 
+**Tipo**: Não determinístico (a busca na KD-tree tem passos condicionais)
+
 **Complexidade Temporal: O(N + k + m log m · s)**
 
 **Análise da complexidade:**
 
 1. **Validações**: O(1) - verificações de limites de latitude/longitude são comparações numéricas simples, operação constante
 
-2. **rangeQueryUnsorted**: O(N + k)
-   - **Traversal recursivo**: No pior caso, quando o retângulo de busca cobre todo o dataset ou a árvore é degenerada (altura O(N)), a poda espacial não consegue eliminar ramos. Isto força a visita de todos os N nós da árvore
+2. **rangeQueryUnsorted**: O(N + k) - **Componente não determinístico**
+   - **Percorrer a árvore**: No pior caso, quando o retângulo de busca cobre todo o dataset ou a árvore é degenerada (altura O(N)), todos os ramos precisam ser explorados. Isto força a visita de todos os N nós da árvore
    - **Verificação de estações**: Para cada nó visitado, são verificadas todas as estações no bucket para ver se estão dentro do range retangular. Cada verificação de coordenadas é O(1)
    - **Resultado**: São visitados N nós e são recolhidas k estações que estão no range → O(N + k)
-   - **Nota**: No caso médio com árvore balanceada, o traversal é O(√N), resultando em O(√N + k)
+   - **Nota**: No caso médio com árvore balanceada, o percurso é O(√N), resultando em O(√N + k)
 
-3. **Filtragem**: O(k)
+3. **Filtragem**: O(k) - **Componente determinístico**
    - São percorridos os k resultados obtidos da query uma única vez
    - Cada chamada `filters.matches(station)` executa no máximo 3 comparações constantes (país, isCity, isMainStation), então é O(1)
    - **Total**: k iterações × O(1) = O(k)
 
-4. **Ordenação**: O(m log m · s)
+4. **Ordenação**: O(m log m · s) - **Componente determinístico**
    - São ordenados apenas os m resultados filtrados (não todos os k), o que é uma otimização importante
    - É utilizado Timsort (algoritmo padrão do Java), que é baseado em comparações e requer O(m log m) comparações no pior caso
    - Cada comparação de nomes de estações (`String.compareTo()`) compara caracteres sequencialmente até encontrar diferença, levando O(s) tempo onde s é o comprimento médio dos nomes
@@ -78,11 +82,13 @@ public List<Station> searchByGeographicalArea(double latMin, double latMax,
                                                double lonMin, double lonMax)
 ```
 
+**Tipo**: Não determinístico (a busca na KD-tree tem passos condicionais)
+
 **Complexidade Temporal: O(N + k log k · s)**
 
 **Análise da complexidade:**
-1. **Range query**: O(N + k) - mesma análise do método com filtros: traversal O(N) no pior caso e recolha de k resultados
-2. **Ordenação**: O(k log k · s)
+1. **Range query**: O(N + k) - **Componente não determinístico** - mesma análise do método com filtros: percurso O(N) no pior caso e recolha de k resultados
+2. **Ordenação**: O(k log k · s) - **Componente determinístico**
    - Como não há filtros, são ordenados todos os k resultados obtidos da query
    - Timsort requer O(k log k) comparações
    - Cada comparação de strings leva O(s) tempo
@@ -98,15 +104,17 @@ public List<KDTree.StationDistance> findNearestStations(double targetLat, double
                                                            int n, SearchFilters filters)
 ```
 
+**Tipo**: Não determinístico (a busca na KD-tree tem passos condicionais)
+
 **Complexidade Temporal: O(N log k + k log k)**
 
 **Análise da complexidade:**
 
 1. **Validações**: O(1) - verificações de coordenadas válidas e parâmetro n positivo são operações constantes
 
-2. **nearestN**: O(N log k + k log k)
-   - **Traversal recursivo**: O(N)
-     - No pior caso, quando todas as estações são equidistantes do ponto alvo ou a árvore é degenerada, a poda branch-and-bound não consegue eliminar ramos
+2. **nearestN**: O(N log k + k log k) - **Componente não determinístico**
+   - **Percorrer a árvore**: O(N)
+     - No pior caso, quando todas as estações são equidistantes do ponto alvo ou a árvore é degenerada, todos os ramos precisam ser explorados
      - Isto força a visita de todos os N nós da árvore
      - Para cada nó, são processadas todas as estações no bucket
    - **Priority queue (max-heap)**: O(N log k)
@@ -115,13 +123,13 @@ public List<KDTree.StationDistance> findNearestStations(double targetLat, double
      - Se a heap tem menos de k elementos, é feito `offer()` (O(log k))
      - Se a heap está cheia e é encontrada uma estação mais próxima, é feito `poll()` seguido de `offer()` (ambos O(log k))
      - **Total**: N estações × O(log k) operações = O(N log k)
-   - **Ordenação final**: O(k log k)
-     - Após o traversal, são ordenados os k resultados finais por distância
+   - **Ordenação final**: O(k log k) - **Componente determinístico**
+     - Após o percurso, são ordenados os k resultados finais por distância
      - Comparar doubles é O(1), então não há fator de string
      - Timsort requer O(k log k) comparações
    - **Total nearestN**: O(N) + O(N log k) + O(k log k) = O(N log k + k log k) (O(N) é dominado por O(N log k))
 
-3. **Filtragem**: O(m)
+3. **Filtragem**: O(m) - **Componente determinístico**
    - São percorridos os m resultados retornados por nearestN uma vez
    - Cada filtro é O(1) como explicado anteriormente
    - **Total**: O(m)
@@ -136,6 +144,8 @@ public List<KDTree.StationDistance> findNearestStations(double targetLat, double
 public List<KDTree.StationDistance> findNearestStations(double targetLat, double targetLon, int n)
 ```
 
+**Tipo**: Não determinístico (a busca na KD-tree tem passos condicionais)
+
 **Complexidade Temporal: O(N log k + k log k)**
 - Mesma que nearestN
 
@@ -148,15 +158,17 @@ public List<KDTree.StationDistance> findStationsInRadius(double targetLat, doubl
                                                               double radiusKm, SearchFilters filters)
 ```
 
+**Tipo**: Não determinístico (a busca na KD-tree tem passos condicionais)
+
 **Complexidade Temporal: O(N + k + m log m)**
 
 **Análise da complexidade:**
 
 1. **Validações**: O(1) - verificações de coordenadas válidas e raio não-negativo são operações constantes
 
-2. **radiusSearchUnsorted**: O(N + k)
-   - **Traversal recursivo**: O(N)
-     - No pior caso, quando o raio de busca é muito grande (cobrindo toda a árvore) ou a árvore é degenerada, a poda espacial não consegue eliminar ramos
+2. **radiusSearchUnsorted**: O(N + k) - **Componente não determinístico**
+   - **Percorrer a árvore**: O(N)
+     - No pior caso, quando o raio de busca é muito grande (cobrindo toda a árvore) ou a árvore é degenerada, todos os ramos precisam ser explorados
      - Isto força a visita de todos os N nós da árvore
    - **Processamento de estações**: Para cada estação encontrada, é calculada a distância Haversine até ao ponto alvo
      - O cálculo Haversine envolve operações trigonométricas (sin, cos, atan2) que são O(1)
@@ -164,14 +176,14 @@ public List<KDTree.StationDistance> findStationsInRadius(double targetLat, doubl
    - **Recolha de resultados**: São guardados k resultados dentro do raio como objetos StationDistance
      - Cada criação de objeto é O(1)
    - **Total**: O(N) para visitar todos os nós + O(k) para processar e guardar resultados = O(N + k)
-   - **Nota**: No caso médio com árvore balanceada e raio razoável, o traversal é O(√N), resultando em O(√N + k)
+   - **Nota**: No caso médio com árvore balanceada e raio razoável, o percurso é O(√N), resultando em O(√N + k)
 
-3. **Filtragem**: O(k)
+3. **Filtragem**: O(k) - **Componente determinístico**
    - São percorridos os k resultados obtidos da busca uma vez
    - Cada filtro é O(1) como explicado anteriormente
    - **Total**: O(k)
 
-4. **Ordenação**: O(m log m)
+4. **Ordenação**: O(m log m) - **Componente determinístico**
    - São ordenados apenas os m resultados filtrados por distância (não todos os k)
    - Timsort requer O(m log m) comparações
    - Comparar doubles (distâncias) é O(1), então não há fator adicional
@@ -187,12 +199,13 @@ public List<KDTree.StationDistance> findStationsInRadius(double targetLat, doubl
 public List<KDTree.StationDistance> findStationsInRadius(double targetLat, double targetLon, double radiusKm)
 ```
 
+**Tipo**: Não determinístico (a busca na KD-tree tem passos condicionais)
+
 **Complexidade Temporal: O(N + k log k)**
 
 **Análise da complexidade:**
-1. **Radius search**: O(N + k)
-   - Mesma análise do método com filtros: traversal O(N) no pior caso, processamento de estações e recolha de k resultados
-2. **Ordenação**: O(k log k)
+1. **Radius search**: O(N + k) - **Componente não determinístico** - mesma análise do método com filtros: percurso O(N) no pior caso, processamento de estações e recolha de k resultados
+2. **Ordenação**: O(k log k) - **Componente determinístico**
    - Como não há filtros, são ordenados todos os k resultados obtidos da busca por distância
    - Timsort requer O(k log k) comparações
    - Comparar doubles é O(1), então não há fator adicional
@@ -204,45 +217,52 @@ public List<KDTree.StationDistance> findStationsInRadius(double targetLat, doubl
 ## Resumo
 
 **Constructor**
+- Tipo: Determinístico
 - Complexidade Temporal: O(N)
 
 **searchByGeographicalArea (com filtros)**
+- Tipo: Não determinístico
 - Complexidade Temporal: O(N + k + m log m · s)
 
 **searchByGeographicalArea (sem filtros)**
+- Tipo: Não determinístico
 - Complexidade Temporal: O(N + k log k · s)
 
 **findNearestStations (com filtros)**
+- Tipo: Não determinístico
 - Complexidade Temporal: O(N log k + k log k)
 
 **findNearestStations (sem filtros)**
+- Tipo: Não determinístico
 - Complexidade Temporal: O(N log k + k log k)
 
 **findStationsInRadius (com filtros)**
+- Tipo: Não determinístico
 - Complexidade Temporal: O(N + k + m log m)
 
 **findStationsInRadius (sem filtros)**
+- Tipo: Não determinístico
 - Complexidade Temporal: O(N + k log k)
 
 ### Casos: Melhor, Médio, Pior
 
 **Range Query**
-- Melhor: O(log N + k) - árvore balanceada, query pequena
-- Médio: O(√N + k) - árvore balanceada, query típica
-- Pior: O(N + k) - árvore degenerada ou query cobre todo dataset
+- Melhor: O(log N + k) - árvore balanceada, query pequena, muitos ramos podem ser ignorados
+- Médio: O(√N + k) - árvore balanceada, query típica, alguns ramos podem ser ignorados
+- Pior: O(N + k) - árvore degenerada ou query cobre todo dataset, todos os ramos precisam ser explorados
 
 **Nearest Neighbor**
-- Melhor: O(log N · log k + k log k) - árvore balanceada, poda forte
-- Médio: O(√N log k + k log k) - árvore balanceada, poda moderada
-- Pior: O(N log k + k log k) - árvore degenerada ou pontos equidistantes
+- Melhor: O(log N · log k + k log k) - árvore balanceada, muitos ramos podem ser ignorados
+- Médio: O(√N log k + k log k) - árvore balanceada, alguns ramos podem ser ignorados
+- Pior: O(N log k + k log k) - árvore degenerada ou pontos equidistantes, todos os ramos precisam ser explorados
 
 **Radius Search**
-- Melhor: O(log N + k) - árvore balanceada, raio pequeno
-- Médio: O(√N + k) - árvore balanceada, raio moderado
-- Pior: O(N + k) - árvore degenerada ou raio muito grande
+- Melhor: O(log N + k) - árvore balanceada, raio pequeno, muitos ramos podem ser ignorados
+- Médio: O(√N + k) - árvore balanceada, raio moderado, alguns ramos podem ser ignorados
+- Pior: O(N + k) - árvore degenerada ou raio muito grande, todos os ramos precisam ser explorados
 
 ### Notas
 
 1. **Comparação de strings**: O(s) por comparação. Para nomes limitados, simplifica para O(m log m).
 
-2. **Pior caso ocorre quando**: árvore degenerada, queries grandes cobrindo todo dataset, ou pontos equidistantes (nearest neighbor).
+2. **Pior caso ocorre quando**: árvore degenerada, queries grandes cobrindo todo dataset, ou pontos equidistantes (nearest neighbor). Nestes casos, todos os ramos da árvore precisam ser explorados.
