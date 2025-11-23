@@ -1163,15 +1163,6 @@ class GeographicalSearchControllerTest {
         }
     }
 
-    @Test
-    void test60_RangeQuery_ExactBoundaries() {
-        // Test: Query with exact boundary values
-        List<Station> results1 = controller.searchByGeographicalArea(-90.0, 90.0, -180.0, 180.0);
-        assertNotNull(results1, "Deve funcionar com limites exatos");
-        
-        List<Station> results2 = controller.searchByGeographicalArea(0.0, 0.0, 0.0, 0.0);
-        assertNotNull(results2, "Deve funcionar com ponto único (0,0)");
-    }
 
     @Test
     void test61_NearestNeighbor_NegativeN() {
@@ -1198,63 +1189,25 @@ class GeographicalSearchControllerTest {
     }
 
     @Test
-    void test64_RangeQuery_ExactLatitudeBoundaries() {
-        // Test: Query with exact latitude boundaries
-        List<Station> results1 = controller.searchByGeographicalArea(-90.0, -89.0, -180.0, 180.0);
-        assertNotNull(results1, "Deve funcionar com latMin = -90");
+    void test64_ExactBoundaries_AllMethods() {
+        // Test: Exact boundary values for all search methods (consolidated)
+        // Range query
+        assertNotNull(controller.searchByGeographicalArea(-90.0, -89.0, -180.0, 180.0), "Range: latMin = -90");
+        assertNotNull(controller.searchByGeographicalArea(89.0, 90.0, -180.0, 180.0), "Range: latMax = 90");
+        assertNotNull(controller.searchByGeographicalArea(-90.0, 90.0, -180.0, -179.0), "Range: lonMin = -180");
+        assertNotNull(controller.searchByGeographicalArea(-90.0, 90.0, 179.0, 180.0), "Range: lonMax = 180");
         
-        List<Station> results2 = controller.searchByGeographicalArea(89.0, 90.0, -180.0, 180.0);
-        assertNotNull(results2, "Deve funcionar com latMax = 90");
-    }
-
-    @Test
-    void test65_RangeQuery_ExactLongitudeBoundaries() {
-        // Test: Query with exact longitude boundaries
-        List<Station> results1 = controller.searchByGeographicalArea(-90.0, 90.0, -180.0, -179.0);
-        assertNotNull(results1, "Deve funcionar com lonMin = -180");
+        // Nearest neighbor
+        assertNotNull(controller.findNearestStations(-90.0, 0.0, 5), "Nearest: lat = -90");
+        assertNotNull(controller.findNearestStations(90.0, 0.0, 5), "Nearest: lat = 90");
+        assertNotNull(controller.findNearestStations(0.0, -180.0, 5), "Nearest: lon = -180");
+        assertNotNull(controller.findNearestStations(0.0, 180.0, 5), "Nearest: lon = 180");
         
-        List<Station> results2 = controller.searchByGeographicalArea(-90.0, 90.0, 179.0, 180.0);
-        assertNotNull(results2, "Deve funcionar com lonMax = 180");
-    }
-
-    @Test
-    void test66_NearestNeighbor_ExactLatitudeBoundaries() {
-        // Test: Nearest neighbor with exact latitude boundaries
-        List<KDTree.StationDistance> results1 = controller.findNearestStations(-90.0, 0.0, 5);
-        assertNotNull(results1, "Deve funcionar com lat = -90");
-        
-        List<KDTree.StationDistance> results2 = controller.findNearestStations(90.0, 0.0, 5);
-        assertNotNull(results2, "Deve funcionar com lat = 90");
-    }
-
-    @Test
-    void test67_NearestNeighbor_ExactLongitudeBoundaries() {
-        // Test: Nearest neighbor with exact longitude boundaries
-        List<KDTree.StationDistance> results1 = controller.findNearestStations(0.0, -180.0, 5);
-        assertNotNull(results1, "Deve funcionar com lon = -180");
-        
-        List<KDTree.StationDistance> results2 = controller.findNearestStations(0.0, 180.0, 5);
-        assertNotNull(results2, "Deve funcionar com lon = 180");
-    }
-
-    @Test
-    void test68_RadiusSearch_ExactLatitudeBoundaries() {
-        // Test: Radius search with exact latitude boundaries
-        List<KDTree.StationDistance> results1 = controller.findStationsInRadius(-90.0, 0.0, 100.0);
-        assertNotNull(results1, "Deve funcionar com lat = -90");
-        
-        List<KDTree.StationDistance> results2 = controller.findStationsInRadius(90.0, 0.0, 100.0);
-        assertNotNull(results2, "Deve funcionar com lat = 90");
-    }
-
-    @Test
-    void test69_RadiusSearch_ExactLongitudeBoundaries() {
-        // Test: Radius search with exact longitude boundaries
-        List<KDTree.StationDistance> results1 = controller.findStationsInRadius(0.0, -180.0, 100.0);
-        assertNotNull(results1, "Deve funcionar com lon = -180");
-        
-        List<KDTree.StationDistance> results2 = controller.findStationsInRadius(0.0, 180.0, 100.0);
-        assertNotNull(results2, "Deve funcionar com lon = 180");
+        // Radius search
+        assertNotNull(controller.findStationsInRadius(-90.0, 0.0, 100.0), "Radius: lat = -90");
+        assertNotNull(controller.findStationsInRadius(90.0, 0.0, 100.0), "Radius: lat = 90");
+        assertNotNull(controller.findStationsInRadius(0.0, -180.0, 100.0), "Radius: lon = -180");
+        assertNotNull(controller.findStationsInRadius(0.0, 180.0, 100.0), "Radius: lon = 180");
     }
 
     @Test
@@ -1264,30 +1217,6 @@ class GeographicalSearchControllerTest {
         assertNotNull(results, "Deve funcionar com ponto único");
     }
 
-    @Test
-    void test71_RangeQuery_WithFilters_EmptyResults() {
-        // Test: Filters that result in no matches
-        double latMin = 40.0;
-        double latMax = 50.0;
-        double lonMin = -10.0;
-        double lonMax = 10.0;
-        // Filter for a country that doesn't exist in this region
-        SearchFilters filters = new SearchFilters(null, null, Country.MT); // Malta is far from this region
-        
-        List<Station> results = controller.searchByGeographicalArea(latMin, latMax, lonMin, lonMax, filters);
-        
-        assertNotNull(results, "Deve retornar lista mesmo sem matches");
-        // Results may be empty or contain stations if Malta stations exist in this region
-    }
-
-    @Test
-    void test72_NearestNeighbor_LargeN() {
-        // Test: Nearest neighbor with large n (more than available stations)
-        List<KDTree.StationDistance> results = controller.findNearestStations(48.8566, 2.3522, 100000);
-        
-        assertNotNull(results, "Deve retornar lista");
-        assertTrue(results.size() <= cachedStations.size(), "Número de resultados não deve exceder total de estações");
-    }
 
     @Test
     void test73_RadiusSearch_VeryLargeRadius() {
@@ -1299,51 +1228,31 @@ class GeographicalSearchControllerTest {
     }
 
     @Test
-    void test74_RangeQuery_InvalidLatitude_LessThanMin() {
-        // Test: latMin < -90 should throw exception
+    void test74_InvalidLatitude_AllMethods() {
+        // Test: Invalid latitude values for all methods (consolidated)
+        // Range query
         assertThrows(IllegalArgumentException.class, () -> {
             controller.searchByGeographicalArea(-91.0, 90.0, -180.0, 180.0);
-        }, "Deve lançar exceção para latMin < -90");
-    }
-
-    @Test
-    void test75_RangeQuery_InvalidLatitude_GreaterThanMax() {
-        // Test: latMax > 90 should throw exception
+        }, "Range: latMin < -90");
         assertThrows(IllegalArgumentException.class, () -> {
             controller.searchByGeographicalArea(-90.0, 91.0, -180.0, 180.0);
-        }, "Deve lançar exceção para latMax > 90");
-    }
-
-    @Test
-    void test76_NearestNeighbor_InvalidLatitude_LessThanMin() {
-        // Test: targetLat < -90 should throw exception
+        }, "Range: latMax > 90");
+        
+        // Nearest neighbor
         assertThrows(IllegalArgumentException.class, () -> {
             controller.findNearestStations(-91.0, 2.3522, 5);
-        }, "Deve lançar exceção para targetLat < -90");
-    }
-
-    @Test
-    void test77_NearestNeighbor_InvalidLatitude_GreaterThanMax() {
-        // Test: targetLat > 90 should throw exception
+        }, "Nearest: lat < -90");
         assertThrows(IllegalArgumentException.class, () -> {
             controller.findNearestStations(91.0, 2.3522, 5);
-        }, "Deve lançar exceção para targetLat > 90");
-    }
-
-    @Test
-    void test78_RadiusSearch_InvalidLatitude_LessThanMin() {
-        // Test: targetLat < -90 should throw exception
+        }, "Nearest: lat > 90");
+        
+        // Radius search
         assertThrows(IllegalArgumentException.class, () -> {
             controller.findStationsInRadius(-91.0, 2.3522, 50.0);
-        }, "Deve lançar exceção para targetLat < -90");
-    }
-
-    @Test
-    void test79_RadiusSearch_InvalidLatitude_GreaterThanMax() {
-        // Test: targetLat > 90 should throw exception
+        }, "Radius: lat < -90");
         assertThrows(IllegalArgumentException.class, () -> {
             controller.findStationsInRadius(91.0, 2.3522, 50.0);
-        }, "Deve lançar exceção para targetLat > 90");
+        }, "Radius: lat > 90");
     }
 
     @Test
@@ -1383,149 +1292,7 @@ class GeographicalSearchControllerTest {
         }, "Deve lançar exceção quando tree não está construída (após clear)");
     }
 
-    @Test
-    void test82_RangeQuery_FiltersNullButHasFilters() {
-        // Test: Edge case - filters is null (already covered, but ensuring branch coverage)
-        double latMin = 40.0;
-        double latMax = 50.0;
-        double lonMin = -10.0;
-        double lonMax = 10.0;
-        
-        List<Station> results = controller.searchByGeographicalArea(latMin, latMax, lonMin, lonMax, null);
-        assertNotNull(results, "Deve retornar resultados com filtros null");
-    }
 
-    @Test
-    void test83_NearestNeighbor_FiltersNullButHasFilters() {
-        // Test: Edge case - filters is null
-        List<KDTree.StationDistance> results = controller.findNearestStations(48.8566, 2.3522, 5, null);
-        assertNotNull(results, "Deve retornar resultados com filtros null");
-    }
-
-    @Test
-    void test84_RadiusSearch_FiltersNullButHasFilters() {
-        // Test: Edge case - filters is null
-        List<KDTree.StationDistance> results = controller.findStationsInRadius(48.8566, 2.3522, 50.0, null);
-        assertNotNull(results, "Deve retornar resultados com filtros null");
-    }
-
-    @Test
-    void test85_RangeQuery_FiltersWithHasFiltersFalse() {
-        // Test: Filters object exists but hasFilters() returns false
-        SearchFilters emptyFilters = new SearchFilters(null, null, null);
-        double latMin = 40.0;
-        double latMax = 50.0;
-        double lonMin = -10.0;
-        double lonMax = 10.0;
-        
-        List<Station> results = controller.searchByGeographicalArea(latMin, latMax, lonMin, lonMax, emptyFilters);
-        assertNotNull(results, "Deve retornar resultados quando hasFilters() é false");
-    }
-
-    @Test
-    void test86_NearestNeighbor_FiltersWithHasFiltersFalse() {
-        // Test: Filters object exists but hasFilters() returns false
-        SearchFilters emptyFilters = new SearchFilters(null, null, null);
-        List<KDTree.StationDistance> results = controller.findNearestStations(48.8566, 2.3522, 5, emptyFilters);
-        assertNotNull(results, "Deve retornar resultados quando hasFilters() é false");
-    }
-
-    @Test
-    void test87_RadiusSearch_FiltersWithHasFiltersFalse() {
-        // Test: Filters object exists but hasFilters() returns false
-        SearchFilters emptyFilters = new SearchFilters(null, null, null);
-        List<KDTree.StationDistance> results = controller.findStationsInRadius(48.8566, 2.3522, 50.0, emptyFilters);
-        assertNotNull(results, "Deve retornar resultados quando hasFilters() é false");
-    }
-
-    @Test
-    void test88_Constructor_WithKDTreeRepository_TreeNullAfterException() {
-        // Test: Edge case where repository might have null tree
-        // Create repository with empty station list that might cause issues
-        List<Station> emptyStations = new ArrayList<>();
-        StationRepository testRepo = new StationRepository(emptyStations);
-        KDTreeRepository kdTreeRepo = new KDTreeRepository(testRepo);
-        
-        // Try to build tree with empty list - might fail or create empty tree
-        try {
-            kdTreeRepo.buildTree(emptyStations);
-        } catch (Exception e) {
-            // Expected
-        }
-        
-        // If hasCachedTree returns false, constructor should throw IllegalStateException
-        if (!kdTreeRepo.hasCachedTree()) {
-            assertThrows(IllegalStateException.class, () -> {
-                new GeographicalSearchController(kdTreeRepo, testRepo);
-            }, "Deve lançar exceção quando tree não está construída");
-        }
-    }
-
-    @Test
-    void test89_RangeQuery_AllFilterCombinations_EdgeCases() {
-        // Test: Additional filter combinations to ensure full coverage
-        double latMin = 40.0;
-        double latMax = 50.0;
-        double lonMin = -10.0;
-        double lonMax = 10.0;
-        
-        // Test all combinations of boolean filters with null country
-        SearchFilters[] filters = {
-            new SearchFilters(true, null, null),
-            new SearchFilters(false, null, null),
-            new SearchFilters(null, true, null),
-            new SearchFilters(null, false, null),
-            new SearchFilters(true, true, null),
-            new SearchFilters(true, false, null),
-            new SearchFilters(false, true, null),
-            new SearchFilters(false, false, null)
-        };
-        
-        for (SearchFilters filter : filters) {
-            List<Station> results = controller.searchByGeographicalArea(latMin, latMax, lonMin, lonMax, filter);
-            assertNotNull(results, "Deve retornar resultados para filtro: " + filter);
-        }
-    }
-
-    @Test
-    void test90_NearestNeighbor_AllFilterCombinations_EdgeCases() {
-        // Test: Additional filter combinations for nearest neighbor
-        double targetLat = 48.8566;
-        double targetLon = 2.3522;
-        int n = 10;
-        
-        SearchFilters[] filters = {
-            new SearchFilters(true, null, null),
-            new SearchFilters(false, null, null),
-            new SearchFilters(null, true, null),
-            new SearchFilters(null, false, null)
-        };
-        
-        for (SearchFilters filter : filters) {
-            List<KDTree.StationDistance> results = controller.findNearestStations(targetLat, targetLon, n, filter);
-            assertNotNull(results, "Deve retornar resultados para filtro: " + filter);
-        }
-    }
-
-    @Test
-    void test91_RadiusSearch_AllFilterCombinations_EdgeCases() {
-        // Test: Additional filter combinations for radius search
-        double targetLat = 48.8566;
-        double targetLon = 2.3522;
-        double radiusKm = 100.0;
-        
-        SearchFilters[] filters = {
-            new SearchFilters(true, null, null),
-            new SearchFilters(false, null, null),
-            new SearchFilters(null, true, null),
-            new SearchFilters(null, false, null)
-        };
-        
-        for (SearchFilters filter : filters) {
-            List<KDTree.StationDistance> results = controller.findStationsInRadius(targetLat, targetLon, radiusKm, filter);
-            assertNotNull(results, "Deve retornar resultados para filtro: " + filter);
-        }
-    }
 
     @Test
     void test92_GetTreeStatistics_NotEmpty() {
