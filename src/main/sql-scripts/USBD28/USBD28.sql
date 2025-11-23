@@ -5,19 +5,19 @@ AS
 BEGIN
 OPEN locomotiveResultCursor FOR
 SELECT DISTINCT
-    locomotive.LOCOMOTIVE_ID,
-    locomotive.OPERATOR_ID,
-    locomotive.LOCOMOTIVE_MODEL_ID,
-    locomotive.GAUGECODE
-FROM   LOCOMOTIVE locomotive
-WHERE  locomotive.OPERATOR_ID = 'PT509017800'
-  AND    locomotive.LOCOMOTIVE_MODEL_ID IN (
+    l.LOCOMOTIVE_ID,
+    l.OPERATOR_ID,
+    l.LOCOMOTIVE_MODEL_ID,
+    l.GAUGECODE
+FROM   LOCOMOTIVE l
+WHERE  l.OPERATOR_ID = 'PT509017800'
+  AND  l.LOCOMOTIVE_MODEL_ID IN (
     SELECT LOCOMOTIVE_MODEL_ID
     FROM   LOCOMOTIVE
     GROUP BY LOCOMOTIVE_MODEL_ID
     HAVING COUNT(DISTINCT GAUGECODE) > 1
 )
-ORDER BY locomotive.LOCOMOTIVE_ID;
+ORDER BY l.LOCOMOTIVE_ID;
 
 RETURN locomotiveResultCursor;
 END;
@@ -28,35 +28,4 @@ END;
 
 
 
-SET SERVEROUTPUT ON;
 
-DECLARE
-locomotiveResultCursor SYS_REFCURSOR;
-
-    locomotiveIdentifier       LOCOMOTIVE.LOCOMOTIVE_ID%TYPE;
-    operatorIdentifier         LOCOMOTIVE.OPERATOR_ID%TYPE;
-    locomotiveModelIdentifier  LOCOMOTIVE.LOCOMOTIVE_MODEL_ID%TYPE;
-    gaugeCode                  LOCOMOTIVE.GAUGECODE%TYPE;
-BEGIN
-    locomotiveResultCursor := getLocomotivesWithMultipleGauges;
-
-    LOOP
-FETCH locomotiveResultCursor
-        INTO  locomotiveIdentifier,
-              operatorIdentifier,
-              locomotiveModelIdentifier,
-              gaugeCode;
-
-        EXIT WHEN locomotiveResultCursor%NOTFOUND;
-
-        DBMS_OUTPUT.PUT_LINE(
-            'LOCOMOTIVE_ID = '          || locomotiveIdentifier      ||
-            ', OPERATOR_ID = '          || operatorIdentifier        ||
-            ', LOCOMOTIVE_MODEL_ID = '  || locomotiveModelIdentifier ||
-            ', GAUGECODE = '            || gaugeCode
-        );
-END LOOP;
-
-CLOSE locomotiveResultCursor;
-END;
-/

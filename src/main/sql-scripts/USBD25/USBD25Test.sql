@@ -1,31 +1,30 @@
 SET SERVEROUTPUT ON;
 
 DECLARE
-RESULT_CURSOR SYS_REFCURSOR;
+cur_result      SYS_REFCURSOR;
 
-    FACILITY_ID_VALUE       FACILITY.FACILITY_ID%TYPE;
-    FACILITY_NAME_VALUE     FACILITY.NAME%TYPE;
-    FACILITY_ORDER_VALUE    TRAIN_ROUTE."ORDER"%TYPE;
+    facility_id     facility.facility_id%TYPE;
+    facility_name   facility.name%TYPE;
+    facility_order  train_route."ORDER"%TYPE;
 BEGIN
-
-    RESULT_CURSOR := FUNCTION_USBD25_LIST_FACILITIES_WITHOUT_STOP;
+    cur_result := FUNCTION_USBD25_LIST_FACILITIES_WITHOUT_STOP;
 
     LOOP
-FETCH RESULT_CURSOR INTO
-            FACILITY_ID_VALUE,
-            FACILITY_NAME_VALUE,
-            FACILITY_ORDER_VALUE;
+FETCH cur_result INTO
+            facility_id,
+            facility_name,
+            facility_order;
 
-        EXIT WHEN RESULT_CURSOR%NOTFOUND;
+        EXIT WHEN cur_result%NOTFOUND;
 
         DBMS_OUTPUT.PUT_LINE(
-              'FACILITY_ID = ' || FACILITY_ID_VALUE
-           || ' | NAME = '        || FACILITY_NAME_VALUE
-           || ' | ORDER = '       || FACILITY_ORDER_VALUE
+              'FACILITY_ID = ' || facility_id
+           || ' | NAME = '     || facility_name
+           || ' | ORDER = '    || facility_order
         );
 END LOOP;
 
-CLOSE RESULT_CURSOR;
+CLOSE cur_result;
 
 EXCEPTION
     WHEN OTHERS THEN

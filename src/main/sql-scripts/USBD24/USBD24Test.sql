@@ -1,49 +1,33 @@
-DECLARE
-    EndPoint SYS_REFCURSOR;
-    FacilityName FACILITY.NAME%TYPE;
-    StopOrder   TRAIN_ROUTE."ORDER"%TYPE;
-
-BEGIN
-    EndPoint := ListEndpointsByRoute(1);
-    IF EndPoint IS NOT NULL THEN
-        LOOP
-            FETCH EndPoint INTO FacilityName, StopOrder;
-            EXIT WHEN EndPoint%NOTFOUND;
-            DBMS_OUTPUT.PUT_LINE('Facility: ' || FacilityName || ', Order: ' || StopOrder);
-        END LOOP;
-    ELSE
-        DBMS_OUTPUT.PUT_LINE('No endpoints found for the given route.');
-    END IF;
-EXCEPTION
-    WHEN OTHERS THEN
-        DBMS_OUTPUT.PUT_LINE('An error occurred: ' || SQLERRM);
-END;
-/
-
---------------------------------------------------------------------------------------------------------
+SET SERVEROUTPUT ON;
 
 DECLARE
-EndPoint SYS_REFCURSOR;
-    FacilityName FACILITY.NAME%TYPE;
-    StopOrder   TRAIN_ROUTE."ORDER"%TYPE;
-
+RouteCursor   SYS_REFCURSOR;
+    FacilityId    FACILITY.FACILITY_ID%TYPE;
+    FacilityName  FACILITY.NAME%TYPE;
+    RouteOrder    TRAIN_ROUTE."ORDER"%TYPE;
 BEGIN
-    EndPoint := ListEndpointsByRoute(2);
-    IF EndPoint IS NOT NULL THEN
-        LOOP
-            FETCH EndPoint INTO FacilityName, StopOrder;
-            EXIT WHEN EndPoint%NOTFOUND;
-            DBMS_OUTPUT.PUT_LINE('Facility: ' || FacilityName || ', Order: ' || StopOrder);
+
+    RouteCursor := ListEndpointsByRoute(1);
+
+    LOOP
+FETCH RouteCursor INTO
+            FacilityId,
+            FacilityName,
+            RouteOrder;
+
+        EXIT WHEN RouteCursor%NOTFOUND;
+
+        DBMS_OUTPUT.PUT_LINE(
+              'FacilityId = ' || FacilityId
+           || ' | Facility = '  || FacilityName
+           || ' | Order = '     || RouteOrder
+        );
 END LOOP;
-ELSE
-        DBMS_OUTPUT.PUT_LINE('No endpoints found for the given route.');
-END IF;
+
+CLOSE RouteCursor;
+
 EXCEPTION
     WHEN OTHERS THEN
-        DBMS_OUTPUT.PUT_LINE('An error occurred: ' || SQLERRM);
+        DBMS_OUTPUT.PUT_LINE('Erro: ' || SQLCODE || ' - ' || SQLERRM);
 END;
 /
-
-
-
-
