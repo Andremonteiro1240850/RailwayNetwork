@@ -1,23 +1,29 @@
 SET SERVEROUTPUT ON;
 
 DECLARE
-  v_cur           SYS_REFCURSOR;
-  v_id            facility.facility_id%TYPE;
-  v_name          facility.name%TYPE;
-  v_type          facility_type.name%TYPE;
+  v_cur  SYS_REFCURSOR;
+  v_id   facility.facility_id%TYPE;
+  v_name facility.name%TYPE;
+  v_type facility_type.name%TYPE;
 
-  v_count   PLS_INTEGER := 0;
-  has_8     BOOLEAN := FALSE;
-  has_14    BOOLEAN := FALSE;
-  has_17    BOOLEAN := FALSE;
+  v_count PLS_INTEGER := 0;
+  has_8   BOOLEAN := FALSE;
+  has_14  BOOLEAN := FALSE;
+  has_17  BOOLEAN := FALSE;
 BEGIN
   v_cur := fn_usbd30_facilities_silos_sem_warehouses;
+
+  DBMS_OUTPUT.PUT_LINE('FACILITY_ID | NAME                | TYPE');
+  DBMS_OUTPUT.PUT_LINE('-----------------------------------------');
 
   LOOP
     FETCH v_cur INTO v_id, v_name, v_type;
     EXIT WHEN v_cur%NOTFOUND;
 
     v_count := v_count + 1;
+    DBMS_OUTPUT.PUT_LINE(
+      LPAD(v_id, 10) || ' | ' || RPAD(v_name, 20) || ' | ' || v_type
+    );
 
     IF v_id = 8  THEN has_8  := TRUE; END IF;
     IF v_id = 14 THEN has_14 := TRUE; END IF;
