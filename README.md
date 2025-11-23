@@ -37,13 +37,13 @@ This project implements a train station management system with the following mai
 
 ```
 ├── doc/                           # Documentation
-│   ├── USEI01-USEI10/            # User story documentation
+│   ├── USEI01-USEI10/             # User story documentation
 │   │   ├── Class Diagram/         # PlantUML class diagrams
-│   │   └── Complexity/           # Complexity analysis
+│   │   └── Complexity/            # Complexity analysis
 │   ├── global-artifacts/          # Domain models, conceptual models
 │   │   ├── Conceptual Model/      # Conceptual model (VPP, SVG)
 │   │   ├── Domain Model/          # Domain model (PlantUML, SVG)
-│   │   ├── Phisical Model/        # Physical database model
+│   │   ├── Realtional Model/      # Physical database model
 │   │   └── Glossary/              # Project glossary
 │   └── auth/                      # Authentication documentation
 ├── src/
