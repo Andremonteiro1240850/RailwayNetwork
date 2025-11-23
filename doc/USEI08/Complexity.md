@@ -1,4 +1,4 @@
-# USEI08 - Análise de Complexidade (Pior Caso)
+# USEI08 - Análise de Complexidade Temporal (Pior Caso)
 
 ## Notação
 
@@ -7,6 +7,17 @@
 - **m**: Resultados filtrados (m ≤ k)
 - **s**: Comprimento médio dos nomes das estações
 - **h**: Altura da árvore (O(log N) balanceada, O(N) degenerada)
+
+## Tipo de Algoritmos
+
+Os algoritmos de busca implementados (range query, nearest neighbor, radius search) são **não determinísticos**, pois têm passos que podem não ser executados dependendo dos valores nas estruturas de dados (poda espacial e branch-and-bound).
+
+Para algoritmos não determinísticos, a análise de complexidade considera:
+- **Worst case (Pior caso)**: Upper bound - caso que causa o máximo número de operações (quando a poda não funciona efetivamente)
+- **Best case (Melhor caso)**: Lower bound - caso que causa o mínimo número de operações (quando a poda funciona de forma ótima)
+- **Average case (Caso médio)**: Tempo esperado considerando todos os possíveis inputs e caminhos de execução
+
+Esta análise foca no **pior caso** para garantir limites superiores de performance.
 
 ---
 
@@ -18,13 +29,10 @@ public GeographicalSearchController(KDTreeRepository kdTreeRepository, StationRe
 
 **Complexidade Temporal: O(N)**
 
-**Como cheguei a este resultado:**
-1. `getCachedTree()`: O(1) - apenas retorna referência, operação constante
-2. `getAllStations()`: O(N) - preciso copiar N referências para o novo ArrayList
-3. **Total**: O(1) + O(N) = O(N)
-
-**Complexidade Espacial: O(N)**
-- ArrayList com N referências a estações
+**Análise da complexidade:**
+1. `getCachedTree()`: O(1) - apenas retorna uma referência ao objeto já existente em memória, sem processamento adicional
+2. `getAllStations()`: O(N) - cria um novo ArrayList e copia todas as N referências às estações. Embora os objetos Station não sejam duplicados (apenas referências), a criação da lista e cópia das referências requer O(N) operações
+3. **Total**: O(1) + O(N) = O(N) - a operação dominante é a cópia da lista
 
 ---
 
@@ -38,24 +46,28 @@ public List<Station> searchByGeographicalArea(double latMin, double latMax,
 
 **Complexidade Temporal: O(N + k + m log m · s)**
 
-**Como cheguei a este resultado:**
+**Análise da complexidade:**
 
-1. **Validações**: O(1) - apenas comparações numéricas simples
+1. **Validações**: O(1) - verificações de limites de latitude/longitude são comparações numéricas simples, operação constante
+
 2. **rangeQueryUnsorted**: O(N + k)
-   - No pior caso, visito todos os N nós da árvore (quando a query cobre tudo ou a árvore é degenerada)
-   - Para cada nó visitado, verifico todas as estações no bucket
-   - No total: visito N nós e verifico k estações que estão no range → O(N + k)
-3. **Filtragem**: O(k) - percorro os k resultados uma vez, cada filtro é O(1) → O(k)
-4. **Ordenação**: O(m log m · s)
-   - Ordeno apenas os m resultados filtrados (não todos os k)
-   - Timsort faz O(m log m) comparações
-   - Cada comparação de strings leva O(s) tempo → O(m log m · s)
-5. **Total**: O(N + k) + O(k) + O(m log m · s) = O(N + k + m log m · s)
+   - **Traversal recursivo**: No pior caso, quando o retângulo de busca cobre todo o dataset ou a árvore é degenerada (altura O(N)), a poda espacial não consegue eliminar ramos. Isto força a visita de todos os N nós da árvore
+   - **Verificação de estações**: Para cada nó visitado, são verificadas todas as estações no bucket para ver se estão dentro do range retangular. Cada verificação de coordenadas é O(1)
+   - **Resultado**: São visitados N nós e são recolhidas k estações que estão no range → O(N + k)
+   - **Nota**: No caso médio com árvore balanceada, o traversal é O(√N), resultando em O(√N + k)
 
-**Complexidade Espacial: O(N + k)**
-- Pilha recursão: O(N) no pior caso
-- Listas: O(k) + O(m) onde m ≤ k
-- Espaço auxiliar ordenação: O(m)
+3. **Filtragem**: O(k)
+   - São percorridos os k resultados obtidos da query uma única vez
+   - Cada chamada `filters.matches(station)` executa no máximo 3 comparações constantes (país, isCity, isMainStation), então é O(1)
+   - **Total**: k iterações × O(1) = O(k)
+
+4. **Ordenação**: O(m log m · s)
+   - São ordenados apenas os m resultados filtrados (não todos os k), o que é uma otimização importante
+   - É utilizado Timsort (algoritmo padrão do Java), que é baseado em comparações e requer O(m log m) comparações no pior caso
+   - Cada comparação de nomes de estações (`String.compareTo()`) compara caracteres sequencialmente até encontrar diferença, levando O(s) tempo onde s é o comprimento médio dos nomes
+   - **Total**: O(m log m) comparações × O(s) por comparação = O(m log m · s)
+
+5. **Total**: O(N + k) + O(k) + O(m log m · s) = O(N + k + m log m · s)
 
 ---
 
@@ -68,15 +80,14 @@ public List<Station> searchByGeographicalArea(double latMin, double latMax,
 
 **Complexidade Temporal: O(N + k log k · s)**
 
-**Como cheguei a este resultado:**
-1. **Range query**: O(N + k) - mesma análise do método com filtros
-2. **Ordenação**: O(k log k · s) - ordeno todos os k resultados (não filtrados), cada comparação de strings é O(s)
+**Análise da complexidade:**
+1. **Range query**: O(N + k) - mesma análise do método com filtros: traversal O(N) no pior caso e recolha de k resultados
+2. **Ordenação**: O(k log k · s)
+   - Como não há filtros, são ordenados todos os k resultados obtidos da query
+   - Timsort requer O(k log k) comparações
+   - Cada comparação de strings leva O(s) tempo
+   - **Total**: O(k log k) comparações × O(s) = O(k log k · s)
 3. **Total**: O(N + k) + O(k log k · s) = O(N + k log k · s)
-
-**Complexidade Espacial: O(N + k)**
-- Pilha recursão: O(N)
-- Lista resultados: O(k)
-- Espaço auxiliar: O(k)
 
 ---
 
@@ -89,25 +100,33 @@ public List<KDTree.StationDistance> findNearestStations(double targetLat, double
 
 **Complexidade Temporal: O(N log k + k log k)**
 
-**Como cheguei a este resultado:**
+**Análise da complexidade:**
 
-1. **Validações**: O(1) - comparações simples
+1. **Validações**: O(1) - verificações de coordenadas válidas e parâmetro n positivo são operações constantes
+
 2. **nearestN**: O(N log k + k log k)
-   - **Traversal**: O(N) - no pior caso visito todos os N nós (estações equidistantes ou árvore degenerada)
-   - **Priority queue**: O(N log k)
-     - Para cada uma das N estações, faço operações na heap de tamanho máximo k
-     - Cada operação (offer/poll) na heap é O(log k)
-     - Total: N estações × O(log k) = O(N log k)
-   - **Ordenação**: O(k log k) - ordeno os k resultados finais por distância (comparar doubles é O(1))
-   - **Total nearestN**: O(N log k) + O(k log k) = O(N log k + k log k)
-3. **Filtragem**: O(m) - percorro os m resultados uma vez, cada filtro é O(1)
-4. **Total**: O(N log k + k log k) + O(m) = O(N log k + k log k) (m ≤ k, então O(m) é dominado)
+   - **Traversal recursivo**: O(N)
+     - No pior caso, quando todas as estações são equidistantes do ponto alvo ou a árvore é degenerada, a poda branch-and-bound não consegue eliminar ramos
+     - Isto força a visita de todos os N nós da árvore
+     - Para cada nó, são processadas todas as estações no bucket
+   - **Priority queue (max-heap)**: O(N log k)
+     - É mantida uma max-heap de tamanho máximo k com as k estações mais próximas encontradas até ao momento
+     - Para cada uma das N estações processadas, é calculada a distância Haversine (O(1)) e são feitas operações na heap
+     - Se a heap tem menos de k elementos, é feito `offer()` (O(log k))
+     - Se a heap está cheia e é encontrada uma estação mais próxima, é feito `poll()` seguido de `offer()` (ambos O(log k))
+     - **Total**: N estações × O(log k) operações = O(N log k)
+   - **Ordenação final**: O(k log k)
+     - Após o traversal, são ordenados os k resultados finais por distância
+     - Comparar doubles é O(1), então não há fator de string
+     - Timsort requer O(k log k) comparações
+   - **Total nearestN**: O(N) + O(N log k) + O(k log k) = O(N log k + k log k) (O(N) é dominado por O(N log k))
 
-**Complexidade Espacial: O(N + k)**
-- Pilha recursão: O(N)
-- Priority queue: O(k)
-- Listas: O(k) + O(m)
-- Espaço auxiliar: O(k)
+3. **Filtragem**: O(m)
+   - São percorridos os m resultados retornados por nearestN uma vez
+   - Cada filtro é O(1) como explicado anteriormente
+   - **Total**: O(m)
+
+4. **Total**: O(N log k + k log k) + O(m) = O(N log k + k log k) (como m ≤ k, O(m) é dominado por O(k log k))
 
 ---
 
@@ -120,8 +139,6 @@ public List<KDTree.StationDistance> findNearestStations(double targetLat, double
 **Complexidade Temporal: O(N log k + k log k)**
 - Mesma que nearestN
 
-**Complexidade Espacial: O(N + k)**
-
 ---
 
 ## findStationsInRadius (com filtros)
@@ -133,22 +150,34 @@ public List<KDTree.StationDistance> findStationsInRadius(double targetLat, doubl
 
 **Complexidade Temporal: O(N + k + m log m)**
 
-**Como cheguei a este resultado:**
+**Análise da complexidade:**
 
-1. **Validações**: O(1) - comparações simples
+1. **Validações**: O(1) - verificações de coordenadas válidas e raio não-negativo são operações constantes
+
 2. **radiusSearchUnsorted**: O(N + k)
-   - **Traversal**: O(N) - no pior caso visito todos os N nós (raio muito grande ou árvore degenerada)
-   - **Processamento**: para cada estação, calculo distância Haversine que é O(1)
-   - **Recolha**: guardo k resultados dentro do raio
-   - **Total**: O(N) para visitar nós + O(k) para guardar resultados = O(N + k)
-3. **Filtragem**: O(k) - percorro os k resultados uma vez, cada filtro é O(1)
-4. **Ordenação**: O(m log m) - ordeno apenas os m resultados filtrados por distância (comparar doubles é O(1))
-5. **Total**: O(N + k) + O(k) + O(m log m) = O(N + k + m log m)
+   - **Traversal recursivo**: O(N)
+     - No pior caso, quando o raio de busca é muito grande (cobrindo toda a árvore) ou a árvore é degenerada, a poda espacial não consegue eliminar ramos
+     - Isto força a visita de todos os N nós da árvore
+   - **Processamento de estações**: Para cada estação encontrada, é calculada a distância Haversine até ao ponto alvo
+     - O cálculo Haversine envolve operações trigonométricas (sin, cos, atan2) que são O(1)
+     - É verificada se a distância está dentro do raio (comparação O(1))
+   - **Recolha de resultados**: São guardados k resultados dentro do raio como objetos StationDistance
+     - Cada criação de objeto é O(1)
+   - **Total**: O(N) para visitar todos os nós + O(k) para processar e guardar resultados = O(N + k)
+   - **Nota**: No caso médio com árvore balanceada e raio razoável, o traversal é O(√N), resultando em O(√N + k)
 
-**Complexidade Espacial: O(N + k)**
-- Pilha recursão: O(N)
-- Listas: O(k) + O(m)
-- Espaço auxiliar: O(m)
+3. **Filtragem**: O(k)
+   - São percorridos os k resultados obtidos da busca uma vez
+   - Cada filtro é O(1) como explicado anteriormente
+   - **Total**: O(k)
+
+4. **Ordenação**: O(m log m)
+   - São ordenados apenas os m resultados filtrados por distância (não todos os k)
+   - Timsort requer O(m log m) comparações
+   - Comparar doubles (distâncias) é O(1), então não há fator adicional
+   - **Total**: O(m log m)
+
+5. **Total**: O(N + k) + O(k) + O(m log m) = O(N + k + m log m)
 
 ---
 
@@ -160,37 +189,40 @@ public List<KDTree.StationDistance> findStationsInRadius(double targetLat, doubl
 
 **Complexidade Temporal: O(N + k log k)**
 
-**Como cheguei a este resultado:**
-1. **Radius search**: O(N + k) - mesma análise do método com filtros
-2. **Ordenação**: O(k log k) - ordeno todos os k resultados por distância (comparar doubles é O(1))
+**Análise da complexidade:**
+1. **Radius search**: O(N + k)
+   - Mesma análise do método com filtros: traversal O(N) no pior caso, processamento de estações e recolha de k resultados
+2. **Ordenação**: O(k log k)
+   - Como não há filtros, são ordenados todos os k resultados obtidos da busca por distância
+   - Timsort requer O(k log k) comparações
+   - Comparar doubles é O(1), então não há fator adicional
+   - **Total**: O(k log k)
 3. **Total**: O(N + k) + O(k log k) = O(N + k log k)
-
-**Complexidade Espacial: O(N + k)**
 
 ---
 
 ## Resumo
 
 **Constructor**
-- Tempo: O(N) | Espaço: O(N)
+- Complexidade Temporal: O(N)
 
 **searchByGeographicalArea (com filtros)**
-- Tempo: O(N + k + m log m · s) | Espaço: O(N + k)
+- Complexidade Temporal: O(N + k + m log m · s)
 
 **searchByGeographicalArea (sem filtros)**
-- Tempo: O(N + k log k · s) | Espaço: O(N + k)
+- Complexidade Temporal: O(N + k log k · s)
 
 **findNearestStations (com filtros)**
-- Tempo: O(N log k + k log k) | Espaço: O(N + k)
+- Complexidade Temporal: O(N log k + k log k)
 
 **findNearestStations (sem filtros)**
-- Tempo: O(N log k + k log k) | Espaço: O(N + k)
+- Complexidade Temporal: O(N log k + k log k)
 
 **findStationsInRadius (com filtros)**
-- Tempo: O(N + k + m log m) | Espaço: O(N + k)
+- Complexidade Temporal: O(N + k + m log m)
 
 **findStationsInRadius (sem filtros)**
-- Tempo: O(N + k log k) | Espaço: O(N + k)
+- Complexidade Temporal: O(N + k log k)
 
 ### Casos: Melhor, Médio, Pior
 
@@ -213,6 +245,4 @@ public List<KDTree.StationDistance> findStationsInRadius(double targetLat, doubl
 
 1. **Comparação de strings**: O(s) por comparação. Para nomes limitados, simplifica para O(m log m).
 
-2. **Espaço recursão**: O(h) onde h = O(N) no pior caso (árvore degenerada).
-
-3. **Pior caso ocorre quando**: árvore degenerada, queries grandes cobrindo todo dataset, ou pontos equidistantes (nearest neighbor).
+2. **Pior caso ocorre quando**: árvore degenerada, queries grandes cobrindo todo dataset, ou pontos equidistantes (nearest neighbor).
