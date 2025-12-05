@@ -4,32 +4,37 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.text.*?>
+<?import javafx.scene.effect.*?>
 
 <StackPane xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
            fx:controller="main.javaFX.Controller"
-           style="-fx-background-color: #f5f5f5;">
+           style="-fx-background-color: linear-gradient(from 0% 0% to 100% 100%, #1F2A44, #0D1B33);">
     <children>
         <VBox spacing="10" alignment="TOP_CENTER" style="-fx-padding: 20;">
-            <!-- Title -->
-            <HBox alignment="CENTER" style="-fx-padding: 0 0 20 0;">
+
+            <!-- Title with Glow -->
+            <HBox alignment="CENTER" style="-fx-padding: 0 0 30 0;">
                 <Label text="Railway Terminal Management System"
-                       style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;">
-                </Label>
+                       style="-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: linear-gradient(to right, #00d4ff, #0099ff); -fx-effect: glow(gaussian, rgba(0, 212, 255, 0.8), 20, 0.7, 0, 0);"/>
             </HBox>
 
             <!-- TabPane -->
-            <TabPane prefHeight="550.0" prefWidth="900.0" tabClosingPolicy="UNAVAILABLE"
-                     style="-fx-background-color: white; -fx-border-color: #dcdcdc; -fx-border-radius: 5;">
+            <TabPane prefHeight="600" prefWidth="950" tabClosingPolicy="UNAVAILABLE"
+                     style="-fx-background-color: linear-gradient(from 0% 0% to 100% 100%, #15203B, #0D1B33);
+                            -fx-border-color: #00A8FF; -fx-border-width: 2;
+                            -fx-border-radius: 10; -fx-background-radius: 10;
+                            -fx-effect: glow(gaussian, rgba(0, 168, 255, 0.5), 15, 0.5, 0, 0);">
+
                 <tabs>
                     <!-- Tab 1: Cargo Handling -->
-                    <Tab text="🚂 Cargo Handling">
+                    <Tab text="🚂 Cargo Handling" style="-fx-background-color: linear-gradient(from 0% 0% to 100% 100%, #1B2A4D, #0D1B33); -fx-text-base-color: #EAF4FF;">
                         <content>
-                            <VBox spacing="15" style="-fx-padding: 30;">
-                                <Label text="Cargo Handling at Railway Terminal"
-                                       style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #34495e;">
-                                </Label>
+                            <VBox spacing="20" style="-fx-padding: 30; -fx-background-color: linear-gradient(from 0% 0% to 100% 100%, #1B2A4D, #0D1B33);">
 
-                                <Separator/>
+                                <Label text="Cargo Handling at Railway Terminal"
+                                       style="-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: #EAF4FF; -fx-effect: glow(gaussian, rgba(234,244,255,0.8), 15,0.7,0,0);"/>
+
+                                <Separator style="-fx-background-color: linear-gradient(to right, transparent, #00A8FF, transparent); -fx-pref-height: 2;"/>
 
                                 <GridPane hgap="15" vgap="15">
                                     <columnConstraints>
@@ -37,91 +42,75 @@
                                         <ColumnConstraints percentWidth="50"/>
                                     </columnConstraints>
 
-                                    <!-- Row 1 -->
+                                    <!-- Row 1 Buttons -->
                                     <VBox spacing="8" GridPane.columnIndex="0" GridPane.rowIndex="0">
                                         <Button text="📦 Wagons Unloading ✓"
                                                 onAction="#handleWagonsButton"
                                                 prefWidth="350" prefHeight="60"
-                                                style="-fx-font-size: 14px; -fx-background-color: #2ecc71; -fx-text-fill: white; -fx-background-radius: 5; -fx-cursor: hand;">
-                                        </Button>
+                                                style="-fx-font-size: 14px; -fx-font-weight: bold; -fx-background-color: linear-gradient(to right, #00C851, #007BFF); -fx-text-fill: white; -fx-background-radius: 8; -fx-cursor: hand; -fx-effect: glow(gaussian, rgba(0, 200, 81, 0.6), 15, 0.6, 0, 3);"/>
                                         <Label text="✓ Unload wagons using FEFO/FIFO strategy"
-                                               style="-fx-text-fill: #27ae60; -fx-font-size: 11px; -fx-font-weight: bold;">
-                                        </Label>
+                                               style="-fx-text-fill: #B0D4FF; -fx-font-size: 11px; -fx-font-weight: bold;"/>
                                     </VBox>
 
                                     <VBox spacing="8" GridPane.columnIndex="1" GridPane.rowIndex="0">
-                                        <Button text="✅ Order Eligibility and Allocation 🚧"
+                                        <Button text="✅ Order Eligibility 🚧"
                                                 onAction="#handleOrderEligibilityButton"
                                                 prefWidth="350" prefHeight="60"
-                                                style="-fx-font-size: 14px; -fx-background-color: #95a5a6; -fx-text-fill: white; -fx-background-radius: 5; -fx-cursor: hand;">
-                                        </Button>
-                                        <Label text="🚧 Coming soon - Check order eligibility and allocate"
-                                               style="-fx-text-fill: #7f8c8d; -fx-font-size: 11px;">
-                                        </Label>
+                                                style="-fx-font-size: 14px; -fx-font-weight: bold; -fx-background-color: linear-gradient(to right, #0D274D, #1B3B66); -fx-text-fill: #94A3B8; -fx-background-radius: 8; -fx-cursor: hand; -fx-border-color: #378DFF; -fx-border-width: 1; -fx-border-radius: 8;"/>
+                                        <Label text="🚧 Coming soon"
+                                               style="-fx-text-fill: #378DFF; -fx-font-size: 11px;"/>
                                     </VBox>
 
-                                    <!-- Row 2 -->
+                                    <!-- Row 2 Buttons -->
                                     <VBox spacing="8" GridPane.columnIndex="0" GridPane.rowIndex="1">
-                                        <Button text="📋 Picking Plans 🚧"
-                                                onAction="#handlePickingPlansButton"
+                                        <Button text="📋 Picking Plans 🚧" onAction="#handlePickingPlansButton"
                                                 prefWidth="350" prefHeight="60"
-                                                style="-fx-font-size: 14px; -fx-background-color: #95a5a6; -fx-text-fill: white; -fx-background-radius: 5; -fx-cursor: hand;">
-                                        </Button>
-                                        <Label text="🚧 Coming soon - Generate and optimize picking plans"
-                                               style="-fx-text-fill: #7f8c8d; -fx-font-size: 11px;">
-                                        </Label>
+                                                style="-fx-font-size: 14px; -fx-font-weight: bold; -fx-background-color: linear-gradient(to right, #0D274D, #1B3B66); -fx-text-fill: #94A3B8; -fx-background-radius: 8; -fx-cursor: hand; -fx-border-color: #378DFF; -fx-border-width: 1; -fx-border-radius: 8;"/>
+                                        <Label text="🚧 Coming soon"
+                                               style="-fx-text-fill: #378DFF; -fx-font-size: 11px;"/>
                                     </VBox>
 
                                     <VBox spacing="8" GridPane.columnIndex="1" GridPane.rowIndex="1">
-                                        <Button text="🛤️ Pick Path Sequencing 🚧"
-                                                onAction="#handlePickPathButton"
+                                        <Button text="🛤️ Pick Path Sequencing 🚧" onAction="#handlePickPathButton"
                                                 prefWidth="350" prefHeight="60"
-                                                style="-fx-font-size: 14px; -fx-background-color: #95a5a6; -fx-text-fill: white; -fx-background-radius: 5; -fx-cursor: hand;">
-                                        </Button>
-                                        <Label text="🚧 Coming soon - Optimize pick path for efficiency"
-                                               style="-fx-text-fill: #7f8c8d; -fx-font-size: 11px;">
-                                        </Label>
+                                                style="-fx-font-size: 14px; -fx-font-weight: bold; -fx-background-color: linear-gradient(to right, #0D274D, #1B3B66); -fx-text-fill: #94A3B8; -fx-background-radius: 8; -fx-cursor: hand; -fx-border-color: #378DFF; -fx-border-width: 1; -fx-border-radius: 8;"/>
+                                        <Label text="🚧 Coming soon"
+                                               style="-fx-text-fill: #378DFF; -fx-font-size: 11px;"/>
                                     </VBox>
 
-                                    <!-- Row 3 -->
+                                    <!-- Row 3 Buttons -->
                                     <VBox spacing="8" GridPane.columnIndex="0" GridPane.rowIndex="2">
-                                        <Button text="🔄 Returns and Quarantine 🚧"
-                                                onAction="#handleReturnsQuarantineButton"
+                                        <Button text="🔄 Returns and Quarantine 🚧" onAction="#handleReturnsQuarantineButton"
                                                 prefWidth="350" prefHeight="60"
-                                                style="-fx-font-size: 14px; -fx-background-color: #95a5a6; -fx-text-fill: white; -fx-background-radius: 5; -fx-cursor: hand;">
-                                        </Button>
-                                        <Label text="🚧 Coming soon - Manage returns and quarantine items"
-                                               style="-fx-text-fill: #7f8c8d; -fx-font-size: 11px;">
-                                        </Label>
+                                                style="-fx-font-size: 14px; -fx-font-weight: bold; -fx-background-color: linear-gradient(to right, #0D274D, #1B3B66); -fx-text-fill: #94A3B8; -fx-background-radius: 8; -fx-cursor: hand; -fx-border-color: #378DFF; -fx-border-width: 1; -fx-border-radius: 8;"/>
+                                        <Label text="🚧 Coming soon"
+                                               style="-fx-text-fill: #378DFF; -fx-font-size: 11px;"/>
                                     </VBox>
+
                                 </GridPane>
 
                                 <!-- Info Box -->
                                 <HBox spacing="10" alignment="CENTER_LEFT"
-                                      style="-fx-background-color: #e8f5e9; -fx-padding: 15; -fx-background-radius: 5; -fx-border-color: #81c784; -fx-border-radius: 5; -fx-border-width: 2;">
+                                      style="-fx-background-color: linear-gradient(to right, rgba(0,168,255,0.15), rgba(0,85,255,0.15)); -fx-padding: 15; -fx-background-radius: 8; -fx-border-color: #00A8FF; -fx-border-radius: 8; -fx-border-width: 2; -fx-effect: glow(gaussian, rgba(0,168,255,0.5), 10, 0.5, 0, 0);">
                                     <Label text="ℹ️" style="-fx-font-size: 20px;"/>
                                     <VBox spacing="5">
                                         <Label text="Fully Implemented Features"
-                                               style="-fx-font-weight: bold; -fx-text-fill: #2e7d32;">
-                                        </Label>
-                                        <Label text="✓ Wagons Unloading is fully functional with complete JavaFX interface"
-                                               style="-fx-text-fill: #2e7d32; -fx-font-size: 12px;">
-                                        </Label>
+                                               style="-fx-font-weight: bold; -fx-text-fill: #B0D4FF;"/>
+                                        <Label text="✓ Wagons Unloading is fully functional"
+                                               style="-fx-text-fill: #94CFFF; -fx-font-size: 12px;"/>
                                     </VBox>
                                 </HBox>
+
                             </VBox>
                         </content>
                     </Tab>
 
                     <!-- Tab 2: Spatial Queries -->
-                    <Tab text="🗺️ Spatial and Indexed Queries">
+                    <Tab text="🗺️ Spatial and Indexed Queries" style="-fx-background-color: linear-gradient(from 0% 0% to 100% 100%, #1B2A4D, #0D1B33); -fx-text-base-color: #EAF4FF;">
                         <content>
-                            <VBox spacing="15" style="-fx-padding: 30;">
-                                <Label text="Spatial and Indexed Queries"
-                                       style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #34495e;">
-                                </Label>
-
-                                <Separator/>
+                            <VBox spacing="20" style="-fx-padding: 30; -fx-background-color: linear-gradient(from 0% 0% to 100% 100%, #1B2A4D, #0D1B33);">
+                                <Label text="Spatial and Indexed Queries" style="-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: #EAF4FF; -fx-effect: glow(gaussian, rgba(234,244,255,0.8), 15,0.7,0,0);"/>
+                                <Separator style="-fx-background-color: linear-gradient(to right, transparent, #00A8FF, transparent); -fx-pref-height: 2;"/>
 
                                 <GridPane hgap="15" vgap="15">
                                     <columnConstraints>
@@ -129,123 +118,83 @@
                                         <ColumnConstraints percentWidth="50"/>
                                     </columnConstraints>
 
-                                    <!-- Row 1 -->
                                     <VBox spacing="8" GridPane.columnIndex="0" GridPane.rowIndex="0">
-                                        <Button text="🕐 Time-Zone Index and Windowed Queries 🚧"
-                                                onAction="#handleStationLookupButton"
+                                        <Button text="🕐 Time-Zone Queries 🚧" onAction="#handleStationLookupButton"
                                                 prefWidth="350" prefHeight="60"
-                                                style="-fx-font-size: 14px; -fx-background-color: #95a5a6; -fx-text-fill: white; -fx-background-radius: 5; -fx-cursor: hand;">
-                                        </Button>
-                                        <Label text="🚧 Coming soon - Query stations by time-zone"
-                                               style="-fx-text-fill: #7f8c8d; -fx-font-size: 11px;">
-                                        </Label>
+                                                style="-fx-background-color: linear-gradient(to right, #0D274D, #1B3B66); -fx-text-fill: #94A3B8; -fx-background-radius: 8; -fx-border-color: #378DFF; -fx-border-width: 1;"/>
+                                        <Label text="🚧 Coming soon" style="-fx-text-fill: #378DFF; -fx-font-size: 11px;"/>
                                     </VBox>
 
                                     <VBox spacing="8" GridPane.columnIndex="1" GridPane.rowIndex="0">
-                                        <Button text="🌳 Build 2D-Tree (Lat/Long) 🚧"
-                                                onAction="#handleKDTreeButton"
+                                        <Button text="🌳 Build 2D-Tree 🚧" onAction="#handleKDTreeButton"
                                                 prefWidth="350" prefHeight="60"
-                                                style="-fx-font-size: 14px; -fx-background-color: #95a5a6; -fx-text-fill: white; -fx-background-radius: 5; -fx-cursor: hand;">
-                                        </Button>
-                                        <Label text="🚧 Coming soon - Build balanced KD-Tree"
-                                               style="-fx-text-fill: #7f8c8d; -fx-font-size: 11px;">
-                                        </Label>
+                                                style="-fx-background-color: linear-gradient(to right, #0D274D, #1B3B66); -fx-text-fill: #94A3B8; -fx-background-radius: 8; -fx-border-color: #378DFF; -fx-border-width: 1;"/>
+                                        <Label text="🚧 Coming soon" style="-fx-text-fill: #378DFF; -fx-font-size: 11px;"/>
                                     </VBox>
 
                                     <!-- Row 2 -->
                                     <VBox spacing="8" GridPane.columnIndex="0" GridPane.rowIndex="1">
-                                        <Button text="📍 Geographical Area Search 🚧"
-                                                onAction="#handleGeographicalSearchButton"
+                                        <Button text="📍 Geographical Area Search 🚧" onAction="#handleGeographicalSearchButton"
                                                 prefWidth="350" prefHeight="60"
-                                                style="-fx-font-size: 14px; -fx-background-color: #95a5a6; -fx-text-fill: white; -fx-background-radius: 5; -fx-cursor: hand;">
-                                        </Button>
-                                        <Label text="🚧 Coming soon - Search within geographical boundaries"
-                                               style="-fx-text-fill: #7f8c8d; -fx-font-size: 11px;">
-                                        </Label>
+                                                style="-fx-background-color: linear-gradient(to right, #0D274D, #1B3B66); -fx-text-fill: #94A3B8; -fx-background-radius: 8; -fx-border-color: #378DFF; -fx-border-width: 1;"/>
+                                        <Label text="🚧 Coming soon" style="-fx-text-fill: #378DFF; -fx-font-size: 11px;"/>
                                     </VBox>
 
                                     <VBox spacing="8" GridPane.columnIndex="1" GridPane.rowIndex="1">
-                                        <Button text="🎯 Proximity Search (Nearest-N) 🚧"
-                                                onAction="#handleProximitySearchButton"
+                                        <Button text="🎯 Proximity Search 🚧" onAction="#handleProximitySearchButton"
                                                 prefWidth="350" prefHeight="60"
-                                                style="-fx-font-size: 14px; -fx-background-color: #95a5a6; -fx-text-fill: white; -fx-background-radius: 5; -fx-cursor: hand;">
-                                        </Button>
-                                        <Label text="🚧 Coming soon - Find nearest stations with filters"
-                                               style="-fx-text-fill: #7f8c8d; -fx-font-size: 11px;">
-                                        </Label>
+                                                style="-fx-background-color: linear-gradient(to right, #0D274D, #1B3B66); -fx-text-fill: #94A3B8; -fx-background-radius: 8; -fx-border-color: #378DFF; -fx-border-width: 1;"/>
+                                        <Label text="🚧 Coming soon" style="-fx-text-fill: #378DFF; -fx-font-size: 11px;"/>
                                     </VBox>
 
                                     <!-- Row 3 -->
                                     <VBox spacing="8" GridPane.columnIndex="0" GridPane.rowIndex="2">
-                                        <Button text="⭕ Radius Search and Density 🚧"
-                                                onAction="#handleRadiusSearchButton"
+                                        <Button text="⭕ Radius Search 🚧" onAction="#handleRadiusSearchButton"
                                                 prefWidth="350" prefHeight="60"
-                                                style="-fx-font-size: 14px; -fx-background-color: #95a5a6; -fx-text-fill: white; -fx-background-radius: 5; -fx-cursor: hand;">
-                                        </Button>
-                                        <Label text="🚧 Coming soon - Search within radius and analyze density"
-                                               style="-fx-text-fill: #7f8c8d; -fx-font-size: 11px;">
-                                        </Label>
+                                                style="-fx-background-color: linear-gradient(to right, #0D274D, #1B3B66); -fx-text-fill: #94A3B8; -fx-background-radius: 8; -fx-border-color: #378DFF; -fx-border-width: 1;"/>
+                                        <Label text="🚧 Coming soon" style="-fx-text-fill: #378DFF; -fx-font-size: 11px;"/>
                                     </VBox>
                                 </GridPane>
 
-                                <!-- Info Box -->
                                 <HBox spacing="10" alignment="CENTER_LEFT"
-                                      style="-fx-background-color: #fff3e0; -fx-padding: 15; -fx-background-radius: 5; -fx-border-color: #ffb74d; -fx-border-radius: 5; -fx-border-width: 2;">
+                                      style="-fx-background-color: linear-gradient(to right, rgba(0,168,255,0.15), rgba(0,85,255,0.15)); -fx-padding: 15; -fx-background-radius: 8; -fx-border-color: #00A8FF; -fx-border-radius: 8; -fx-border-width: 2; -fx-effect: glow(gaussian, rgba(0,168,255,0.5),10,0.5,0,0);">
                                     <Label text="⚠️" style="-fx-font-size: 20px;"/>
                                     <VBox spacing="5">
-                                        <Label text="Under Development"
-                                               style="-fx-font-weight: bold; -fx-text-fill: #e65100;">
-                                        </Label>
-                                        <Label text="All spatial query features are currently being implemented"
-                                               style="-fx-text-fill: #e65100; -fx-font-size: 12px;">
-                                        </Label>
+                                        <Label text="Under Development" style="-fx-font-weight: bold; -fx-text-fill: #B0D4FF;"/>
+                                        <Label text="All spatial query features are being implemented" style="-fx-text-fill: #94CFFF; -fx-font-size: 12px;"/>
                                     </VBox>
                                 </HBox>
                             </VBox>
                         </content>
                     </Tab>
 
-                    <!-- Tab 3: Network Optimization -->
-                    <Tab text="🚄 Railway Network Optimization">
+                    <!-- Tab 3: Railway Network Optimization -->
+                    <Tab text="🚄 Railway Network Optimization" style="-fx-background-color: linear-gradient(from 0% 0% to 100% 100%, #1B2A4D, #0D1B33); -fx-text-base-color: #EAF4FF;">
                         <content>
-                            <VBox spacing="15" alignment="CENTER" style="-fx-padding: 50;">
-                                <Label text="🚧 Coming Soon"
-                                       style="-fx-font-size: 32px; -fx-font-weight: bold; -fx-text-fill: #95a5a6;">
-                                </Label>
+                            <VBox spacing="20" alignment="CENTER" style="-fx-padding: 50; -fx-background-color: linear-gradient(from 0% 0% to 100% 100%, #1B2A4D, #0D1B33);">
+                                <Label text="🚧 Coming Soon" style="-fx-font-size: 36px; -fx-font-weight: bold; -fx-text-fill: #EAF4FF; -fx-effect: glow(gaussian, rgba(234,244,255,0.8), 20,0.7,0,0);"/>
                                 <Label text="Network optimization features will be available in the next release"
-                                       style="-fx-font-size: 14px; -fx-text-fill: #7f8c8d;">
-                                </Label>
-
+                                       style="-fx-font-size: 14px; -fx-text-fill: #B0D4FF;"/>
                                 <VBox spacing="10" alignment="CENTER" style="-fx-padding: 30 0 0 0;">
-                                    <Label text="Planned Features:"
-                                           style="-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #7f8c8d;">
-                                    </Label>
-                                    <Label text="• Route Optimization"
-                                           style="-fx-font-size: 12px; -fx-text-fill: #95a5a6;">
-                                    </Label>
-                                    <Label text="• Network Analysis"
-                                           style="-fx-font-size: 12px; -fx-text-fill: #95a5a6;">
-                                    </Label>
-                                    <Label text="• Capacity Planning"
-                                           style="-fx-font-size: 12px; -fx-text-fill: #95a5a6;">
-                                    </Label>
+                                    <Label text="Planned Features:" style="-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #00A8FF;"/>
+                                    <Label text="• Route Optimization" style="-fx-font-size: 12px; -fx-text-fill: #94CFFF;"/>
+                                    <Label text="• Network Analysis" style="-fx-font-size: 12px; -fx-text-fill: #94CFFF;"/>
+                                    <Label text="• Capacity Planning" style="-fx-font-size: 12px; -fx-text-fill: #94CFFF;"/>
                                 </VBox>
                             </VBox>
                         </content>
                     </Tab>
+
                 </tabs>
             </TabPane>
 
             <!-- Footer -->
-            <HBox alignment="CENTER" spacing="20" style="-fx-padding: 15 0 0 0;">
-                <Label text="Railway Terminal Management System v2.0"
-                       style="-fx-font-size: 11px; -fx-text-fill: #95a5a6;">
-                </Label>
-                <Separator orientation="VERTICAL" prefHeight="15"/>
-                <Label text="© 2024 - All Rights Reserved"
-                       style="-fx-font-size: 11px; -fx-text-fill: #95a5a6;">
-                </Label>
+            <HBox alignment="CENTER" spacing="20" style="-fx-padding: 20 0 0 0;">
+                <Label text="Railway Terminal Management System v2.0" style="-fx-font-size: 11px; -fx-text-fill: #94CFFF;"/>
+                <Separator orientation="VERTICAL" prefHeight="15" style="-fx-background-color: linear-gradient(to bottom, #00A8FF, #378DFF);"/>
+                <Label text="© 2024 - All Rights Reserved" style="-fx-font-size: 11px; -fx-text-fill: #94CFFF;"/>
             </HBox>
+
         </VBox>
     </children>
 </StackPane>
