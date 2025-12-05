@@ -1,0 +1,24 @@
+CREATE OR REPLACE FUNCTION ListEndpointsByRoute (
+    train_id IN TRAIN.TRAIN_ID%TYPE
+)
+    RETURN SYS_REFCURSOR
+IS
+    cursor_output SYS_REFCURSOR;
+BEGIN
+OPEN cursor_output FOR
+SELECT
+    FACILITY.FACILITY_ID,
+    FACILITY.NAME AS facility_name,
+    TRAIN_ROUTE."ORDER" AS stop_order
+FROM
+    TRAIN_ROUTE
+        JOIN FACILITY
+             ON FACILITY.FACILITY_ID = TRAIN_ROUTE.FACILITY_ID
+WHERE
+    TRAIN_ROUTE.TRAIN_ID = train_id
+ORDER BY
+    TRAIN_ROUTE."ORDER" ASC;
+
+RETURN cursor_output;
+END ListEndpointsByRoute;
+/

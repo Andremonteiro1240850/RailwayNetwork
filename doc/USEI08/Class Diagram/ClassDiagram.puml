@@ -1,0 +1,257 @@
+@startuml
+skinparam style strictuml
+skinparam monochrome true
+
+'Diagrama de Classes - USEI08: Search by Geographical Area
+'Baseado APENAS no código implementado
+'Seguindo as regras UML Class Diagrams
+
+package "UI" {
+    class GeographicalSearchUI {
+        - controller: GeographicalSearchController
+        - scanner: Scanner
+        + GeographicalSearchUI(controller: GeographicalSearchController)
+        + showMainMenu(): void
+        + showAreaSearchMenu(): void
+        + showNearestNSearchMenu(): void
+        + showRadiusSearchMenu(): void
+        - searchByArea(): void
+        - searchWithFilters(): void
+        - searchNearestN(): void
+        - searchNearestNWithFilters(): void
+        - searchRadius(): void
+        - searchRadiusWithFilters(): void
+        - displayResults(results: List<Station>, latMin: double, latMax: double, lonMin: double, lonMax: double, filters: SearchFilters): void
+        - displayNearestResults(results: List<StationDistance>, targetLat: double, targetLon: double, n: int, filters: SearchFilters): void
+        - displayRadiusResults(results: List<StationDistance>, targetLat: double, targetLon: double, radiusKm: double, filters: SearchFilters): void
+        - formatStationDistance(sd: StationDistance): String
+        - formatStation(station: Station): String
+        - formatFiltersForDisplay(filters: SearchFilters): String
+        - readFilters(): SearchFilters
+        - readDouble(prompt: String, min: double, max: double): double
+        - showTreeStatistics(): void
+        - showSampleQueries(): void
+        - showSearchSummary(): void
+    }
+}
+
+package "Controller" {
+    class GeographicalSearchController {
+        - kdTree: KDTree
+        - allStations: List<Station>
+        + GeographicalSearchController(stations: List<Station>, stationRepository: StationRepository)
+        + {deprecated} GeographicalSearchController(stations: List<Station>)
+        + GeographicalSearchController(kdTree: KDTree, stations: List<Station>)
+        + GeographicalSearchController(kdTree: KDTree, stationRepository: StationRepository)
+        + GeographicalSearchController(kdTreeController: KDTreeController, stationRepository: StationRepository)
+        + GeographicalSearchController(kdTreeRepository: KDTreeRepository, stationRepository: StationRepository)
+        + searchByGeographicalArea(latMin: double, latMax: double, lonMin: double, lonMax: double, filters: SearchFilters): List<Station>
+        + searchByGeographicalArea(latMin: double, latMax: double, lonMin: double, lonMax: double): List<Station>
+        + findNearestStations(targetLat: double, targetLon: double, n: int, filters: SearchFilters): List<StationDistance>
+        + findNearestStations(targetLat: double, targetLon: double, n: int): List<StationDistance>
+        + findStationsInRadius(targetLat: double, targetLon: double, radiusKm: double, filters: SearchFilters): List<StationDistance>
+        + findStationsInRadius(targetLat: double, targetLon: double, radiusKm: double): List<StationDistance>
+        + getTreeStatistics(): String
+        + getKDTree(): KDTree
+        + getAllStations(): List<Station>
+        + getStationsCount(): int
+    }
+}
+
+package "Domain" {
+    class KDTree {
+        - root: KDNode
+        - numNodes: int
+        - numStations: int
+        + KDTree()
+        + KDTree(root: KDNode)
+        + rangeQuery(latMin: double, latMax: double, lonMin: double, lonMax: double): List<Station>
+        + rangeQueryUnsorted(latMin: double, latMax: double, lonMin: double, lonMax: double): List<Station>
+        + nearestN(targetLat: double, targetLon: double, n: int): List<StationDistance>
+        + radiusSearch(targetLat: double, targetLon: double, radiusKm: double): List<StationDistance>
+        + radiusSearchUnsorted(targetLat: double, targetLon: double, radiusKm: double): List<StationDistance>
+        + getSize(): int[]
+        + size(): int
+        + height(): int
+        + getBucketStats(): Map<Integer, Integer>
+        + isEmpty(): boolean
+        + getRoot(): KDNode
+        + {static} haversineDistance(lat1: double, lon1: double, lat2: double, lon2: double): double
+    }
+
+    class "KDTree.KDNode" as KDNode {
+        - axis: int
+        - splitValue: double
+        - bucket: List<Station>
+        - left: KDNode
+        - right: KDNode
+        + KDNode(axis: int, splitValue: double, bucket: List<Station>)
+        + getAxis(): int
+        + getSplitValue(): double
+        + getBucket(): List<Station>
+        + getLeft(): KDNode
+        + getRight(): KDNode
+        + setLeft(left: KDNode): void
+        + setRight(right: KDNode): void
+    }
+
+    class "KDTree.StationDistance" as StationDistance {
+        - station: Station
+        - distance: double
+        + StationDistance(station: Station, distance: double)
+        + getStation(): Station
+        + getDistance(): double
+        + toString(): String
+    }
+
+    class Station {
+        - name: String
+        - latitude: double
+        - longitude: double
+        - country: String
+        - timeZone: String
+        - timeZoneGroup: String
+        - isCity: boolean
+        - isMainStation: boolean
+        - isAirport: boolean
+        + Station(name: String, latitude: double, longitude: double, country: String, timeZone: String, timeZoneGroup: String, isCity: boolean, isMainStation: boolean, isAirport: boolean)
+        + getName(): String
+        + setName(name: String): void
+        + getLatitude(): double
+        + setLatitude(latitude: double): void
+        + getLongitude(): double
+        + setLongitude(longitude: double): void
+        + getCountry(): String
+        + setCountry(country: String): void
+        + getTimeZone(): String
+        + setTimeZone(timeZone: String): void
+        + getTimeZoneGroup(): String
+        + setTimeZoneGroup(timeZoneGroup: String): void
+        + isCity(): boolean
+        + setCity(city: boolean): void
+        + isMainStation(): boolean
+        + setMainStation(mainStation: boolean): void
+        + isAirport(): boolean
+        + setAirport(airport: boolean): void
+        + compareTo(o: Station): int
+        + equals(o: Object): boolean
+        + hashCode(): int
+        + toString(): String
+    }
+
+    class SearchFilters {
+        - isCity: Boolean
+        - isMainStation: Boolean
+        - country: Country
+        + SearchFilters(isCity: Boolean, isMainStation: Boolean, country: Country)
+        + SearchFilters()
+        + getIsCity(): Boolean
+        + getIsMainStation(): Boolean
+        + getCountry(): Country
+        + hasFilters(): boolean
+        + matches(station: Station): boolean
+        + toString(): String
+    }
+
+    enum Country {
+        AD
+        AL
+        AT
+        BA
+        BE
+        BG
+        BY
+        CH
+        CY
+        CZ
+        DE
+        DK
+        EE
+        ES
+        FI
+        FR
+        GB
+        GR
+        HR
+        HU
+        IE
+        IT
+        LI
+        LT
+        LU
+        LV
+        MA
+        MD
+        ME
+        MK
+        MT
+        NL
+        NO
+        PL
+        PT
+        RO
+        RS
+        RU
+        SE
+        SI
+        SK
+        TR
+        UA
+        + {static} fromString(code: String): Country
+    }
+}
+
+package "Repository" {
+    class KDTreeRepository {
+        - cachedTree: KDTree
+        - stationRepository: StationRepository
+        + KDTreeRepository(stationRepository: StationRepository)
+        + buildTree(): KDTree
+        + buildTree(stations: List<Station>): KDTree
+        + getCachedTree(): KDTree
+        + hasCachedTree(): boolean
+        + clearCache(): void
+    }
+
+    class StationRepository {
+        - latitudeTree: AVL<Station>
+        - longitudeTree: AVL<Station>
+        - groupCountryTree: AVL<Station>
+        - allStations: List<Station>
+        + StationRepository(stations: List<Station>)
+        + getAllStations(): List<Station>
+        + getAllStationsOrderedByLatitude(): Iterable<Station>
+        + getAllStationsOrderedByLongitude(): Iterable<Station>
+        + totalStations(): int
+    }
+}
+
+' --- Relações UML Corretas ---
+' Dependency (uso): linha tracejada com seta
+GeographicalSearchUI ..> GeographicalSearchController : uses
+GeographicalSearchController ..> KDTree : uses
+GeographicalSearchController ..> SearchFilters : uses
+GeographicalSearchController ..> KDTreeRepository : uses
+GeographicalSearchController ..> StationRepository : uses
+GeographicalSearchController ..> KDTreeController : uses
+SearchFilters ..> Station : validates
+SearchFilters ..> Country : uses
+KDTreeRepository ..> StationRepository : uses
+
+' Association: linha sólida (relação entre classes)
+GeographicalSearchController -- Station : manages
+KDTree -- Station : contains
+KDNode -- Station : bucket
+StationDistance -- Station : references
+
+' Self-reference: KDNode referencia outros KDNodes para formar a árvore binária
+KDNode -- KDNode : left
+KDNode -- KDNode : right
+
+' Composition: losango preenchido (parte não pode existir sem o todo)
+KDTree *-- KDNode : contains
+
+' Aggregation: losango vazio (parte pode existir independentemente)
+KDTree o-- StationDistance : contains
+
+@enduml

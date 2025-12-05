@@ -1,0 +1,174 @@
+@startuml USEI03_ClassDiagram
+skinparam monochrome true
+skinparam style strictuml
+
+package "UI" {
+    class TrolleyUI {
+        - trolleyController : TrolleyController
+        - sc : Scanner
+        + TrolleyUI(trolleyController: TrolleyController)
+        + run() : void
+        - showMenu() : void
+        - createTrolley() : void
+        - startPacking() : void
+        - listTrolleys() : void
+        - createPickingPlan() : void
+        - displayPickingPlan(plan: PickingPlan) : void
+        - getIntInput() : int
+    }
+    
+    class PickingPlanUI {
+        - pickingPlanController : PickingPlanController
+        - scanner : Scanner
+        + PickingPlanUI(pickingPlanController: PickingPlanController)
+        + run() : void
+        - getHeuristicChoice() : PackingHeuristic
+        - displayPickingPlan(plan: PickingPlan) : void
+    }
+}
+
+package "Controller" {
+    class PickingPlanController {
+        - warehouseRepository : WarehouseRepository
+        + PickingPlanController(warehouseRepository: WarehouseRepository)
+        + createPickingPlan(capacity: int, heuristic: PackingHeuristic, allowSplitting: boolean) : PickingPlan
+        - firstFit(items: List<AllocationRow>, capacity: int, allowSplitting: boolean) : List<Trolley>
+        - firstFitDecreasing(items: List<AllocationRow>, capacity: int, allowSplitting: boolean) : List<Trolley>
+        - bestFitDecreasing(items: List<AllocationRow>, capacity: int, allowSplitting: boolean) : List<Trolley>
+        - calculateItemWeight(item: AllocationRow) : double
+        - addItemToTrolley(trolley: Trolley, item: AllocationRow, weight: double) : void
+        - findOrCreateTrolley(trolleys: List<Trolley>, capacity: int) : Trolley
+        - createSplitItem(originalItem: AllocationRow, weightToAdd: double) : AllocationRow
+    }
+    
+    class TrolleyController {
+        - warehouseRepository : WarehouseRepository
+        - trolleyRepository : TrolleyRepository
+        - trolley : Trolley
+        - trolleyList : List<Trolley>
+        + TrolleyController(warehouseRepository: WarehouseRepository, trolleyRepository: TrolleyRepository)
+        + createTrolley(capacity: int, heuristic: String) : Trolley
+        + packing() : void
+        + getTrolley() : Trolley
+        + setTrolley(trolley: Trolley) : void
+        + getTrolleyList() : List<Trolley>
+        + createPickingPlan(capacity: int, heuristic: PackingHeuristic, allowSplitting: boolean) : PickingPlan
+    }
+}
+
+package "Domain" {
+    class PickingPlan {
+        - trolleys : List<Trolley>
+        - totalTrolleys : int
+        - averageUtilization : double
+        - heuristic : String
+        + PickingPlan(trolleys: List<Trolley>, heuristic: String)
+        + getTrolleys() : List<Trolley>
+        + getTotalTrolleys() : int
+        + getAverageUtilization() : double
+        + getHeuristic() : String
+    }
+    
+    class Trolley {
+        - maxCapacity : int
+        - currentLoad : double
+        - id : int
+        - pickingItems : List<PickingItems>
+        - optionHeuristic : String
+        + Trolley(maxCapacity: int, currentLoad: double, id: int, pickingItems: List<PickingItems>, optionHeuristic: String)
+        + getId() : int
+        + getMaxCapacity() : int
+        + getCurrentLoad() : double
+        + getPickingItems() : List<PickingItems>
+        + getOptionHeuristic() : String
+        + setPickingItems(pickingItems: List<PickingItems>) : void
+        + setCurrentLoad(currentLoad: double) : void
+        + setId(id: int) : void
+        + setMaxCapacity(maxCapacity: int) : void
+        + setOptionHeuristic(optionHeuristic: String) : void
+    }
+    
+    class PickingItems {
+        - orderId : String
+        - lineNo : int
+        - aisleId : int
+        - bayId : int
+        - boxId : String
+        - sku : String
+        - qty : int
+        + PickingItems(orderId: String, lineNo: int, aisleId: int, bayId: int, boxId: String, sku: String, qty: int)
+        + getOrderId() : String
+        + getLineNo() : int
+        + getAisleId() : int
+        + getBayId() : int
+        + getBoxId() : String
+        + getSku() : String
+        + getQty() : int
+        + setOrderId(orderId: String) : void
+        + setLineNo(lineNo: int) : void
+        + setAisleId(aisleId: int) : void
+        + setBayId(bayId: int) : void
+        + setBoxId(boxId: String) : void
+        + setSku(sku: String) : void
+        + setQty(qty: int) : void
+    }
+    
+    class AllocationRow {
+        - orderId : String
+        - lineNo : int
+        - sku : String
+        - qty : int
+        - boxId : String
+        - aisleID : int
+        - bayID : int
+        + getOrderId() : String
+        + getLineNo() : int
+        + getSku() : String
+        + getQty() : int
+        + getBoxId() : String
+        + getAisle() : int
+        + getBay() : int
+    }
+    
+    enum PackingHeuristic {
+        FF
+        FFD
+        BFD
+    }
+}
+
+package "Repository" {
+    class WarehouseRepository {
+        + getAllocationRows() : List<AllocationRow>
+        + getItemBySku(sku: String) : Item
+    }
+    
+    class TrolleyRepository {
+        - trolleyList : List<Trolley>
+        + saveTrolley(trolleyList: List<Trolley>) : void
+        + getAllTrolleys() : List<Trolley>
+        + getTrolley() : List<Trolley>
+    }
+}
+
+TrolleyUI "1" --> "1" TrolleyController
+PickingPlanUI "1" --> "1" PickingPlanController
+PickingPlanController "1" --> "1" WarehouseRepository
+PickingPlanController ..> PickingPlan
+PickingPlanController ..> Trolley
+PickingPlanController ..> AllocationRow
+PickingPlanController ..> PickingItems
+PickingPlanController ..> PackingHeuristic
+TrolleyController "1" --> "1" WarehouseRepository
+TrolleyController "1" --> "1" TrolleyRepository
+TrolleyController ..> PickingPlan
+TrolleyController ..> Trolley
+TrolleyController ..> PackingHeuristic
+PickingPlan "1" *-- "*" Trolley
+Trolley "1" *-- "*" PickingItems
+PickingItems ..> AllocationRow
+TrolleyRepository "1" o-- "*" Trolley
+WarehouseRepository "1" o-- "*" AllocationRow
+
+@enduml
+

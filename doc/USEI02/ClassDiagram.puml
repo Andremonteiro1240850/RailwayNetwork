@@ -1,0 +1,185 @@
+@startuml USEI02_ClassDiagram
+skinparam monochrome true
+skinparam style strictuml
+
+package "UI" {
+    class orderEligibilityAllocationUI {
+        - warehouseController : WarehouseController
+        - boxRepository : BoxRepository
+        + orderEligibilityAllocationUI(warehouseController: WarehouseController, boxRepository: BoxRepository)
+        + run() : void
+    }
+}
+
+package "Controller" {
+    class WarehouseController {
+        - warehouse : Warehouse
+        - warehouseRepository : WarehouseRepository
+        + WarehouseController(warehouse: Warehouse, warehouseRepository: WarehouseRepository)
+        + processOrderEligibilityAndAllocation(boxRepository: BoxRepository, mode: AllocationMode) : AllocationResult
+        + estadoEncomenda() : List<EligibilityResult>
+        + createAllocationRows(boxRepository: BoxRepository) : List<AllocationRow>
+        - deepCopyStock(originalStock: Map<String, List<Box>>) : Map<String, List<Box>>
+    }
+}
+
+package "Domain" {
+    class Warehouse {
+        - warehouseId : String
+        - name : String
+        - aisles : List<Aisle>
+        + Warehouse(warehouseRepository: WarehouseRepository)
+        + loadItems(filename: String) : void
+        + loadWagons(filename: String) : void
+        + loadOrders(ordersFile: String, orderLinesFile: String) : void
+    }
+    
+    class AllocationResult {
+        - eligibilityResults : List<EligibilityResult>
+        - allocationRows : List<AllocationRow>
+        + AllocationResult(eligibilityResults: List<EligibilityResult>, allocationRows: List<AllocationRow>)
+        + getEligibilityResults() : List<EligibilityResult>
+        + getAllocationRows() : List<AllocationRow>
+        + setEligibilityResults(eligibilityResults: List<EligibilityResult>) : void
+        + setAllocationRows(allocationRows: List<AllocationRow>) : void
+    }
+    
+    class EligibilityResult {
+        - orderId : String
+        - lineNo : int
+        - sku : String
+        - requestedQty : int
+        - allocatedQty : int
+        - status : AllocationStatus
+        + EligibilityResult(orderId: String, lineNo: int, sku: String, requestedQty: int, allocatedQty: int, status: AllocationStatus)
+        + getOrderId() : String
+        + getLineNo() : int
+        + getSku() : String
+        + getRequestedQty() : int
+        + getAllocatedQty() : int
+        + getStatus() : AllocationStatus
+    }
+    
+    class AllocationRow {
+        - orderId : String
+        - lineNo : int
+        - sku : String
+        - qty : int
+        - boxId : String
+        - aisleID : int
+        - bayID : int
+        + AllocationRow(orderId: String, lineNo: int, sku: String, qty: int, boxId: String, aisleID: int, bayID: int)
+        + getOrderId() : String
+        + getLineNo() : int
+        + getSku() : String
+        + getQty() : int
+        + getBoxId() : String
+        + getAisle() : int
+        + getBay() : int
+    }
+    
+    class Order {
+        - id : String
+        - dueDate : LocalDateTime
+        - priority : int
+        - lines : List<OrderLine>
+        + Order(id: String, dueDate: LocalDateTime, priority: int)
+        + getId() : String
+        + getDueDate() : LocalDateTime
+        + getPriority() : int
+        + getLines() : List<OrderLine>
+        + setLines(lines: List<OrderLine>) : void
+        + addLine(line: OrderLine) : void
+        + compareTo(other: Order) : int
+    }
+    
+    class OrderLine {
+        - lineNo : int
+        - sku : String
+        - requestedQty : int
+        - allocatedQty : int
+        - status : String
+        + OrderLine(lineNo: int, sku: String, requestedQty: int)
+        + getLineNo() : int
+        + getSku() : String
+        + getRequestedQty() : int
+        + getAllocatedQty() : int
+        + getStatus() : String
+        + setAllocatedQty(allocatedQty: int) : void
+        + setStatus(status: String) : void
+    }
+    
+    class Box {
+        - boxId : String
+        - sku : String
+        - qty : int
+        - expiryDate : LocalDate
+        - receivedAt : LocalDateTime
+        - location : BayId
+        + getBoxId() : String
+        + getSku() : String
+        + getQty() : int
+        + setQty(qty: int) : void
+        + getLocation() : BayId
+        + {static} FEFO_COMPARATOR : Comparator<Box>
+    }
+    
+    enum AllocationMode {
+        STRICT
+        PARTIAL
+    }
+    
+    enum AllocationStatus {
+        ELIGIBLE
+        PARTIAL
+        UNDISPATCHABLE
+    }
+}
+
+package "Repository" {
+    class WarehouseRepository {
+        - eligibilityResults : List<EligibilityResult>
+        - allocationRows : List<AllocationRow>
+        - items : List<Item>
+        - bays : List<Bay>
+        - orders : List<Order>
+        - stock : Map<String, List<Box>>
+        + WarehouseRepository()
+        + saveEligibilityResults(results: List<EligibilityResult>) : void
+        + saveAllocationRows(rows: List<AllocationRow>) : void
+        + getEligibilityResults() : List<EligibilityResult>
+        + getAllocationRows() : List<AllocationRow>
+        + getOrders() : List<Order>
+        + saveItems(itemsList: List<Item>) : void
+        + getItems() : List<Item>
+        + getItemBySku(sku: String) : Item
+    }
+    
+    class BoxRepository {
+        + getAllAssignedBoxes() : Map<String, List<Box>>
+        + getBoxById(boxId: String) : Box
+    }
+}
+
+orderEligibilityAllocationUI "1" --> "1" WarehouseController
+orderEligibilityAllocationUI "1" --> "1" BoxRepository
+WarehouseController "1" --> "1" Warehouse
+WarehouseController "1" --> "1" WarehouseRepository
+WarehouseController ..> BoxRepository
+WarehouseController ..> AllocationResult
+WarehouseController ..> EligibilityResult
+WarehouseController ..> AllocationRow
+WarehouseController ..> Order
+WarehouseController ..> OrderLine
+WarehouseController ..> Box
+AllocationResult "1" *-- "*" EligibilityResult
+AllocationResult "1" *-- "*" AllocationRow
+EligibilityResult "1" --> "1" AllocationStatus
+Order "1" *-- "*" OrderLine
+WarehouseRepository "1" o-- "*" EligibilityResult
+WarehouseRepository "1" o-- "*" AllocationRow
+WarehouseRepository "1" o-- "*" Order
+WarehouseController ..> AllocationMode
+
+@enduml
+

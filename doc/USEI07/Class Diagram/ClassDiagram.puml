@@ -1,0 +1,148 @@
+@startuml
+'https://plantuml.com/class-diagram
+
+
+    class KDTreeUI {
+        - controller: KDTreeController
+        - scanner: Scanner
+        + void: showMainMenu()
+        - void: buildTree()
+        - void: viewMetrics()
+    }
+
+
+
+    class KDTreeController {
+        - kdTreeRepository: KDTreeRepository
+        + KDTreeController(stationRepository: StationRepository)
+        + boolean: buildTree()
+        + boolean: buildTree(stations: List<Station>)
+        + KDTree: getKDTree()
+        + KDTree: getOrBuildTree()
+        + boolean: isTreeBuilt()
+        + int[]: getTreeSize()
+        + int: getTreeHeight()
+        + Map<Integer, Integer>: getBucketStats()
+        + KDTreeMetrics: getAllMetrics()
+        + String: getMetricsString()
+        + KDTreeRepository: getRepository()
+        + KDTreeRepository: getKDTreeRepository()
+    }
+    
+    class KDTreeMetrics {
+        - numNodes: int
+        - numStations: int
+        - height: int
+        - bucketStats: Map<Integer, Integer>
+        + KDTreeMetrics(numNodes: int, numStations: int, height: int, bucketStats: Map<Integer, Integer>)
+        + int: getNumNodes()
+        + int: getNumStations()
+        + int: getHeight()
+        + Map<Integer, Integer>: getBucketStats()
+        + String: toString()
+    }
+
+
+
+    class KDTree {
+        - root: KDNode
+        - numNodes: int
+        - numStations: int
+        + KDTree()
+        + KDTree(root: KDNode)
+        + int[]: getSize()
+        + int: size()
+        + int: height()
+        + Map<Integer, Integer>: getBucketStats()
+        + List<Station>: rangeQuery(latMin: double, latMax: double, lonMin: double, lonMax: double)
+        + List<Station>: rangeQueryUnsorted(latMin: double, latMax: double, lonMin: double, lonMax: double)
+        + boolean: isEmpty()
+        + KDNode: getRoot()
+        + static double: haversineDistance(lat1: double, lon1: double, lat2: double, lon2: double)
+        - int: countNodes(node: KDNode)
+        - int: countStations(node: KDNode)
+        - int: height(node: KDNode)
+        - void: collectBucketStats(node: KDNode, stats: Map<Integer, Integer>)
+        - void: rangeQueryRecursive(node: KDNode, latMin: double, latMax: double, lonMin: double, lonMax: double, depth: int, results: List<Station>)
+    }
+    
+    class "KDTree.KDNode" as KDNode {
+        - axis: int
+        - splitValue: double
+        - bucket: List<Station>
+        - left: KDNode
+        - right: KDNode
+        + KDNode(axis: int, splitValue: double, bucket: List<Station>)
+        + int: getAxis()
+        + double: getSplitValue()
+        + List<Station>: getBucket()
+        + KDNode: getLeft()
+        + KDNode: getRight()
+        + void: setLeft(left: KDNode)
+        + void: setRight(right: KDNode)
+    }
+    
+    class Station {
+        - name: String
+        - latitude: double
+        - longitude: double
+        - country: String
+        - timeZone: String
+        - timeZoneGroup: String
+        - isCity: boolean
+        - isMainStation: boolean
+        - isAirport: boolean
+        + String: getName()
+        + double: getLatitude()
+        + double: getLongitude()
+        + String: getCountry()
+        + String: getTimeZone()
+        + String: getTimeZoneGroup()
+        + boolean: isCity()
+        + boolean: isMainStation()
+        + boolean: isAirport()
+    }
+
+
+    class KDTreeRepository {
+        - cachedTree: KDTree
+        - stationRepository: StationRepository
+        + KDTreeRepository(stationRepository: StationRepository)
+        + KDTree: buildTree()
+        + KDTree: buildTree(stations: List<Station>)
+        + KDTree: getCachedTree()
+        + boolean: hasCachedTree()
+        + KDTree: getOrBuildTree()
+        + void: clearCache()
+        - KDTree.KDNode: bulkBuild(sortedByLat: List<Station>, sortedByLon: List<Station>, depth: int)
+        - boolean: isValidCoordinate(station: Station)
+    }
+
+    class StationRepository {
+        - latitudeTree: AVL
+        - longitudeTree: AVL
+        - groupCountryTree: AVL
+        + void: populateTrees(stations: List<Station>)
+        + Iterable<Station>: getAllStationsOrderedByLatitude()
+        + Iterable<Station>: getAllStationsOrderedByLongitude()
+        + int: totalStations()
+    }
+
+
+' --- Relações ---
+KDTreeUI --> KDTreeController : uses
+KDTreeController --> KDTreeRepository : uses
+KDTreeController --> KDTreeMetrics : creates
+KDTreeRepository --* KDTree : builds and caches
+KDTreeRepository --> StationRepository : uses
+KDTree "0..*" --> "1" Station : contains
+KDTree *-- KDNode : contains
+KDNode "0..*" --> "1" Station : bucket contains
+
+' Composição: KDTreeRepository constrói e cacheia KDTree
+' Cardinalidade: KDTree contém muitas Station através de KDNode buckets
+' KDTreeRepository usa StationRepository (AVL trees de USEI06) para obter dados ordenados
+' KDNode é uma classe interna estática de KDTree
+
+@enduml
+

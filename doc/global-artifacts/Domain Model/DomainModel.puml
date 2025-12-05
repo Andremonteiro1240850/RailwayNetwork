@@ -1,0 +1,464 @@
+@startuml
+skinparam style strictuml
+
+
+  class RailwayNetwork {
+    +name : String
+  }
+
+  class Owner {
+    +ownerId : String
+    +name : String
+  }
+
+  class Line {
+    +lineId : String
+    +name : String
+    +ownerId: String
+  }
+
+  enum SegmentType {
+    SINGLE
+    DOUBLE
+  }
+
+  class LineSegment {
+    +segmentId : String
+    +lengthKm : double
+    +electrified: boolean
+    +gauge_mm : int
+    +maxWeightKgPerM : int
+    +speedLimitKmH : int
+  }
+
+  class NormalStation {
+    +stationId : int
+    +name : String
+    +location : String
+  }
+
+  class Terminal {
+    +terminalId : int
+    +name : String
+  }
+
+  class Station {
+    +stationType : String
+    +numberTracks : int
+    +latitude : double
+    +longitude : double
+    +country : String
+    +timeZone : String
+    +timeZoneGroup: String
+    }
+
+  enum trainState{
+  INTRANSIT
+  STOPPED
+  }
+
+  enum trackState{
+  GREEN
+  YELLOW
+  RED
+  RED(BLINKING)
+  }
+  class systemAdministrator{
+    +administratorId : int
+    +name : String
+  }
+
+
+
+  systemAdministrator "1" -- "0..*" Station : manages
+Station "1" -- "1" trainState : has
+Station "1" -- "1" trackState : has
+RailwayNetwork "1" -- "1..*" Line : has
+Line "1" -- "1..*" LineSegment : has
+Line "1..*" -- "*" Station : pass trough
+Line "1" -- "1" Owner : has
+LineSegment "1" -- "1" SegmentType : can be
+Station "1" -- "0..1" NormalStation : can be
+Station "1" -- "0..1" Terminal : can be
+
+
+
+
+  class TrainOperator {
+    +operatorId : int
+    +name : String
+  }
+
+  enum LocoType {
+    DIESEL
+    ELETRIC
+  }
+
+  class Locomotive {
+    +locoId : String
+    +make : String
+    +model : String
+    +serviceYear : int
+    +type : LocoType
+    +powerKW : double
+    +acceleration : double
+    +dimensions : String
+    +totalWeightKg : int
+    +bogies : int
+    +fuelCapacityL : int
+    +gauge_mm : int
+  }
+
+  enum WagonType {
+    BOX
+    FLAT
+    TANK
+    HOPPER
+    REFRIG
+  }
+
+  class Wagon {
+    +wagonId : String
+    +type : WagonType
+    +payloadKg : int
+    +volumeM3 : double
+    +tareKg : int
+    +dimensions : String
+    +gauge_mm : int
+  }
+
+  class Train {
+    +trainId : String
+    +departureTime : DateTime
+
+  }
+
+  class Freight {
+    +freightId : String
+  }
+
+  class Path {
+    +pathId : String
+  }
+
+  class PathStep {
+    +seq : int
+  }
+
+  class Route {
+    +routeID : String
+    +routeType : String
+  }
+
+  enum RouteType {
+    COMPLEX
+    SIMPLE
+  }
+
+TrainOperator "1" -- "0..*" Locomotive : belongs
+TrainOperator "1" -- "0..*" Wagon : belongs
+Train "1" -- "1..*" Locomotive : composed of
+Train "1" -- "0..*" Wagon : composed of
+Freight "1" -- "1" Path : carry on
+Freight "1" -- "1" Route : follows
+Path "1" -- "1..*" PathStep : composed of
+PathStep "1" -- "1..1" Station : has
+Wagon "0..*" -- "0..1" Freight : carries
+Wagon "1" -- "1" WagonType : can be
+Locomotive "1" -- "1" LocoType : can be
+Path "1..*" -- "1" Route : is part of
+Route "1" -- "1" RouteType : can be
+
+
+  class CirculationLine {
+    +id : String
+  }
+
+  class ParkingLine {
+    +id : String
+  }
+
+  class UnloadingDock {
+    +id : String
+    +code : String
+  }
+
+  class Warehouse {
+    +warehouseId : String
+    +name : String
+  }
+
+  class Aisle {
+    +aisleNo : int
+  }
+
+  class Bay {
+    warehouseId : int
+    +bayNo : int
+    +capacityBoxes : int
+    +aisleId : int
+  }
+
+  class Item {
+    +sku : String
+    +name : String
+    +category : String
+    +unit : String
+    +volume : double
+    +unitWeight : double
+  }
+
+  enum BoxStatus {
+    AVAILABLE
+    ALLOCATED
+    DISPATCHED
+    REMOVED
+  }
+
+  class Box {
+    +boxId : String
+    +sku : String
+    +quantity : int
+    +expiryDate : Date
+    +receivedAt : DateTime
+    +status : BoxStatus
+  }
+
+
+Terminal "1" -- "0..*" CirculationLine : has
+Terminal "1" -- "0..*" ParkingLine : has
+Terminal "1" -- "0..*" UnloadingDock : has
+Terminal "1" -- "0..*" Warehouse : connects
+Warehouse "1" -- "1..*" Aisle : contains
+Aisle "1" -- "1..*" Bay : contains
+Bay "1" -- "0..*" Box : stores
+Item "1" -- "1..*" Box : describes
+Box "1" -- "1" BoxStatus : status
+Box "0..*" -- "1" Wagon : transport
+
+
+
+
+
+
+
+  class UnloadingOperation {
+    +opId : String
+    +executedAt : DateTime
+  }
+
+  class DispatchOperation {
+    +opId : String
+    +executedAt : DateTime
+  }
+
+  class Relocation {
+    +opId : String
+    +executedAt : DateTime
+    +fromBay : String
+    +toBay : String
+  }
+
+
+UnloadingOperation "1" -- "1..*" Box : unload
+DispatchOperation "1" -- "1..*" Box : consumes
+Relocation "1" -- "1..*" Box : moves
+
+
+
+
+  class Order {
+    +orderId : String
+    +dueDate : Date
+    +priority : int
+  }
+
+  class OrderLine {
+    +orderId : String
+    +lineNo : int
+    +sku : String
+    +requestedQty : int
+  }
+
+  enum AllocationMode {
+    STRICT
+    PARTIAL
+  }
+
+  enum AllocationStatus {
+    ELIGIBLE
+    PARTIAL
+    UNDISPATCHABLE
+  }
+
+  class Allocation {
+    +allocationId : String
+    +orderId : String
+    +lineNo : int
+    +sku : String
+    +qty : int
+    +boxId : String
+    +aisle : int
+    +bay : int
+    +mode : AllocationMode
+    +status : AllocationStatus
+  }
+
+Order "1" -- "1..*" OrderLine : composed of
+Allocation "1..*" -- "1" OrderLine : allocates
+Allocation "1..*" -- "1" Box : from
+Allocation "1..*" -- "1" Bay : at
+Allocation "1" -- "1" AllocationStatus : has
+Allocation "1" -- "1" AllocationMode : has
+
+
+  class PickingTrolley {
+    +trolleyId : String
+    +capacityWeightKg : int
+    +usedWeightKg : int
+  }
+
+  enum PackingHeuristic {
+    FF
+    FFD
+    BFD
+  }
+
+  class PickingBatch {
+    +batchId : String
+    +heuristic : PackingHeuristic
+    +utilisationPct : double
+  }
+
+  class PickingPlan {
+    +planId : String
+    +createdAt : DateTime
+  }
+
+  enum PathStrategy {
+    ASC_SWEEP
+    NEAREST_NEIGHBOUR
+  }
+
+  class PickPath {
+    +pathId : String
+    +strategy : PathStrategy
+    +totalDistance : int
+  }
+
+  class PickStop {
+    +seq : int
+    +aisle : int
+    +bay : int
+    +totalQty : int
+  }
+
+
+PickingPlan "1" -- "1..*" PickingBatch : determines
+PickingBatch "1" -- "1" PickingTrolley : carried by
+PickingBatch "1" -- "1..*" Allocation : has
+PackingHeuristic "1" -- "1..*" PickingBatch : organizes
+PickPath "1" -- "1..*" PickStop : stops at
+PickStop "1" -- "1" Bay : matches
+PickPath "1" -- "1" PathStrategy : defined by
+
+
+  enum ReturnReason {
+    REMORSE
+    DAMAGED
+    EXPIRED
+    CYCLE_COUNT
+  }
+
+  enum QAAction {
+    RESTOCK
+    DISCARD
+  }
+
+  class QuarantineInspection {
+    +inspectionId : String
+    +returnId : String
+    +inspectedAt : DateTime
+    +action : QAAction
+  }
+
+  class AuditLog {
+    +logId : String
+    +timestamp : DateTime
+    +returnId : String
+    +sku : String
+    +action : String
+    +qtyRestocked : int
+    +qtyDiscarded : int
+    +qty : int
+  }
+
+  class QualityOperator {
+    +userId : String
+    +name : String
+  }
+
+
+QuarantineInspection "1" -- "1" Box : on RESTOCK
+AuditLog "1..*" -- "1" QuarantineInspection : stores
+QualityOperator "1" -- "0..*" QuarantineInspection : does
+QuarantineInspection "1" -- "1" QAAction : determines
+QAAction "1" -- "0..*" ReturnReason : depends
+
+  class TrainDriver{
+    +trainId : String
+    +driverId : int
+    +name : String
+  }
+
+  class StationMaster {
+    +stationMasterId : int
+    +name: String
+    +stationId : int
+  }
+
+  class WarehousePlanner {
+    +warehouseId : int
+    +name : String
+  }
+
+  class StationStorageManager {
+    +stationStorageManegerId: int
+    +stationId : int
+    +name : String
+  }
+
+  class FreightManager {
+    +freightManagerId : int
+    +name : String
+  }
+
+  class Planner {
+    +plannerId : int
+    +name : String
+  }
+
+  class Picker {
+    +pickerId ; int
+    +name : String
+  }
+  class StationOperator{
+    +operatorId : int
+    +name : String
+  }
+StationOperator "1" -- "0..*" Station : works at
+TrainDriver "1" -- "1..*" Train : drive
+StationMaster "1" -- "1" Station : supervision
+StationStorageManager "1" -- "1..*" Station : operates in
+StationStorageManager "1" -- "0..*" Freight : manages
+FreightManager "1" -- "0..*" Freight : manages
+FreightManager "1" -- "0..*" Train : dispatches
+Planner "1" -- "0..*" Train : schedules
+WarehousePlanner "1" -- "1..*" Warehouse : manages
+WarehousePlanner "1" -- "0..*" Allocation : atributes
+WarehousePlanner "1" -- "0..*" Order : fulfill
+Picker "1" -- "0..*" PickPath: planes
+Planner "1" -- "0..*" Allocation : pack
+
+
+@enduml

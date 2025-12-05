@@ -1,0 +1,107 @@
+@startuml
+' USEI10 - Radius Search and Density Summary
+' Class Diagram for radius search operations with density summary
+' Only shows classes specific to USEI10
+
+
+    class RadiusSearchController {
+        - kdTree: KDTree
+        - allStations: List<Station>
+        + RadiusSearchController(kdTreeRepository: KDTreeRepository, stationRepository: StationRepository)
+        + RadiusSearchResult: searchRadiusWithSummary(targetLat: double, targetLon: double, radiusKm: double)
+        - RadiusSearchSummary: calculateSummary(stationsInRadius: List<StationDistance>)
+        + KDTree: getKDTree()
+        + List<Station>: getAllStations()
+    }
+    
+    class "RadiusSearchController.RadiusSearchResult" as RadiusSearchResult {
+        - resultTree: AVL<StationDistance>
+        - summary: RadiusSearchSummary
+        + RadiusSearchResult(resultTree: AVL<StationDistance>, summary: RadiusSearchSummary)
+        + AVL<StationDistance>: getResultTree()
+        + RadiusSearchSummary: getSummary()
+    }
+
+
+
+    class RadiusSearchSummary {
+        - stationsByCountry: Map<String, Integer>
+        - stationsByCity: int
+        - stationsByNonCity: int
+        - totalStations: int
+        + RadiusSearchSummary(stationsByCountry: Map<String, Integer>, stationsByCity: int, stationsByNonCity: int, totalStations: int)
+        + Map<String, Integer>: getStationsByCountry()
+        + int: getStationsByCity()
+        + int: getStationsByNonCity()
+        + int: getTotalStations()
+        + String: toString()
+    }
+    
+    class StationDistanceComparator {
+        + StationDistanceComparator()
+        + int: compare(sd1: StationDistance, sd2: StationDistance)
+    }
+    
+    class AVL<E extends Comparable<E>> {
+        + AVL()
+        + AVL(comparator: Comparator<E>)
+        + void: insert(element: E)
+        + void: remove(element: E)
+        + Node<E>: getRoot()
+        + boolean: isEmpty()
+    }
+
+
+' External dependencies (from other use cases) - shown as simplified references
+
+    class KDTree <<external>> {
+        + List<StationDistance>: radiusSearch(targetLat: double, targetLon: double, radiusKm: double)
+        + static double: haversineDistance(lat1: double, lon1: double, lat2: double, lon2: double)
+    }
+    
+    class "KDTree.StationDistance" as StationDistance <<external>> {
+        + Station: getStation()
+        + double: getDistance()
+    }
+    
+    class Station <<external>> {
+        + String: getName()
+        + String: getCountry()
+        + boolean: isCity()
+    }
+    
+    class KDTreeRepository <<external>> {
+        + KDTree: getCachedTree()
+        + boolean: hasCachedTree()
+    }
+    
+    class StationRepository <<external>> {
+        + List<Station>: getAllStations()
+    }
+
+
+' --- Relações ---
+' Internal USEI10 relationships
+RadiusSearchController +-- RadiusSearchResult : contains
+RadiusSearchController --> RadiusSearchSummary : creates
+RadiusSearchController --> StationDistanceComparator : uses
+RadiusSearchController --> AVL : creates
+
+RadiusSearchResult --> AVL : contains
+RadiusSearchResult --> RadiusSearchSummary : contains
+
+StationDistanceComparator ..> StationDistance : compares
+
+AVL --> StationDistance : stores (via generic E)
+
+RadiusSearchSummary --> Station : aggregates (via StationDistance)
+
+' External dependencies (from USEI07, USEI06, etc.)
+RadiusSearchController ..> KDTree : uses (from USEI07)
+RadiusSearchController ..> KDTreeRepository : uses (from USEI07)
+RadiusSearchController ..> StationRepository : uses (from USEI06)
+
+KDTree --> StationDistance : returns
+StationDistance --> Station : references
+
+@enduml

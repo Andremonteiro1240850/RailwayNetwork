@@ -1,0 +1,139 @@
+@startuml
+'https://plantuml.com/class-diagram
+
+' --- Pacotes para organização ---
+
+class ProximitySearchUI {
+    - controller: ProximitySearchController
+    - scanner: Scanner
+    + ProximitySearchUI(controller: ProximitySearchController)
+    + void: showMainMenu()
+    - void: searchNearestN()
+    - void: searchNearestNWithFilters()
+    - void: showTreeStatistics()
+    - void: displayNearestResults(results: List<StationDistance>, targetLat: double, targetLon: double, n: int, filters: SearchFilters)
+    - String: formatStationDistance(sd: StationDistance)
+    - String: formatFiltersForDisplay(filters: SearchFilters)
+    - SearchFilters: readFilters()
+    - double: readDouble(prompt: String, min: double, max: double)
+}
+
+
+class ProximitySearchController {
+    - kdTree: KDTree
+    - allStations: List<Station>
+    + ProximitySearchController(stations: List<Station>)
+    + ProximitySearchController(kdTree: KDTree, stations: List<Station>)
+    + ProximitySearchController(kdTree: KDTree, stationRepository: StationRepository)
+    + ProximitySearchController(kdTreeController: KDTreeController, stationRepository: StationRepository)
+    + List<StationDistance>: findNearestStations(targetLat: double, targetLon: double, n: int, filters: SearchFilters)
+    + List<StationDistance>: findNearestStations(targetLat: double, targetLon: double, n: int)
+    + String: getTreeStatistics()
+    + KDTree: getKDTree()
+    + List<Station>: getAllStations()
+    + int: getStationsCount()
+}
+
+
+class KDTree {
+    - root: KDNode
+    - numNodes: int
+    - numStations: int
+    + KDTree()
+    + KDTree(root: KDNode)
+    + List<StationDistance>: nearestN(targetLat: double, targetLon: double, n: int)
+    + List<StationDistance>: radiusSearch(targetLat: double, targetLon: double, radiusKm: double)
+    + List<StationDistance>: radiusSearchUnsorted(targetLat: double, targetLon: double, radiusKm: double)
+    + int[]: getSize()
+    + int: size()
+    + int: height()
+    + Map<Integer, Integer>: getBucketStats()
+    + boolean: isEmpty()
+    + KDNode: getRoot()
+    + static double: haversineDistance(lat1: double, lon1: double, lat2: double, lon2: double)
+    - void: nearestNRecursive(node: KDNode, targetLat: double, targetLon: double, n: int, depth: int, nearestQueue: PriorityQueue<StationDistance>)
+    - void: radiusSearchRecursive(node: KDNode, targetLat: double, targetLon: double, radiusKm: double, depth: int, results: List<StationDistance>)
+}
+
+class "KDTree.StationDistance" as StationDistance {
+    - station: Station
+    - distance: double
+    + StationDistance(station: Station, distance: double)
+    + Station: getStation()
+    + double: getDistance()
+    + int: compareTo(other: StationDistance)
+    + String: toString()
+}
+
+class "KDTree.KDNode" as KDNode {
+    - axis: int
+    - splitValue: double
+    - bucket: List<Station>
+    - left: KDNode
+    - right: KDNode
+    + KDNode(axis: int, splitValue: double, bucket: List<Station>)
+    + int: getAxis()
+    + double: getSplitValue()
+    + List<Station>: getBucket()
+    + KDNode: getLeft()
+    + KDNode: getRight()
+    + void: setLeft(left: KDNode)
+    + void: setRight(right: KDNode)
+}
+
+class Station {
+    - name: String
+    - latitude: double
+    - longitude: double
+    - country: String
+    - timeZone: String
+    - timeZoneGroup: String
+    - isCity: boolean
+    - isMainStation: boolean
+    - isAirport: boolean
+    + String: getName()
+    + double: getLatitude()
+    + double: getLongitude()
+    + String: getCountry()
+    + String: getTimeZone()
+    + String: getTimeZoneGroup()
+    + boolean: isCity()
+    + boolean: isMainStation()
+    + boolean: isAirport()
+}
+
+class SearchFilters {
+    - isCity: Boolean
+    - isMainStation: Boolean
+    - country: Country
+    + SearchFilters(isCity: Boolean, isMainStation: Boolean, country: Country)
+    + SearchFilters()
+    + Boolean: getIsCity()
+    + Boolean: getIsMainStation()
+    + Country: getCountry()
+    + boolean: hasFilters()
+    + boolean: matches(station: Station)
+    + String: toString()
+}
+
+' --- Relações ---
+ProximitySearchUI --> ProximitySearchController : uses
+ProximitySearchController --> KDTree : uses
+ProximitySearchController --> KDTreeController : uses (optional)
+ProximitySearchController --> StationRepository : uses (optional)
+ProximitySearchController --> SearchFilters : uses
+KDTree *-- KDNode : contains
+KDTree *-- StationDistance : contains
+KDTree "0..*" --> "1" Station : contains
+StationDistance --> Station : references
+SearchFilters --> Station : validates
+
+' Composição: KDTree contém KDNode e StationDistance (classes internas estáticas)
+' Cardinalidade: KDTree contém muitas Station através de KDNode buckets
+' StationDistance armazena uma Station com sua distância do ponto alvo (Haversine)
+' ProximitySearchController usa KDTree (construída em USEI07) para realizar buscas de proximidade
+' SearchFilters permite filtrar resultados por país, cidade, estação principal (timezone)
+' ProximitySearchController pode ser construído a partir de KDTreeController (USEI07) ou KDTree diretamente
+
+@enduml
+

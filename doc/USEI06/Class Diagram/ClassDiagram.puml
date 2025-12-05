@@ -1,0 +1,147 @@
+@startuml
+'https://plantuml.com/class-diagram
+
+' --- Pacotes para organização ---
+package "UI" {
+    class StationUI {
+        - stationController: StationController
+        - scanner: Scanner
+        + void: run()
+        + void: showStationsByCountry()
+        + void: showStationsByTimeZoneGroup()
+        + void: showStationByLatitudeRange()
+        + void: showStationByLongitudeRange()
+    }
+}
+
+package "Controller" {
+    class StationController {
+        - stationRepository: StationRepository
+        + Iterable<Station>: getStationsByCountry(String country)
+        + Iterable<Station>: getStationsByTimeZoneGroup(String timeZoneGroup)
+        + Iterable<Station>: getStationsByLatitude(double minLat, double maxLat)
+        + Iterable<Station>: getStationsByLongitude(double minLon, double maxLon)
+        + boolean: isValidCountry(String country)
+        + boolean: isValidTimeZoneGroup(String timeZoneGroup)
+        + boolean: isValidLatitude(double latmax , double latmin)
+        + boolean: isValidLongitude(double longmin , double longmax)
+    }
+}
+
+package "Repository" {
+    class StationRepository {
+        - latitudeTree: AVL
+        - longitudeTree: AVL
+        - groupCountryTree: AVL
+        + void: populateTrees(stations: List<Station>)
+        + List<Station>: getStationsByTimeZone(timeZone: String)
+        + List<Station>: getStationsByCountry(country: String)
+        + List<Station>: getStationsByLatitude(latitudeMin: double, latitudeMax: double)
+        + List<Station>: getStationsByLongitude(longitudeMin: double, longitudeMax: double)
+        + int: totalStations()
+        + int: getHeightLatitudeTree()
+        + int: getHeightTimeZoneTree()
+        + Iterable<Station>: getAllStationsOrderedByLatitude()
+        + Iterable<Station>: getAllStationsOrderedByLongitude()
+        + void: collectByLatitude(node: BST_Node, min: double, max: double, result: List<Station>)
+        + void: collectByLongitude(node: BST_Node, min: double, max: double, result: List<Station>)
+        + void: collectByTimeZone(node: BST_Node, timeZone: String, result: List<Station>)
+    }
+}
+
+package "Domain" {
+    class Station {
+        - name: String
+        - latitude: double
+        - longitude: double
+        - country: String
+        - timeZone: String
+        - timeZoneGroup: String
+        - isCity: boolean
+        - isMainStation: boolean
+        - isAirport: boolean
+        + Station(name: String, latitude: double, longitude: double, country: String, timeZone: String, timeZoneGroup: String, isCity: boolean, isMainStation: boolean, isAirport: boolean)
+        + int: compareTo(o: Station)
+        + String: getName()
+        + void: setName(name: String)
+        + double: getLatitude()
+        + void: setLatitude(latitude: double)
+        + double: getLongitude()
+        + void: setLongitude(longitude: double)
+        + String: getCountry()
+        + void: setCountry(country: String)
+        + String: getTimeZone()
+        + void: setTimeZone(timeZone: String)
+        + String: getTimeZoneGroup()
+        + void: setTimeZoneGroup(timeZoneGroup: String)
+        + boolean: isCity()
+        + void: setCity(city: boolean)
+        + boolean: isMainStation()
+        + void: setMainStation(mainStation: boolean)
+        + boolean: isAirport()
+        + void: setAirport(airport: boolean)
+        + boolean: equals(o: Object)
+        + int: hashCode()
+        + String: toString()
+    }
+
+package "Utils" {
+    class StationLoader {
+        + List<Station>: loadFromCSV(filePath: String)
+        + Station: parseLine(line: String, lineNumber: int)
+        + String: parseTimeZone(timeZoneRaw: String)
+        + Double: parseDoubleSafe(value: String)
+        + boolean: isValidLine(parts: String[])
+    }
+
+
+    class StationValidator {
+        + boolean: isValidStation(station: Station)
+    }
+  }
+}
+
+package "DataStructures" {
+    class BST {
+        + insert(E element)
+        + remove(E element)
+        + size(): int
+        + height(): int
+        + smallestElement(): E
+        + inOrder(): Iterable<E>
+        + preOrder(): Iterable<E>
+        + posOrder(): Iterable<E>
+        + toString(): String
+    }
+
+    class AVL {
+        + insert(E element)
+        + remove(E element)
+        + getRoot(): Node<E>
+    }
+
+    class BST_Node
+}
+
+' --- Relações ---
+StationUI --> StationController : uses
+StationController --* StationRepository : manages
+StationLoader --> Station : creates
+StationValidator --> Station : validates
+StationRepository "0..*" --> "1" Station : contains
+
+' Composição: StationController possui StationRepository
+
+' Cardinalidade: StationRepository contém muitas Station
+
+' Herança: AVL estende BST
+AVL --|> BST : uses
+
+' BST e AVL usam Nodes
+BST --> BST_Node : uses
+
+
+' StationRepository usa AVL e BST_Node
+StationRepository --> AVL : uses
+
+@enduml
