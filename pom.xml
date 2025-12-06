@@ -9,38 +9,38 @@
     <version>1.0-SNAPSHOT</version>
 
     <properties>
-        <!-- Configuração para Java 11 -->
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <javafx.version>17.0.6</javafx.version>
+        <!-- JavaFX 17.0.2 é a última versão compatível com Java 11 -->
+        <javafx.version>17.0.2</javafx.version>
         <junit.version>5.10.0</junit.version>
     </properties>
 
     <dependencies>
-        <!-- ✅ JavaFX Controls -->
+        <!-- JavaFX Controls -->
         <dependency>
             <groupId>org.openjfx</groupId>
             <artifactId>javafx-controls</artifactId>
             <version>${javafx.version}</version>
         </dependency>
 
-        <!-- ✅ JavaFX FXML -->
+        <!-- JavaFX FXML -->
         <dependency>
             <groupId>org.openjfx</groupId>
             <artifactId>javafx-fxml</artifactId>
             <version>${javafx.version}</version>
         </dependency>
 
-        <!-- ✅ JUnit 5 API -->
+        <!-- JUnit 5 API -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-api</artifactId>
             <version>${junit.version}</version>
-            <scope>test</scope> <!-- IMPORTANTE: test scope, não compile! -->
+            <scope>test</scope>
         </dependency>
 
-        <!-- ✅ JUnit 5 Engine -->
+        <!-- JUnit 5 Engine -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-engine</artifactId>
@@ -48,7 +48,7 @@
             <scope>test</scope>
         </dependency>
 
-        <!-- ✅ JUnit 5 Params (para testes parametrizados) -->
+        <!-- JUnit 5 Params -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-params</artifactId>
@@ -59,7 +59,7 @@
 
     <build>
         <plugins>
-            <!-- 🔧 Configuração do compilador -->
+            <!-- Compilador Maven -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -71,7 +71,7 @@
                 </configuration>
             </plugin>
 
-            <!-- ✅ Plugin JavaFX Maven - ESSENCIAL PARA EXECUTAR! -->
+            <!-- Plugin JavaFX Maven -->
             <plugin>
                 <groupId>org.openjfx</groupId>
                 <artifactId>javafx-maven-plugin</artifactId>
@@ -81,21 +81,11 @@
                 </configuration>
             </plugin>
 
-            <!-- ✅ Configuração do Maven Surefire Plugin para JUnit 5 -->
+            <!-- Maven Surefire Plugin para JUnit 5 -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.1.2</version>
-                <configuration>
-                    <includes>
-                        <include>**/*Test.java</include>
-                    </includes>
-                    <!-- Argumentos para evitar problemas com módulos Java -->
-                    <argLine>
-                        --add-opens java.base/java.lang=ALL-UNNAMED
-                        --add-opens java.base/java.util=ALL-UNNAMED
-                    </argLine>
-                </configuration>
             </plugin>
         </plugins>
     </build>

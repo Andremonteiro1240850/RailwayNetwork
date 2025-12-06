@@ -24,10 +24,10 @@ public class MainApp extends Application {
                 return;
             }
 
-            Scene scene = new Scene(loader.load(), 800, 600);
+            Scene scene = new Scene(loader.load(), 1100, 750);
 
-            // Opcional: adicionar CSS se existir
-            // scene.getStylesheets().add(getClass().getResource("/styles.css").toExternalForm());
+            // Adicionar estilos CSS
+            scene.getStylesheets().add(getClass().getResource("/styles.css").toExternalForm());
 
             primaryStage.setTitle("Railway Terminal Management System");
             primaryStage.setScene(scene);

@@ -31,54 +31,105 @@ public class WagonsUnloadingFXUI {
         stage = new Stage();
         stage.setTitle("Wagons Unloading System");
 
+        // Main container with gradient background
         BorderPane root = new BorderPane();
-        root.setPadding(new Insets(15));
+        root.setStyle("-fx-background-color: linear-gradient(to bottom, #1E293B, #0F172A);");
+        root.setPadding(new Insets(25));
 
-        // Top: Title
-        Label titleLabel = new Label("WAGONS UNLOADING SYSTEM");
-        titleLabel.setStyle("-fx-font-size: 20px; -fx-font-weight: bold;");
-        VBox topBox = new VBox(titleLabel);
+        // Top: Title with elegant styling
+        VBox topBox = new VBox(8);
         topBox.setAlignment(Pos.CENTER);
-        topBox.setPadding(new Insets(0, 0, 15, 0));
+        topBox.setPadding(new Insets(0, 0, 25, 0));
+        
+        Label titleLabel = new Label("Wagons Unloading System");
+        titleLabel.setStyle("-fx-font-size: 28px; -fx-font-weight: 600; " +
+                           "-fx-text-fill: linear-gradient(to right, #60A5FA, #3B82F6, #60A5FA); " +
+                           "-fx-letter-spacing: 0.5px;");
+        
+        Separator separator = new Separator();
+        separator.setPrefWidth(500);
+        separator.setStyle("-fx-background-color: linear-gradient(to right, transparent, #3B82F6, transparent); " +
+                          "-fx-pref-height: 2;");
+        
+        topBox.getChildren().addAll(titleLabel, separator);
         root.setTop(topBox);
 
-        // Center: Buttons
-        VBox buttonBox = new VBox(10);
+        // Center: Buttons with professional styling
+        VBox buttonBox = new VBox(15);
         buttonBox.setAlignment(Pos.CENTER);
-        buttonBox.setPadding(new Insets(10));
+        buttonBox.setPadding(new Insets(20));
 
         Button unloadButton = new Button("Unload Wagons (FEFO/FIFO)");
-        unloadButton.setPrefWidth(250);
+        unloadButton.setPrefWidth(400);
+        unloadButton.setPrefHeight(65);
+        unloadButton.setStyle("-fx-font-size: 15px; -fx-font-weight: 600; " +
+                             "-fx-background-color: #2563EB; " +
+                             "-fx-text-fill: #FFFFFF; " +
+                             "-fx-background-radius: 8; " +
+                             "-fx-cursor: hand;");
         unloadButton.setOnAction(e -> unloadWagons());
 
         Button dispatchButton = new Button("Dispatch Stock");
-        dispatchButton.setPrefWidth(250);
+        dispatchButton.setPrefWidth(400);
+        dispatchButton.setPrefHeight(65);
+        dispatchButton.setStyle("-fx-font-size: 15px; -fx-font-weight: 500; " +
+                              "-fx-background-color: linear-gradient(to right, #1E293B, #334155); " +
+                              "-fx-text-fill: #CBD5E1; " +
+                              "-fx-background-radius: 8; " +
+                              "-fx-cursor: hand; " +
+                              "-fx-border-color: #475569; -fx-border-width: 1; -fx-border-radius: 8;");
         dispatchButton.setOnAction(e -> dispatchStock());
 
         Button relocateButton = new Button("Relocate Box");
-        relocateButton.setPrefWidth(250);
+        relocateButton.setPrefWidth(400);
+        relocateButton.setPrefHeight(65);
+        relocateButton.setStyle("-fx-font-size: 15px; -fx-font-weight: 500; " +
+                               "-fx-background-color: linear-gradient(to right, #1E293B, #334155); " +
+                               "-fx-text-fill: #CBD5E1; " +
+                               "-fx-background-radius: 8; " +
+                               "-fx-cursor: hand; " +
+                               "-fx-border-color: #475569; -fx-border-width: 1; -fx-border-radius: 8;");
         relocateButton.setOnAction(e -> relocateBox());
 
         Button closeButton = new Button("Close");
-        closeButton.setPrefWidth(250);
+        closeButton.setPrefWidth(400);
+        closeButton.setPrefHeight(65);
+        closeButton.setStyle("-fx-font-size: 15px; -fx-font-weight: 500; " +
+                            "-fx-background-color: linear-gradient(to right, #475569, #64748B); " +
+                            "-fx-text-fill: #E2E8F0; " +
+                            "-fx-background-radius: 8; " +
+                            "-fx-cursor: hand; " +
+                            "-fx-border-color: #64748B; -fx-border-width: 1; -fx-border-radius: 8;");
         closeButton.setOnAction(e -> stage.close());
 
         buttonBox.getChildren().addAll(unloadButton, dispatchButton, relocateButton, closeButton);
         root.setCenter(buttonBox);
 
-        // Bottom: Output area
+        // Bottom: Output area with elegant styling
+        VBox bottomBox = new VBox(10);
+        bottomBox.setPadding(new Insets(15, 0, 0, 0));
+        
+        Label outputLabel = new Label("Output Log");
+        outputLabel.setStyle("-fx-font-size: 14px; -fx-font-weight: 600; -fx-text-fill: #E2E8F0;");
+        
         outputArea = new TextArea();
         outputArea.setEditable(false);
-        outputArea.setPrefHeight(300);
-        outputArea.setStyle("-fx-font-family: 'Courier New'; -fx-font-size: 12px;");
-        VBox bottomBox = new VBox(5);
-        Label outputLabel = new Label("Output:");
-        outputLabel.setStyle("-fx-font-weight: bold;");
+        outputArea.setPrefHeight(280);
+        outputArea.setStyle("-fx-font-family: 'Consolas', 'Courier New', monospace; " +
+                           "-fx-font-size: 12px; " +
+                           "-fx-background-color: #FFFFFF; " +
+                           "-fx-text-fill: #000000; " +
+                           "-fx-border-color: #334155; " +
+                           "-fx-border-radius: 8; " +
+                           "-fx-background-radius: 8; " +
+                           "-fx-padding: 10;");
+        
         bottomBox.getChildren().addAll(outputLabel, outputArea);
         root.setBottom(bottomBox);
 
-        Scene scene = new Scene(root, 800, 700);
+        Scene scene = new Scene(root, 900, 750);
         stage.setScene(scene);
+        stage.setResizable(true);
         stage.show();
 
         appendOutput("System ready. Please select an option.");
@@ -175,30 +226,56 @@ public class WagonsUnloadingFXUI {
             return;
         }
 
-        // Create dialog
+        // Create dialog with professional styling
         Dialog<ButtonType> dialog = new Dialog<>();
         dialog.setTitle("Dispatch Stock");
         dialog.setHeaderText("Select SKU and enter quantity");
+        dialog.getDialogPane().setStyle("-fx-background-color: #1E293B;");
 
         GridPane grid = new GridPane();
-        grid.setHgap(10);
-        grid.setVgap(10);
-        grid.setPadding(new Insets(20));
+        grid.setHgap(15);
+        grid.setVgap(15);
+        grid.setPadding(new Insets(25));
+        grid.setStyle("-fx-background-color: #1E293B;");
 
+        Label skuLabel = new Label("SKU:");
+        skuLabel.setStyle("-fx-text-fill: #E2E8F0; -fx-font-weight: 500; -fx-font-size: 13px;");
+        
         ComboBox<String> skuCombo = new ComboBox<>(FXCollections.observableArrayList(skus));
         skuCombo.setPromptText("Select SKU");
-        skuCombo.setPrefWidth(200);
+        skuCombo.setPrefWidth(300);
+        skuCombo.setStyle("-fx-background-color: #0F172A; -fx-text-fill: #CBD5E1; " +
+                         "-fx-border-color: #475569; -fx-border-radius: 6; " +
+                         "-fx-background-radius: 6; -fx-padding: 8;");
+
+        Label quantityLabel = new Label("Quantity:");
+        quantityLabel.setStyle("-fx-text-fill: #E2E8F0; -fx-font-weight: 500; -fx-font-size: 13px;");
 
         TextField quantityField = new TextField();
         quantityField.setPromptText("Enter quantity");
+        quantityField.setPrefWidth(300);
+        quantityField.setStyle("-fx-background-color: #0F172A; -fx-text-fill: #CBD5E1; " +
+                              "-fx-border-color: #475569; -fx-border-radius: 6; " +
+                              "-fx-background-radius: 6; -fx-padding: 8;");
 
-        grid.add(new Label("SKU:"), 0, 0);
+        grid.add(skuLabel, 0, 0);
         grid.add(skuCombo, 1, 0);
-        grid.add(new Label("Quantity:"), 0, 1);
+        grid.add(quantityLabel, 0, 1);
         grid.add(quantityField, 1, 1);
 
         dialog.getDialogPane().setContent(grid);
         dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+        
+        // Style dialog buttons
+        Button okButton = (Button) dialog.getDialogPane().lookupButton(ButtonType.OK);
+        okButton.setStyle("-fx-background-color: linear-gradient(to right, #3B82F6, #2563EB); " +
+                         "-fx-text-fill: white; -fx-background-radius: 6; -fx-padding: 8 20; " +
+                         "-fx-font-weight: 500; -fx-cursor: hand;");
+        
+        Button cancelButton = (Button) dialog.getDialogPane().lookupButton(ButtonType.CANCEL);
+        cancelButton.setStyle("-fx-background-color: #475569; -fx-text-fill: #E2E8F0; " +
+                            "-fx-background-radius: 6; -fx-padding: 8 20; " +
+                            "-fx-font-weight: 500; -fx-cursor: hand;");
 
         Optional<ButtonType> result = dialog.showAndWait();
 
@@ -262,39 +339,80 @@ public class WagonsUnloadingFXUI {
             return;
         }
 
-        // Create dialog
+        // Create dialog with professional styling
         Dialog<ButtonType> dialog = new Dialog<>();
         dialog.setTitle("Relocate Box");
         dialog.setHeaderText("Enter box ID and target location");
+        dialog.getDialogPane().setStyle("-fx-background-color: #1E293B;");
 
         GridPane grid = new GridPane();
-        grid.setHgap(10);
-        grid.setVgap(10);
-        grid.setPadding(new Insets(20));
+        grid.setHgap(15);
+        grid.setVgap(15);
+        grid.setPadding(new Insets(25));
+        grid.setStyle("-fx-background-color: #1E293B;");
 
+        Label boxIdLabel = new Label("Box ID:");
+        boxIdLabel.setStyle("-fx-text-fill: #E2E8F0; -fx-font-weight: 500; -fx-font-size: 13px;");
+        
         TextField boxIdField = new TextField();
         boxIdField.setPromptText("Box ID");
+        boxIdField.setPrefWidth(300);
+        boxIdField.setStyle("-fx-background-color: #0F172A; -fx-text-fill: #CBD5E1; " +
+                           "-fx-border-color: #475569; -fx-border-radius: 6; " +
+                           "-fx-background-radius: 6; -fx-padding: 8;");
 
+        Label warehouseLabel = new Label("Target Warehouse:");
+        warehouseLabel.setStyle("-fx-text-fill: #E2E8F0; -fx-font-weight: 500; -fx-font-size: 13px;");
+        
         TextField warehouseField = new TextField();
         warehouseField.setPromptText("Warehouse ID (e.g., W1)");
+        warehouseField.setPrefWidth(300);
+        warehouseField.setStyle("-fx-background-color: #0F172A; -fx-text-fill: #CBD5E1; " +
+                               "-fx-border-color: #475569; -fx-border-radius: 6; " +
+                               "-fx-background-radius: 6; -fx-padding: 8;");
 
+        Label aisleLabel = new Label("Target Aisle:");
+        aisleLabel.setStyle("-fx-text-fill: #E2E8F0; -fx-font-weight: 500; -fx-font-size: 13px;");
+        
         TextField aisleField = new TextField();
         aisleField.setPromptText("Aisle number");
+        aisleField.setPrefWidth(300);
+        aisleField.setStyle("-fx-background-color: #0F172A; -fx-text-fill: #CBD5E1; " +
+                           "-fx-border-color: #475569; -fx-border-radius: 6; " +
+                           "-fx-background-radius: 6; -fx-padding: 8;");
 
+        Label bayLabel = new Label("Target Bay:");
+        bayLabel.setStyle("-fx-text-fill: #E2E8F0; -fx-font-weight: 500; -fx-font-size: 13px;");
+        
         TextField bayField = new TextField();
         bayField.setPromptText("Bay number");
+        bayField.setPrefWidth(300);
+        bayField.setStyle("-fx-background-color: #0F172A; -fx-text-fill: #CBD5E1; " +
+                         "-fx-border-color: #475569; -fx-border-radius: 6; " +
+                         "-fx-background-radius: 6; -fx-padding: 8;");
 
-        grid.add(new Label("Box ID:"), 0, 0);
+        grid.add(boxIdLabel, 0, 0);
         grid.add(boxIdField, 1, 0);
-        grid.add(new Label("Target Warehouse:"), 0, 1);
+        grid.add(warehouseLabel, 0, 1);
         grid.add(warehouseField, 1, 1);
-        grid.add(new Label("Target Aisle:"), 0, 2);
+        grid.add(aisleLabel, 0, 2);
         grid.add(aisleField, 1, 2);
-        grid.add(new Label("Target Bay:"), 0, 3);
+        grid.add(bayLabel, 0, 3);
         grid.add(bayField, 1, 3);
 
         dialog.getDialogPane().setContent(grid);
         dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+        
+        // Style dialog buttons
+        Button okButton = (Button) dialog.getDialogPane().lookupButton(ButtonType.OK);
+        okButton.setStyle("-fx-background-color: linear-gradient(to right, #3B82F6, #2563EB); " +
+                         "-fx-text-fill: white; -fx-background-radius: 6; -fx-padding: 8 20; " +
+                         "-fx-font-weight: 500; -fx-cursor: hand;");
+        
+        Button cancelButton = (Button) dialog.getDialogPane().lookupButton(ButtonType.CANCEL);
+        cancelButton.setStyle("-fx-background-color: #475569; -fx-text-fill: #E2E8F0; " +
+                             "-fx-background-radius: 6; -fx-padding: 8 20; " +
+                             "-fx-font-weight: 500; -fx-cursor: hand;");
 
         Optional<ButtonType> result = dialog.showAndWait();
 
@@ -452,6 +570,25 @@ public class WagonsUnloadingFXUI {
             alert.setTitle(title);
             alert.setHeaderText(null);
             alert.setContentText(content);
+            
+            // Style the alert dialog
+            alert.getDialogPane().setStyle("-fx-background-color: #1E293B;");
+            
+            // Style labels
+            alert.getDialogPane().lookupAll(".label").forEach(node -> {
+                if (node instanceof Label) {
+                    ((Label) node).setStyle("-fx-text-fill: #E2E8F0; -fx-font-size: 13px;");
+                }
+            });
+            
+            // Style buttons
+            Button okButton = (Button) alert.getDialogPane().lookupButton(ButtonType.OK);
+            if (okButton != null) {
+                okButton.setStyle("-fx-background-color: linear-gradient(to right, #3B82F6, #2563EB); " +
+                                 "-fx-text-fill: white; -fx-background-radius: 6; -fx-padding: 8 20; " +
+                                 "-fx-font-weight: 500; -fx-cursor: hand;");
+            }
+            
             alert.showAndWait();
         });
     }

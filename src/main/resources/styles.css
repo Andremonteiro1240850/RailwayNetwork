@@ -1,0 +1,68 @@
+/* Railway Terminal Management System - Elegant Styles with Life */
+
+/* Button Hover Effects - Professional with Energy */
+.button {
+    -fx-cursor: hand;
+    -fx-transition: all 0.2s ease;
+}
+
+/* Active Button (Wagons Unloading) - Solid Blue */
+.button:default {
+    -fx-background-color: #2563EB;
+}
+
+.button:default:hover {
+    -fx-background-color: #1D4ED8;
+}
+
+.button:default:pressed {
+    -fx-background-color: #1E40AF;
+}
+
+/* Inactive Buttons - Dark with subtle gradient */
+.button {
+    -fx-background-color: linear-gradient(to right, #1E293B, #334155);
+    -fx-border-color: #475569;
+    -fx-text-fill: #CBD5E1;
+}
+
+.button:hover {
+    -fx-background-color: linear-gradient(to right, #334155, #475569);
+    -fx-border-color: #64748B;
+    -fx-text-fill: #E2E8F0;
+}
+
+.button:pressed {
+    -fx-background-color: linear-gradient(to right, #475569, #64748B);
+}
+
+/* Tab Styling - More Vibrant */
+.tab {
+    -fx-background-color: #1E293B;
+    -fx-padding: 10 20;
+    -fx-cursor: hand;
+}
+
+.tab:selected {
+    -fx-background-color: #0F172A;
+    -fx-border-color: linear-gradient(to right, #3B82F6, #8B5CF6);
+    -fx-border-width: 0 0 2 0;
+}
+
+.tab:hover {
+    -fx-background-color: #334155;
+}
+
+/* TabPane Styling */
+.tab-pane {
+    -fx-tab-min-width: 120px;
+}
+
+.tab-pane .tab-header-area .tab-header-background {
+    -fx-background-color: #1E293B;
+}
+
+/* Info Box Hover - Subtle */
+.hbox {
+    -fx-cursor: default;
+}
