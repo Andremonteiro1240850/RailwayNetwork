@@ -8,274 +8,611 @@
 
 <StackPane xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
            fx:controller="Sprint1.JavaFX.Controller"
-           style="-fx-background-color: linear-gradient(to bottom, #1E293B, #0F172A);">
+           style="-fx-background-color: #0D1117;">
     <children>
-        <VBox spacing="20" alignment="TOP_CENTER" style="-fx-padding: 35;">
-
-            <!-- Title - Clean and Professional with Accent -->
-            <VBox alignment="CENTER" spacing="8" style="-fx-padding: 0 0 30 0;">
+        <VBox spacing="25" alignment="TOP_CENTER" style="-fx-padding: 40;">
+            
+            <!-- Title - Modern with Gradient -->
+            <VBox alignment="CENTER" spacing="10" style="-fx-padding: 0 0 35 0;">
                 <Label text="Railway Terminal Management System"
-                       style="-fx-font-size: 28px; -fx-font-weight: 600; -fx-text-fill: linear-gradient(to right, #60A5FA, #3B82F6, #60A5FA); -fx-letter-spacing: 0.5px;"/>
-                <Separator prefWidth="450" style="-fx-background-color: linear-gradient(to right, transparent, #3B82F6, transparent); -fx-pref-height: 2;"/>
+                       styleClass="title-main"
+                       style="-fx-font-size: 32px; -fx-font-weight: 700; -fx-text-fill: linear-gradient(to right, #A78BFA, #C4B5FD, #A78BFA); -fx-letter-spacing: 0.8px;"/>
+                <Separator prefWidth="500" styleClass="separator-subtle"
+                           style="-fx-background-color: linear-gradient(to right, transparent, rgba(167, 139, 250, 0.3), transparent); -fx-pref-height: 1.5;"/>
             </VBox>
 
-            <!-- TabPane - Elegant with Subtle Border -->
-            <TabPane prefHeight="650" prefWidth="1000" tabClosingPolicy="UNAVAILABLE"
-                     style="-fx-background-color: #0F172A;
-                            -fx-border-color: linear-gradient(to right, #3B82F6, #8B5CF6); -fx-border-width: 1.5;
-                            -fx-border-radius: 10; -fx-background-radius: 10;">
-
+            <!-- TabPane - Modern with Subtle Border -->
+            <TabPane prefHeight="650" prefWidth="1100" tabClosingPolicy="UNAVAILABLE"
+                     style="-fx-background-color: #161B22;
+                            -fx-border-color: rgba(99, 102, 241, 0.2);
+                            -fx-border-width: 1.5;
+                            -fx-border-radius: 12px;
+                            -fx-background-radius: 12px;
+                            -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.2), 10, 0, 0, 3);">
+                
                 <tabs>
                     <!-- Tab 1: Cargo Handling -->
-                    <Tab text="Cargo Handling" style="-fx-background-color: #1E293B; -fx-text-base-color: #E2E8F0; -fx-font-size: 13px; -fx-font-weight: 500;">
+                    <Tab text="Cargo Handling" 
+                         style="-fx-background-color: #161B22; 
+                                -fx-text-base-color: rgba(255, 255, 255, 0.8); 
+                                -fx-font-family: 'Segoe UI Variable', 'Inter', 'Segoe UI', sans-serif;
+                                -fx-font-size: 13px; 
+                                -fx-font-weight: 500;
+                                -fx-padding: 12px 24px;">
                         <content>
-                            <VBox spacing="30" style="-fx-padding: 45; -fx-background-color: #0F172A;">
-
-                                <VBox spacing="10" alignment="CENTER_LEFT">
+                            <VBox spacing="25" style="-fx-padding: 35; -fx-background-color: #0D1117;">
+                                
+                                <!-- Section Header -->
+                                <VBox spacing="12" alignment="CENTER_LEFT">
                                     <Label text="Cargo Handling at Railway Terminal"
-                                           style="-fx-font-size: 22px; -fx-font-weight: 600; -fx-text-fill: #F1F5F9;"/>
-                                    <Separator prefWidth="550" style="-fx-background-color: linear-gradient(to right, transparent, #3B82F6, transparent); -fx-pref-height: 2;"/>
+                                           style="-fx-font-family: 'Segoe UI Variable', 'Inter', 'Segoe UI', sans-serif;
+                                                  -fx-font-size: 24px; 
+                                                  -fx-font-weight: 600; 
+                                                  -fx-text-fill: rgba(255, 255, 255, 0.9);
+                                                  -fx-letter-spacing: 0.5px;"/>
+                                    <Separator prefWidth="600" 
+                                               style="-fx-background-color: linear-gradient(to right, transparent, rgba(99, 102, 241, 0.25), transparent); 
+                                                      -fx-pref-height: 1.5;"/>
                                 </VBox>
 
-                                <GridPane hgap="25" vgap="25" alignment="CENTER">
+                                <!-- Button Cards Grid -->
+                                <GridPane hgap="25" vgap="20" alignment="CENTER">
                                     <columnConstraints>
                                         <ColumnConstraints percentWidth="50" halignment="CENTER"/>
                                         <ColumnConstraints percentWidth="50" halignment="CENTER"/>
                                     </columnConstraints>
 
-                                    <!-- Row 1 Buttons -->
-                                    <VBox spacing="8" alignment="CENTER" GridPane.columnIndex="0" GridPane.rowIndex="0">
+                                    <!-- Row 1: Wagons Unloading & Order Eligibility -->
+                                    <VBox spacing="12" alignment="CENTER" 
+                                          style="-fx-background-color: #161B22;
+                                                 -fx-background-radius: 20px;
+                                                 -fx-border-color: rgba(99, 102, 241, 0.15);
+                                                 -fx-border-radius: 20px;
+                                                 -fx-border-width: 1;
+                                                 -fx-padding: 18px;
+                                                 -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.2), 10, 0, 0, 3);"
+                                          GridPane.columnIndex="0" GridPane.rowIndex="0">
                                         <Button text="Wagons Unloading"
                                                 onAction="#handleWagonsButton"
-                                                prefWidth="400" prefHeight="70"
-                                                style="-fx-font-size: 15px; -fx-font-weight: 600; 
-                                                       -fx-background-color: #2563EB; 
+                                                prefWidth="300" prefHeight="50"
+                                                style="-fx-font-family: 'Segoe UI Variable', 'Inter', 'Segoe UI', sans-serif;
+                                                       -fx-font-size: 15px; 
+                                                       -fx-font-weight: 600; 
+                                                       -fx-background-color: #6366F1; 
                                                        -fx-text-fill: #FFFFFF; 
-                                                       -fx-background-radius: 8; 
-                                                       -fx-cursor: hand;"/>
+                                                       -fx-background-radius: 16px; 
+                                                       -fx-cursor: hand;
+                                                       -fx-letter-spacing: 0.3px;
+                                                       -fx-effect: dropshadow(gaussian, rgba(139, 92, 246, 0.4), 8, 0, 0, 2);"/>
                                         <Label text="Unload wagons using FEFO/FIFO strategy"
-                                               style="-fx-text-fill: #94A3B8; -fx-font-size: 12px; -fx-font-weight: 500;"/>
+                                               style="-fx-font-family: 'Segoe UI Variable', 'Inter', 'Segoe UI', sans-serif;
+                                                      -fx-text-fill: rgba(255, 255, 255, 0.7); 
+                                                      -fx-font-size: 12px; 
+                                                      -fx-font-weight: 400;
+                                                      -fx-opacity: 0.85;"/>
                                     </VBox>
 
-                                    <VBox spacing="8" alignment="CENTER" GridPane.columnIndex="1" GridPane.rowIndex="0">
+                                    <VBox spacing="12" alignment="CENTER" 
+                                          style="-fx-background-color: #161B22;
+                                                 -fx-background-radius: 20px;
+                                                 -fx-border-color: rgba(99, 102, 241, 0.15);
+                                                 -fx-border-radius: 20px;
+                                                 -fx-border-width: 1;
+                                                 -fx-padding: 18px;
+                                                 -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.2), 10, 0, 0, 3);"
+                                          GridPane.columnIndex="1" GridPane.rowIndex="0">
                                         <Button text="Order Eligibility"
                                                 onAction="#handleOrderEligibilityButton"
-                                                prefWidth="400" prefHeight="70"
-                                                style="-fx-font-size: 15px; -fx-font-weight: 500; 
-                                                       -fx-background-color: linear-gradient(to right, #1E293B, #334155); 
-                                                       -fx-text-fill: #CBD5E1; 
-                                                       -fx-background-radius: 8; 
-                                                       -fx-cursor: hand; 
-                                                       -fx-border-color: #475569; -fx-border-width: 1; -fx-border-radius: 8;"/>
-                                        <Label text="Coming soon"
-                                               style="-fx-text-fill: #94A3B8; -fx-font-size: 12px;"/>
+                                                prefWidth="300" prefHeight="50"
+                                                style="-fx-font-family: 'Segoe UI Variable', 'Inter', 'Segoe UI', sans-serif;
+                                                       -fx-font-size: 15px; 
+                                                       -fx-font-weight: 600; 
+                                                       -fx-background-color: #6366F1; 
+                                                       -fx-text-fill: #FFFFFF; 
+                                                       -fx-background-radius: 16px; 
+                                                       -fx-cursor: hand;
+                                                       -fx-letter-spacing: 0.3px;
+                                                       -fx-effect: dropshadow(gaussian, rgba(139, 92, 246, 0.4), 8, 0, 0, 2);"/>
+                                        <Label text="Process order eligibility and allocation"
+                                               style="-fx-font-family: 'Segoe UI Variable', 'Inter', 'Segoe UI', sans-serif;
+                                                      -fx-text-fill: rgba(255, 255, 255, 0.7); 
+                                                      -fx-font-size: 12px; 
+                                                      -fx-font-weight: 400;
+                                                      -fx-opacity: 0.85;"/>
                                     </VBox>
 
-                                    <!-- Row 2 Buttons -->
-                                    <VBox spacing="8" alignment="CENTER" GridPane.columnIndex="0" GridPane.rowIndex="1">
+                                    <!-- Row 2: Picking Plans & Pick Path Sequencing -->
+                                    <VBox spacing="12" alignment="CENTER" 
+                                          style="-fx-background-color: #161B22;
+                                                 -fx-background-radius: 20px;
+                                                 -fx-border-color: rgba(99, 102, 241, 0.15);
+                                                 -fx-border-radius: 20px;
+                                                 -fx-border-width: 1;
+                                                 -fx-padding: 18px;
+                                                 -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.2), 10, 0, 0, 3);"
+                                          GridPane.columnIndex="0" GridPane.rowIndex="1">
                                         <Button text="Picking Plans" 
                                                 onAction="#handlePickingPlansButton"
-                                                prefWidth="400" prefHeight="70"
-                                                style="-fx-font-size: 15px; -fx-font-weight: 500; 
-                                                       -fx-background-color: linear-gradient(to right, #1E293B, #334155); 
-                                                       -fx-text-fill: #CBD5E1; 
-                                                       -fx-background-radius: 8; 
-                                                       -fx-cursor: hand; 
-                                                       -fx-border-color: #475569; -fx-border-width: 1; -fx-border-radius: 8;"/>
-                                        <Label text="Coming soon"
-                                               style="-fx-text-fill: #94A3B8; -fx-font-size: 12px;"/>
+                                                prefWidth="300" prefHeight="50"
+                                                style="-fx-font-family: 'Segoe UI Variable', 'Inter', 'Segoe UI', sans-serif;
+                                                       -fx-font-size: 15px; 
+                                                       -fx-font-weight: 600; 
+                                                       -fx-background-color: #6366F1; 
+                                                       -fx-text-fill: #FFFFFF; 
+                                                       -fx-background-radius: 16px; 
+                                                       -fx-cursor: hand;
+                                                       -fx-letter-spacing: 0.3px;
+                                                       -fx-effect: dropshadow(gaussian, rgba(139, 92, 246, 0.4), 8, 0, 0, 2);"/>
+                                        <Label text="Create picking plans for trolleys"
+                                               style="-fx-font-family: 'Segoe UI Variable', 'Inter', 'Segoe UI', sans-serif;
+                                                      -fx-text-fill: rgba(255, 255, 255, 0.7); 
+                                                      -fx-font-size: 12px; 
+                                                      -fx-font-weight: 400;
+                                                      -fx-opacity: 0.85;"/>
                                     </VBox>
 
-                                    <VBox spacing="8" alignment="CENTER" GridPane.columnIndex="1" GridPane.rowIndex="1">
+                                    <VBox spacing="12" alignment="CENTER" 
+                                          style="-fx-background-color: #161B22;
+                                                 -fx-background-radius: 20px;
+                                                 -fx-border-color: rgba(99, 102, 241, 0.15);
+                                                 -fx-border-radius: 20px;
+                                                 -fx-border-width: 1;
+                                                 -fx-padding: 18px;
+                                                 -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.2), 10, 0, 0, 3);"
+                                          GridPane.columnIndex="1" GridPane.rowIndex="1">
                                         <Button text="Pick Path Sequencing" 
                                                 onAction="#handlePickPathButton"
-                                                prefWidth="400" prefHeight="70"
-                                                style="-fx-font-size: 15px; -fx-font-weight: 500; 
-                                                       -fx-background-color: linear-gradient(to right, #1E293B, #334155); 
-                                                       -fx-text-fill: #CBD5E1; 
-                                                       -fx-background-radius: 8; 
-                                                       -fx-cursor: hand; 
-                                                       -fx-border-color: #475569; -fx-border-width: 1; -fx-border-radius: 8;"/>
-                                        <Label text="Coming soon"
-                                               style="-fx-text-fill: #94A3B8; -fx-font-size: 12px;"/>
+                                                prefWidth="300" prefHeight="50"
+                                                style="-fx-font-family: 'Segoe UI Variable', 'Inter', 'Segoe UI', sans-serif;
+                                                       -fx-font-size: 15px; 
+                                                       -fx-font-weight: 600; 
+                                                       -fx-background-color: #6366F1; 
+                                                       -fx-text-fill: #FFFFFF; 
+                                                       -fx-background-radius: 16px; 
+                                                       -fx-cursor: hand;
+                                                       -fx-letter-spacing: 0.3px;
+                                                       -fx-effect: dropshadow(gaussian, rgba(139, 92, 246, 0.4), 8, 0, 0, 2);"/>
+                                        <Label text="Sequence pick paths using strategies"
+                                               style="-fx-font-family: 'Segoe UI Variable', 'Inter', 'Segoe UI', sans-serif;
+                                                      -fx-text-fill: rgba(255, 255, 255, 0.7); 
+                                                      -fx-font-size: 12px; 
+                                                      -fx-font-weight: 400;
+                                                      -fx-opacity: 0.85;"/>
                                     </VBox>
 
-                                    <!-- Row 3 Buttons -->
-                                    <VBox spacing="8" alignment="CENTER" GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="2" GridPane.halignment="CENTER">
+                                    <!-- Row 3: Returns and Quarantine -->
+                                    <VBox spacing="12" alignment="CENTER" 
+                                          style="-fx-background-color: #161B22;
+                                                 -fx-background-radius: 20px;
+                                                 -fx-border-color: rgba(99, 102, 241, 0.15);
+                                                 -fx-border-radius: 20px;
+                                                 -fx-border-width: 1;
+                                                 -fx-padding: 18px;
+                                                 -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.2), 10, 0, 0, 3);"
+                                          GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="2" GridPane.halignment="CENTER">
                                         <Button text="Returns and Quarantine" 
                                                 onAction="#handleReturnsQuarantineButton"
-                                                prefWidth="400" prefHeight="70"
-                                                style="-fx-font-size: 15px; -fx-font-weight: 500; 
-                                                       -fx-background-color: linear-gradient(to right, #1E293B, #334155); 
-                                                       -fx-text-fill: #CBD5E1; 
-                                                       -fx-background-radius: 8; 
-                                                       -fx-cursor: hand; 
-                                                       -fx-border-color: #475569; -fx-border-width: 1; -fx-border-radius: 8;"/>
-                                        <Label text="Coming soon"
-                                               style="-fx-text-fill: #94A3B8; -fx-font-size: 12px;"/>
+                                                prefWidth="300" prefHeight="50"
+                                                style="-fx-font-family: 'Segoe UI Variable', 'Inter', 'Segoe UI', sans-serif;
+                                                       -fx-font-size: 15px; 
+                                                       -fx-font-weight: 600; 
+                                                       -fx-background-color: #6366F1; 
+                                                       -fx-text-fill: #FFFFFF; 
+                                                       -fx-background-radius: 16px; 
+                                                       -fx-cursor: hand;
+                                                       -fx-letter-spacing: 0.3px;
+                                                       -fx-effect: dropshadow(gaussian, rgba(139, 92, 246, 0.4), 8, 0, 0, 2);"/>
+                                        <Label text="Process returns and quarantine inspections"
+                                               style="-fx-font-family: 'Segoe UI Variable', 'Inter', 'Segoe UI', sans-serif;
+                                                      -fx-text-fill: rgba(255, 255, 255, 0.7); 
+                                                      -fx-font-size: 12px; 
+                                                      -fx-font-weight: 400;
+                                                      -fx-opacity: 0.85;"/>
                                     </VBox>
 
                                 </GridPane>
-
-                                <!-- Info Box - Subtle and Clean with Accent -->
-                                <HBox spacing="12" alignment="CENTER_LEFT"
-                                      style="-fx-background-color: linear-gradient(to right, rgba(59, 130, 246, 0.1), rgba(139, 92, 246, 0.05)); 
-                                             -fx-padding: 18; 
-                                             -fx-background-radius: 8; 
-                                             -fx-border-color: linear-gradient(to right, #3B82F6, #8B5CF6); 
-                                             -fx-border-radius: 8; 
-                                             -fx-border-width: 1.5;">
-                                    <Label text="ℹ" style="-fx-font-size: 20px; -fx-text-fill: #60A5FA;"/>
-                                    <VBox spacing="4">
-                                        <Label text="Fully Implemented Features"
-                                               style="-fx-font-weight: 600; -fx-text-fill: #E2E8F0; -fx-font-size: 13px;"/>
-                                        <Label text="Wagons Unloading is fully functional and ready to use"
-                                               style="-fx-text-fill: #94A3B8; -fx-font-size: 12px;"/>
-                                    </VBox>
-                                </HBox>
 
                             </VBox>
                         </content>
                     </Tab>
 
-                    <!-- Tab 2: Spatial Queries -->
-                    <Tab text="Spatial and Indexed Queries" style="-fx-background-color: #1E293B; -fx-text-base-color: #E2E8F0; -fx-font-size: 13px; -fx-font-weight: 500;">
+                    <!-- Tab 2: Spatial and Indexed Queries -->
+                    <Tab text="Spatial and Indexed Queries" 
+                         style="-fx-background-color: #161B22; 
+                                -fx-text-base-color: rgba(255, 255, 255, 0.8); 
+                                -fx-font-family: 'Segoe UI Variable', 'Inter', 'Segoe UI', sans-serif;
+                                -fx-font-size: 13px; 
+                                -fx-font-weight: 500;
+                                -fx-padding: 12px 24px;">
                         <content>
-                            <VBox spacing="30" style="-fx-padding: 45; -fx-background-color: #0F172A;">
-                                <VBox spacing="10" alignment="CENTER_LEFT">
+                            <VBox spacing="25" style="-fx-padding: 35; -fx-background-color: #0D1117;">
+                                
+                                <!-- Section Header -->
+                                <VBox spacing="12" alignment="CENTER_LEFT">
                                     <Label text="Spatial and Indexed Queries" 
-                                           style="-fx-font-size: 22px; -fx-font-weight: 600; -fx-text-fill: #F1F5F9;"/>
-                                    <Separator prefWidth="550" style="-fx-background-color: linear-gradient(to right, transparent, #8B5CF6, transparent); -fx-pref-height: 2;"/>
+                                           style="-fx-font-family: 'Segoe UI Variable', 'Inter', 'Segoe UI', sans-serif;
+                                                  -fx-font-size: 24px; 
+                                                  -fx-font-weight: 600; 
+                                                  -fx-text-fill: rgba(255, 255, 255, 0.9);
+                                                  -fx-letter-spacing: 0.5px;"/>
+                                    <Separator prefWidth="600" 
+                                               style="-fx-background-color: linear-gradient(to right, transparent, rgba(99, 102, 241, 0.25), transparent); 
+                                                      -fx-pref-height: 1.5;"/>
                                 </VBox>
 
-                                <GridPane hgap="25" vgap="25" alignment="CENTER">
+                                <!-- Button Cards Grid -->
+                                <GridPane hgap="25" vgap="20" alignment="CENTER">
                                     <columnConstraints>
                                         <ColumnConstraints percentWidth="50" halignment="CENTER"/>
                                         <ColumnConstraints percentWidth="50" halignment="CENTER"/>
                                     </columnConstraints>
 
-                                    <VBox spacing="8" alignment="CENTER" GridPane.columnIndex="0" GridPane.rowIndex="0">
+                                    <!-- Row 1: Time-Zone Queries & Build 2D-Tree -->
+                                    <VBox spacing="12" alignment="CENTER" 
+                                          style="-fx-background-color: #161B22;
+                                                 -fx-background-radius: 20px;
+                                                 -fx-border-color: rgba(99, 102, 241, 0.15);
+                                                 -fx-border-radius: 20px;
+                                                 -fx-border-width: 1;
+                                                 -fx-padding: 18px;
+                                                 -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.2), 10, 0, 0, 3);"
+                                          GridPane.columnIndex="0" GridPane.rowIndex="0">
                                         <Button text="Time-Zone Queries" 
                                                 onAction="#handleStationLookupButton"
-                                                prefWidth="400" prefHeight="70"
-                                                style="-fx-font-size: 15px; -fx-font-weight: 500; 
-                                                       -fx-background-color: linear-gradient(to right, #1E293B, #334155); 
-                                                       -fx-text-fill: #CBD5E1; 
-                                                       -fx-background-radius: 8; 
-                                                       -fx-cursor: hand; 
-                                                       -fx-border-color: #475569; -fx-border-width: 1; -fx-border-radius: 8;"/>
-                                        <Label text="Coming soon" 
-                                               style="-fx-text-fill: #94A3B8; -fx-font-size: 12px;"/>
+                                                prefWidth="300" prefHeight="50"
+                                                style="-fx-font-family: 'Segoe UI Variable', 'Inter', 'Segoe UI', sans-serif;
+                                                       -fx-font-size: 15px; 
+                                                       -fx-font-weight: 600; 
+                                                       -fx-background-color: #6366F1; 
+                                                       -fx-text-fill: #FFFFFF; 
+                                                       -fx-background-radius: 16px; 
+                                                       -fx-cursor: hand;
+                                                       -fx-letter-spacing: 0.3px;
+                                                       -fx-effect: dropshadow(gaussian, rgba(139, 92, 246, 0.4), 8, 0, 0, 2);"/>
+                                        <Label text="Query stations by time zone and location" 
+                                               style="-fx-font-family: 'Segoe UI Variable', 'Inter', 'Segoe UI', sans-serif;
+                                                      -fx-text-fill: rgba(255, 255, 255, 0.7); 
+                                                      -fx-font-size: 12px; 
+                                                      -fx-font-weight: 400;
+                                                      -fx-opacity: 0.85;"/>
                                     </VBox>
 
-                                    <VBox spacing="8" alignment="CENTER" GridPane.columnIndex="1" GridPane.rowIndex="0">
+                                    <VBox spacing="12" alignment="CENTER" 
+                                          style="-fx-background-color: #161B22;
+                                                 -fx-background-radius: 20px;
+                                                 -fx-border-color: rgba(99, 102, 241, 0.15);
+                                                 -fx-border-radius: 20px;
+                                                 -fx-border-width: 1;
+                                                 -fx-padding: 18px;
+                                                 -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.2), 10, 0, 0, 3);"
+                                          GridPane.columnIndex="1" GridPane.rowIndex="0">
                                         <Button text="Build 2D-Tree" 
                                                 onAction="#handleKDTreeButton"
-                                                prefWidth="400" prefHeight="70"
-                                                style="-fx-font-size: 15px; -fx-font-weight: 500; 
-                                                       -fx-background-color: linear-gradient(to right, #1E293B, #334155); 
-                                                       -fx-text-fill: #CBD5E1; 
-                                                       -fx-background-radius: 8; 
-                                                       -fx-cursor: hand; 
-                                                       -fx-border-color: #475569; -fx-border-width: 1; -fx-border-radius: 8;"/>
-                                        <Label text="Coming soon" 
-                                               style="-fx-text-fill: #94A3B8; -fx-font-size: 12px;"/>
+                                                prefWidth="300" prefHeight="50"
+                                                style="-fx-font-family: 'Segoe UI Variable', 'Inter', 'Segoe UI', sans-serif;
+                                                       -fx-font-size: 15px; 
+                                                       -fx-font-weight: 600; 
+                                                       -fx-background-color: #6366F1; 
+                                                       -fx-text-fill: #FFFFFF; 
+                                                       -fx-background-radius: 16px; 
+                                                       -fx-cursor: hand;
+                                                       -fx-letter-spacing: 0.3px;
+                                                       -fx-effect: dropshadow(gaussian, rgba(139, 92, 246, 0.4), 8, 0, 0, 2);"/>
+                                        <Label text="Build balanced KD-tree for spatial queries" 
+                                               style="-fx-font-family: 'Segoe UI Variable', 'Inter', 'Segoe UI', sans-serif;
+                                                      -fx-text-fill: rgba(255, 255, 255, 0.7); 
+                                                      -fx-font-size: 12px; 
+                                                      -fx-font-weight: 400;
+                                                      -fx-opacity: 0.85;"/>
                                     </VBox>
 
-                                    <!-- Row 2 -->
-                                    <VBox spacing="8" alignment="CENTER" GridPane.columnIndex="0" GridPane.rowIndex="1">
+                                    <!-- Row 2: Geographical Area Search & Proximity Search -->
+                                    <VBox spacing="12" alignment="CENTER" 
+                                          style="-fx-background-color: #161B22;
+                                                 -fx-background-radius: 20px;
+                                                 -fx-border-color: rgba(99, 102, 241, 0.15);
+                                                 -fx-border-radius: 20px;
+                                                 -fx-border-width: 1;
+                                                 -fx-padding: 18px;
+                                                 -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.2), 10, 0, 0, 3);"
+                                          GridPane.columnIndex="0" GridPane.rowIndex="1">
                                         <Button text="Geographical Area Search" 
                                                 onAction="#handleGeographicalSearchButton"
-                                                prefWidth="400" prefHeight="70"
-                                                style="-fx-font-size: 15px; -fx-font-weight: 500; 
-                                                       -fx-background-color: linear-gradient(to right, #1E293B, #334155); 
-                                                       -fx-text-fill: #CBD5E1; 
-                                                       -fx-background-radius: 8; 
-                                                       -fx-cursor: hand; 
-                                                       -fx-border-color: #475569; -fx-border-width: 1; -fx-border-radius: 8;"/>
-                                        <Label text="Coming soon" 
-                                               style="-fx-text-fill: #94A3B8; -fx-font-size: 12px;"/>
+                                                prefWidth="300" prefHeight="50"
+                                                style="-fx-font-family: 'Segoe UI Variable', 'Inter', 'Segoe UI', sans-serif;
+                                                       -fx-font-size: 15px; 
+                                                       -fx-font-weight: 600; 
+                                                       -fx-background-color: #6366F1; 
+                                                       -fx-text-fill: #FFFFFF; 
+                                                       -fx-background-radius: 16px; 
+                                                       -fx-cursor: hand;
+                                                       -fx-letter-spacing: 0.3px;
+                                                       -fx-effect: dropshadow(gaussian, rgba(139, 92, 246, 0.4), 8, 0, 0, 2);"/>
+                                        <Label text="Search stations in geographical area" 
+                                               style="-fx-font-family: 'Segoe UI Variable', 'Inter', 'Segoe UI', sans-serif;
+                                                      -fx-text-fill: rgba(255, 255, 255, 0.7); 
+                                                      -fx-font-size: 12px; 
+                                                      -fx-font-weight: 400;
+                                                      -fx-opacity: 0.85;"/>
                                     </VBox>
 
-                                    <VBox spacing="8" alignment="CENTER" GridPane.columnIndex="1" GridPane.rowIndex="1">
+                                    <VBox spacing="12" alignment="CENTER" 
+                                          style="-fx-background-color: #161B22;
+                                                 -fx-background-radius: 20px;
+                                                 -fx-border-color: rgba(99, 102, 241, 0.15);
+                                                 -fx-border-radius: 20px;
+                                                 -fx-border-width: 1;
+                                                 -fx-padding: 18px;
+                                                 -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.2), 10, 0, 0, 3);"
+                                          GridPane.columnIndex="1" GridPane.rowIndex="1">
                                         <Button text="Proximity Search" 
                                                 onAction="#handleProximitySearchButton"
-                                                prefWidth="400" prefHeight="70"
-                                                style="-fx-font-size: 15px; -fx-font-weight: 500; 
-                                                       -fx-background-color: linear-gradient(to right, #1E293B, #334155); 
-                                                       -fx-text-fill: #CBD5E1; 
-                                                       -fx-background-radius: 8; 
-                                                       -fx-cursor: hand; 
-                                                       -fx-border-color: #475569; -fx-border-width: 1; -fx-border-radius: 8;"/>
-                                        <Label text="Coming soon" 
-                                               style="-fx-text-fill: #94A3B8; -fx-font-size: 12px;"/>
+                                                prefWidth="300" prefHeight="50"
+                                                style="-fx-font-family: 'Segoe UI Variable', 'Inter', 'Segoe UI', sans-serif;
+                                                       -fx-font-size: 15px; 
+                                                       -fx-font-weight: 600; 
+                                                       -fx-background-color: #6366F1; 
+                                                       -fx-text-fill: #FFFFFF; 
+                                                       -fx-background-radius: 16px; 
+                                                       -fx-cursor: hand;
+                                                       -fx-letter-spacing: 0.3px;
+                                                       -fx-effect: dropshadow(gaussian, rgba(139, 92, 246, 0.4), 8, 0, 0, 2);"/>
+                                        <Label text="Find N nearest stations to a point" 
+                                               style="-fx-font-family: 'Segoe UI Variable', 'Inter', 'Segoe UI', sans-serif;
+                                                      -fx-text-fill: rgba(255, 255, 255, 0.7); 
+                                                      -fx-font-size: 12px; 
+                                                      -fx-font-weight: 400;
+                                                      -fx-opacity: 0.85;"/>
                                     </VBox>
 
-                                    <!-- Row 3 -->
-                                    <VBox spacing="8" alignment="CENTER" GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="2" GridPane.halignment="CENTER">
+                                    <!-- Row 3: Radius Search -->
+                                    <VBox spacing="12" alignment="CENTER" 
+                                          style="-fx-background-color: #161B22;
+                                                 -fx-background-radius: 20px;
+                                                 -fx-border-color: rgba(99, 102, 241, 0.15);
+                                                 -fx-border-radius: 20px;
+                                                 -fx-border-width: 1;
+                                                 -fx-padding: 18px;
+                                                 -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.2), 10, 0, 0, 3);"
+                                          GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="2" GridPane.halignment="CENTER">
                                         <Button text="Radius Search" 
                                                 onAction="#handleRadiusSearchButton"
-                                                prefWidth="400" prefHeight="70"
-                                                style="-fx-font-size: 15px; -fx-font-weight: 500; 
-                                                       -fx-background-color: linear-gradient(to right, #1E293B, #334155); 
-                                                       -fx-text-fill: #CBD5E1; 
-                                                       -fx-background-radius: 8; 
-                                                       -fx-cursor: hand; 
-                                                       -fx-border-color: #475569; -fx-border-width: 1; -fx-border-radius: 8;"/>
-                                        <Label text="Coming soon" 
-                                               style="-fx-text-fill: #94A3B8; -fx-font-size: 12px;"/>
+                                                prefWidth="300" prefHeight="50"
+                                                style="-fx-font-family: 'Segoe UI Variable', 'Inter', 'Segoe UI', sans-serif;
+                                                       -fx-font-size: 15px; 
+                                                       -fx-font-weight: 600; 
+                                                       -fx-background-color: #6366F1; 
+                                                       -fx-text-fill: #FFFFFF; 
+                                                       -fx-background-radius: 16px; 
+                                                       -fx-cursor: hand;
+                                                       -fx-letter-spacing: 0.3px;
+                                                       -fx-effect: dropshadow(gaussian, rgba(139, 92, 246, 0.4), 8, 0, 0, 2);"/>
+                                        <Label text="Search stations within radius with density summary" 
+                                               style="-fx-font-family: 'Segoe UI Variable', 'Inter', 'Segoe UI', sans-serif;
+                                                      -fx-text-fill: rgba(255, 255, 255, 0.7); 
+                                                      -fx-font-size: 12px; 
+                                                      -fx-font-weight: 400;
+                                                      -fx-opacity: 0.85;"/>
                                     </VBox>
-                                </GridPane>
 
-                                <HBox spacing="12" alignment="CENTER_LEFT"
-                                      style="-fx-background-color: linear-gradient(to right, rgba(251, 191, 36, 0.1), rgba(245, 158, 11, 0.05)); 
-                                             -fx-padding: 18; 
-                                             -fx-background-radius: 8; 
-                                             -fx-border-color: linear-gradient(to right, #FBBF24, #F59E0B); 
-                                             -fx-border-radius: 8; 
-                                             -fx-border-width: 1.5;">
-                                    <Label text="⚠" style="-fx-font-size: 20px; -fx-text-fill: #FBBF24;"/>
-                                    <VBox spacing="4">
-                                        <Label text="Under Development" 
-                                               style="-fx-font-weight: 600; -fx-text-fill: #E2E8F0; -fx-font-size: 13px;"/>
-                                        <Label text="All spatial query features are being implemented" 
-                                               style="-fx-text-fill: #94A3B8; -fx-font-size: 12px;"/>
-                                    </VBox>
-                                </HBox>
+                                </GridPane>
                             </VBox>
                         </content>
                     </Tab>
 
                     <!-- Tab 3: Railway Network Optimization -->
-                    <Tab text="Railway Network Optimization" style="-fx-background-color: #1E293B; -fx-text-base-color: #E2E8F0; -fx-font-size: 13px; -fx-font-weight: 500;">
+                    <Tab text="Railway Network Optimization" 
+                         style="-fx-background-color: #161B22; 
+                                -fx-text-base-color: rgba(255, 255, 255, 0.8); 
+                                -fx-font-family: 'Segoe UI Variable', 'Inter', 'Segoe UI', sans-serif;
+                                -fx-font-size: 13px; 
+                                -fx-font-weight: 500;
+                                -fx-padding: 12px 24px;">
                         <content>
-                            <VBox spacing="35" alignment="CENTER" style="-fx-padding: 60; -fx-background-color: #0F172A;">
-                                <VBox spacing="15" alignment="CENTER">
+                            <VBox spacing="40" alignment="CENTER" style="-fx-padding: 60; -fx-background-color: #0D1117;">
+                                <VBox spacing="18" alignment="CENTER">
                                     <Label text="Coming Soon" 
-                                           style="-fx-font-size: 32px; -fx-font-weight: 600; -fx-text-fill: #F1F5F9;"/>
-                                    <Separator prefWidth="400" style="-fx-background-color: #334155; -fx-pref-height: 1;"/>
+                                           style="-fx-font-family: 'Segoe UI Variable', 'Inter', 'Segoe UI', sans-serif;
+                                                  -fx-font-size: 32px; 
+                                                  -fx-font-weight: 600; 
+                                                  -fx-text-fill: rgba(255, 255, 255, 0.9);
+                                                  -fx-letter-spacing: 0.5px;"/>
+                                    <Separator prefWidth="450" 
+                                               style="-fx-background-color: linear-gradient(to right, transparent, rgba(167, 139, 250, 0.25), transparent); 
+                                                      -fx-pref-height: 1.5;"/>
                                     <Label text="Network optimization features will be available in the next release"
-                                           style="-fx-font-size: 14px; -fx-text-fill: #94A3B8;"/>
+                                           style="-fx-font-family: 'Segoe UI Variable', 'Inter', 'Segoe UI', sans-serif;
+                                                  -fx-font-size: 14px; 
+                                                  -fx-text-fill: #94A3B8;
+                                                  -fx-opacity: 0.85;"/>
                                 </VBox>
                                 
-                                <VBox spacing="15" alignment="CENTER" 
-                                      style="-fx-background-color: #1E293B; 
-                                             -fx-padding: 30; 
-                                             -fx-background-radius: 8; 
-                                             -fx-border-color: #334155; 
-                                             -fx-border-radius: 8; 
-                                             -fx-border-width: 1;">
+                                <VBox spacing="18" alignment="CENTER" 
+                                      style="-fx-background-color: linear-gradient(to bottom, rgba(30, 41, 59, 0.6), rgba(15, 23, 42, 0.4));
+                                             -fx-padding: 35; 
+                                             -fx-background-radius: 20px; 
+                                             -fx-border-color: rgba(167, 139, 250, 0.15); 
+                                             -fx-border-radius: 20px; 
+                                             -fx-border-width: 1;
+                                             -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.2), 10, 0, 0, 3);">
                                     <Label text="Planned Features:" 
-                                           style="-fx-font-size: 16px; -fx-font-weight: 600; -fx-text-fill: #E2E8F0;"/>
-                                    <VBox spacing="12" alignment="CENTER_LEFT" style="-fx-padding: 15 0 0 0;">
+                                           style="-fx-font-family: 'Segoe UI Variable', 'Inter', 'Segoe UI', sans-serif;
+                                                  -fx-font-size: 18px; 
+                                                  -fx-font-weight: 600; 
+                                                  -fx-text-fill: #E2E8F0;
+                                                  -fx-letter-spacing: 0.3px;"/>
+                                    <VBox spacing="14" alignment="CENTER_LEFT" style="-fx-padding: 20 0 0 0;">
                                         <Label text="• Route Optimization" 
-                                               style="-fx-font-size: 13px; -fx-text-fill: #CBD5E1;"/>
+                                               style="-fx-font-family: 'Segoe UI Variable', 'Inter', 'Segoe UI', sans-serif;
+                                                      -fx-font-size: 13px; 
+                                                      -fx-text-fill: rgba(255, 255, 255, 0.8);
+                                                      -fx-opacity: 0.85;"/>
                                         <Label text="• Network Analysis" 
-                                               style="-fx-font-size: 13px; -fx-text-fill: #CBD5E1;"/>
+                                               style="-fx-font-family: 'Segoe UI Variable', 'Inter', 'Segoe UI', sans-serif;
+                                                      -fx-font-size: 13px; 
+                                                      -fx-text-fill: rgba(255, 255, 255, 0.8);
+                                                      -fx-opacity: 0.85;"/>
                                         <Label text="• Capacity Planning" 
-                                               style="-fx-font-size: 13px; -fx-text-fill: #CBD5E1;"/>
+                                               style="-fx-font-family: 'Segoe UI Variable', 'Inter', 'Segoe UI', sans-serif;
+                                                      -fx-font-size: 13px; 
+                                                      -fx-text-fill: rgba(255, 255, 255, 0.8);
+                                                      -fx-opacity: 0.85;"/>
                                     </VBox>
                                 </VBox>
+                            </VBox>
+                        </content>
+                    </Tab>
+
+                    <!-- Tab 4: Settings -->
+                    <Tab text="Settings" 
+                         style="-fx-background-color: #161B22; 
+                                -fx-text-base-color: rgba(255, 255, 255, 0.8); 
+                                -fx-font-family: 'Segoe UI Variable', 'Inter', 'Segoe UI', sans-serif;
+                                -fx-font-size: 13px; 
+                                -fx-font-weight: 500;
+                                -fx-padding: 12px 24px;">
+                        <content>
+                            <VBox spacing="25" style="-fx-padding: 35; -fx-background-color: #0D1117;">
+                                
+                                <!-- Section Header -->
+                                <VBox spacing="12" alignment="CENTER_LEFT">
+                                    <Label text="Settings &amp; Information"
+                                           style="-fx-font-family: 'Segoe UI Variable', 'Inter', 'Segoe UI', sans-serif;
+                                                  -fx-font-size: 24px; 
+                                                  -fx-font-weight: 600; 
+                                                  -fx-text-fill: rgba(255, 255, 255, 0.9);
+                                                  -fx-letter-spacing: 0.5px;"/>
+                                    <Separator prefWidth="600" 
+                                               style="-fx-background-color: linear-gradient(to right, transparent, rgba(99, 102, 241, 0.25), transparent); 
+                                                      -fx-pref-height: 1.5;"/>
+                                </VBox>
+
+                                <!-- Button Cards Grid -->
+                                <GridPane hgap="25" vgap="20" alignment="CENTER">
+                                    <columnConstraints>
+                                        <ColumnConstraints percentWidth="50" halignment="CENTER"/>
+                                        <ColumnConstraints percentWidth="50" halignment="CENTER"/>
+                                    </columnConstraints>
+
+                                    <!-- Row 1: Development Team & Application Info -->
+                                    <VBox spacing="12" alignment="CENTER" 
+                                          style="-fx-background-color: #161B22;
+                                                 -fx-background-radius: 20px;
+                                                 -fx-border-color: rgba(99, 102, 241, 0.15);
+                                                 -fx-border-radius: 20px;
+                                                 -fx-border-width: 1;
+                                                 -fx-padding: 18px;
+                                                 -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.2), 10, 0, 0, 3);"
+                                          GridPane.columnIndex="0" GridPane.rowIndex="0">
+                                        <Button text="Development Team"
+                                                onAction="#handleDevelopmentTeamButton"
+                                                prefWidth="300" prefHeight="50"
+                                                style="-fx-font-family: 'Segoe UI Variable', 'Inter', 'Segoe UI', sans-serif;
+                                                       -fx-font-size: 15px; 
+                                                       -fx-font-weight: 600; 
+                                                       -fx-background-color: #6366F1; 
+                                                       -fx-text-fill: #FFFFFF; 
+                                                       -fx-background-radius: 16px; 
+                                                       -fx-cursor: hand;
+                                                       -fx-letter-spacing: 0.3px;
+                                                       -fx-effect: dropshadow(gaussian, rgba(139, 92, 246, 0.4), 8, 0, 0, 2);"/>
+                                        <Label text="View development team information"
+                                               style="-fx-font-family: 'Segoe UI Variable', 'Inter', 'Segoe UI', sans-serif;
+                                                      -fx-text-fill: rgba(255, 255, 255, 0.7); 
+                                                      -fx-font-size: 12px; 
+                                                      -fx-font-weight: 400;
+                                                      -fx-opacity: 0.85;"/>
+                                    </VBox>
+
+                                    <VBox spacing="12" alignment="CENTER" 
+                                          style="-fx-background-color: #161B22;
+                                                 -fx-background-radius: 20px;
+                                                 -fx-border-color: rgba(99, 102, 241, 0.15);
+                                                 -fx-border-radius: 20px;
+                                                 -fx-border-width: 1;
+                                                 -fx-padding: 18px;
+                                                 -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.2), 10, 0, 0, 3);"
+                                          GridPane.columnIndex="1" GridPane.rowIndex="0">
+                                        <Button text="Application Info"
+                                                onAction="#handleApplicationInfoButton"
+                                                prefWidth="300" prefHeight="50"
+                                                style="-fx-font-family: 'Segoe UI Variable', 'Inter', 'Segoe UI', sans-serif;
+                                                       -fx-font-size: 15px; 
+                                                       -fx-font-weight: 600; 
+                                                       -fx-background-color: #6366F1; 
+                                                       -fx-text-fill: #FFFFFF; 
+                                                       -fx-background-radius: 16px; 
+                                                       -fx-cursor: hand;
+                                                       -fx-letter-spacing: 0.3px;
+                                                       -fx-effect: dropshadow(gaussian, rgba(139, 92, 246, 0.4), 8, 0, 0, 2);"/>
+                                        <Label text="View application version and details"
+                                               style="-fx-font-family: 'Segoe UI Variable', 'Inter', 'Segoe UI', sans-serif;
+                                                      -fx-text-fill: rgba(255, 255, 255, 0.7); 
+                                                      -fx-font-size: 12px; 
+                                                      -fx-font-weight: 400;
+                                                      -fx-opacity: 0.85;"/>
+                                    </VBox>
+
+                                    <!-- Row 2: Features Overview & Technical Details -->
+                                    <VBox spacing="12" alignment="CENTER" 
+                                          style="-fx-background-color: #161B22;
+                                                 -fx-background-radius: 20px;
+                                                 -fx-border-color: rgba(99, 102, 241, 0.15);
+                                                 -fx-border-radius: 20px;
+                                                 -fx-border-width: 1;
+                                                 -fx-padding: 18px;
+                                                 -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.2), 10, 0, 0, 3);"
+                                          GridPane.columnIndex="0" GridPane.rowIndex="1">
+                                        <Button text="Features Overview" 
+                                                onAction="#handleFeaturesOverviewButton"
+                                                prefWidth="300" prefHeight="50"
+                                                style="-fx-font-family: 'Segoe UI Variable', 'Inter', 'Segoe UI', sans-serif;
+                                                       -fx-font-size: 15px; 
+                                                       -fx-font-weight: 600; 
+                                                       -fx-background-color: #6366F1; 
+                                                       -fx-text-fill: #FFFFFF; 
+                                                       -fx-background-radius: 16px; 
+                                                       -fx-cursor: hand;
+                                                       -fx-letter-spacing: 0.3px;
+                                                       -fx-effect: dropshadow(gaussian, rgba(139, 92, 246, 0.4), 8, 0, 0, 2);"/>
+                                        <Label text="View all available features"
+                                               style="-fx-font-family: 'Segoe UI Variable', 'Inter', 'Segoe UI', sans-serif;
+                                                      -fx-text-fill: rgba(255, 255, 255, 0.7); 
+                                                      -fx-font-size: 12px; 
+                                                      -fx-font-weight: 400;
+                                                      -fx-opacity: 0.85;"/>
+                                    </VBox>
+
+                                    <VBox spacing="12" alignment="CENTER" 
+                                          style="-fx-background-color: #161B22;
+                                                 -fx-background-radius: 20px;
+                                                 -fx-border-color: rgba(99, 102, 241, 0.15);
+                                                 -fx-border-radius: 20px;
+                                                 -fx-border-width: 1;
+                                                 -fx-padding: 18px;
+                                                 -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.2), 10, 0, 0, 3);"
+                                          GridPane.columnIndex="1" GridPane.rowIndex="1">
+                                        <Button text="Technical Details" 
+                                                onAction="#handleTechnicalDetailsButton"
+                                                prefWidth="300" prefHeight="50"
+                                                style="-fx-font-family: 'Segoe UI Variable', 'Inter', 'Segoe UI', sans-serif;
+                                                       -fx-font-size: 15px; 
+                                                       -fx-font-weight: 600; 
+                                                       -fx-background-color: #6366F1; 
+                                                       -fx-text-fill: #FFFFFF; 
+                                                       -fx-background-radius: 16px; 
+                                                       -fx-cursor: hand;
+                                                       -fx-letter-spacing: 0.3px;
+                                                       -fx-effect: dropshadow(gaussian, rgba(139, 92, 246, 0.4), 8, 0, 0, 2);"/>
+                                        <Label text="View technical architecture details"
+                                               style="-fx-font-family: 'Segoe UI Variable', 'Inter', 'Segoe UI', sans-serif;
+                                                      -fx-text-fill: rgba(255, 255, 255, 0.7); 
+                                                      -fx-font-size: 12px; 
+                                                      -fx-font-weight: 400;
+                                                      -fx-opacity: 0.85;"/>
+                                    </VBox>
+
+                                </GridPane>
                             </VBox>
                         </content>
                     </Tab>
@@ -283,16 +620,24 @@
                 </tabs>
             </TabPane>
 
-            <!-- Footer - Clean and Minimal with Accent -->
-            <VBox spacing="8" alignment="CENTER" style="-fx-padding: 20 0 0 0;">
-                <Separator prefWidth="600" style="-fx-background-color: linear-gradient(to right, transparent, #3B82F6, transparent); -fx-pref-height: 1.5;"/>
+            <!-- Footer - Modern and Subtle -->
+            <VBox spacing="10" alignment="CENTER" style="-fx-padding: 25 0 0 0;">
+                <Separator prefWidth="650" 
+                           style="-fx-background-color: linear-gradient(to right, transparent, rgba(167, 139, 250, 0.2), transparent); 
+                                  -fx-pref-height: 1;"/>
                 <HBox alignment="CENTER" spacing="20">
                     <Label text="Railway Terminal Management System v2.0" 
-                           style="-fx-font-size: 11px; -fx-text-fill: #94A3B8; -fx-font-weight: 500;"/>
+                           style="-fx-font-family: 'Segoe UI Variable', 'Inter', 'Segoe UI', sans-serif;
+                                  -fx-font-size: 11px; 
+                                  -fx-text-fill: #64748B; 
+                                  -fx-font-weight: 500;"/>
                     <Separator orientation="VERTICAL" prefHeight="14" 
-                               style="-fx-background-color: #475569;"/>
+                               style="-fx-background-color: rgba(100, 116, 139, 0.3);"/>
                     <Label text="© 2024 - All Rights Reserved" 
-                           style="-fx-font-size: 11px; -fx-text-fill: #94A3B8; -fx-font-weight: 500;"/>
+                           style="-fx-font-family: 'Segoe UI Variable', 'Inter', 'Segoe UI', sans-serif;
+                                  -fx-font-size: 11px; 
+                                  -fx-text-fill: #64748B; 
+                                  -fx-font-weight: 500;"/>
                 </HBox>
             </VBox>
 
