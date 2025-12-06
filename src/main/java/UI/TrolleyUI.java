@@ -1,10 +1,10 @@
 package UI;
 
-import Controller.TrolleyController;
-import Domain.PickingItems;
-import Domain.PickingPlan;
-import Domain.Trolley;
-import Domain.ENUM.PackingHeuristic;
+import Sprint1.Controller.TrolleyController;
+import Sprint1.Domain.PickingItems;
+import Sprint1.Domain.PickingPlan;
+import Sprint1.Domain.Trolley;
+import Sprint1.Domain.ENUM.PackingHeuristic;
 
 import java.util.InputMismatchException;
 import java.util.List;

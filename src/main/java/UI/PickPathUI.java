@@ -1,11 +1,11 @@
 package UI;
 
-import Controller.PickPathController;
-import Domain.PickPath;
-import Domain.PickStop;
-import Domain.PickingItems;
-import Domain.Trolley;
-import Domain.ENUM.PathStrategy;
+import Sprint1.Controller.PickPathController;
+import Sprint1.Domain.PickPath;
+import Sprint1.Domain.PickStop;
+import Sprint1.Domain.PickingItems;
+import Sprint1.Domain.Trolley;
+import Sprint1.Domain.ENUM.PathStrategy;
 
 import java.util.List;
 import java.util.Map;

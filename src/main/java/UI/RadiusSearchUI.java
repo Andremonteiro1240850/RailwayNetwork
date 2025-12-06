@@ -1,11 +1,10 @@
 package UI;
 
-import Controller.RadiusSearchController;
-import Domain.KDTree;
-import Domain.RadiusSearchSummary;
-import Domain.AVL;
-import Domain.BST;
-import Domain.Station;
+import Sprint2.Controller.RadiusSearchController;
+import Sprint2.Domain.KDTree;
+import Sprint2.Domain.RadiusSearchSummary;
+import Sprint2.Domain.AVL;
+import Sprint1.Domain.Station;
 
 import java.util.*;
 

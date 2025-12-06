@@ -1,11 +1,9 @@
 package UI;
 
-import Controller.QualityOperatorController;
-import Domain.Return;
-import Domain.QuarantineInspection;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import Sprint1.Controller.QualityOperatorController;
+import Sprint1.Domain.Return;
+import Sprint1.Domain.QuarantineInspection;
+
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Scanner;

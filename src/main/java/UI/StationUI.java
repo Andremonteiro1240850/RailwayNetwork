@@ -1,6 +1,6 @@
 package UI;
 
-import Controller.StationController;
+import Sprint2.Controller.StationController;
 import java.util.Scanner;
 
 /**

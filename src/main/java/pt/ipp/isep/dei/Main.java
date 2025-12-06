@@ -1,18 +1,19 @@
 package pt.ipp.isep.dei;
 
-import Controller.*;
-import Domain.StationLoader;
-import Domain.Warehouse;
-import Domain.ENUM.ReturnReason;
-import Repository.BoxRepository;
-import Repository.KDTreeRepository;
-import Repository.StationRepository;
-import Repository.TrolleyRepository;
-import Repository.WarehouseRepository;
+import Sprint1.Controller.*;
+import Sprint2.Controller.*;
+import Sprint2.Domain.StationLoader;
+import Sprint1.Domain.Warehouse;
+import Sprint1.Domain.AuditLog;
+import Sprint1.Domain.ENUM.ReturnReason;
+import Sprint1.Repository.BoxRepository;
+import Sprint2.Repository.KDTreeRepository;
+import Sprint2.Repository.StationRepository;
+import Sprint1.Repository.TrolleyRepository;
+import Sprint1.Repository.WarehouseRepository;
 import UI.*;
-import Domain.DataLoader;
+import Sprint1.Domain.DataLoader;
 
-import java.util.List;
 import java.util.Scanner;
 
 /**
@@ -62,7 +63,7 @@ public class Main {
      */
     public static void main(String[] args) {
         // Clear audit log at startup to only show inspections from this session
-        Domain.AuditLog.clearAll();
+        AuditLog.clearAll();
         
         // Load data at startup
         loadAllData();

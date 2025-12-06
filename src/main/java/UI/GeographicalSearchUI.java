@@ -1,10 +1,9 @@
 package UI;
 
-import Controller.GeographicalSearchController;
-import Domain.Station;
-import Domain.SearchFilters;
-import Domain.KDTree;
-import Domain.ENUM.Country;
+import Sprint2.Controller.GeographicalSearchController;
+import Sprint1.Domain.Station;
+import Sprint2.Domain.SearchFilters;
+import Sprint2.Domain.ENUM.Country;
 
 import java.util.List;
 import java.util.Scanner;

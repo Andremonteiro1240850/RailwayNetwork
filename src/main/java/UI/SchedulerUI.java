@@ -1,7 +1,12 @@
 package UI;
 
-import Domain.*;
-import Controller.DispatchController;
+import Sprint2.Controller.DispatchController;
+import Sprint1.Domain.*;
+import Sprint2.Domain.DispatchReport;
+import Sprint2.Domain.KDTree;
+import Sprint2.Domain.LineSegment;
+import Sprint2.Domain.Train;
+
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;

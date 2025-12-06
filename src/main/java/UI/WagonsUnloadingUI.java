@@ -1,8 +1,11 @@
 package UI;
 
-import Controller.WagonsUnloadingController;
-import Domain.Bay;
-import Domain.Box;
+import Sprint1.Controller.WagonsUnloadingController;
+import Sprint1.Domain.Box;
+import Sprint1.Domain.Bay;
+import Sprint1.Domain.BayId;
+import Sprint1.Repository.BoxRepository;
+
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -68,8 +71,8 @@ public class WagonsUnloadingUI {
         }
         
         // Show status before unloading
-        Repository.BoxRepository boxRepo = controller.getBoxRepository();
-        Repository.BoxRepository.RepositoryStats statsBefore = boxRepo.getStats();
+        BoxRepository boxRepo = controller.getBoxRepository();
+        BoxRepository.RepositoryStats statsBefore = boxRepo.getStats();
         System.out.println("\nCurrent repository status:");
         System.out.println("  Unassigned boxes: " + statsBefore.totalUnassigned + " (SKUs: " + statsBefore.unassignedSkus + ")");
         System.out.println("  Assigned boxes: " + statsBefore.totalAssigned + " (SKUs: " + statsBefore.assignedSkus + ")");
@@ -105,7 +108,7 @@ public class WagonsUnloadingUI {
         controller.unloadWagons();
         
         // Show results
-        Repository.BoxRepository.RepositoryStats statsAfter = boxRepo.getStats();
+        BoxRepository.RepositoryStats statsAfter = boxRepo.getStats();
         int assignedCount = statsBefore.totalUnassigned - statsAfter.totalUnassigned;
         
         System.out.println("\n=== UNLOADING COMPLETED ===");
@@ -204,7 +207,7 @@ public class WagonsUnloadingUI {
         String boxId = scanner.nextLine().trim();
         
         // Check if box exists first
-        Repository.BoxRepository boxRepo = controller.getBoxRepository();
+        BoxRepository boxRepo = controller.getBoxRepository();
         Box box = boxRepo.getBoxById(boxId);
         if (box == null) {
             System.out.println("Box " + boxId + " not found.");
@@ -212,7 +215,7 @@ public class WagonsUnloadingUI {
         }
         
         // Show current location
-        Domain.BayId currentLocation = box.getLocation();
+        BayId currentLocation = box.getLocation();
         if (currentLocation == null) {
             System.out.println("Box " + boxId + " is not assigned to any bay.");
             return;
@@ -231,10 +234,10 @@ public class WagonsUnloadingUI {
             System.out.print("Enter target bay: ");
             int bay = Integer.parseInt(scanner.nextLine().trim());
             
-            Domain.BayId targetBayId = new Domain.BayId(warehouseId, aisle, bay);
+            BayId targetBayId = new BayId(warehouseId, aisle, bay);
             
             // Check if target bay exists
-            Domain.Bay targetBay = controller.getBayMap().get(targetBayId);
+            Bay targetBay = controller.getBayMap().get(targetBayId);
             if (targetBay == null) {
                 System.out.println("Target bay " + targetBayId + " not found.");
                 return;
@@ -271,7 +274,7 @@ public class WagonsUnloadingUI {
     /**
      * Show detailed box assignments by warehouse/aisle/bay
      */
-    private void showDetailedAssignments(Repository.BoxRepository boxRepo) {
+    private void showDetailedAssignments(BoxRepository boxRepo) {
         Map<String, List<Box>> assignedBoxes = boxRepo.getAllAssignedBoxes();
         
         if (assignedBoxes.isEmpty()) {

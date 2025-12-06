@@ -1,7 +1,12 @@
 package UI;
 
-import Domain.*;
-import Controller.TravelTimeController;
+import Sprint1.Controller.TravelTimeController;
+import Sprint1.Domain.Facility;
+import Sprint1.Domain.IncompatibleGaugeException;
+import Sprint1.Domain.Locomotive;
+import Sprint1.Domain.TravelCalculationService;
+import Sprint2.Domain.LineSegment;
+
 import java.util.*;
 
 /**

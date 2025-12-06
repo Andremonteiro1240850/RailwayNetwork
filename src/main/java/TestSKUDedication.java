@@ -1,5 +1,9 @@
 package Domain;
 
+import Sprint1.Domain.Bay;
+import Sprint1.Domain.BayId;
+import Sprint1.Domain.Box;
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;

@@ -1,8 +1,10 @@
 package UI;
 
-import Controller.PickingPlanController;
-import Domain.*;
-import Domain.ENUM.PackingHeuristic;
+import Sprint1.Controller.PickingPlanController;
+import Sprint1.Domain.ENUM.PackingHeuristic;
+import Sprint1.Domain.PickingItems;
+import Sprint1.Domain.PickingPlan;
+import Sprint1.Domain.Trolley;
 
 import java.util.List;
 import java.util.Scanner;

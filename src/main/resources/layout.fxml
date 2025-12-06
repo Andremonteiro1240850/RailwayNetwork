@@ -7,7 +7,7 @@
 <?import javafx.scene.effect.*?>
 
 <StackPane xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
-           fx:controller="main.javaFX.Controller"
+           fx:controller="Sprint1.JavaFX.Controller"
            style="-fx-background-color: linear-gradient(to bottom, #1E293B, #0F172A);">
     <children>
         <VBox spacing="20" alignment="TOP_CENTER" style="-fx-padding: 35;">

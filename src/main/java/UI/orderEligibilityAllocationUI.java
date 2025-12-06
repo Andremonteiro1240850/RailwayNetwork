@@ -1,11 +1,11 @@
 package UI;
 
-import Controller.WarehouseController;
-import Domain.AllocationRow;
-import Domain.AllocationResult;
-import Domain.EligibilityResult;
-import Domain.ENUM.AllocationMode;
-import Repository.BoxRepository;
+import Sprint1.Controller.WarehouseController;
+import Sprint1.Domain.AllocationRow;
+import Sprint1.Domain.AllocationResult;
+import Sprint1.Domain.EligibilityResult;
+import Sprint1.Domain.ENUM.AllocationMode;
+import Sprint1.Repository.BoxRepository;
 
 /**
  * The type Order eligibility allocation ui.
