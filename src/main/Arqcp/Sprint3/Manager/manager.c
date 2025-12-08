@@ -22,3 +22,13 @@ int assignArrivingTrain (Train *t, Track *tr) {
         return 0;
     }
 }
+int setTrackINOP(Track *t){
+    if(t->state == 3){
+        trackINOP();
+        return 1;
+    } else {
+        trackINOP();
+        t->state = 3;
+        return 1;
+    }
+}
