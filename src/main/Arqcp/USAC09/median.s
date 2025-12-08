@@ -9,7 +9,7 @@ median:
 
     addi sp, sp, -4
     sw s0, 0(sp)
-    mv s0, a1                   # s0 = length (a1)
+    mv s0, a1                   # s0 = length (a1) pois depois é alterado esta lenght
 
     beqz a0, return_zero        # if (!vec) return 0
     beqz a2, return_zero        # if (!me) return 0
