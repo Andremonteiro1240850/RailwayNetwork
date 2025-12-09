@@ -1,4 +1,4 @@
-package UI;
+package Sprint1.UI;
 
 /**
  * The type Development team ui.

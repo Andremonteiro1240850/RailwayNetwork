@@ -1,4 +1,4 @@
-package UI;
+package Sprint2.UI;
 
 import Sprint2.Controller.StationController;
 import java.util.Scanner;

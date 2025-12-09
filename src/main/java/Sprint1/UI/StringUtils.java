@@ -1,4 +1,4 @@
-package UI;
+package Sprint1.UI;
 
 /**
  * Utility class for string operations.
