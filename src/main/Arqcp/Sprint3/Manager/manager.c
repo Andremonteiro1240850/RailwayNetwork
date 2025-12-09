@@ -32,3 +32,11 @@ int setTrackINOP(Track *t){
         return 1;
     }
 }
+int setTrackFree(Track *t){
+    if(t->state == 0){
+        return 1;
+    }else {
+        t->state = 0;
+        return 1;
+    }
+}
