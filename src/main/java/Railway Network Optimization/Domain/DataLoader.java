@@ -9,6 +9,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 
 /**
  * Data loader for railway network data from CSV files.
@@ -25,13 +26,24 @@ public class DataLoader {
     
     private StationRepository stationRepository;
     private LineRepository lineRepository;
+    private boolean verbose; // Control logging for performance
     
     /**
      * Constructs a new DataLoader with empty repositories.
      */
     public DataLoader() {
+        this(false); // Default: no verbose logging for performance
+    }
+    
+    /**
+     * Constructs a new DataLoader with optional verbose logging.
+     *
+     * @param verbose if true, enables detailed logging (slower)
+     */
+    public DataLoader(boolean verbose) {
         this.stationRepository = new StationRepository();
         this.lineRepository = new LineRepository();
+        this.verbose = verbose;
     }
     
     /**
@@ -42,6 +54,8 @@ public class DataLoader {
      * @throws IOException if there's an error reading the files
      */
     public void loadAllData(String stationsFilePath, String linesFilePath) throws IOException {
+        long startTime = System.currentTimeMillis();
+        
         // Clear existing data
         stationRepository.clear();
         lineRepository.clear();
@@ -52,9 +66,13 @@ public class DataLoader {
         // Load lines (depends on stations being loaded)
         loadLines(linesFilePath);
         
-        System.out.println("\n=== DATA LOADING COMPLETE ===");
-        System.out.println("Stations loaded: " + stationRepository.size());
-        System.out.println("Lines loaded: " + lineRepository.size());
+        long totalTime = System.currentTimeMillis() - startTime;
+        if (verbose) {
+            System.out.println("\n=== DATA LOADING COMPLETE ===");
+            System.out.println("Stations loaded: " + stationRepository.size());
+            System.out.println("Lines loaded: " + lineRepository.size());
+            System.out.println("Total time: " + totalTime + " ms");
+        }
     }
     
     /**
