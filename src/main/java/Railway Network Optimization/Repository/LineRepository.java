@@ -191,7 +191,7 @@ public class LineRepository {
     }
     
     /**
-     * Gets an iterator over all lines.
+     * Gets an iterator over all lines
      *
      * @return iterator over lines
      */

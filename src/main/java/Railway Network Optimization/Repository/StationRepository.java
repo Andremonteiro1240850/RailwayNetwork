@@ -19,7 +19,7 @@ public class StationRepository {
     private final Map<String, Station> stationById;
     
     /**
-     * Constructs an empty StationRepository.
+     * Constructs an empty StationRepository
      */
     public StationRepository() {
         this.stations = new ArrayList<>();
