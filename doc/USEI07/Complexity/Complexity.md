@@ -47,23 +47,18 @@ This method always executes the same sequence of operations for a given input.
 | Step | Operation | Complexity | Justification |
 |------|-----------|------------|---------------|
 | 1 | Null/empty validation | O(1) | Constant time checks |
-| 2 | Filter valid stations | O(n) | Iterate over n stations, O(1) validation per station |
-| 3 | Create list copies | O(n) | Two copies of references (not objects), O(n) |
-| 4 | Sort by latitude | O(n log n) | TimSort with multi-key comparator: `comparingDouble(Station::getLatitude).thenComparingDouble(Station::getLongitude).thenComparing(Station::getName)`. Each comparison is O(1) (double + double + string with bounded length), but total number of comparisons is O(n log n) |
-| 5 | Sort by longitude | O(n log n) | TimSort with multi-key comparator: `comparingDouble(Station::getLongitude).thenComparingDouble(Station::getLatitude).thenComparing(Station::getName)`. Identical analysis to step 4 |
-| 6 | Tree construction (bulkBuild) | O(n log n) | Divide-and-conquer algorithm (see detailed analysis below) |
-| 7 | Calculate metrics | O(n) | Single tree traversal to count nodes and stations |
+| 2 | Filter valid stations | O(n) | Iterate over n stations |
+| 3 | Create list copies | O(n) | Two copies of references |
+| 4 | Sort by latitude | O(n log n) | TimSort with multi-key comparator |
+| 5 | Sort by longitude | O(n log n) | TimSort with multi-key comparator |
+| 6 | Tree construction (bulkBuild) | O(n log n) | Divide-and-conquer algorithm |
+| 7 | Calculate metrics | O(n) | Single tree traversal |
 
 #### Overall Time Complexity
 
 **O(n log n)**
 
-**Justification:** The complexity is dominated by the two sorting operations (O(n log n) each) and the bulk-build algorithm (O(n log n)). Even in pathological cases where all stations share the same coordinates, the bulk-build has cost O(n log n) (all stations go into a single bucket at the root, which is sorted in O(n log n), and recursion terminates immediately).
-
-**Note on Multi-Key Comparators:** Although each individual comparison involves multiple keys (latitude, longitude, name), the cost per comparison remains O(1) because:
-- `double` comparisons are O(1)
-- `String` comparisons are O(min(s₁, s₂)) where s is length, but we assume bounded string lengths, resulting in O(1) per comparison
-- The total number of comparisons in TimSort is O(n log n), maintaining global complexity
+**Justification:** Dominated by two sorting operations (O(n log n) each) and bulk-build (O(n log n)). Even when all stations share coordinates, bucket sorting costs O(n log n).
 
 ---
 
@@ -77,15 +72,15 @@ This method uses AVL trees from `StationRepository` and always executes the same
 
 | Step | Operation | Complexity | Justification |
 |------|-----------|------------|---------------|
-| 1 | Iterate over AVL trees | O(n) | Two iterations, each O(n) |
+| 1 | Iterate over AVL trees | O(n) | Two iterations |
 | 2 | Create HashSet for intersection | O(n) | HashSet with n elements |
 | 3 | Set intersection (retainAll) | O(n) | O(n) operation on HashSet |
-| 4 | Rebuild final lists | O(n) | Two iterations over AVL trees with O(1) checks |
+| 4 | Rebuild final lists | O(n) | Two iterations over AVL trees |
 | 5 | Sort and bulkBuild | O(n log n) | Identical to `buildTree(List)` method |
 
 #### Overall Time Complexity
 
-**O(n log n)** — dominated by sorting and bulkBuild operations
+**O(n log n)** — dominated by sorting and bulkBuild
 
 ---
 
@@ -108,17 +103,14 @@ The `bulkBuild` method implements a divide-and-conquer algorithm that:
 
 #### Work per Level Analysis
 
-- **Median selection:** O(1) — index access
-- **Partition `sortedByAxis`:** O(n) — linear loop
+- **Median selection:** O(1)
+- **Partition `sortedByAxis`:** O(n)
 - **Create HashSet for `bucketCoords`:** O(b) where b is bucket size
-- **Sort bucket by name:** O(b log b) where b ≤ n (assuming bounded string lengths, each comparison is O(1))
-- **Partition `sortedByOther`:** O(n) — linear loop with HashSet check (O(1) amortized)
+- **Sort bucket by name:** O(b log b) where b ≤ n
+- **Partition `sortedByOther`:** O(n)
 - **Total per level:** O(n) + O(b log b) = O(n) when b << n, or O(n log n) when b = n
 
-In the pathological case where b = n (all stations in the same bucket):
-- Bucket sorting: O(n log n)
-- Recursion terminates immediately (empty partitions)
-- **Total cost:** O(n log n)
+In pathological case (b = n): bucket sorting O(n log n), recursion terminates immediately.
 
 #### Overall Time Complexity
 
@@ -138,58 +130,39 @@ This method uses spatial pruning: some tree nodes may not be visited depending o
 
 **O(log n + k log k)**
 
-**Conditions:**
-- Very small query rectangle
-- Optimal spatial pruning (most branches pruned)
-- Small number of results (k << n)
-- Balanced tree (height O(log n))
+**Conditions:** Very small query rectangle, optimal spatial pruning, small number of results (k << n), balanced tree.
 
 **Analysis:**
-- Tree traversal: O(log n) — visits only nodes along a single path from root to leaf
-- Bucket checks: O(1) per visited node (assuming bounded bucket sizes)
-- Final sorting: O(k log k) — sorts k results by name (necessary for output specification)
+- Tree traversal: O(log n) — single path from root to leaf
+- Bucket checks: O(1) per visited node
+- Final sorting: O(k log k) — sorts k results by name
 - **Total:** O(log n + k log k)
 
 #### Average Case Time Complexity
 
 **O(√n + k log k)**
 
-**Conditions:**
-- Balanced tree (height O(log n))
-- Rectangular query that intersects approximately O(√n) spatial cells
-- Effective spatial pruning
-- Moderate number of results (k = O(√n))
-- Bounded bucket sizes
+**Conditions:** Balanced tree, rectangular query intersecting O(√n) spatial cells, effective spatial pruning.
 
 **Analysis:**
 - Tree traversal: O(√n) — spatial pruning eliminates most branches
-- Bucket checks: O(√n) — checks buckets in visited nodes (assuming bounded bucket sizes)
-- Final sorting: O(k log k) — sorts k results by name (necessary for output specification)
+- Bucket checks: O(√n) — checks buckets in visited nodes
+- Final sorting: O(k log k) — sorts k results by name
 - **Total:** O(√n + k log k)
 
-**Justification for O(√n):**
-For a balanced 2D KD-tree, a rectangular query typically intersects O(√n) nodes when:
-- The query rectangle is reasonably sized
-- Spatial pruning effectively eliminates subtrees that cannot contain results
-- The tree is well-balanced
+**Justification:** For balanced 2D KD-tree, rectangular queries typically intersect O(√n) nodes.
 
 #### Worst Case Time Complexity
 
 **O(n + k log k)**
 
-**Conditions:**
-- Query rectangle covers the entire dataset, OR
-- Tree is degenerate (height O(n)), OR
-- Spatial pruning is ineffective (query intersects all nodes)
+**Conditions:** Query rectangle covers entire dataset, OR tree is degenerate (height O(n)), OR spatial pruning is ineffective.
 
 **Analysis:**
 - Tree traversal: O(n) — all n nodes are visited
 - Bucket checks: O(n) — checks all buckets in all nodes
-- Final sorting: O(k log k) — sorts k results by name (necessary for output specification)
+- Final sorting: O(k log k) — sorts k results by name
 - **Total:** O(n + k log k)
-
-**Degenerate Tree Case:**
-When the tree degenerates to a linked list (height O(n)), spatial pruning becomes ineffective, and all n nodes must be visited, resulting in O(n) traversal cost.
 
 **Note:** When k = n, complexity becomes O(n log n), dominated by sorting.
 
@@ -208,88 +181,64 @@ The complexity is expressed in terms of:
 - **N** = number of nearest neighbors requested
 
 **Component Breakdown:**
-- Tree traversal: O(m) — visits m stations (distributed across visited nodes)
-- Distance calculations: O(m) — calculates Haversine distance (O(1) each) for m stations
-- Priority queue operations: O(m log N) — m operations (insert/extract) on a max heap of size ≤ N
-- Final sorting: O(N log N) — sorts N results by distance (necessary for output specification)
+- Tree traversal: O(m)
+- Distance calculations: O(m) — Haversine O(1) each
+- Priority queue operations: O(m log N) — m operations on max heap of size ≤ N
+- Final sorting: O(N log N) — sorts N results by distance
 
 **Overall Complexity:** O(m + m log N + N log N) = **O(m log N + N log N)**
 
 #### Variation of m (Number of Stations Visited)
 
-The value of **m** varies depending on the effectiveness of branch-and-bound pruning:
-
 | Case | m (Stations Visited) | Conditions |
 |------|----------------------|------------|
-| **Best Case** | m = O(log n) | Optimal branch-and-bound pruning, target point very close to N stations, most branches pruned early, balanced tree |
-| **Average Case** | m = O(√n) | Balanced tree, moderate spatial distribution, effective branch-and-bound pruning |
-| **Worst Case** | m = O(n) | All stations must be visited: tree is degenerate (height O(n)), OR branch-and-bound pruning is ineffective, OR target point requires exploring all nodes |
+| **Best Case** | m = O(log n) | Optimal branch-and-bound pruning, balanced tree |
+| **Average Case** | m = O(√n) | Balanced tree, effective branch-and-bound pruning |
+| **Worst Case** | m = O(n) | Degenerate tree OR ineffective pruning |
 
 #### Best Case Time Complexity
 
 **O(log n · log N + N log N)**
 
-**Conditions:**
-- Optimal branch-and-bound pruning (most branches pruned early)
-- Target point is very close to N stations
-- N nearest stations found quickly along a single path
-- Balanced tree (height O(log n))
-- Bounded bucket sizes
+**Conditions:** Optimal branch-and-bound pruning, target point very close to N stations, balanced tree.
 
 **Analysis:**
 - Stations visited: m = O(log n)
 - Tree traversal: O(log n)
-- Distance calculations: O(log n) — Haversine O(1) each
+- Distance calculations: O(log n)
 - Priority queue operations: O(log n · log N)
-- Final sorting: O(N log N) — necessary for output specification
+- Final sorting: O(N log N)
 - **Total:** O(log n · log N + N log N)
-
-**Note:** When N << n, this simplifies to O(log n · log N + N log N). When N is constant, this becomes O(log n + N log N).
 
 #### Average Case Time Complexity
 
 **O(√n · log N + N log N)**
 
-**Conditions:**
-- Balanced tree (height O(log n))
-- Moderate spatial distribution
-- Effective branch-and-bound pruning
-- N nearest stations distributed across multiple subtrees
-- Bounded bucket sizes
+**Conditions:** Balanced tree, moderate spatial distribution, effective branch-and-bound pruning.
 
 **Analysis:**
 - Stations visited: m = O(√n)
 - Tree traversal: O(√n)
-- Distance calculations: O(√n) — Haversine O(1) each
+- Distance calculations: O(√n)
 - Priority queue operations: O(√n · log N)
-- Final sorting: O(N log N) — necessary for output specification
+- Final sorting: O(N log N)
 - **Total:** O(√n · log N + N log N)
 
-**Justification for O(√n):**
-For a balanced 2D KD-tree, branch-and-bound pruning typically results in visiting O(√n) stations when:
-- The tree is well-balanced
-- Spatial pruning effectively eliminates subtrees that cannot contain closer stations
-- The N-th nearest distance is established reasonably quickly
+**Justification:** For balanced 2D KD-tree, branch-and-bound typically visits O(√n) stations.
 
 #### Worst Case Time Complexity
 
 **O(n log N + N log N)**
 
-**Conditions:**
-- Tree is degenerate (height O(n)), OR
-- Branch-and-bound pruning is ineffective (all stations must be visited), OR
-- Target point requires visiting all nodes
+**Conditions:** Degenerate tree (height O(n)) OR ineffective branch-and-bound pruning.
 
 **Analysis:**
 - Stations visited: m = O(n)
 - Tree traversal: O(n)
-- Distance calculations: O(n) — Haversine O(1) each
+- Distance calculations: O(n)
 - Priority queue operations: O(n log N)
-- Final sorting: O(N log N) — necessary for output specification
+- Final sorting: O(N log N)
 - **Total:** O(n log N + N log N)
-
-**Degenerate Tree Case:**
-When the tree degenerates to a linked list (height O(n)), branch-and-bound pruning becomes ineffective, and all n stations must be visited, resulting in m = n.
 
 **Note:** When N = O(n), complexity becomes O(n log n), dominated by sorting.
 
@@ -305,59 +254,39 @@ This method uses spatial pruning: some tree nodes may not be visited depending o
 
 **O(log n + k log k)**
 
-**Conditions:**
-- Very small search radius
-- Optimal spatial pruning (most branches pruned)
-- Small number of results (k << n)
-- Balanced tree (height O(log n))
-- Bounded bucket sizes
+**Conditions:** Very small search radius, optimal spatial pruning, small number of results (k << n), balanced tree.
 
 **Analysis:**
-- Tree traversal: O(log n) — visits only nodes along a single path
-- Distance calculations: O(k) — calculates Haversine distance (O(1) each) for k stations within radius
-- Final sorting: O(k log k) — sorts k results by distance (necessary for output specification)
+- Tree traversal: O(log n) — single path from root to leaf
+- Distance calculations: O(k) — Haversine O(1) each
+- Final sorting: O(k log k) — sorts k results by distance
 - **Total:** O(log n + k log k)
 
 #### Average Case Time Complexity
 
 **O(√n + k log k)**
 
-**Conditions:**
-- Balanced tree (height O(log n))
-- Moderate search radius
-- Effective spatial pruning
-- Moderate number of results (k = O(√n))
-- Bounded bucket sizes
+**Conditions:** Balanced tree, moderate search radius, effective spatial pruning.
 
 **Analysis:**
 - Tree traversal: O(√n) — spatial pruning eliminates most branches
-- Distance calculations: O(k) — calculates Haversine distance (O(1) each) for k stations within radius
-- Final sorting: O(k log k) — sorts k results by distance (necessary for output specification)
+- Distance calculations: O(k) — Haversine O(1) each
+- Final sorting: O(k log k) — sorts k results by distance
 - **Total:** O(√n + k log k)
 
-**Justification for O(√n):**
-For a balanced 2D KD-tree with moderate radius, spatial pruning typically results in visiting O(√n) nodes when:
-- The search radius is reasonably sized
-- Spatial pruning effectively eliminates subtrees outside the radius
-- The tree is well-balanced
+**Justification:** For balanced 2D KD-tree, spatial pruning typically visits O(√n) nodes.
 
 #### Worst Case Time Complexity
 
 **O(n + k log k)**
 
-**Conditions:**
-- Search radius is very large (covers entire dataset), OR
-- Tree is degenerate (height O(n)), OR
-- Spatial pruning is ineffective
+**Conditions:** Very large search radius (covers entire dataset) OR degenerate tree (height O(n)) OR ineffective spatial pruning.
 
 **Analysis:**
 - Tree traversal: O(n) — all n nodes are visited
-- Distance calculations: O(n) — calculates Haversine distance (O(1) each) for all stations
-- Final sorting: O(k log k) — sorts k results by distance (necessary for output specification)
+- Distance calculations: O(n) — Haversine O(1) each
+- Final sorting: O(k log k) — sorts k results by distance
 - **Total:** O(n + k log k)
-
-**Degenerate Tree Case:**
-When the tree degenerates to a linked list (height O(n)), spatial pruning becomes ineffective, and all n nodes must be visited, resulting in O(n) traversal cost.
 
 **Note:** When k = n, complexity becomes O(n log n), dominated by sorting.
 

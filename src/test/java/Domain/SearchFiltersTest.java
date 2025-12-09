@@ -1,6 +1,8 @@
 package Domain;
 
-import Domain.ENUM.Country;
+import Sprint1.Domain.Station;
+import Sprint2.Domain.ENUM.Country;
+import Sprint2.Domain.SearchFilters;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;

@@ -49,24 +49,25 @@ The `InitialSchema/` folder contains the foundational database scripts:
 ### USBD24
 **Folder:** `USBD24/`
 
-- **`USBD24.sql`** - User Story 24: Implementation script.
+- **`USBD24.sql`** - User Story 24: List of all endpoints of a planned train route.
 - **`USBD24Test.sql`** - Test script for User Story 24.
 
 ### USBD25
 **Folder:** `USBD25/`
 
-- **`USBD25.sql`** - User Story 25: Implementation script.
+- **`USBD25.sql`** - User Story 25: List of all endpoints of a planned train route where the train does not stop.
 - **`USBD25Test.sql`** - Test script for User Story 25.
 
 ### USBD28
 **Folder:** `USBD28/`
 
-- **`USBD28.sql`** - User Story 28: Implementation script.
-
+- **`USBD28.sql`** - User Story 28: List of all locomotives of a given operator that support multiple gauges.
+- **`USBD28Test.sql`** - Test script for User Story 28.
+- 
 ### USBD30
 **Folder:** `USBD30/`
 
-- **`USBD30.sql`** - User Story 30: Implementation script.
+- **`USBD30.sql`** - User Story 30: Llist of all facilities that have grain silos, but no warehouses.
 - **`USBD30Test.sql`** - Test script for User Story 30.
 
 ---
@@ -95,6 +96,7 @@ sql-scripts/
 │   └── USBD25Test.sql
 ├── USBD28/
 │   └── USBD28.sql
+|   └── USBD28Test.sql
 └── USBD30/
     ├── USBD30.sql
     └── USBD30Test.sql

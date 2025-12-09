@@ -1,5 +1,6 @@
 package Domain;
 
+import Sprint1.Domain.Station;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

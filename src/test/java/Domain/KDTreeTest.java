@@ -1,7 +1,9 @@
 package Domain;
 
-import Repository.KDTreeRepository;
-import Repository.StationRepository;
+import Sprint1.Domain.Station;
+import Sprint2.Domain.KDTree;
+import Sprint2.Repository.KDTreeRepository;
+import Sprint2.Repository.StationRepository;
 import org.junit.jupiter.api.*;
 
 import java.io.BufferedReader;

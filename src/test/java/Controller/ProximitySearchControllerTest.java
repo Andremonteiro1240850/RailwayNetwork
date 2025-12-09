@@ -1,11 +1,12 @@
 package Controller;
 
-import Domain.KDTree;
-import Domain.SearchFilters;
-import Domain.Station;
-import Domain.ENUM.Country;
-import Repository.KDTreeRepository;
-import Repository.StationRepository;
+import Sprint2.Controller.KDTreeController;
+import Sprint2.Controller.ProximitySearchController;
+import Sprint2.Domain.KDTree;
+import Sprint2.Domain.SearchFilters;
+import Sprint1.Domain.Station;
+import Sprint2.Domain.ENUM.Country;
+import Sprint2.Repository.StationRepository;
 import org.junit.jupiter.api.*;
 
 import java.io.BufferedReader;

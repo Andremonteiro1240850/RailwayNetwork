@@ -1,5 +1,8 @@
 package Domain;
 
+import Sprint1.Domain.Station;
+import Sprint2.Domain.KDTree;
+import Sprint2.Domain.StationDistanceComparator;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -55,7 +58,7 @@ class StationDistanceComparatorTest {
         double targetLat = 38.7223;
         double targetLon = -9.1393;
         
-        double dist1 = KDTree.haversineDistance(targetLat, targetLon, 
+        double dist1 = KDTree.haversineDistance(targetLat, targetLon,
                 station1.getLatitude(), station1.getLongitude());
         double dist2 = KDTree.haversineDistance(targetLat, targetLon, 
                 station2.getLatitude(), station2.getLongitude());
@@ -228,7 +231,7 @@ class StationDistanceComparatorTest {
      * Called once via @BeforeAll.
      */
     private static List<Station> loadStationsFromCSV() {
-        List<Domain.Station> stations = new ArrayList<>();
+        List<Station> stations = new ArrayList<>();
         
         try (BufferedReader br = new BufferedReader(new FileReader(CSV_FILE_PATH))) {
             String line;

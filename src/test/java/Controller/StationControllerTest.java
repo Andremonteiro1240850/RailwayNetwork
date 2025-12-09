@@ -1,7 +1,8 @@
 package Controller;
 
-import Domain.Station;
-import Repository.StationRepository;
+import Sprint1.Domain.Station;
+import Sprint2.Controller.StationController;
+import Sprint2.Repository.StationRepository;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

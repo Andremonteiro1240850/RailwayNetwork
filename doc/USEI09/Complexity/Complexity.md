@@ -48,24 +48,13 @@ Finds the n nearest stations to a target point using a branch-and-bound algorith
 
 | Component | Best Case Complexity | Justification |
 |-----------|---------------------|---------------|
-| **Node visitation** | O(log N) | Best case: query point is positioned such that branch-and-bound pruning eliminates all but one path from root to leaf. Only O(log N) nodes (tree height) are visited |
-| **Stations processed** | O(n) | In best case, only n stations need to be examined (the n nearest are found quickly along the optimal path) |
-| **Distance calculations** | O(n) | O(1) per station × O(n) stations = O(n) |
-| **Priority queue operations** | O(n log n) | All n stations are inserted into the queue: n × O(log n) = O(n log n) |
+| **Node visitation** | O(log N) | Branch-and-bound pruning eliminates all but one path from root to leaf |
+| **Stations processed** | O(n) | Only n stations examined along optimal path |
+| **Distance calculations** | O(n) | O(1) per station × O(n) stations |
+| **Priority queue operations** | O(n log n) | n insertions into queue |
 | **Final sorting** | O(k log k) | Sort k results, where k ≤ n |
 
-**Detailed Justification:**
-
-1. **Optimal pruning:** The best case occurs when the query point is positioned such that:
-   - The nearest n stations are all located along a single path from root to leaf
-   - Branch-and-bound pruning eliminates all other subtrees immediately
-   - Only O(log N) nodes (the tree height) need to be visited
-
-2. **Minimal station processing:** Only n stations need to be examined and added to the priority queue, as the optimal path contains exactly the n nearest neighbors.
-
-3. **Priority queue:** All n stations are inserted once, requiring O(n log n) total operations.
-
-**Note:** This best case is theoretical and rarely occurs in practice. It requires perfect spatial alignment between query point and data distribution.
+**Note:** This best case is theoretical and requires perfect spatial alignment.
 
 ### Time Complexity — Average Case
 
@@ -75,23 +64,13 @@ Finds the n nearest stations to a target point using a branch-and-bound algorith
 
 | Component | Average Case Complexity | Justification |
 |-----------|------------------------|---------------|
-| **Node visitation** | O(√N) | Average case: with balanced tree and typical spatial distribution, approximately O(√N) nodes are visited. This is the classical result for 2D KD-tree nearest neighbor search |
-| **Stations processed** | O(√N) | Each visited node processes stations in its bucket. With typical bucket sizes O(1), total stations processed is O(√N) |
-| **Distance calculations** | O(√N) | O(1) per station × O(√N) stations = O(√N) |
-| **Priority queue operations** | O(√N log n) | Each of the O(√N) stations processed may require queue operations: O(√N) × O(log n) = O(√N log n) |
+| **Node visitation** | O(√N) | Classical result for 2D KD-tree nearest neighbor search |
+| **Stations processed** | O(√N) | Typical bucket sizes O(1) |
+| **Distance calculations** | O(√N) | O(1) per station × O(√N) stations |
+| **Priority queue operations** | O(√N log n) | O(√N) stations × O(log n) per operation |
 | **Final sorting** | O(k log k) | Sort k results, where k ≤ n |
 
-**Detailed Justification:**
-
-1. **Expected node visitation:** With balanced tree and typical spatial distribution, the expected number of nodes visited in 2D nearest neighbor search is O(√N). This comes from the geometric properties of KD-trees in 2D space.
-
-2. **Station processing:** Each visited node processes stations in its bucket. With typical bucket sizes bounded by a constant, the total number of stations processed is O(√N).
-
-3. **Priority queue operations:** For each station processed, priority queue operations (offer/poll) cost O(log n). Total: O(√N log n).
-
-4. **Final sorting:** Results are sorted, requiring O(k log k) where k ≤ n.
-
-**Note:** The √N factor is the expected number of nodes that must be examined in 2D nearest neighbor search with balanced KD-tree and typical data distribution.
+**Note:** The √N factor is the expected number of nodes examined in 2D nearest neighbor search with balanced KD-tree.
 
 ### Time Complexity — Worst Case
 
@@ -101,27 +80,13 @@ Finds the n nearest stations to a target point using a branch-and-bound algorith
 
 | Component | Worst Case Complexity | Justification |
 |-----------|----------------------|---------------|
-| **Node visitation** | O(N) | Worst case: all nodes must be visited when pruning is ineffective (e.g., all stations very close to target, or query point near dataset center with poor spatial distribution) |
-| **Stations processed** | O(N) | In worst case, all N stations are examined (each station's distance is calculated) |
-| **Distance calculations** | O(N) | O(1) per station × O(N) stations = O(N) |
-| **Priority queue operations** | O(N log n) | Each of the N stations processed may require: `offer()` O(log n) when queue size < n, or `poll()` + `offer()` O(log n) when replacing farthest element. In worst case, all N stations trigger queue updates |
-| **Final sorting** | O(k log k) | Convert priority queue to list O(k) + sort k results O(k log k). Note: k ≤ n, but k may be less than n if fewer than n stations exist |
+| **Node visitation** | O(N) | All nodes visited when pruning is ineffective |
+| **Stations processed** | O(N) | All N stations examined |
+| **Distance calculations** | O(N) | O(1) per station × O(N) stations |
+| **Priority queue operations** | O(N log n) | All N stations may trigger queue updates |
+| **Final sorting** | O(k log k) | Sort k results, where k ≤ n |
 
-**Detailed Justification:**
-
-1. **Tree traversal:** In the worst case, the branch-and-bound pruning fails to eliminate subtrees effectively. This occurs when:
-   - All stations are very close to the target point
-   - The query point is positioned such that the distance to split planes is always less than the current maximum distance in the queue
-   - The KD-tree is degenerate (height O(N)) and pruning cannot skip branches
-
-2. **Priority queue operations:** For each of the N stations processed:
-   - If queue size < n: `offer()` operation costs O(log n)
-   - If queue size = n and new station is closer: `poll()` O(log n) + `offer()` O(log n) = O(log n)
-   - Total: O(N log n)
-
-3. **Final sorting:** After traversal, the priority queue contains at most k = min(n, number of stations) elements. Converting to list is O(k), sorting is O(k log k). Since k ≤ n ≤ N, this term is dominated by O(N log n) when n is large, but must be included for completeness.
-
-**Note:** Worst-case analysis requires O(N) to provide an upper bound, even though average case performance is much better with O(√N).
+**Note:** Worst-case analysis requires O(N) to provide an upper bound, even though average case is O(√N).
 
 ---
 
@@ -149,25 +114,13 @@ Finds all stations within a specified radius of a target point using spatial pru
 
 | Component | Best Case Complexity | Justification |
 |-----------|---------------------|---------------|
-| **Node visitation** | O(log N) | Best case: radius is very small and query point is positioned such that spatial pruning eliminates all but one path from root to leaf. Only O(log N) nodes (tree height) are visited |
-| **Stations processed** | O(k) | In best case, only k stations (those within radius) are examined along the optimal path |
-| **Distance calculations** | O(k) | O(1) per station × O(k) stations = O(k) |
-| **Result collection** | O(k) | Adding k results to list: O(1) amortized per insertion = O(k) |
-| **Final sorting** | O(k log k) | Sort k results by distance using TimSort: O(k log k) |
+| **Node visitation** | O(log N) | Spatial pruning eliminates all but one path from root to leaf |
+| **Stations processed** | O(k) | Only k stations (within radius) examined along optimal path |
+| **Distance calculations** | O(k) | O(1) per station × O(k) stations |
+| **Result collection** | O(k) | Adding k results to list: O(1) amortized per insertion |
+| **Final sorting** | O(k log k) | Sort k results by distance |
 
-**Detailed Justification:**
-
-1. **Optimal pruning:** The best case occurs when:
-   - The search radius is very small
-   - All stations within the radius are located along a single path from root to leaf
-   - Spatial pruning eliminates all other subtrees immediately
-   - Only O(log N) nodes (the tree height) need to be visited
-
-2. **Minimal station processing:** Only k stations (those within radius) need to be examined, as they are all located along the optimal path.
-
-3. **Result collection and sorting:** k results are collected and sorted, requiring O(k log k).
-
-**Note:** This best case is theoretical and requires perfect spatial alignment. In practice, even small radii typically require visiting more than O(log N) nodes.
+**Note:** This best case is theoretical and requires perfect spatial alignment.
 
 ### Time Complexity — Average Case
 
@@ -177,21 +130,13 @@ Finds all stations within a specified radius of a target point using spatial pru
 
 | Component | Average Case Complexity | Justification |
 |-----------|------------------------|---------------|
-| **Node visitation** | O(√N) | Average case: with balanced tree and reasonable radius, approximately O(√N) nodes are visited. This is the classical result for 2D KD-tree radius search |
-| **Stations processed** | O(√N) | Each visited node processes stations in its bucket. With typical bucket sizes O(1), total stations processed is O(√N) |
-| **Distance calculations** | O(√N) | O(1) per station × O(√N) stations = O(√N) |
-| **Result collection** | O(k) | Adding k results to list: O(1) amortized per insertion = O(k) |
-| **Final sorting** | O(k log k) | Sort k results by distance using TimSort: O(k log k) |
+| **Node visitation** | O(√N) | Classical result for 2D KD-tree radius search |
+| **Stations processed** | O(√N) | Typical bucket sizes O(1) |
+| **Distance calculations** | O(√N) | O(1) per station × O(√N) stations |
+| **Result collection** | O(k) | Adding k results: O(1) amortized per insertion |
+| **Final sorting** | O(k log k) | Sort k results by distance |
 
-**Detailed Justification:**
-
-1. **Expected node visitation:** With balanced tree and typical radius size, the expected number of nodes visited in 2D radius search is O(√N). This comes from the geometric properties of KD-trees in 2D space.
-
-2. **Station processing:** Each visited node processes stations in its bucket. With typical bucket sizes bounded by a constant, the total number of stations processed is O(√N).
-
-3. **Result collection and sorting:** k results are collected and sorted, requiring O(k log k).
-
-**Note:** The √N factor is the expected number of nodes that must be examined in 2D radius search with balanced KD-tree and typical data distribution.
+**Note:** The √N factor is the expected number of nodes examined in 2D radius search with balanced KD-tree.
 
 ### Time Complexity — Worst Case
 
@@ -201,31 +146,13 @@ Finds all stations within a specified radius of a target point using spatial pru
 
 | Component | Worst Case Complexity | Justification |
 |-----------|----------------------|---------------|
-| **Node visitation** | O(N) | Worst case: radius is very large (covers entire dataset) or spatial pruning is ineffective, requiring all N nodes to be visited |
-| **Stations processed** | O(N) | In worst case, all N stations are examined (distance calculated for each) |
-| **Distance calculations** | O(N) | O(1) per station × O(N) stations = O(N) |
-| **Result collection** | O(k) | Adding k results to list: O(1) amortized per insertion = O(k) |
-| **Final sorting** | O(k log k) | Sort k results by distance using TimSort: O(k log k) |
+| **Node visitation** | O(N) | Very large radius OR ineffective spatial pruning |
+| **Stations processed** | O(N) | All N stations examined |
+| **Distance calculations** | O(N) | O(1) per station × O(N) stations |
+| **Result collection** | O(k) | Adding k results: O(1) amortized per insertion |
+| **Final sorting** | O(k log k) | Sort k results by distance |
 
-**Detailed Justification:**
-
-1. **Tree traversal:** In worst case, spatial pruning fails to eliminate subtrees. This occurs when:
-   - The search radius is very large (radius ≥ maximum distance in dataset), causing all nodes to be within or intersect the search region
-   - The KD-tree is degenerate (height O(N)) and pruning cannot effectively skip branches
-   - Query point and radius are positioned such that distance to split planes is always ≤ radius
-
-2. **Station processing:** All N stations are examined, each requiring:
-   - Haversine distance calculation: O(1)
-   - Distance comparison: O(1)
-   - Conditional list insertion: O(1) amortized
-   - Total: O(N)
-
-3. **Final sorting:** Results are sorted by distance. When k = N (all stations in radius), sorting dominates: O(N log N). However, the general form O(N + k log k) is more precise:
-   - When k ≪ N: O(N) dominates
-   - When k = N: O(N + N log N) = O(N log N)
-   - When k = O(1): O(N) dominates
-
-**Note:** Worst-case analysis requires O(N) to provide an upper bound, even though average case performance is much better with O(√N).
+**Note:** Worst-case analysis requires O(N) to provide an upper bound, even though average case is O(√N).
 
 ---
 
@@ -243,15 +170,7 @@ Calculates the great-circle distance between two points on Earth using the Haver
 
 **O(1)**
 
-**Justification:**
-
-The Haversine formula involves a fixed sequence of operations regardless of input values:
-- Constant number of arithmetic operations (addition, subtraction, multiplication, division)
-- Constant number of trigonometric function calls (sin, cos, atan2, toRadians)
-- No loops or recursive calls
-- All operations are O(1)
-
-The algorithm always performs the same number of operations for any valid input coordinates, making it deterministic with constant time complexity.
+**Justification:** Fixed sequence of arithmetic and trigonometric operations (sin, cos, atan2). No loops or recursion. All operations are O(1).
 
 ---
 

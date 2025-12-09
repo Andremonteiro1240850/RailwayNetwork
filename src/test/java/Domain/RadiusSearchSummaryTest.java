@@ -1,5 +1,6 @@
 package Domain;
 
+import Sprint2.Domain.RadiusSearchSummary;
 import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;

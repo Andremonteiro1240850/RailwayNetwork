@@ -1,17 +1,17 @@
 package Repository;
 
-import Domain.KDTree;
-import Domain.Station;
+import Sprint2.Domain.KDTree;
+import Sprint1.Domain.Station;
+import Sprint2.Repository.KDTreeRepository;
+import Sprint2.Repository.StationRepository;
 import org.junit.jupiter.api.*;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;

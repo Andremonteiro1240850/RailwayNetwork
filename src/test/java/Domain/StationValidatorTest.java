@@ -1,5 +1,7 @@
 package Domain;
 
+import Sprint1.Domain.Station;
+import Sprint2.Domain.StationValidator;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
 
