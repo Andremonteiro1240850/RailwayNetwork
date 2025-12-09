@@ -1,4 +1,4 @@
-package UI;
+package Sprint1.UI;
 
 import Sprint1.Controller.TrolleyController;
 import Sprint1.Domain.PickingItems;

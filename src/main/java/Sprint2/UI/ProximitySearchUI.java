@@ -1,5 +1,6 @@
-package UI;
+package Sprint2.UI;
 
+import Sprint1.UI.StringUtils;
 import Sprint2.Controller.ProximitySearchController;
 import Sprint1.Domain.Station;
 import Sprint2.Domain.SearchFilters;
