@@ -1,62 +1,77 @@
 package Domain;
 
+import Repository.StationRepository;
+import Repository.LineRepository;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
 
 /**
  * Data loader for railway network data from CSV files.
- * Loads stations and lines from Sprint3 CSV files.
+ * Loads stations and lines from Sprint3 CSV files and populates repositories.
+ * 
+ * This class follows the Repository pattern, separating data loading from data storage.
+ * The loaded data is stored in StationRepository and LineRepository for efficient access
+ * by graph algorithms and optimization routines.
  *
  * @author Development Team
- * @version 1.0
+ * @version 2.0
  */
 public class DataLoader {
     
-    private List<Station> stations;
-    private List<Line> lines;
-    private Map<String, Station> stationMap;
+    private StationRepository stationRepository;
+    private LineRepository lineRepository;
     
     /**
-     * Constructs a new DataLoader.
+     * Constructs a new DataLoader with empty repositories.
      */
     public DataLoader() {
-        this.stations = new ArrayList<>();
-        this.lines = new ArrayList<>();
-        this.stationMap = new HashMap<>();
+        this.stationRepository = new StationRepository();
+        this.lineRepository = new LineRepository();
     }
     
     /**
-     * Loads all railway network data from CSV files.
+     * Loads all railway network data from CSV files and populates repositories.
      *
      * @param stationsFilePath the path to the stations CSV file
      * @param linesFilePath    the path to the lines CSV file
      * @throws IOException if there's an error reading the files
      */
     public void loadAllData(String stationsFilePath, String linesFilePath) throws IOException {
+        // Clear existing data
+        stationRepository.clear();
+        lineRepository.clear();
+        
+        // Load stations first (required for line validation)
         loadStations(stationsFilePath);
+        
+        // Load lines (depends on stations being loaded)
         loadLines(linesFilePath);
+        
+        System.out.println("\n=== DATA LOADING COMPLETE ===");
+        System.out.println("Stations loaded: " + stationRepository.size());
+        System.out.println("Lines loaded: " + lineRepository.size());
     }
     
     /**
-     * Loads stations from the CSV file.
+     * Loads stations from the CSV file and adds them to StationRepository.
      * Expected format: Station id,Station,Lat,Lon,CoordX,CoordY
      *
      * @param filePath the path to the stations CSV file
      * @throws IOException if there's an error reading the file
      */
-    public void loadStations(String filePath) throws IOException {
+    private void loadStations(String filePath) throws IOException {
         Path path = Paths.get(filePath);
         
         if (!Files.exists(path)) {
             throw new IOException("File not found: " + filePath);
         }
         
-        System.out.println("Loading stations from: " + filePath);
+        System.out.println("\nLoading stations from: " + filePath);
         
         try (BufferedReader br = Files.newBufferedReader(path, StandardCharsets.UTF_8)) {
             String line;
@@ -114,9 +129,9 @@ public class DataLoader {
                             continue;
                         }
                         
+                        // Create Station object and add to repository
                         Station station = new Station(id, name, latitude, longitude, coordX, coordY);
-                        stations.add(station);
-                        stationMap.put(id, station);
+                        stationRepository.add(station);
                         loadedCount++;
                         
                     } catch (NumberFormatException e) {
@@ -143,20 +158,20 @@ public class DataLoader {
     }
     
     /**
-     * Loads lines from the CSV file.
+     * Loads lines from the CSV file and adds them to LineRepository.
      * Expected format: departure_stid,arrival_stid,dist,capacity,cost
      *
      * @param filePath the path to the lines CSV file
      * @throws IOException if there's an error reading the file
      */
-    public void loadLines(String filePath) throws IOException {
+    private void loadLines(String filePath) throws IOException {
         Path path = Paths.get(filePath);
         
         if (!Files.exists(path)) {
             throw new IOException("File not found: " + filePath);
         }
         
-        System.out.println("Loading lines from: " + filePath);
+        System.out.println("\nLoading lines from: " + filePath);
         
         try (BufferedReader br = Files.newBufferedReader(path, StandardCharsets.UTF_8)) {
             String line;
@@ -200,23 +215,21 @@ public class DataLoader {
                         int capacity = Integer.parseInt(capacityStr);
                         double cost = Double.parseDouble(costStr);
                         
-                        // Validate that both stations exist
-                        Station departureStation = stationMap.get(departureId);
-                        Station arrivalStation = stationMap.get(arrivalId);
-                        
-                        if (departureStation == null) {
+                        // Validate that both stations exist in repository
+                        if (!stationRepository.exists(departureId)) {
                             System.err.println("Line " + lineNumber + " rejected: Departure station not found: " + departureId);
                             rejectedCount++;
                             continue;
                         }
-                        if (arrivalStation == null) {
+                        if (!stationRepository.exists(arrivalId)) {
                             System.err.println("Line " + lineNumber + " rejected: Arrival station not found: " + arrivalId);
                             rejectedCount++;
                             continue;
                         }
                         
+                        // Create Line object and add to repository
                         Line lineObj = new Line(departureId, arrivalId, distance, capacity, cost);
-                        lines.add(lineObj);
+                        lineRepository.add(lineObj);
                         loadedCount++;
                         
                     } catch (NumberFormatException e) {
@@ -243,31 +256,21 @@ public class DataLoader {
     }
     
     /**
-     * Gets all loaded stations.
+     * Gets the StationRepository containing all loaded stations.
      *
-     * @return list of stations
+     * @return the station repository
      */
-    public List<Station> getStations() {
-        return new ArrayList<>(stations);
+    public StationRepository getStationRepository() {
+        return stationRepository;
     }
     
     /**
-     * Gets all loaded lines.
+     * Gets the LineRepository containing all loaded lines.
      *
-     * @return list of lines
+     * @return the line repository
      */
-    public List<Line> getLines() {
-        return new ArrayList<>(lines);
-    }
-    
-    /**
-     * Gets a station by its ID.
-     *
-     * @param id the station ID
-     * @return the station, or null if not found
-     */
-    public Station getStationById(String id) {
-        return stationMap.get(id);
+    public LineRepository getLineRepository() {
+        return lineRepository;
     }
     
     /**
@@ -276,7 +279,7 @@ public class DataLoader {
      * @return number of stations
      */
     public int getStationCount() {
-        return stations.size();
+        return stationRepository.size();
     }
     
     /**
@@ -285,6 +288,6 @@ public class DataLoader {
      * @return number of lines
      */
     public int getLineCount() {
-        return lines.size();
+        return lineRepository.size();
     }
 }
