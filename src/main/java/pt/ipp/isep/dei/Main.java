@@ -1,6 +1,7 @@
 package pt.ipp.isep.dei;
 
 import Sprint1.Controller.*;
+import Sprint1.UI.*;
 import Sprint2.Controller.*;
 import Sprint2.Domain.StationLoader;
 import Sprint1.Domain.Warehouse;
@@ -11,7 +12,7 @@ import Sprint2.Repository.KDTreeRepository;
 import Sprint2.Repository.StationRepository;
 import Sprint1.Repository.TrolleyRepository;
 import Sprint1.Repository.WarehouseRepository;
-import UI.*;
+import Sprint2.UI.*;
 import Sprint1.Domain.DataLoader;
 
 import java.util.Scanner;

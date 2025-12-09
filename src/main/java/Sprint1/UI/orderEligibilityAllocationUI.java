@@ -1,4 +1,4 @@
-package UI;
+package Sprint1.UI;
 
 import Sprint1.Controller.WarehouseController;
 import Sprint1.Domain.AllocationRow;
