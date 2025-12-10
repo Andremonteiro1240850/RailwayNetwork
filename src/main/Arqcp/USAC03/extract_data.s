@@ -53,10 +53,10 @@ token_advance:
 token_found:
     beq     t0, s0, token_ok     # ok se no início
 
-    addi    t7, t0, -1           # char anterior
-    lb      t8, 0(t7)
-    li      t9, '#'
-    bne     t8, t9, token_advance   # não é delimitado
+    addi    t1, t0, -1           # char anterior
+    lb      t3, 0(t1)            # ler char anterior
+    li      t4, 35               # '#'
+    bne     t3, t4, token_advance   # não é delimitado
 
 token_ok:
     mv      t6, t2               # após token
