@@ -6,12 +6,12 @@
 # a0 = vec, a1 = length, a2 = order
 
 sort_array:
-    addi    sp, sp, -16
+    addi    sp, sp, -16     # para o cxaso da função ser chamada
     sw      ra, 12(sp)
 
     # validar parâmetros
-    beqz    a0, error
-    blez    a1, error
+    beqz    a0, error         # vec == NULL
+    blez    a1, error         # length <= 0
     li      t0, 1
     bgt     a2, t0, error     # order > 1
     blt     a2, zero, error   # order < 0
@@ -20,22 +20,22 @@ sort_array:
     li      t1, 0             # i = 0
 
 outer_loop:
-    bge     t1, t0, success
+    bge     t1, t0, success   # i >= i_max → array ordenado
 
     # end_ptr = vec + (length - i - 1)*4
     sub     t3, a1, t1        # length - i
     addi    t3, t3, -1        # length - i - 1
-    slli    t3, t3, 2
-    add     t3, a0, t3        # end_ptr
+    slli    t3, t3, 2         # *4 porque cada int tem 4 bytes
+    add     t3, a0, t3        # end_ptr = vec + (length - i - 1)
 
     mv      t2, a0            # current_ptr = vec
-    li      t4, 0             # swap_flag = 0   (t4 substitui t9)
+    li      t4, 0             # swap_flag = 0
 
 inner_loop:
     lw      t5, 0(t2)         # vec[j]
     lw      t6, 4(t2)         # vec[j+1]
 
-    beqz    a2, descending
+    beqz    a2, descending    # se order == 0 → vai para descending
 
     # ASCENDING
     bgt     t5, t6, do_swap
@@ -50,15 +50,15 @@ no_swap:
     j       check_swaps
 
 do_swap:
-    sw      t6, 0(t2)
-    sw      t5, 4(t2)
-    li      t4, 1
+    sw      t6, 0(t2)  # vec[j] = t6
+    sw      t5, 4(t2)  # vec[j+1] = t5 (troca)
+    li      t4, 1      # swap_flag = 1
     addi    t2, t2, 4
-    blt     t2, t3, inner_loop
+    blt     t2, t3, inner_loop  #avança para o proximo par
 
 check_swaps:
-    beqz    t4, success
-    addi    t1, t1, 1
+    beqz    t4, success  # swap_flag == 0 - nenhuma troca
+    addi    t1, t1, 1  #incrementa i e volta ao loop externo
     j       outer_loop
 
 success:
@@ -69,6 +69,6 @@ error:
     li      a0, 0
 
 exit:
-    lw      ra, 12(sp)
-    addi    sp, sp, 16
+    lw      ra, 12(sp)   #restaura ra
+    addi    sp, sp, 16   #liberta a stack
     ret

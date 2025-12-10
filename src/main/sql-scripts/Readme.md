@@ -6,6 +6,16 @@ This folder contains all SQL scripts used to create, populate, and maintain the 
 
 ## Core Scripts
 
+
+
+### Acessing the database
+- Host: vsgate-s1.dei.isep.ipp.pt
+- Username: System
+- Password: G0442526DB
+- Port: 10715
+- SID: XE
+
+---
 ### InitialSchema Folder
 
 The `InitialSchema/` folder contains the foundational database scripts:
