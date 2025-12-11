@@ -11,7 +11,7 @@ import Sprint2.Domain.StationLoader;
 import Sprint2.JavaFX.*;
 import Sprint2.Repository.KDTreeRepository;
 import Sprint2.Repository.StationRepository;
-import UI.*;
+import Sprint3.JavaFX.UpgradePlanFXUI;
 import javafx.fxml.FXML;
 import javafx.application.Platform;
 import javafx.scene.control.Alert;
@@ -293,6 +293,20 @@ public class Controller {
                 });
             } catch (Exception e) {
                 Platform.runLater(() -> showError("Error", "Failed to start Radius Search: " + e.getMessage()));
+            }
+        });
+    }
+
+    @FXML
+    private void handleUpgradePlanButton() {
+        executorService.execute(() -> {
+            try {
+                Platform.runLater(() -> {
+                    UpgradePlanFXUI ui = new UpgradePlanFXUI();
+                    ui.show();
+                });
+            } catch (Exception e) {
+                Platform.runLater(() -> showError("Error", "Failed to start Upgrade Plan: " + e.getMessage()));
             }
         });
     }

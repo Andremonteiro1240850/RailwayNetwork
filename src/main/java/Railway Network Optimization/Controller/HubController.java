@@ -23,8 +23,9 @@ public class HubController {
             int[] sigma,
             List<Station>[] pred
     )
-
-
+        // TODO: Implementar algoritmo de Brandes
+        // Por agora, retorna array vazio
+        return new double[0];
 
 
 
