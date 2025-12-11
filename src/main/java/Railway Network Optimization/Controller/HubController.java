@@ -1,17 +1,31 @@
 package Controller;
 
+import Domain.Station;
 import Repository.LineRepository;
 import Repository.StationRepository;
 
+import java.util.Comparator;
+import java.util.List;
+import java.util.function.BinaryOperator;
+
 public class HubController {
     public HubController() {
-
     }
 
-    public static double[] brandesAlgorithm (){
+    //usamos um djikstra adaptado para o brandes (é diferente do original) para encontrar os caminhos mais curtos
+    private static <Station> void dijkstraBrandes(
+            Graph<Station, Double> g,
+            Station source,
+            Comparator<Double> ce,
+            BinaryOperator<Double> sum,
+            Double zero,
+            Double[] dist,
+            int[] sigma,
+            List<Station>[] pred
+    )
 
 
-    }
-    // falta fazer um djiksta
+
+
 
 }
