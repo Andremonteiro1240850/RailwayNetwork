@@ -6,7 +6,7 @@
 # a0 = vec, a1 = length, a2 = order
 
 sort_array:
-    addi    sp, sp, -16     # para o cxaso da função ser chamada
+    addi    sp, sp, -16
     sw      ra, 12(sp)
 
     # validar parâmetros
@@ -20,13 +20,13 @@ sort_array:
     li      t1, 0             # i = 0
 
 outer_loop:
-    bge     t1, t0, success   # i >= i_max → array ordenado
+    bge     t1, t0, success   # i >= i_max - array ordenado
 
-    # end_ptr = vec + (length - i - 1)*4
+    # end_ptr = vec + (length - i - 1) * 4
     sub     t3, a1, t1        # length - i
     addi    t3, t3, -1        # length - i - 1
     slli    t3, t3, 2         # *4 porque cada int tem 4 bytes
-    add     t3, a0, t3        # end_ptr = vec + (length - i - 1)
+    add     t3, a0, t3        # end_ptr - aponta para o último elemento a ser comparado neste loop
 
     mv      t2, a0            # current_ptr = vec
     li      t4, 0             # swap_flag = 0
@@ -46,7 +46,7 @@ descending:
 
 no_swap:
     addi    t2, t2, 4
-    blt     t2, t3, inner_loop
+    blt     t2, t3, inner_loop      #t2 < t3, verificação se já chegou ao fim da comparação, se não volta ao loop
     j       check_swaps
 
 do_swap:

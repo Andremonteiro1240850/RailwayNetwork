@@ -209,11 +209,11 @@ See [`train_station_dataset/README.md`](train_station_dataset/README.md) for com
 - [Main Application](src/main/java/pt/ipp/isep/dei/Main.java)
 
 ### User Stories
-- [USEI06 - AVL Trees](doc/USEI06/)
-- [USEI07 - KD-Tree Construction](doc/USEI07/)
-- [USEI08 - Geographical Search](doc/USEI08/)
-- [USEI09 - Proximity Search](doc/USEI09/)
-- [USEI10 - Radius Search](doc/USEI10/)
+- [USEI06 - AVL Trees](doc/Sprint2/USEI06/)
+- [USEI07 - KD-Tree Construction](doc/Sprint2/USEI07/)
+- [USEI08 - Geographical Search](doc/Sprint2/USEI08/)
+- [USEI09 - Proximity Search](doc/Sprint2/USEI09/)
+- [USEI10 - Radius Search](doc/Sprint2/USEI10/)
 
 ---
 
