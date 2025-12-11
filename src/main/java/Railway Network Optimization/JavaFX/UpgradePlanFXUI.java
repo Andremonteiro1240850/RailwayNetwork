@@ -1,9 +1,8 @@
-package Sprint3.JavaFX;
+package JavaFX;
 
-import Sprint3.Controller.UpgradePlanController;
-import Sprint3.Domain.CycleDetection;
+import Controller.UpgradePlanController;
+import Domain.CycleDetection;
 import Domain.DataLoader;
-import Domain.Station;
 import Domain.Line;
 import Repository.StationRepository;
 import Repository.LineRepository;

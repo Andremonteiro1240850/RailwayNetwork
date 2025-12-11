@@ -17,8 +17,6 @@ import javafx.stage.Stage;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 
-import java.util.List;
-
 public class OrderEligibilityFXUI {
     private final WarehouseController controller;
     private final BoxRepository boxRepository;

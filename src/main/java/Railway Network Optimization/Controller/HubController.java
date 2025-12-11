@@ -1,5 +1,6 @@
-package Controller;
+/**package Controller;
 
+import Domain.RailwayGraph;
 import Domain.Station;
 import Repository.LineRepository;
 import Repository.StationRepository;
@@ -14,7 +15,7 @@ public class HubController {
 
     //usamos um djikstra adaptado para o brandes (é diferente do original) para encontrar os caminhos mais curtos
     private static <Station> void dijkstraBrandes(
-            Graph<Station, Double> g,
+            RailwayGraph grafo,
             Station source,
             Comparator<Double> ce,
             BinaryOperator<Double> sum,
@@ -25,8 +26,6 @@ public class HubController {
     )
         // TODO: Implementar algoritmo de Brandes
         // Por agora, retorna array vazio
-        return new double[0];
-
-
-
+        return new double[0.0];
 }
+ */

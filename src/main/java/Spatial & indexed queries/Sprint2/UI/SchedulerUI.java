@@ -2,7 +2,6 @@ package Sprint2.UI;
 
 import Sprint1.UI.StringUtils;
 import Sprint2.Controller.DispatchController;
-import Sprint1.Domain.*;
 import Sprint2.Domain.DispatchReport;
 import Sprint2.Domain.KDTree;
 import Sprint2.Domain.LineSegment;
