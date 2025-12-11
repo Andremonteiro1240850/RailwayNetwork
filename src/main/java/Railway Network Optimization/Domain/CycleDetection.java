@@ -1,7 +1,4 @@
-package Sprint3.Domain;
-
-import Domain.Station;
-import Domain.Line;
+package Domain;
 
 import java.util.*;
 
