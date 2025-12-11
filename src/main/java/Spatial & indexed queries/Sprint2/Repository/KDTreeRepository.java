@@ -1,7 +1,7 @@
 package Sprint2.Repository;
 
 import Sprint2.Domain.KDTree;
-import Sprint1.Domain.Station;
+import Sprint2.Domain.Station;
 
 import java.io.*;
 import java.nio.file.Files;

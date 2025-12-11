@@ -2,7 +2,7 @@ package Sprint2.Repository;
 
 import Sprint2.Domain.AVL;
 import Sprint2.Domain.BST;
-import Sprint1.Domain.Station;
+import Sprint2.Domain.Station;
 import Sprint2.Domain.StationValidator;
 
 import java.util.ArrayList;

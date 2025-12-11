@@ -4,7 +4,7 @@ import Sprint2.Controller.GeographicalSearchController;
 import Sprint2.Controller.KDTreeController;
 import Sprint2.Domain.KDTree;
 import Sprint2.Domain.SearchFilters;
-import Sprint1.Domain.Station;
+import Sprint2.Domain.Station;
 import Sprint2.Domain.ENUM.Country;
 import Sprint2.Repository.KDTreeRepository;
 import Sprint2.Repository.StationRepository;

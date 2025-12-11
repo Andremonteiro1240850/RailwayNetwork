@@ -2,6 +2,7 @@ package Repository;
 
 import Domain.Connection;
 import Domain.Graph;
+import Domain.Station;
 import Interfaces.GraphRepository;
 
 import java.io.BufferedReader;

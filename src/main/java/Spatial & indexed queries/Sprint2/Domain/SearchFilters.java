@@ -1,6 +1,5 @@
 package Sprint2.Domain;
 
-import Sprint1.Domain.Station;
 import Sprint2.Domain.ENUM.Country;
 
 /**

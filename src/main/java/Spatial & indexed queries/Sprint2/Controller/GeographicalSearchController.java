@@ -1,6 +1,6 @@
 package Sprint2.Controller;
 
-import Sprint1.Domain.Station;
+import Sprint2.Domain.Station;
 import Sprint2.Domain.KDTree;
 import Sprint2.Domain.SearchFilters;
 import Sprint2.Repository.StationRepository;

@@ -2,7 +2,7 @@ package Sprint2.UI;
 
 import Sprint1.UI.StringUtils;
 import Sprint2.Controller.GeographicalSearchController;
-import Sprint1.Domain.Station;
+import Sprint2.Domain.Station;
 import Sprint2.Domain.SearchFilters;
 import Sprint2.Domain.ENUM.Country;
 

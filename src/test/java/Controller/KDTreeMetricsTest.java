@@ -2,7 +2,7 @@ package Controller;
 
 import Sprint2.Controller.KDTreeMetrics;
 import Sprint2.Domain.KDTree;
-import Sprint1.Domain.Station;
+import Sprint2.Domain.Station;
 import Sprint2.Repository.KDTreeRepository;
 import Sprint2.Repository.StationRepository;
 import org.junit.jupiter.api.*;

@@ -1,4 +1,4 @@
-package Sprint1.Domain;
+package Sprint2.Domain;
 
 import java.io.Serializable;
 import java.util.Objects;

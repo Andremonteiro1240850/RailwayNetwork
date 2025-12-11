@@ -1,7 +1,7 @@
 package Sprint2.Controller;
 
 import Sprint2.Domain.KDTree;
-import Sprint1.Domain.Station;
+import Sprint2.Domain.Station;
 import Sprint2.Domain.StationDistanceComparator;
 import Sprint2.Domain.RadiusSearchSummary;
 import Sprint2.Domain.AVL;

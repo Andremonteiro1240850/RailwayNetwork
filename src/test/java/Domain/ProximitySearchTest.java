@@ -1,7 +1,7 @@
 package Domain;
 
 import Sprint2.Controller.ProximitySearchController;
-import Sprint1.Domain.Station;
+import Sprint2.Domain.Station;
 import Sprint2.Domain.ENUM.Country;
 import Sprint2.Domain.KDTree;
 import Sprint2.Domain.ProximitySearch;

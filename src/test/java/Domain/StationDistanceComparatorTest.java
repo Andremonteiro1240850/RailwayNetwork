@@ -1,6 +1,6 @@
 package Domain;
 
-import Sprint1.Domain.Station;
+import Sprint2.Domain.Station;
 import Sprint2.Domain.KDTree;
 import Sprint2.Domain.StationDistanceComparator;
 import org.junit.jupiter.api.BeforeAll;

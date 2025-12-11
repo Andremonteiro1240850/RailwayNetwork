@@ -6,7 +6,12 @@ import Sprint1.Domain.Warehouse;
 import Sprint1.Repository.BoxRepository;
 import Sprint1.Repository.TrolleyRepository;
 import Sprint1.Repository.WarehouseRepository;
+import Sprint2.Controller.KDTreeController;
+import Sprint2.Controller.ProximitySearchController;
+import Sprint2.Controller.RadiusSearchController;
+import Sprint2.Controller.StationController;
 import Sprint2.Domain.StationLoader;
+import Sprint2.JavaFX.*;
 import Sprint2.Repository.KDTreeRepository;
 import Sprint2.Repository.StationRepository;
 import JavaFX.UpgradePlanFXUI;
@@ -18,6 +23,7 @@ import javafx.animation.ScaleTransition;
 import javafx.util.Duration;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import Sprint2.Controller.GeographicalSearchController;
 
 public class Controller {
     private static DataLoader dataLoader;

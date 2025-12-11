@@ -5,7 +5,7 @@ import Sprint2.Domain.AVL;
 import Sprint2.Domain.BST;
 import Sprint2.Domain.KDTree;
 import Sprint2.Domain.RadiusSearchSummary;
-import Sprint1.Domain.Station;
+import Sprint2.Domain.Station;
 import Sprint2.Repository.KDTreeRepository;
 import Sprint2.Repository.StationRepository;
 import org.junit.jupiter.api.*;

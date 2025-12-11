@@ -1,7 +1,5 @@
 package Sprint2.Domain;
 
-import Sprint1.Domain.Station;
-
 /**
  * The type Station validator.
  */

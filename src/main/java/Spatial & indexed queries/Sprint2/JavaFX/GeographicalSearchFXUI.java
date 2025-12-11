@@ -1,6 +1,6 @@
 package Sprint2.JavaFX;
 
-import Sprint1.Domain.Station;
+import Sprint2.Domain.Station;
 import Sprint2.Controller.GeographicalSearchController;
 import Sprint2.Domain.SearchFilters;
 import Sprint2.Domain.ENUM.Country;

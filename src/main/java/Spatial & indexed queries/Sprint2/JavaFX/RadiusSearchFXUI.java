@@ -1,6 +1,6 @@
 package Sprint2.JavaFX;
 
-import Sprint1.Domain.Station;
+import Sprint2.Domain.Station;
 import Sprint2.Controller.RadiusSearchController;
 import Sprint2.Domain.AVL;
 import Sprint2.Domain.KDTree;

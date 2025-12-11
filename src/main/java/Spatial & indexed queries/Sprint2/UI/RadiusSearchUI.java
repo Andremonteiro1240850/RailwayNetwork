@@ -5,7 +5,7 @@ import Sprint2.Controller.RadiusSearchController;
 import Sprint2.Domain.KDTree;
 import Sprint2.Domain.RadiusSearchSummary;
 import Sprint2.Domain.AVL;
-import Sprint1.Domain.Station;
+import Sprint2.Domain.Station;
 
 import java.util.*;
 

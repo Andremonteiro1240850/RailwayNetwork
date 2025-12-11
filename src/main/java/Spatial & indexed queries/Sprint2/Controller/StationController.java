@@ -1,6 +1,6 @@
 package Sprint2.Controller;
 
-import Sprint1.Domain.Station;
+import Sprint2.Domain.Station;
 import Sprint2.Repository.StationRepository;
 
 import java.util.List;
