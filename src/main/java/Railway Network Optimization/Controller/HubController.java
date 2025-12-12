@@ -173,4 +173,47 @@ public class HubController {
         }
         return harmonicCloseness;
     }
+    public Map<Station, Double> calculateStrengthNorm(Map<Station, Map<Station, Double>> undirectGraph) {
+        Map<Station, Double> strength = new HashMap<>();
+
+        // Obter todas as estações
+        Set<Station> allStations = new HashSet<>(undirectGraph.keySet());
+        for(Map<Station, Double> destinos : undirectGraph.values()) {
+            allStations.addAll(destinos.keySet());
+        }
+
+        // Inicializar com 0
+        for(Station s : allStations) {
+            strength.put(s, 0.0);
+        }
+
+        // Calcular strength - adicionar peso apenas à origem
+        // Como o grafo é não-direcionado, cada aresta aparece nas duas direções
+        for(Map.Entry<Station, Map<Station, Double>> outerEntry : undirectGraph.entrySet()) {
+            Station origem = outerEntry.getKey();
+
+            for(Double peso : outerEntry.getValue().values()) {
+                strength.merge(origem, peso, Double::sum);
+            }
+        }
+
+        // Normalizar
+        double maxStrength = strength.values().stream()
+                .max(Double::compareTo)
+                .orElse(0.0);
+
+        Map<Station, Double> normalizedStrength = new HashMap<>();
+
+        if(maxStrength > 0.0) {
+            for(Map.Entry<Station, Double> entry : strength.entrySet()) {
+                normalizedStrength.put(entry.getKey(), entry.getValue() / maxStrength);
+            }
+        } else {
+            for(Station s : allStations) {
+                normalizedStrength.put(s, 0.0);
+            }
+        }
+
+        return normalizedStrength;
+    }
 }
