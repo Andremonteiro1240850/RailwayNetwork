@@ -105,5 +105,72 @@ public class HubController {
         return centralidades;
     }
 
+    public Map<Station, Double> djikstra(Station sOrig, Map<Station, Map<Station, Double>> undirectGraph, Set<Station> allStations) {
+        Map<Station, Double> caminhosCurtos = new HashMap<>();
 
+        // Inicialização
+        for(Station s : allStations){
+            caminhosCurtos.put(s, Double.MAX_VALUE);
+        }
+        caminhosCurtos.put(sOrig, 0.0);
+
+        // PriorityQueue com par (distância, estação)
+        PriorityQueue<Map.Entry<Double, Station>> fila = new PriorityQueue<>(
+                Map.Entry.comparingByKey()
+        );
+        fila.add(Map.entry(0.0, sOrig));
+
+        Set<Station> visitadas = new HashSet<>();
+
+        while (!fila.isEmpty()) {
+            Map.Entry<Double, Station> entry = fila.poll();
+            double dist = entry.getKey();
+            Station atual = entry.getValue();
+
+            // Se já visitamos, ignorar
+            if (visitadas.contains(atual)) {
+                continue;
+            }
+            visitadas.add(atual);
+
+            Map<Station, Double> vizinhos = undirectGraph.getOrDefault(atual, Collections.emptyMap());
+
+            for(Map.Entry<Station, Double> vizinho : vizinhos.entrySet()){
+                Station destino = vizinho.getKey();
+
+                if (visitadas.contains(destino)) {
+                    continue;
+                }
+
+                double peso = vizinho.getValue();
+                double novaDistancia = dist + peso;
+
+                if(novaDistancia < caminhosCurtos.get(destino)){
+                    caminhosCurtos.put(destino, novaDistancia);
+                    fila.add(Map.entry(novaDistancia, destino));
+                }
+            }
+        }
+        return caminhosCurtos;
+    }
+
+    public Map<Station, Double> calculateHarmonicCloseness (Map<Station, Map<Station, Double>> undirectGraph) {
+        Set<Station> allStations = undirectGraph.keySet();
+        Map<Station, Double> harmonicCloseness = new HashMap<>();
+        for (Station s : allStations) {
+            Map<Station, Double> caminhosCurtos = djikstra(s, undirectGraph, allStations);
+            double hc = 0.0;
+            for(Station s2 : allStations){
+                if(s.equals(s2)){
+                    continue;
+                }
+                Double novaDistancia = caminhosCurtos.get(s2);
+                if(novaDistancia < Double.MAX_VALUE && novaDistancia > 0.0){
+                    hc += 1.0 / novaDistancia;
+                }
+            }
+            harmonicCloseness.put(s, hc);
+        }
+        return harmonicCloseness;
+    }
 }
