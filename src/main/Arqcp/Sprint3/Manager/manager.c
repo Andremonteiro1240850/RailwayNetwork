@@ -45,3 +45,13 @@ int setTrackFree(Track *t){
     }
 }
 
+int departureTrain(Train *t, Track *tr){
+    if(t -> state == 1 && tr -> state == 1){
+        t-> state = 2;
+        tr -> state = 0;
+        showDepartingTrain();
+        return 1;
+    } else {
+        return 0;
+    }
+}
