@@ -119,3 +119,14 @@ void trackINOP() {
     printf("                    \n");
 }
 
+void showFreeTrack() {
+    printf("                                                       &&&&&&&&&        \n");
+    printf("                                                      &&&               \n");
+    printf("                                                     &&                 \n");
+    printf("                                                    &  _____ ___________\n");
+    printf("                                                   II__|[] | |   I I   |\n");
+    printf("                                                  |        |_|_  I I  _|\n");
+    printf("                                                 < OO----OOO   OO---OO  \n");
+    printf("              **********************************************************\n");
+}
+

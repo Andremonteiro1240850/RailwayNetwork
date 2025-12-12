@@ -22,6 +22,7 @@ int assignArrivingTrain (Train *t, Track *tr) {
         return 0;
     }
 }
+
 int setTrackINOP(Track *t){
     if(t->state == 3){
         trackINOP();
@@ -32,11 +33,15 @@ int setTrackINOP(Track *t){
         return 1;
     }
 }
+
 int setTrackFree(Track *t){
     if(t->state == 0){
+        showFreeTrack();
         return 1;
     }else {
         t->state = 0;
+        showFreeTrack();
         return 1;
     }
 }
+
