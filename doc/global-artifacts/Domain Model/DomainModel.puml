@@ -34,7 +34,6 @@ skinparam style strictuml
   class NormalStation {
     +stationId : int
     +name : String
-    +location : String
   }
 
   class Terminal {
@@ -45,12 +44,29 @@ skinparam style strictuml
   class Station {
     +stationType : String
     +numberTracks : int
-    +latitude : double
-    +longitude : double
     +country : String
     +timeZone : String
     +timeZoneGroup: String
     }
+
+  class Location {
+    +latitude : double
+    +longitude : double
+  }
+
+  class Building {
+    +buildingId : int
+    +buildingTypeId : int
+    +name : String
+  }
+
+  enum BuildingType {
+  WAREHOUSE
+  REFRIGERATED_AREA
+  GRAIN_SILO
+  OFFICE
+  }
+
 
   enum trainState{
   INTRANSIT
@@ -63,6 +79,7 @@ skinparam style strictuml
   RED
   RED(BLINKING)
   }
+
   class systemAdministrator{
     +administratorId : int
     +name : String
@@ -70,7 +87,7 @@ skinparam style strictuml
 
 
 
-  systemAdministrator "1" -- "0..*" Station : manages
+systemAdministrator "1" -- "0..*" Station : manages
 Station "1" -- "1" trainState : has
 Station "1" -- "1" trackState : has
 RailwayNetwork "1" -- "1..*" Line : has
@@ -80,6 +97,10 @@ Line "1" -- "1" Owner : has
 LineSegment "1" -- "1" SegmentType : can be
 Station "1" -- "0..1" NormalStation : can be
 Station "1" -- "0..1" Terminal : can be
+Station "1" -- "1" Location : located at
+Terminal "1" -- "0..*" Building : contains
+Building "1" -- "1" BuildingType : is of type
+trainState "1" -- "1" Train : defines
 
 
 
@@ -139,6 +160,8 @@ Station "1" -- "0..1" Terminal : can be
 
   class Path {
     +pathId : String
+    +departureTime: DateTime
+    +arrivalTime : DateTime
   }
 
   class PathStep {
@@ -168,6 +191,8 @@ Wagon "1" -- "1" WagonType : can be
 Locomotive "1" -- "1" LocoType : can be
 Path "1..*" -- "1" Route : is part of
 Route "1" -- "1" RouteType : can be
+Train "1" -- "1..*" Path : follows
+
 
 
   class CirculationLine {
