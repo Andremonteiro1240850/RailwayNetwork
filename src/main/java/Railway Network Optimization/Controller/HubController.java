@@ -216,4 +216,27 @@ public class HubController {
 
         return normalizedStrength;
     }
+    public Map<Station, Double> calculateHubScore(
+            Map<Station, Double> força,
+            Map<Station, Double> harmonicCloseness,
+            Map<Station, Double> betweness,
+            Set<Station> allStations) {
+
+        Map<Station, Double> hubScores = new HashMap<>();
+
+        for(Station s : allStations) {
+            // Verificar se a estação existe em todos os mapas
+            if(!força.containsKey(s) || !harmonicCloseness.containsKey(s) || !betweness.containsKey(s)) {
+                throw new IllegalStateException("Estação " + s + " não encontrada em todos os mapas de métricas");
+            }
+
+            double hubScore = (0.35 * betweness.get(s)) +
+                    (0.35 * harmonicCloseness.get(s)) +
+                    (0.30 * força.get(s));
+
+            hubScores.put(s, hubScore);
+        }
+
+        return hubScores;
+    }
 }
