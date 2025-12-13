@@ -283,30 +283,64 @@ public class DataLoader {
      *
      * @return the graph structure with stations and costs
      */
+    /**
+     * Builds a graph structure from the loaded data.
+     * Creates an UNDIRECTED graph by adding connections in both directions.
+     * The graph is represented as Map<Station, Map<Station, Double>> where:
+     * - Outer map: origin station -> destinations map
+     * - Inner map: destination station -> distance/cost
+     *
+     * @return the undirected graph structure with stations and distances
+     */
     public Map<Station, Map<Station, Double>> buildGraph() {
         Map<Station, Map<Station, Double>> graph = new HashMap<>();
 
-        // Iterate through all lines and build the graph
+        // Iterate through all lines and build the UNDIRECTED graph
         for (Line line : lineRepository.getAll()) {
             String departureId = line.getDepartureStationId();
             String arrivalId = line.getArrivalStationId();
-            double cost = line.getCost();
+
+            // Use distance for the graph weight
+            double weight = line.getDistance();
+
+            // If distance is 0 or invalid, use cost as fallback
+            if (weight <= 0) {
+                weight = line.getCost();
+            }
+
+            // If still invalid, skip this line
+            if (weight <= 0) {
+                if (verbose) {
+                    System.err.println("WARNING: Invalid weight for line " + departureId + " -> " + arrivalId);
+                }
+                continue;
+            }
 
             // Get the station objects using getById method
             Station departure = stationRepository.getById(departureId);
             Station arrival = stationRepository.getById(arrivalId);
 
             if (departure != null && arrival != null) {
-                // Add connection to graph
+                // IMPORTANT: Add connection in BOTH directions for undirected graph
+
+                // Direction 1: departure -> arrival
                 graph.putIfAbsent(departure, new HashMap<>());
-                graph.get(departure).put(arrival, cost);
+                graph.get(departure).put(arrival, weight);
+
+                // Direction 2: arrival -> departure (makes it undirected)
+                graph.putIfAbsent(arrival, new HashMap<>());
+                graph.get(arrival).put(departure, weight);
             }
         }
 
         if (verbose) {
-            System.out.println("\n=== GRAPH BUILT ===");
+            System.out.println("\n=== GRAPH BUILT (UNDIRECTED) ===");
             System.out.println("Graph nodes: " + graph.size());
-            System.out.println("Total connections: " + graph.values().stream().mapToInt(Map::size).sum());
+            int totalConnections = graph.values().stream().mapToInt(Map::size).sum();
+            System.out.println("Total connections: " + totalConnections);
+            if (!graph.isEmpty()) {
+                System.out.println("Average degree: " + (totalConnections / graph.size()));
+            }
         }
 
         return graph;

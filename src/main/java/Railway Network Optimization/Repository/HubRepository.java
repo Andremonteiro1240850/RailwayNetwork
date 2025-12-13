@@ -37,4 +37,8 @@ public class HubRepository {
         }
         return stations;
     }
+
+    public DataLoader getLoader() {
+        return loader;
+    }
 }

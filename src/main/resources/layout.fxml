@@ -401,27 +401,27 @@
                     </Tab>
 
                     <!-- Tab 3: Railway Network Optimization -->
-                    <Tab text="Railway Network Optimization" 
-                         style="-fx-background-color: #161B22; 
-                                -fx-text-base-color: rgba(255, 255, 255, 0.8); 
-                                -fx-font-family: 'Segoe UI Variable', 'Inter', 'Segoe UI', sans-serif;
-                                -fx-font-size: 13px; 
-                                -fx-font-weight: 500;
-                                -fx-padding: 12px 24px;">
+                    <Tab text="Railway Network Optimization"
+                         style="-fx-background-color: #161B22;
+            -fx-text-base-color: rgba(255, 255, 255, 0.8);
+            -fx-font-family: 'Segoe UI Variable', 'Inter', 'Segoe UI', sans-serif;
+            -fx-font-size: 13px;
+            -fx-font-weight: 500;
+            -fx-padding: 12px 24px;">
                         <content>
                             <VBox spacing="25" style="-fx-padding: 35; -fx-background-color: #0D1117;">
-                                
+
                                 <!-- Section Header -->
                                 <VBox spacing="12" alignment="CENTER_LEFT">
                                     <Label text="Railway Network Optimization"
                                            style="-fx-font-family: 'Segoe UI Variable', 'Inter', 'Segoe UI', sans-serif;
-                                                  -fx-font-size: 24px; 
-                                                  -fx-font-weight: 600; 
-                                                  -fx-text-fill: rgba(255, 255, 255, 0.9);
-                                                  -fx-letter-spacing: 0.5px;"/>
-                                    <Separator prefWidth="600" 
-                                               style="-fx-background-color: linear-gradient(to right, transparent, rgba(99, 102, 241, 0.25), transparent); 
-                                                      -fx-pref-height: 1.5;"/>
+                              -fx-font-size: 24px;
+                              -fx-font-weight: 600;
+                              -fx-text-fill: rgba(255, 255, 255, 0.9);
+                              -fx-letter-spacing: 0.5px;"/>
+                                    <Separator prefWidth="600"
+                                               style="-fx-background-color: linear-gradient(to right, transparent, rgba(99, 102, 241, 0.25), transparent);
+                                  -fx-pref-height: 1.5;"/>
                                 </VBox>
 
                                 <!-- Button Cards Grid -->
@@ -431,41 +431,69 @@
                                         <ColumnConstraints percentWidth="50" halignment="CENTER"/>
                                     </columnConstraints>
 
-                                    <!-- Row 1: Directed Line Upgrade Plan -->
-                                    <VBox spacing="12" alignment="CENTER" 
+                                    <!-- Row 1: Directed Line Upgrade Plan & Hub Score Analysis -->
+                                    <VBox spacing="12" alignment="CENTER"
                                           style="-fx-background-color: #161B22;
-                                                 -fx-background-radius: 20px;
-                                                 -fx-border-color: rgba(99, 102, 241, 0.15);
-                                                 -fx-border-radius: 20px;
-                                                 -fx-border-width: 1;
-                                                 -fx-padding: 18px;
-                                                 -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.2), 10, 0, 0, 3);"
-                                          GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="0" GridPane.halignment="CENTER">
+                             -fx-background-radius: 20px;
+                             -fx-border-color: rgba(99, 102, 241, 0.15);
+                             -fx-border-radius: 20px;
+                             -fx-border-width: 1;
+                             -fx-padding: 18px;
+                             -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.2), 10, 0, 0, 3);"
+                                          GridPane.columnIndex="0" GridPane.rowIndex="0">
                                         <Button text="Directed Line Upgrade Plan"
                                                 onAction="#handleUpgradePlanButton"
                                                 prefWidth="400" prefHeight="50"
                                                 style="-fx-font-family: 'Segoe UI Variable', 'Inter', 'Segoe UI', sans-serif;
-                                                       -fx-font-size: 15px; 
-                                                       -fx-font-weight: 600; 
-                                                       -fx-background-color: #6366F1; 
-                                                       -fx-text-fill: #FFFFFF; 
-                                                       -fx-background-radius: 16px; 
-                                                       -fx-cursor: hand;
-                                                       -fx-letter-spacing: 0.3px;
-                                                       -fx-effect: dropshadow(gaussian, rgba(139, 92, 246, 0.4), 8, 0, 0, 2);"/>
-                                        <Label text="Calculate topological order for station modernization or detect cycles" 
+                                   -fx-font-size: 15px;
+                                   -fx-font-weight: 600;
+                                   -fx-background-color: #6366F1;
+                                   -fx-text-fill: #FFFFFF;
+                                   -fx-background-radius: 16px;
+                                   -fx-cursor: hand;
+                                   -fx-letter-spacing: 0.3px;
+                                   -fx-effect: dropshadow(gaussian, rgba(139, 92, 246, 0.4), 8, 0, 0, 2);"/>
+                                        <Label text="Calculate topological order for station modernization or detect cycles"
                                                style="-fx-font-family: 'Segoe UI Variable', 'Inter', 'Segoe UI', sans-serif;
-                                                      -fx-text-fill: rgba(255, 255, 255, 0.7); 
-                                                      -fx-font-size: 12px; 
-                                                      -fx-font-weight: 400;
-                                                      -fx-opacity: 0.85;"/>
+                                  -fx-text-fill: rgba(255, 255, 255, 0.7);
+                                  -fx-font-size: 12px;
+                                  -fx-font-weight: 400;
+                                  -fx-opacity: 0.85;"/>
+                                    </VBox>
+
+                                    <VBox spacing="12" alignment="CENTER"
+                                          style="-fx-background-color: #161B22;
+                             -fx-background-radius: 20px;
+                             -fx-border-color: rgba(99, 102, 241, 0.15);
+                             -fx-border-radius: 20px;
+                             -fx-border-width: 1;
+                             -fx-padding: 18px;
+                             -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.2), 10, 0, 0, 3);"
+                                          GridPane.columnIndex="1" GridPane.rowIndex="0">
+                                        <Button text="📊 Hub Score Analysis"
+                                                onAction="#handleHubScoreButton"
+                                                prefWidth="400" prefHeight="50"
+                                                style="-fx-font-family: 'Segoe UI Variable', 'Inter', 'Segoe UI', sans-serif;
+                                   -fx-font-size: 15px;
+                                   -fx-font-weight: 600;
+                                   -fx-background-color: #6366F1;
+                                   -fx-text-fill: #FFFFFF;
+                                   -fx-background-radius: 16px;
+                                   -fx-cursor: hand;
+                                   -fx-letter-spacing: 0.3px;
+                                   -fx-effect: dropshadow(gaussian, rgba(139, 92, 246, 0.4), 8, 0, 0, 2);"/>
+                                        <Label text="Analyze railway network hub importance using centrality metrics"
+                                               style="-fx-font-family: 'Segoe UI Variable', 'Inter', 'Segoe UI', sans-serif;
+                                  -fx-text-fill: rgba(255, 255, 255, 0.7);
+                                  -fx-font-size: 12px;
+                                  -fx-font-weight: 400;
+                                  -fx-opacity: 0.85;"/>
                                     </VBox>
 
                                 </GridPane>
                             </VBox>
                         </content>
                     </Tab>
-
                     <!-- Tab 4: Settings -->
                     <Tab text="Settings" 
                          style="-fx-background-color: #161B22; 

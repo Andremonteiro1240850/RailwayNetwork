@@ -1,5 +1,6 @@
 package Sprint1.JavaFX;
 
+import JavaFX.HubScoreFXUI;
 import Sprint1.Controller.*;
 import Sprint1.Domain.DataLoader;
 import Sprint1.Domain.Warehouse;
@@ -24,6 +25,11 @@ import javafx.util.Duration;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import Sprint2.Controller.GeographicalSearchController;
+import JavaFX.HubScoreFXUI;
+import Controller.HubController ;
+import Repository.HubRepository ;
+
+
 
 public class Controller {
     private static DataLoader dataLoader;
@@ -35,6 +41,8 @@ public class Controller {
     private static StationLoader stationLoader = new StationLoader();
     private static KDTreeController kdTreeController;
     private static ExecutorService executorService = Executors.newCachedThreadPool();
+    private static HubController hubController;
+    private static boolean hubDataLoaded = false;
 
     /**
      * Initialize data if not already loaded
@@ -314,6 +322,69 @@ public class Controller {
             }
         });
     }
+    private void ensureHubDataLoaded() {
+        if (!hubDataLoaded || hubController == null) {
+            try {
+                System.out.println("Loading hub data from CSV files...");
+
+                // Paths para os dados do Sprint3
+                String stationsPath = "train_station_dataset/Sprint3/stations.csv";
+                String linesPath = "train_station_dataset/Sprint3/lines.csv";
+
+                // IMPORTANTE: Usar nome qualificado completo para evitar conflito
+                // Create DataLoader with undirected flag = true for hub analysis
+                Domain.DataLoader hubDataLoader = new Domain.DataLoader(true);
+
+                // Load data
+                hubDataLoader.loadAllData(stationsPath, linesPath);
+
+                // Create HubRepository - CORRIGIDO: só precisa do DataLoader
+                HubRepository hubRepository = new HubRepository(hubDataLoader);
+
+                // Create controller
+                hubController = new HubController(hubRepository);
+
+                hubDataLoaded = true;
+                System.out.println("Hub data loaded successfully!");
+
+                // Debug info
+                System.out.println("Stations loaded: " + hubRepository.getUndirectedStations().size());
+
+            } catch (Exception e) {
+                System.out.println("Error loading hub data: " + e.getMessage());
+                e.printStackTrace();
+                showError("Hub Data Loading Error", "Failed to load hub data: " + e.getMessage());
+            }
+        }
+    }
+
+    /**
+     * Handles the Hub Score Analysis button click.
+     * Opens the Hub Score Analysis window.
+     */
+    @FXML
+    private void handleHubScoreButton() {
+        executorService.execute(() -> {
+            try {
+                System.out.println("\n=== HUB SCORE ANALYSIS ===");
+                ensureHubDataLoaded();
+
+                if (hubController == null) {
+                    Platform.runLater(() -> showError("Error", "Failed to load hub data"));
+                    return;
+                }
+
+                Platform.runLater(() -> {
+                    HubScoreFXUI ui = new HubScoreFXUI(hubController);
+                    ui.show();
+                });
+            } catch (Exception e) {
+                Platform.runLater(() -> showError("Error", "Failed to start Hub Score Analysis: " + e.getMessage()));
+                e.printStackTrace();
+            }
+        });
+    }
+
 
     private void showComingSoon(String featureName) {
         Platform.runLater(() -> {

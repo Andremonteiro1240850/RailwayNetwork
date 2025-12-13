@@ -239,4 +239,32 @@ public class HubController {
 
         return hubScores;
     }
+    public Map<Station, Integer> calculateDegree(Map<Station, Map<Station, Double>> undirectGraph) {
+        Map<Station, Integer> degree = new HashMap<>();
+
+        // Obter todas as estações do grafo
+        Set<Station> allStations = new HashSet<>(undirectGraph.keySet());
+        for(Map<Station, Double> destinos : undirectGraph.values()) {
+            allStations.addAll(destinos.keySet());
+        }
+
+        // Inicializar com 0
+        for(Station s : allStations) {
+            degree.put(s, 0);
+        }
+
+        // Calcular o grau de cada estação
+        // Como o grafo é não-direcionado, contamos apenas as arestas que saem de cada nó
+        for(Map.Entry<Station, Map<Station, Double>> entry : undirectGraph.entrySet()) {
+            Station origem = entry.getKey();
+            int numConexoes = entry.getValue().size();
+            degree.put(origem, numConexoes);
+        }
+
+        return degree;
+    }
+
+    public HubRepository getHubRepository() {
+        return hubRepository;
+    }
 }
