@@ -1,0 +1,124 @@
+@startuml
+'https://plantuml.com/class-diagram
+
+class HubController {
+    - hubRepository : HubRepository
+
+    + HubController(hubRepository : HubRepository)
+
+    + calculateBetweennessCentrality(
+        undirectGraph : Map<Station, Map<Station, Double>>
+      ) : Map<Station, Double>
+
+    + djikstra(
+        sOrig : Station,
+        undirectGraph : Map<Station, Map<Station, Double>>,
+        allStations : Set<Station>
+      ) : Map<Station, Double>
+
+    + calculateHarmonicCloseness(
+        undirectGraph : Map<Station, Map<Station, Double>>
+      ) : Map<Station, Double>
+
+    + calculateStrengthNorm(
+        undirectGraph : Map<Station, Map<Station, Double>>
+      ) : Map<Station, Double>
+
+    + calculateHubScore(
+        força : Map<Station, Double>,
+        harmonicCloseness : Map<Station, Double>,
+        betweness : Map<Station, Double>,
+        allStations : Set<Station>
+      ) : Map<Station, Double>
+
+    + calculateDegree(
+        undirectGraph : Map<Station, Map<Station, Double>>
+      ) : Map<Station, Integer>
+
+    + getHubRepository() : HubRepository
+}
+
+class Station {
+    - id : String
+    - name : String
+    - latitude : double
+    - longitude : double
+    - coordX : double
+    - coordY : double
+
+    + Station(
+        id : String,
+        name : String,
+        latitude : double,
+        longitude : double,
+        coordX : double,
+        coordY : double
+      )
+
+    + getId() : String
+    + getName() : String
+    + getLatitude() : double
+    + getLongitude() : double
+    + getCoordX() : double
+    + getCoordY() : double
+
+    + equals(obj : Object) : boolean
+    + hashCode() : int
+    + toString() : String
+}
+
+class DataLoader {
+    - stationRepository : StationRepository
+    - lineRepository : LineRepository
+    - verbose : boolean
+
+    + DataLoader()
+    + DataLoader(verbose : boolean)
+
+    + loadAllData(
+        stationsFilePath : String,
+        linesFilePath : String
+      ) : void
+
+    - loadStations(filePath : String) : void
+    - loadLines(filePath : String) : void
+
+    + buildGraph() : Map<Station, Map<Station, Double>>
+
+    + getStationRepository() : StationRepository
+    + getLineRepository() : LineRepository
+    + getStationCount() : int
+    + getLineCount() : int
+}
+
+class HubRepository {
+    - loader : DataLoader
+
+    + HubRepository(loader : DataLoader)
+
+    + getUndirectedGraph() : Map<Station, Map<Station, Double>>
+    + getConectedStations() : Map<Station, List<Station>>
+    + getUndirectedStations() : Set<Station>
+    + getLoader() : DataLoader
+}
+
+class HubScoreUI {
+    - hubController : HubController
+    - scanner : Scanner
+
+    + HubScoreUI(hubController : HubController)
+    + run() : void
+
+    - printLine(widths : int...) : void
+    - truncate(text : String, maxWidth : int) : String
+}
+
+HubScoreUI ..|> Runnable
+
+HubScoreUI --> HubController
+HubController --> HubRepository
+HubController ..> Station
+HubRepository --> DataLoader
+DataLoader ..> Station
+
+@enduml
