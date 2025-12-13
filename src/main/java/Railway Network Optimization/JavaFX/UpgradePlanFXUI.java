@@ -18,6 +18,15 @@ import javafx.scene.layout.*;
 import javafx.stage.Stage;
 import javafx.collections.ObservableList;
 import javafx.collections.FXCollections;
+import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.stage.FileChooser;
+import javafx.scene.web.WebView;
+import javafx.scene.web.WebEngine;
+import javafx.scene.input.Clipboard;
+import javafx.scene.input.ClipboardContent;
+import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -33,15 +42,38 @@ public class UpgradePlanFXUI {
     private UpgradePlanController controller;
     private Stage stage;
     private Button calculateButton;
-    private TextArea resultArea;
+    private TextArea technicalLogArea;
     private ProgressIndicator progressIndicator;
     private Label statusLabel;
-    private Button viewAllStationsButton;
-    private Button viewAllCyclesButton;
+    private TabPane resultTabPane;
+    
+    // Overview tab components
+    private VBox overviewTab;
+    private Label totalNodesLabel;
+    private Label totalEdgesLabel;
+    private Label cyclesDetectedLabel;
+    private Label affectedStationsLabel;
+    private Label largestCycleLabel;
+    private Label mostProblematicStationLabel;
+    
+    // Tables
+    private TableView<StationData> affectedStationsTable;
+    private TableView<CycleData> cyclesTable;
+    private TableView<EdgeData> criticalEdgesTable;
+    
+    // Graph visualization
+    private WebView graphWebView;
+    private WebEngine webEngine;
+    private Button exportDOTButton;
+    private Button exportSVGButton;
+    private Button refreshGraphButton;
+    
     private CycleDetection.CycleInfo currentCycleInfo;
     private Map<String, Integer> currentStationDegrees;
     private Map<String, List<Integer>> currentStationCycles;
     private List<List<Station>> currentCycles;
+    private UpgradePlanController.UpgradePlanResult currentResult;
+    private String rawTechnicalLog;
     
     // Default file paths
     private static final String DEFAULT_STATIONS_PATH = "train_station_dataset/Sprint3/stations.csv";
@@ -63,110 +95,85 @@ public class UpgradePlanFXUI {
         stage.setTitle("Directed Line Upgrade Plan");
         
         BorderPane root = new BorderPane();
-        root.setStyle("-fx-background-color: linear-gradient(to bottom, #1E293B, #0F172A);");
-        root.setPadding(new Insets(25));
+        root.setStyle("-fx-background-color: #1B2533;");
+        root.setPadding(new Insets(20));
         
-        // Top: Title
-        VBox topBox = new VBox(8);
+        // Top: Title and button
+        VBox topBox = new VBox(15);
         topBox.setAlignment(Pos.CENTER);
-        topBox.setPadding(new Insets(0, 0, 25, 0));
+        topBox.setPadding(new Insets(0, 0, 20, 0));
         
         Label titleLabel = new Label("Directed Line Upgrade Plan");
-        titleLabel.setStyle("-fx-font-size: 28px; -fx-font-weight: 600; " +
-                           "-fx-text-fill: linear-gradient(to right, #60A5FA, #3B82F6, #60A5FA);");
-        
-        Separator separator = new Separator();
-        separator.setPrefWidth(500);
-        separator.setStyle("-fx-background-color: linear-gradient(to right, transparent, #3B82F6, transparent);");
+        titleLabel.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
+                           "-fx-font-size: 32px; " +
+                           "-fx-font-weight: 700; " +
+                           "-fx-text-fill: #E2E8F0; " +
+                           "-fx-letter-spacing: 0.5px;");
         
         Label descriptionLabel = new Label(
-            "Calculate the upgrade order for Belgian railway stations based on directed dependencies.\n" +
-            "If cycles are detected, they will be identified and reported."
+            "Calculate the upgrade order for Belgian railway stations based on directed dependencies"
         );
-        descriptionLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #94A3B8;");
+        descriptionLabel.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
+                                  "-fx-font-size: 13px; " +
+                                  "-fx-text-fill: #94A3B8;");
         descriptionLabel.setWrapText(true);
         
-        topBox.getChildren().addAll(titleLabel, separator, descriptionLabel);
-        root.setTop(topBox);
-        
-        // Center: Button and results
-        VBox centerBox = new VBox(20);
-        centerBox.setPadding(new Insets(20));
-        centerBox.setAlignment(Pos.CENTER);
-        
         calculateButton = new Button("Calculate Upgrade Order");
-        calculateButton.setPrefWidth(350);
-        calculateButton.setPrefHeight(60);
-        calculateButton.setStyle("-fx-font-size: 16px; -fx-font-weight: 600; " +
-                                "-fx-background-color: #3B82F6; " +
+        calculateButton.setPrefWidth(300);
+        calculateButton.setPrefHeight(50);
+        calculateButton.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
+                                "-fx-font-size: 15px; " +
+                                "-fx-font-weight: 600; " +
+                                "-fx-background-color: #6366F1; " +
                                 "-fx-text-fill: #FFFFFF; " +
-                                "-fx-background-radius: 8; " +
-                                "-fx-cursor: hand;");
+                                "-fx-background-radius: 12px; " +
+                                "-fx-cursor: hand; " +
+                                "-fx-effect: dropshadow(gaussian, rgba(99, 102, 241, 0.4), 8, 0, 0, 2);");
         calculateButton.setOnAction(e -> handleCalculate());
         
-        Label resultsLabel = new Label("Results:");
-        resultsLabel.setStyle("-fx-font-size: 18px; -fx-font-weight: 600; -fx-text-fill: #E2E8F0;");
+        topBox.getChildren().addAll(titleLabel, descriptionLabel, calculateButton);
+        root.setTop(topBox);
         
-        resultArea = new TextArea();
-        resultArea.setEditable(false);
-        resultArea.setWrapText(true);
-        resultArea.setPrefHeight(400);
-        resultArea.setStyle("-fx-font-family: 'Consolas', 'Monaco', monospace; " +
-                           "-fx-font-size: 12px; " +
-                           "-fx-background-color: #FFFFFF; " +
-                           "-fx-text-fill: #000000; " +
-                           "-fx-border-color: #334155; " +
-                           "-fx-border-radius: 8; " +
-                           "-fx-background-radius: 8; " +
-                           "-fx-padding: 10;");
+        // Center: TabPane with results
+        resultTabPane = new TabPane();
+        resultTabPane.setStyle("-fx-background-color: #1B2533; " +
+                              "-fx-tab-min-width: 120px; " +
+                              "-fx-tab-min-height: 35px;");
+        resultTabPane.setTabClosingPolicy(TabPane.TabClosingPolicy.UNAVAILABLE);
         
-        // Button to view all stations (initially hidden)
-        viewAllStationsButton = new Button();
-        viewAllStationsButton.setVisible(false);
-        viewAllStationsButton.setStyle("-fx-font-size: 13px; -fx-font-weight: 500; " +
-                                      "-fx-background-color: #475569; " +
-                                      "-fx-text-fill: #E2E8F0; " +
-                                      "-fx-background-radius: 6; " +
-                                      "-fx-cursor: hand; " +
-                                      "-fx-padding: 8 16;");
-        viewAllStationsButton.setOnAction(e -> showAllStationsDialog());
+        // Create tabs
+        createOverviewTab();
+        createAffectedStationsTab();
+        createCyclesTab();
+        createCriticalEdgesTab();
+        createGraphVisualizationTab();
+        createTechnicalLogTab();
         
-        // Button to view all cycles (initially hidden)
-        viewAllCyclesButton = new Button();
-        viewAllCyclesButton.setVisible(false);
-        viewAllCyclesButton.setStyle("-fx-font-size: 13px; -fx-font-weight: 500; " +
-                                    "-fx-background-color: #475569; " +
-                                    "-fx-text-fill: #E2E8F0; " +
-                                    "-fx-background-radius: 6; " +
-                                    "-fx-cursor: hand; " +
-                                    "-fx-padding: 8 16;");
-        viewAllCyclesButton.setOnAction(e -> showAllCyclesDialog());
-        
-        VBox resultContainer = new VBox(10);
-        resultContainer.getChildren().addAll(resultArea, viewAllStationsButton, viewAllCyclesButton);
-        
-        centerBox.getChildren().addAll(calculateButton, resultsLabel, resultContainer);
-        root.setCenter(centerBox);
+        root.setCenter(resultTabPane);
         
         // Bottom: Status and progress
-        HBox bottomBox = new HBox(10);
+        HBox bottomBox = new HBox(15);
         bottomBox.setAlignment(Pos.CENTER_LEFT);
-        bottomBox.setPadding(new Insets(20, 0, 0, 0));
+        bottomBox.setPadding(new Insets(15, 0, 0, 0));
         
         progressIndicator = new ProgressIndicator();
         progressIndicator.setVisible(false);
         progressIndicator.setPrefSize(20, 20);
         
         statusLabel = new Label("Ready to calculate");
-        statusLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #94A3B8;");
+        statusLabel.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
+                            "-fx-font-size: 13px; " +
+                            "-fx-text-fill: #94A3B8;");
         
         Button closeButton = new Button("Close");
-        closeButton.setPrefWidth(200);
-        closeButton.setPrefHeight(50);
-        closeButton.setStyle("-fx-font-size: 15px; -fx-font-weight: 500; " +
-                            "-fx-background-color: linear-gradient(to right, #475569, #64748B); " +
+        closeButton.setPrefWidth(150);
+        closeButton.setPrefHeight(40);
+        closeButton.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
+                            "-fx-font-size: 14px; " +
+                            "-fx-font-weight: 500; " +
+                            "-fx-background-color: #475569; " +
                             "-fx-text-fill: #E2E8F0; " +
-                            "-fx-background-radius: 8; " +
+                            "-fx-background-radius: 8px; " +
                             "-fx-cursor: hand;");
         closeButton.setOnAction(e -> stage.close());
         
@@ -179,10 +186,744 @@ public class UpgradePlanFXUI {
         
         root.setBottom(bottomContainer);
         
-        Scene scene = new Scene(root, 900, 700);
+        Scene scene = new Scene(root, 1200, 800);
+        
+        // Add CSS for table column headers
+        String tableHeaderCSS = 
+            ".table-view .column-header .label { " +
+            "    -fx-text-fill: #FFFFFF !important; " +
+            "    -fx-font-weight: 700 !important; " +
+            "    -fx-font-size: 13px !important; " +
+            "    -fx-font-family: 'Segoe UI', 'Roboto', sans-serif !important; " +
+            "} " +
+            ".table-view .column-header { " +
+            "    -fx-background-color: #2D3748; " +
+            "} " +
+            ".table-view .column-header-background { " +
+            "    -fx-background-color: #2D3748; " +
+            "}";
+        scene.getStylesheets().add("data:text/css;charset=utf-8," + tableHeaderCSS);
+        
         stage.setScene(scene);
         stage.setResizable(true);
         stage.show();
+    }
+    
+    /**
+     * Creates the Overview tab with metric cards.
+     */
+    private void createOverviewTab() {
+        overviewTab = new VBox(20);
+        overviewTab.setPadding(new Insets(25));
+        overviewTab.setStyle("-fx-background-color: #1B2533;");
+        
+        Label titleLabel = new Label("Overview");
+        titleLabel.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
+                           "-fx-font-size: 20px; " +
+                           "-fx-font-weight: 600; " +
+                           "-fx-text-fill: #E2E8F0;");
+        
+        // Grid for metric cards
+        GridPane cardsGrid = new GridPane();
+        cardsGrid.setHgap(20);
+        cardsGrid.setVgap(20);
+        cardsGrid.setAlignment(Pos.CENTER);
+        
+        // Card 1: Total Nodes
+        VBox card1 = createMetricCard("Total Nodes", "0", "#6366F1");
+        totalNodesLabel = (Label) ((VBox) card1.getChildren().get(1)).getChildren().get(0);
+        cardsGrid.add(card1, 0, 0);
+        
+        // Card 2: Total Edges
+        VBox card2 = createMetricCard("Total Edges", "0", "#8B5CF6");
+        totalEdgesLabel = (Label) ((VBox) card2.getChildren().get(1)).getChildren().get(0);
+        cardsGrid.add(card2, 1, 0);
+        
+        // Card 3: Cycles Detected
+        VBox card3 = createMetricCard("Cycles Detected", "0", "#EC4899");
+        cyclesDetectedLabel = (Label) ((VBox) card3.getChildren().get(1)).getChildren().get(0);
+        cardsGrid.add(card3, 2, 0);
+        
+        // Card 4: Affected Stations
+        VBox card4 = createMetricCard("Affected Stations", "0", "#F59E0B");
+        affectedStationsLabel = (Label) ((VBox) card4.getChildren().get(1)).getChildren().get(0);
+        cardsGrid.add(card4, 0, 1);
+        
+        // Card 5: Largest Cycle
+        VBox card5 = createMetricCard("Largest Cycle", "N/A", "#10B981");
+        largestCycleLabel = (Label) ((VBox) card5.getChildren().get(1)).getChildren().get(0);
+        cardsGrid.add(card5, 1, 1);
+        
+        // Card 6: Most Problematic Station
+        VBox card6 = createMetricCard("Most Problematic", "N/A", "#EF4444");
+        mostProblematicStationLabel = (Label) ((VBox) card6.getChildren().get(1)).getChildren().get(0);
+        cardsGrid.add(card6, 2, 1);
+        
+        overviewTab.getChildren().addAll(titleLabel, cardsGrid);
+        
+        Tab tab = new Tab("Overview", overviewTab);
+        tab.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
+                    "-fx-font-size: 13px;");
+        resultTabPane.getTabs().add(tab);
+    }
+    
+    /**
+     * Creates a metric card with rounded corners.
+     */
+    private VBox createMetricCard(String title, String value, String color) {
+        VBox card = new VBox(10);
+        card.setPadding(new Insets(20));
+        card.setStyle("-fx-background-color: #243447; " +
+                     "-fx-background-radius: 12px; " +
+                     "-fx-border-color: rgba(99, 102, 241, 0.2); " +
+                     "-fx-border-radius: 12px; " +
+                     "-fx-border-width: 1px; " +
+                     "-fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.2), 10, 0, 0, 3);");
+        card.setPrefWidth(200);
+        card.setPrefHeight(120);
+        
+        Label titleLabel = new Label(title);
+        titleLabel.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
+                           "-fx-font-size: 13px; " +
+                           "-fx-text-fill: #94A3B8; " +
+                           "-fx-font-weight: 500;");
+        
+        VBox valueBox = new VBox();
+        Label valueLabel = new Label(value);
+        valueLabel.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
+                           "-fx-font-size: 28px; " +
+                           "-fx-font-weight: 700; " +
+                           "-fx-text-fill: " + color + ";");
+        valueBox.getChildren().add(valueLabel);
+        
+        card.getChildren().addAll(titleLabel, valueBox);
+        return card;
+    }
+    
+    /**
+     * Helper method to format table columns with consistent styling.
+     */
+    private <T, S> void formatTableColumn(TableColumn<T, S> column, String headerText, boolean rightAlign) {
+        column.setText(headerText);
+        column.setSortable(true);
+        column.setResizable(true);
+        
+        // Header style - using bright white for maximum visibility
+        column.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
+                       "-fx-font-size: 13px; " +
+                       "-fx-font-weight: 700; " +
+                       "-fx-text-fill: #FFFFFF; " +
+                       "-fx-background-color: #2D3748; " +
+                       "-fx-padding: 10 12;");
+        
+        // Cell style
+        column.setCellFactory(tc -> new javafx.scene.control.TableCell<T, S>() {
+            @Override
+            protected void updateItem(S item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                    setStyle("");
+                } else {
+                    setText(item.toString());
+                    setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
+                            "-fx-font-size: 13px; " +
+                            "-fx-text-fill: #E2E8F0; " +
+                            "-fx-padding: 8 12; " +
+                            "-fx-alignment: " + (rightAlign ? "CENTER-RIGHT" : "CENTER-LEFT") + ";");
+                }
+            }
+        });
+    }
+    
+    /**
+     * Creates the Affected Stations tab with table.
+     */
+    private void createAffectedStationsTab() {
+        VBox tabContent = new VBox(15);
+        tabContent.setPadding(new Insets(20));
+        tabContent.setStyle("-fx-background-color: #1B2533;");
+        
+        Label titleLabel = new Label("Affected Stations");
+        titleLabel.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
+                           "-fx-font-size: 18px; " +
+                           "-fx-font-weight: 600; " +
+                           "-fx-text-fill: #E2E8F0;");
+        
+        affectedStationsTable = new TableView<>();
+        affectedStationsTable.setStyle("-fx-background-color: #243447; " +
+                                      "-fx-table-cell-border-color: rgba(99, 102, 241, 0.1); " +
+                                      "-fx-border-color: rgba(99, 102, 241, 0.2); " +
+                                      "-fx-border-width: 1px; " +
+                                      "-fx-border-radius: 8px; " +
+                                      "-fx-background-radius: 8px;");
+        affectedStationsTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        
+        // Enable row striping
+        affectedStationsTable.setRowFactory(tv -> new javafx.scene.control.TableRow<StationData>() {
+            @Override
+            protected void updateItem(StationData item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setStyle("");
+                } else {
+                    int index = getIndex();
+                    if (index % 2 == 0) {
+                        setStyle("-fx-background-color: #243447;");
+                    } else {
+                        setStyle("-fx-background-color: #1E293B;");
+                    }
+                }
+            }
+        });
+        
+        TableColumn<StationData, String> idCol = new TableColumn<>();
+        idCol.setCellValueFactory(new PropertyValueFactory<>("id"));
+        formatTableColumn(idCol, "ID", false);
+        idCol.setMinWidth(80);
+        idCol.setMaxWidth(100);
+        
+        TableColumn<StationData, String> nameCol = new TableColumn<>();
+        nameCol.setCellValueFactory(new PropertyValueFactory<>("name"));
+        formatTableColumn(nameCol, "Name", false);
+        nameCol.setMinWidth(150);
+        
+        TableColumn<StationData, Integer> inCol = new TableColumn<>();
+        inCol.setCellValueFactory(new PropertyValueFactory<>("inDegree"));
+        formatTableColumn(inCol, "In", true);
+        inCol.setMinWidth(60);
+        inCol.setMaxWidth(80);
+        
+        TableColumn<StationData, Integer> outCol = new TableColumn<>();
+        outCol.setCellValueFactory(new PropertyValueFactory<>("outDegree"));
+        formatTableColumn(outCol, "Out", true);
+        outCol.setMinWidth(60);
+        outCol.setMaxWidth(80);
+        
+        TableColumn<StationData, Integer> totalCol = new TableColumn<>();
+        totalCol.setCellValueFactory(new PropertyValueFactory<>("totalDegree"));
+        formatTableColumn(totalCol, "Total", true);
+        totalCol.setMinWidth(70);
+        totalCol.setMaxWidth(90);
+        
+        TableColumn<StationData, String> cyclesCol = new TableColumn<>();
+        cyclesCol.setCellValueFactory(new PropertyValueFactory<>("cycles"));
+        formatTableColumn(cyclesCol, "In Cycle #", false);
+        cyclesCol.setMinWidth(150);
+        
+        affectedStationsTable.getColumns().addAll(idCol, nameCol, inCol, outCol, totalCol, cyclesCol);
+        
+        Label placeholder = new Label("No data available. Click 'Calculate Upgrade Order' to analyze.");
+        placeholder.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
+                            "-fx-font-size: 14px; " +
+                            "-fx-text-fill: #94A3B8;");
+        affectedStationsTable.setPlaceholder(placeholder);
+        
+        VBox.setVgrow(affectedStationsTable, Priority.ALWAYS);
+        tabContent.getChildren().addAll(titleLabel, affectedStationsTable);
+        
+        Tab tab = new Tab("Affected Stations", tabContent);
+        tab.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
+                    "-fx-font-size: 13px;");
+        resultTabPane.getTabs().add(tab);
+    }
+    
+    /**
+     * Creates the Cycles tab with table.
+     */
+    private void createCyclesTab() {
+        VBox tabContent = new VBox(15);
+        tabContent.setPadding(new Insets(20));
+        tabContent.setStyle("-fx-background-color: #1B2533;");
+        
+        Label titleLabel = new Label("Cycles");
+        titleLabel.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
+                           "-fx-font-size: 18px; " +
+                           "-fx-font-weight: 600; " +
+                           "-fx-text-fill: #E2E8F0;");
+        
+        cyclesTable = new TableView<>();
+        cyclesTable.setStyle("-fx-background-color: #243447; " +
+                            "-fx-table-cell-border-color: rgba(99, 102, 241, 0.1); " +
+                            "-fx-border-color: rgba(99, 102, 241, 0.2); " +
+                            "-fx-border-width: 1px; " +
+                            "-fx-border-radius: 8px; " +
+                            "-fx-background-radius: 8px;");
+        cyclesTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        
+        // Enable row striping
+        cyclesTable.setRowFactory(tv -> new javafx.scene.control.TableRow<CycleData>() {
+            @Override
+            protected void updateItem(CycleData item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setStyle("");
+                } else {
+                    int index = getIndex();
+                    if (index % 2 == 0) {
+                        setStyle("-fx-background-color: #243447;");
+                    } else {
+                        setStyle("-fx-background-color: #1E293B;");
+                    }
+                }
+            }
+        });
+        
+        TableColumn<CycleData, Integer> numCol = new TableColumn<>();
+        numCol.setCellValueFactory(new PropertyValueFactory<>("cycleNumber"));
+        formatTableColumn(numCol, "Cycle #", true);
+        numCol.setMinWidth(80);
+        numCol.setMaxWidth(100);
+        
+        TableColumn<CycleData, Integer> sizeCol = new TableColumn<>();
+        sizeCol.setCellValueFactory(new PropertyValueFactory<>("size"));
+        formatTableColumn(sizeCol, "Size", true);
+        sizeCol.setMinWidth(70);
+        sizeCol.setMaxWidth(90);
+        
+        TableColumn<CycleData, String> pathCol = new TableColumn<>();
+        pathCol.setCellValueFactory(new PropertyValueFactory<>("path"));
+        formatTableColumn(pathCol, "Path", false);
+        pathCol.setMinWidth(300);
+        pathCol.setPrefWidth(400);
+        
+        TableColumn<CycleData, String> impactCol = new TableColumn<>();
+        impactCol.setCellValueFactory(new PropertyValueFactory<>("impact"));
+        // Custom cell factory for impact with color coding
+        impactCol.setText("Impact");
+        impactCol.setSortable(true);
+        impactCol.setResizable(true);
+        impactCol.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
+                          "-fx-font-size: 13px; " +
+                          "-fx-font-weight: 700; " +
+                          "-fx-text-fill: #FFFFFF; " +
+                          "-fx-background-color: #2D3748; " +
+                          "-fx-padding: 10 12;");
+        impactCol.setCellFactory(tc -> new javafx.scene.control.TableCell<CycleData, String>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                    setStyle("");
+                } else {
+                    setText(item);
+                    String color;
+                    String upper = item.toUpperCase();
+                    if ("HIGH".equals(upper)) {
+                        color = "#EF4444";
+                    } else if ("MEDIUM".equals(upper)) {
+                        color = "#F59E0B";
+                    } else if ("LOW".equals(upper)) {
+                        color = "#10B981";
+                    } else {
+                        color = "#E2E8F0";
+                    }
+                    setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
+                            "-fx-font-size: 13px; " +
+                            "-fx-font-weight: 600; " +
+                            "-fx-text-fill: " + color + "; " +
+                            "-fx-padding: 8 12; " +
+                            "-fx-alignment: CENTER;");
+                }
+            }
+        });
+        impactCol.setMinWidth(100);
+        impactCol.setMaxWidth(120);
+        
+        cyclesTable.getColumns().addAll(numCol, sizeCol, pathCol, impactCol);
+        
+        Label placeholder = new Label("No data available. Click 'Calculate Upgrade Order' to analyze.");
+        placeholder.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
+                            "-fx-font-size: 14px; " +
+                            "-fx-text-fill: #94A3B8;");
+        cyclesTable.setPlaceholder(placeholder);
+        
+        VBox.setVgrow(cyclesTable, Priority.ALWAYS);
+        tabContent.getChildren().addAll(titleLabel, cyclesTable);
+        
+        Tab tab = new Tab("Cycles", tabContent);
+        tab.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
+                    "-fx-font-size: 13px;");
+        resultTabPane.getTabs().add(tab);
+    }
+    
+    /**
+     * Creates the Critical Edges tab with table.
+     */
+    private void createCriticalEdgesTab() {
+        VBox tabContent = new VBox(15);
+        tabContent.setPadding(new Insets(20));
+        tabContent.setStyle("-fx-background-color: #1B2533;");
+        
+        Label titleLabel = new Label("Critical Edges");
+        titleLabel.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
+                           "-fx-font-size: 18px; " +
+                           "-fx-font-weight: 600; " +
+                           "-fx-text-fill: #E2E8F0;");
+        
+        criticalEdgesTable = new TableView<>();
+        criticalEdgesTable.setStyle("-fx-background-color: #243447; " +
+                                    "-fx-table-cell-border-color: rgba(99, 102, 241, 0.1); " +
+                                    "-fx-border-color: rgba(99, 102, 241, 0.2); " +
+                                    "-fx-border-width: 1px; " +
+                                    "-fx-border-radius: 8px; " +
+                                    "-fx-background-radius: 8px;");
+        criticalEdgesTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        
+        // Enable row striping
+        criticalEdgesTable.setRowFactory(tv -> new javafx.scene.control.TableRow<EdgeData>() {
+            @Override
+            protected void updateItem(EdgeData item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setStyle("");
+                } else {
+                    int index = getIndex();
+                    if (index % 2 == 0) {
+                        setStyle("-fx-background-color: #243447;");
+                    } else {
+                        setStyle("-fx-background-color: #1E293B;");
+                    }
+                }
+            }
+        });
+        
+        TableColumn<EdgeData, Integer> rankCol = new TableColumn<>();
+        rankCol.setCellValueFactory(new PropertyValueFactory<>("rank"));
+        formatTableColumn(rankCol, "Rank", true);
+        rankCol.setMinWidth(70);
+        rankCol.setMaxWidth(90);
+        
+        TableColumn<EdgeData, String> edgeCol = new TableColumn<>();
+        edgeCol.setCellValueFactory(new PropertyValueFactory<>("edge"));
+        formatTableColumn(edgeCol, "Edge", false);
+        edgeCol.setMinWidth(120);
+        edgeCol.setMaxWidth(150);
+        
+        TableColumn<EdgeData, String> distCol = new TableColumn<>();
+        distCol.setCellValueFactory(new PropertyValueFactory<>("distance"));
+        formatTableColumn(distCol, "Distance", true);
+        distCol.setMinWidth(100);
+        distCol.setMaxWidth(120);
+        
+        TableColumn<EdgeData, String> cyclesCol = new TableColumn<>();
+        cyclesCol.setCellValueFactory(new PropertyValueFactory<>("cycles"));
+        formatTableColumn(cyclesCol, "Cycles Involved", false);
+        cyclesCol.setMinWidth(150);
+        
+        TableColumn<EdgeData, String> recCol = new TableColumn<>();
+        recCol.setCellValueFactory(new PropertyValueFactory<>("recommendation"));
+        // Custom cell factory for recommendation with color coding
+        recCol.setText("Recommendation");
+        recCol.setSortable(true);
+        recCol.setResizable(true);
+        recCol.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
+                       "-fx-font-size: 13px; " +
+                       "-fx-font-weight: 700; " +
+                       "-fx-text-fill: #FFFFFF; " +
+                       "-fx-background-color: #2D3748; " +
+                       "-fx-padding: 10 12;");
+        recCol.setCellFactory(tc -> new javafx.scene.control.TableCell<EdgeData, String>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                    setStyle("");
+                } else {
+                    setText(item);
+                    String color;
+                    String upper = item.toUpperCase();
+                    if ("HIGH PRIORITY".equals(upper) || "CRITICAL".equals(upper)) {
+                        color = "#EF4444";
+                    } else if ("MEDIUM PRIORITY".equals(upper)) {
+                        color = "#F59E0B";
+                    } else if ("LOW PRIORITY".equals(upper)) {
+                        color = "#10B981";
+                    } else {
+                        color = "#E2E8F0";
+                    }
+                    setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
+                            "-fx-font-size: 13px; " +
+                            "-fx-font-weight: 600; " +
+                            "-fx-text-fill: " + color + "; " +
+                            "-fx-padding: 8 12; " +
+                            "-fx-alignment: CENTER;");
+                }
+            }
+        });
+        recCol.setMinWidth(150);
+        recCol.setMaxWidth(180);
+        
+        criticalEdgesTable.getColumns().addAll(rankCol, edgeCol, distCol, cyclesCol, recCol);
+        
+        Label placeholder = new Label("No data available. Click 'Calculate Upgrade Order' to analyze.");
+        placeholder.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
+                            "-fx-font-size: 14px; " +
+                            "-fx-text-fill: #94A3B8;");
+        criticalEdgesTable.setPlaceholder(placeholder);
+        
+        VBox.setVgrow(criticalEdgesTable, Priority.ALWAYS);
+        tabContent.getChildren().addAll(titleLabel, criticalEdgesTable);
+        
+        Tab tab = new Tab("Critical Edges", tabContent);
+        tab.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
+                    "-fx-font-size: 13px;");
+        resultTabPane.getTabs().add(tab);
+    }
+    
+    /**
+     * Creates the Graph Visualization tab.
+     */
+    private void createGraphVisualizationTab() {
+        VBox tabContent = new VBox(15);
+        tabContent.setPadding(new Insets(20));
+        tabContent.setStyle("-fx-background-color: #1B2533;");
+        
+        Label titleLabel = new Label("Graph Visualization");
+        titleLabel.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
+                           "-fx-font-size: 18px; " +
+                           "-fx-font-weight: 600; " +
+                           "-fx-text-fill: #E2E8F0;");
+        
+        // Buttons
+        HBox buttonBox = new HBox(10);
+        buttonBox.setAlignment(Pos.CENTER_LEFT);
+        
+        refreshGraphButton = new Button("Refresh Graph");
+        refreshGraphButton.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
+                                   "-fx-font-size: 13px; " +
+                                   "-fx-font-weight: 500; " +
+                                   "-fx-background-color: #6366F1; " +
+                                   "-fx-text-fill: #FFFFFF; " +
+                                   "-fx-background-radius: 8px; " +
+                                   "-fx-cursor: hand; " +
+                                   "-fx-padding: 8 16;");
+        refreshGraphButton.setOnAction(e -> refreshGraphVisualization());
+        
+        exportDOTButton = new Button("Export DOT");
+        exportDOTButton.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
+                                "-fx-font-size: 13px; " +
+                                "-fx-font-weight: 500; " +
+                                "-fx-background-color: #475569; " +
+                                "-fx-text-fill: #E2E8F0; " +
+                                "-fx-background-radius: 8px; " +
+                                "-fx-cursor: hand; " +
+                                "-fx-padding: 8 16;");
+        exportDOTButton.setOnAction(e -> exportDOTFile());
+        
+        exportSVGButton = new Button("Export SVG");
+        exportSVGButton.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
+                               "-fx-font-size: 13px; " +
+                               "-fx-font-weight: 500; " +
+                               "-fx-background-color: #475569; " +
+                               "-fx-text-fill: #E2E8F0; " +
+                               "-fx-background-radius: 8px; " +
+                               "-fx-cursor: hand; " +
+                               "-fx-padding: 8 16;");
+        exportSVGButton.setOnAction(e -> exportSVGFile());
+        
+        buttonBox.getChildren().addAll(refreshGraphButton, exportDOTButton, exportSVGButton);
+        
+        // WebView for SVG display
+        graphWebView = new WebView();
+        webEngine = graphWebView.getEngine();
+        graphWebView.setPrefHeight(600);
+        VBox.setVgrow(graphWebView, Priority.ALWAYS);
+        
+        Label placeholderLabel = new Label("Graph visualization will appear here after calculation");
+        placeholderLabel.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
+                                 "-fx-font-size: 14px; " +
+                                 "-fx-text-fill: #94A3B8;");
+        placeholderLabel.setAlignment(Pos.CENTER);
+        VBox.setVgrow(placeholderLabel, Priority.ALWAYS);
+        
+        tabContent.getChildren().addAll(titleLabel, buttonBox, graphWebView);
+        
+        Tab tab = new Tab("Graph Visualization", tabContent);
+        tab.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
+                    "-fx-font-size: 13px;");
+        resultTabPane.getTabs().add(tab);
+    }
+    
+    /**
+     * Creates the Technical Log tab with raw text.
+     */
+    private void createTechnicalLogTab() {
+        VBox tabContent = new VBox(20);
+        tabContent.setPadding(new Insets(25));
+        tabContent.setStyle("-fx-background-color: #1B2533;");
+        
+        // Header section with title and description
+        VBox headerBox = new VBox(8);
+        Label titleLabel = new Label("📋 Technical Log");
+        titleLabel.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
+                           "-fx-font-size: 22px; " +
+                           "-fx-font-weight: 700; " +
+                           "-fx-text-fill: #E2E8F0;");
+        
+        Label descriptionLabel = new Label("Complete raw analysis output for debugging and technical review");
+        descriptionLabel.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
+                                 "-fx-font-size: 13px; " +
+                                 "-fx-text-fill: #94A3B8;");
+        headerBox.getChildren().addAll(titleLabel, descriptionLabel);
+        
+        // Action buttons
+        HBox buttonBox = new HBox(10);
+        buttonBox.setAlignment(Pos.CENTER_LEFT);
+        
+        Button copyButton = new Button("📋 Copy to Clipboard");
+        copyButton.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
+                          "-fx-font-size: 13px; " +
+                          "-fx-font-weight: 500; " +
+                          "-fx-background-color: #475569; " +
+                          "-fx-text-fill: #E2E8F0; " +
+                          "-fx-background-radius: 8px; " +
+                          "-fx-cursor: hand; " +
+                          "-fx-padding: 8 16;");
+        copyButton.setOnAction(e -> {
+            if (technicalLogArea != null && technicalLogArea.getText() != null) {
+                Clipboard clipboard = Clipboard.getSystemClipboard();
+                ClipboardContent content = new ClipboardContent();
+                content.putString(technicalLogArea.getText());
+                clipboard.setContent(content);
+                
+                // Show feedback
+                copyButton.setText("✓ Copied!");
+                copyButton.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
+                                  "-fx-font-size: 13px; " +
+                                  "-fx-font-weight: 500; " +
+                                  "-fx-background-color: #10B981; " +
+                                  "-fx-text-fill: #FFFFFF; " +
+                                  "-fx-background-radius: 8px; " +
+                                  "-fx-cursor: hand; " +
+                                  "-fx-padding: 8 16;");
+                new java.util.Timer().schedule(new java.util.TimerTask() {
+                    @Override
+                    public void run() {
+                        Platform.runLater(() -> {
+                            copyButton.setText("📋 Copy to Clipboard");
+                            copyButton.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
+                                              "-fx-font-size: 13px; " +
+                                              "-fx-font-weight: 500; " +
+                                              "-fx-background-color: #475569; " +
+                                              "-fx-text-fill: #E2E8F0; " +
+                                              "-fx-background-radius: 8px; " +
+                                              "-fx-cursor: hand; " +
+                                              "-fx-padding: 8 16;");
+                        });
+                    }
+                }, 2000);
+            }
+        });
+        
+        Button exportButton = new Button("💾 Export to File");
+        exportButton.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
+                            "-fx-font-size: 13px; " +
+                            "-fx-font-weight: 500; " +
+                            "-fx-background-color: #475569; " +
+                            "-fx-text-fill: #E2E8F0; " +
+                            "-fx-background-radius: 8px; " +
+                            "-fx-cursor: hand; " +
+                            "-fx-padding: 8 16;");
+        exportButton.setOnAction(e -> {
+            if (technicalLogArea != null && technicalLogArea.getText() != null && !technicalLogArea.getText().isEmpty()) {
+                FileChooser fileChooser = new FileChooser();
+                fileChooser.setTitle("Export Technical Log");
+                fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Text files", "*.txt"));
+                fileChooser.setInitialFileName("upgrade_plan_analysis.txt");
+                File file = fileChooser.showSaveDialog(stage);
+                
+                if (file != null) {
+                    try {
+                        Files.write(Paths.get(file.getAbsolutePath()), technicalLogArea.getText().getBytes());
+                        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+                        alert.setTitle("Export Successful");
+                        alert.setHeaderText(null);
+                        alert.setContentText("Technical log exported successfully!");
+                        alert.showAndWait();
+                    } catch (Exception ex) {
+                        Alert alert = new Alert(Alert.AlertType.ERROR);
+                        alert.setTitle("Export Error");
+                        alert.setHeaderText(null);
+                        alert.setContentText("Failed to export file: " + ex.getMessage());
+                        alert.showAndWait();
+                    }
+                }
+            }
+        });
+        
+        Button clearButton = new Button("🗑️ Clear");
+        clearButton.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
+                           "-fx-font-size: 13px; " +
+                           "-fx-font-weight: 500; " +
+                           "-fx-background-color: #475569; " +
+                           "-fx-text-fill: #E2E8F0; " +
+                           "-fx-background-radius: 8px; " +
+                           "-fx-cursor: hand; " +
+                           "-fx-padding: 8 16;");
+        clearButton.setOnAction(e -> {
+            if (technicalLogArea != null) {
+                technicalLogArea.clear();
+            }
+        });
+        
+        buttonBox.getChildren().addAll(copyButton, exportButton, clearButton);
+        
+        // TextArea with enhanced styling - black text on light background
+        technicalLogArea = new TextArea();
+        technicalLogArea.setEditable(false);
+        technicalLogArea.setWrapText(false); // Disable wrapping to show more content horizontally
+        technicalLogArea.setStyle("-fx-font-family: 'Consolas', 'Monaco', 'Courier New', monospace; " +
+                                 "-fx-font-size: 11px; " +
+                                 "-fx-line-spacing: 2px; " +
+                                 "-fx-background-color: #FFFFFF; " +
+                                 "-fx-text-fill: #000000; " +
+                                 "-fx-border-color: rgba(99, 102, 241, 0.3); " +
+                                 "-fx-border-width: 2px; " +
+                                 "-fx-border-radius: 12px; " +
+                                 "-fx-background-radius: 12px; " +
+                                 "-fx-padding: 12; " +
+                                 "-fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.1), 5, 0, 0, 1);");
+        
+        // Placeholder text
+        Label placeholderLabel = new Label("No analysis data available.\nClick 'Calculate Upgrade Order' to generate the technical log.");
+        placeholderLabel.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
+                                "-fx-font-size: 14px; " +
+                                "-fx-text-fill: #64748B; " +
+                                "-fx-alignment: CENTER;");
+        placeholderLabel.setWrapText(true);
+        placeholderLabel.setMaxWidth(Double.MAX_VALUE);
+        placeholderLabel.setAlignment(Pos.CENTER);
+        
+        // Container for TextArea with placeholder
+        StackPane logContainer = new StackPane();
+        logContainer.getChildren().addAll(technicalLogArea, placeholderLabel);
+        VBox.setVgrow(logContainer, Priority.ALWAYS);
+        
+        // Make TextArea fill available space and auto-scroll to top when content changes
+        technicalLogArea.textProperty().addListener((obs, oldText, newText) -> {
+            if (newText != null && !newText.isEmpty()) {
+                // Scroll to top when new content is set
+                Platform.runLater(() -> {
+                    technicalLogArea.setScrollTop(0);
+                    technicalLogArea.setScrollLeft(0);
+                });
+            }
+        });
+        
+        // Show/hide placeholder based on content
+        technicalLogArea.textProperty().addListener((obs, oldText, newText) -> {
+            placeholderLabel.setVisible(newText == null || newText.isEmpty());
+        });
+        
+        tabContent.getChildren().addAll(headerBox, buttonBox, logContainer);
+        
+        Tab tab = new Tab("Technical Log", tabContent);
+        tab.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
+                    "-fx-font-size: 13px;");
+        resultTabPane.getTabs().add(tab);
     }
     
     /**
@@ -193,7 +934,10 @@ public class UpgradePlanFXUI {
         calculateButton.setDisable(true);
         progressIndicator.setVisible(true);
         statusLabel.setText("Loading data and calculating...");
-        resultArea.clear();
+        if (technicalLogArea != null) technicalLogArea.clear();
+        if (affectedStationsTable != null) affectedStationsTable.getItems().clear();
+        if (cyclesTable != null) cyclesTable.getItems().clear();
+        if (criticalEdgesTable != null) criticalEdgesTable.getItems().clear();
         
         // Create a service to perform the calculation in background
         Service<UpgradePlanController.UpgradePlanResult> service = new Service<>() {
@@ -237,6 +981,7 @@ public class UpgradePlanFXUI {
         // Handle completion
         service.setOnSucceeded(e -> {
             UpgradePlanController.UpgradePlanResult result = service.getValue();
+            currentResult = result;
             displayResult(result);
             calculateButton.setDisable(false);
             progressIndicator.setVisible(false);
@@ -256,300 +1001,424 @@ public class UpgradePlanFXUI {
     }
     
     /**
-     * Displays the calculation result in the result area.
+     * Displays the calculation result in all tabs.
      * 
      * @param result the upgrade plan result
      */
     private void displayResult(UpgradePlanController.UpgradePlanResult result) {
+        // Build technical log (raw text output)
         StringBuilder sb = new StringBuilder();
-        
-        // Title
-        sb.append("UPGRADE PLAN ANALYSIS - USEI11\n");
+        sb.append("UPGRADE PLAN ANALYSIS \n");
         sb.append("=".repeat(80)).append("\n\n");
         
-        // Graph Overview
+        // Get graph statistics
+        final int[] nodes = {0};
+        final int[] edges = {0};
         try {
             String stats = controller.getGraphStatistics();
-            // Parse stats to extract numbers
             String[] lines = stats.split("\n");
-            int nodes = 0, edges = 0;
             for (String line : lines) {
                 if (line.contains("Nodes:")) {
-                    nodes = Integer.parseInt(line.replaceAll("[^0-9]", ""));
+                    nodes[0] = Integer.parseInt(line.replaceAll("[^0-9]", ""));
                 } else if (line.contains("Edges:")) {
-                    edges = Integer.parseInt(line.replaceAll("[^0-9]", ""));
+                    edges[0] = Integer.parseInt(line.replaceAll("[^0-9]", ""));
                 }
             }
             sb.append("GRAPH OVERVIEW\n");
             sb.append("-".repeat(80)).append("\n");
-            sb.append(String.format("Nodes (Stations): %d\n", nodes));
-            sb.append(String.format("Edges (Connections): %d\n\n", edges));
+            sb.append(String.format("Nodes (Stations): %d\n", nodes[0]));
+            sb.append(String.format("Edges (Connections): %d\n\n", edges[0]));
         } catch (Exception e) {
-            // Ignore if statistics can't be retrieved
+            // Ignore
         }
         
+        // Update Overview cards
+        final int finalNodes = nodes[0];
+        final int finalEdges = edges[0];
+        Platform.runLater(() -> {
+            if (totalNodesLabel != null) totalNodesLabel.setText(String.valueOf(finalNodes));
+            if (totalEdgesLabel != null) totalEdgesLabel.setText(String.valueOf(finalEdges));
+        });
+        
+        // Populate tables and update UI
         if (result.hasTopologicalOrder()) {
-            // Display topological order
-            sb.append("RESULT: VALID ORDER FOUND\n");
-            sb.append("-".repeat(80)).append("\n");
-            sb.append("A valid topological order can be determined.\n\n");
-            
-            sb.append("STATION UPGRADE ORDER:\n");
-            sb.append("=".repeat(80)).append("\n");
-            
-            List<Station> order = result.getTopologicalOrder();
-            for (int i = 0; i < order.size(); i++) {
-                Station station = order.get(i);
-                sb.append(String.format("%4d. [%s] %s\n", 
-                    i + 1, 
-                    station.getId(), 
-                    station.getName() != null ? station.getName() : "N/A"));
-            }
-            
-            sb.append("\n").append("=".repeat(80)).append("\n");
-            sb.append(String.format("Total: %d stations\n", order.size()));
-            sb.append("\nThis order respects all directed dependencies.\n");
-            sb.append("Stations must be upgraded in this sequence.\n");
-            
+            populateTopologicalOrderResult(result, sb);
         } else if (result.hasCycles()) {
-            // Display cycle information in the format from images
-            var cycleInfo = result.getCycleInfo();
-            sb.append("RESULT: CYCLES DETECTED\n");
-            sb.append("-".repeat(80)).append("\n");
-            sb.append("A valid topological order cannot be determined due to circular dependencies.\n\n");
-            
-            // Calculate station statistics
-            currentStationDegrees = calculateStationDegrees(cycleInfo);
-            currentStationCycles = calculateStationCycleParticipation(cycleInfo);
-            currentCycleInfo = cycleInfo;
-            currentCycles = cycleInfo.getCycles();
-            List<List<Station>> cycles = currentCycles;
-            
-            // Affected Stations Table
-            Set<String> cycleNodeIds = cycleInfo.getCycleNodeIds();
-            sb.append("AFFECTED STATIONS (").append(cycleNodeIds.size())
-              .append(" stations in cycles)\n");
-            sb.append("-".repeat(80)).append("\n");
-            sb.append(String.format("%-8s %-30s %-8s %-8s %-8s %-20s\n", 
-                "ID", "Name (if available)", "In", "Out", "Total", "In Cycle #"));
-            sb.append("-".repeat(80)).append("\n");
-            
-            // Sort stations by total degree (descending) and show top 15
-            List<Map.Entry<String, Integer>> sortedStations = new ArrayList<>(
-                currentStationDegrees.entrySet());
-            sortedStations.sort((a, b) -> b.getValue().compareTo(a.getValue()));
-            
-            int displayCount = Math.min(15, sortedStations.size());
-            for (int i = 0; i < displayCount; i++) {
-                String stationId = sortedStations.get(i).getKey();
-                List<Integer> cycleNums = currentStationCycles.getOrDefault(stationId, new ArrayList<>());
-                String cycleStr = formatCycleList(cycleNums);
-                
-                Station station = findStationById(stationId);
-                String name = station != null && station.getName() != null 
-                    ? station.getName() 
-                    : "N/A";
-                if (name.length() > 28) name = name.substring(0, 25) + "...";
-                
-                // Get correct degree information
-                try {
-                    UpgradePlanController.DegreeInfo degreeInfo = controller.getStationDegreeInfo(stationId);
-                    int inDegree = degreeInfo.getInDegree();
-                    int outDegree = degreeInfo.getOutDegree();
-                    int totalDegree = degreeInfo.getTotalDegree();
-                    
-                    sb.append(String.format("%-8s %-30s %-8d %-8d %-8d %-20s\n", 
-                        stationId, name, inDegree, outDegree, totalDegree, cycleStr));
-                } catch (Exception e) {
-                    // Fallback to stored degree if error
-                    int degree = sortedStations.get(i).getValue();
-                    sb.append(String.format("%-8s %-30s %-8s %-8s %-8d %-20s\n", 
-                        stationId, name, "?", "?", degree, cycleStr));
-                }
-            }
-            
-            if (sortedStations.size() > 15) {
-                sb.append("\n(top 10-15 most problematic)\n");
-                // Show button to view all stations
-                Platform.runLater(() -> {
-                    viewAllStationsButton.setText("View all affected stations");
-                    viewAllStationsButton.setVisible(true);
-                });
-            } else {
-                Platform.runLater(() -> viewAllStationsButton.setVisible(false));
-            }
-            sb.append("\n");
-            
-            // Critical Findings
-            sb.append("CRITICAL FINDINGS:\n");
-            sb.append("-".repeat(80)).append("\n");
-            int totalStations = 0;
-            try {
-                String stats = controller.getGraphStatistics();
-                String[] lines = stats.split("\n");
-                for (String line : lines) {
-                    if (line.contains("Nodes:")) {
-                        totalStations = Integer.parseInt(line.replaceAll("[^0-9]", ""));
-                    }
-                }
-            } catch (Exception e) {
-                // Ignore
-            }
-            
-            double percentage = totalStations > 0 
-                ? (cycleNodeIds.size() * 100.0 / totalStations) 
-                : 0;
-            sb.append(String.format("- %d of %d stations (%.1f%%) are involved in circular dependencies\n",
-                cycleNodeIds.size(), totalStations, percentage));
-            sb.append(String.format("- %d distinct cycles identified in the network\n", cycles.size()));
-            
-            // Find largest cycle
-            int maxCycleSize = cycles.stream()
-                .mapToInt(List::size)
-                .max()
-                .orElse(0);
-            int largestCycleIndex = -1;
-            for (int i = 0; i < cycles.size(); i++) {
-                if (cycles.get(i).size() == maxCycleSize) {
-                    largestCycleIndex = i;
-                    break;
-                }
-            }
-            if (largestCycleIndex >= 0) {
-                sb.append(String.format("- Largest cycle: %d stations (Cycle %d)\n", 
-                    maxCycleSize, largestCycleIndex + 1));
-            }
-            
-            // Find most problematic station
-            String mostProblematic = currentStationCycles.entrySet().stream()
-                .max((a, b) -> Integer.compare(a.getValue().size(), b.getValue().size()))
-                .map(Map.Entry::getKey)
-                .orElse("N/A");
-            int maxCycles = mostProblematic.equals("N/A") ? 0 
-                : currentStationCycles.get(mostProblematic).size();
-            if (maxCycles > 0) {
-                sb.append(String.format("- Most problematic station: ID %s (appears in %d cycles)\n",
-                    mostProblematic, maxCycles));
-            }
-            sb.append("\n");
-            
-            // Action Required
-            sb.append("ACTION REQUIRED:\n");
-            sb.append("-".repeat(80)).append("\n");
-            sb.append("1. Break cycles before attempting upgrade planning\n");
-            sb.append("2. Focus on stations with highest cycle participation\n");
-            sb.append("3. Review edges marked as primary cycle contributors\n\n");
-            
-            // Cycles Analysis (sorted by impact)
-            sb.append("CYCLES ANALYSIS (sorted by impact)\n");
-            sb.append("=".repeat(80)).append("\n\n");
-            
-            // Categorize cycles
-            List<List<Station>> highImpact = new ArrayList<>();
-            List<List<Station>> mediumImpact = new ArrayList<>();
-            List<List<Station>> lowImpact = new ArrayList<>();
-            
-            for (List<Station> cycle : cycles) {
-                int size = cycle.size();
-                if (size > 10) {
-                    highImpact.add(cycle);
-                } else if (size >= 5) {
-                    mediumImpact.add(cycle);
-                } else {
-                    lowImpact.add(cycle);
-                }
-            }
-            
-            // HIGH IMPACT
-            if (!highImpact.isEmpty()) {
-                sb.append("HIGH IMPACT - LARGE CYCLES (>10 stations):\n");
-                for (int i = 0; i < cycles.size(); i++) {
-                    List<Station> cycle = cycles.get(i);
-                    if (cycle.size() > 10) {
-                        sb.append(formatCycle(cycle, i + 1));
-                    }
-                }
-                sb.append("\n");
-            }
-            
-            // MEDIUM IMPACT
-            if (!mediumImpact.isEmpty()) {
-                sb.append("MEDIUM IMPACT (5-10 stations):\n");
-                for (int i = 0; i < cycles.size(); i++) {
-                    List<Station> cycle = cycles.get(i);
-                    if (cycle.size() >= 5 && cycle.size() <= 10) {
-                        sb.append(formatCycle(cycle, i + 1));
-                    }
-                }
-                sb.append("\n");
-            }
-            
-            // LOW IMPACT
-            if (!lowImpact.isEmpty()) {
-                sb.append("LOW IMPACT - SMALL CYCLES (<5 stations):\n");
-                for (int i = 0; i < cycles.size(); i++) {
-                    List<Station> cycle = cycles.get(i);
-                    if (cycle.size() < 5) {
-                        sb.append(formatCycle(cycle, i + 1));
-                    }
-                }
-                sb.append("\n");
-            }
-            
-            // Show button to view all cycles
-            if (cycles.size() > 0) {
-                Platform.runLater(() -> {
-                    viewAllCyclesButton.setText("View all cycles");
-                    viewAllCyclesButton.setVisible(true);
-                });
-            } else {
-                Platform.runLater(() -> viewAllCyclesButton.setVisible(false));
-            }
-            
-            // Critical Edges Breaking Suggestions
-            Map<Line, Integer> edgeCycleCount = calculateEdgeCycleCount(cycleInfo);
-            List<Map.Entry<Line, Integer>> sortedEdges = new ArrayList<>(edgeCycleCount.entrySet());
-            sortedEdges.sort((a, b) -> b.getValue().compareTo(a.getValue()));
-            
-            sb.append("CRITICAL EDGES BREAKING SUGGESTIONS\n");
-            sb.append("-".repeat(80)).append("\n");
-            sb.append("These edges appear in multiple cycles - consider removing/upgrading them first:\n\n");
-            sb.append(String.format("%-6s %-15s %-12s %-25s %-20s\n",
-                "Rank", "Edge", "Distance", "Cycles Involved", "Recommendation"));
-            sb.append("-".repeat(80)).append("\n");
-            
-            int rank = 1;
-            for (Map.Entry<Line, Integer> entry : sortedEdges.stream().limit(10).collect(Collectors.toList())) {
-                Line edge = entry.getKey();
-                int cycleCount = entry.getValue();
-                String recommendation = cycleCount >= 4 ? "HIGH PRIORITY" 
-                    : cycleCount >= 2 ? "MEDIUM PRIORITY" 
-                    : "LOW PRIORITY";
-                
-                List<Integer> edgeCycles = findEdgeCycles(edge, cycleInfo);
-                String cyclesStr = formatCycleList(edgeCycles);
-                
-                double dist = edge.getDistance();
-                String distStr = dist > 0 ? String.format("%.2f km", dist) : "? km";
-                
-                sb.append(String.format("%-6d %-15s %-12s %-25s %-20s\n",
-                    rank++,
-                    edge.getDepartureStationId() + " -> " + edge.getArrivalStationId(),
-                    distStr,
-                    cyclesStr,
-                    recommendation));
-            }
-            
+            populateCyclesResult(result, sb);
         } else {
             sb.append("RESULT: EMPTY OR INVALID\n");
             sb.append("No valid result available.\n");
-            Platform.runLater(() -> {
-                viewAllStationsButton.setVisible(false);
-                viewAllCyclesButton.setVisible(false);
-            });
         }
         
-        resultArea.setText(sb.toString());
+        // Save technical log
+        final String finalLog = sb.toString();
+        rawTechnicalLog = finalLog;
+        if (technicalLogArea != null) {
+            Platform.runLater(() -> {
+                technicalLogArea.setText(finalLog);
+                // Scroll to top after setting text
+                technicalLogArea.setScrollTop(0);
+                technicalLogArea.setScrollLeft(0);
+            });
+        }
+    }
+    
+    /**
+     * Populates UI for topological order result.
+     */
+    private void populateTopologicalOrderResult(UpgradePlanController.UpgradePlanResult result, StringBuilder sb) {
+        List<Station> order = result.getTopologicalOrder();
+        sb.append("RESULT: VALID ORDER FOUND\n");
+        sb.append("-".repeat(80)).append("\n");
+        sb.append("A valid topological order can be determined.\n\n");
+        sb.append("STATION UPGRADE ORDER:\n");
+        sb.append("=".repeat(80)).append("\n");
+        for (int i = 0; i < order.size(); i++) {
+            Station station = order.get(i);
+            sb.append(String.format("%4d. [%s] %s\n", i + 1, station.getId(), 
+                station.getName() != null ? station.getName() : "N/A"));
+        }
+        sb.append("\n").append("=".repeat(80)).append("\n");
+        sb.append(String.format("Total: %d stations\n", order.size()));
+        
+        Platform.runLater(() -> {
+            if (cyclesDetectedLabel != null) cyclesDetectedLabel.setText("0");
+            if (affectedStationsLabel != null) affectedStationsLabel.setText("0");
+            if (largestCycleLabel != null) largestCycleLabel.setText("N/A");
+            if (mostProblematicStationLabel != null) mostProblematicStationLabel.setText("N/A");
+        });
+    }
+    
+    /**
+     * Populates UI for cycles result.
+     */
+    private void populateCyclesResult(UpgradePlanController.UpgradePlanResult result, StringBuilder sb) {
+        var cycleInfo = result.getCycleInfo();
+        currentStationDegrees = calculateStationDegrees(cycleInfo);
+        currentStationCycles = calculateStationCycleParticipation(cycleInfo);
+        currentCycleInfo = cycleInfo;
+        currentCycles = cycleInfo.getCycles();
+        
+        Set<String> cycleNodeIds = cycleInfo.getCycleNodeIds();
+        List<List<Station>> cycles = currentCycles;
+        
+        // Update Overview cards
+        final int[] totalStations = {0};
+        try {
+            String stats = controller.getGraphStatistics();
+            String[] lines = stats.split("\n");
+            for (String line : lines) {
+                if (line.contains("Nodes:")) {
+                    totalStations[0] = Integer.parseInt(line.replaceAll("[^0-9]", ""));
+                }
+            }
+        } catch (Exception e) {
+            // Ignore
+        }
+        
+        final double percentage = totalStations[0] > 0 ? (cycleNodeIds.size() * 100.0 / totalStations[0]) : 0;
+        
+        // Find largest cycle
+        final int maxCycleSize = cycles.stream().mapToInt(List::size).max().orElse(0);
+        int largestCycleIndex = -1;
+        for (int i = 0; i < cycles.size(); i++) {
+            if (cycles.get(i).size() == maxCycleSize) {
+                largestCycleIndex = i;
+                break;
+            }
+        }
+        final int finalLargestCycleIndex = largestCycleIndex;
+        
+        // Find most problematic station
+        String mostProblematic = currentStationCycles.entrySet().stream()
+            .max((a, b) -> Integer.compare(a.getValue().size(), b.getValue().size()))
+            .map(Map.Entry::getKey)
+            .orElse("N/A");
+        final int maxCycles = mostProblematic.equals("N/A") ? 0 : currentStationCycles.get(mostProblematic).size();
+        final String finalMostProblematic = mostProblematic;
+        final int finalTotalStations = totalStations[0];
+        final int finalCyclesSize = cycles.size();
+        final int finalCycleNodeIdsSize = cycleNodeIds.size();
+        
+        Platform.runLater(() -> {
+            if (cyclesDetectedLabel != null) cyclesDetectedLabel.setText(String.valueOf(finalCyclesSize));
+            if (affectedStationsLabel != null) affectedStationsLabel.setText(String.valueOf(finalCycleNodeIdsSize) + 
+                " (" + String.format("%.1f", percentage) + "%)");
+            if (largestCycleLabel != null) {
+                largestCycleLabel.setText(maxCycleSize > 0 ? maxCycleSize + " stations" : "N/A");
+            }
+            if (mostProblematicStationLabel != null) {
+                mostProblematicStationLabel.setText(maxCycles > 0 ? finalMostProblematic + " (" + maxCycles + " cycles)" : "N/A");
+            }
+        });
+        
+        // Populate Affected Stations table
+        ObservableList<StationData> stationDataList = FXCollections.observableArrayList();
+        List<Map.Entry<String, Integer>> sortedStations = new ArrayList<>(currentStationDegrees.entrySet());
+        sortedStations.sort((a, b) -> b.getValue().compareTo(a.getValue()));
+        
+        for (Map.Entry<String, Integer> entry : sortedStations) {
+            String stationId = entry.getKey();
+            Station station = findStationById(stationId);
+            String name = station != null && station.getName() != null ? station.getName() : "N/A";
+            List<Integer> cycleNums = currentStationCycles.getOrDefault(stationId, new ArrayList<>());
+            String cyclesStr = cycleNums.stream().map(String::valueOf).collect(Collectors.joining(", "));
+            
+            try {
+                UpgradePlanController.DegreeInfo degreeInfo = controller.getStationDegreeInfo(stationId);
+                stationDataList.add(new StationData(stationId, name, degreeInfo.getInDegree(), 
+                    degreeInfo.getOutDegree(), degreeInfo.getTotalDegree(), cyclesStr));
+            } catch (Exception e) {
+                stationDataList.add(new StationData(stationId, name, 0, 0, entry.getValue(), cyclesStr));
+            }
+        }
+        
+        Platform.runLater(() -> {
+            if (affectedStationsTable != null) {
+                affectedStationsTable.setItems(stationDataList);
+            }
+        });
+        
+        // Populate Cycles table
+        ObservableList<CycleData> cycleDataList = FXCollections.observableArrayList();
+        for (int i = 0; i < cycles.size(); i++) {
+            List<Station> cycle = cycles.get(i);
+            String path = cycle.stream().map(Station::getId).collect(Collectors.joining(" -> "));
+            String impact = cycle.size() > 10 ? "HIGH" : cycle.size() >= 5 ? "MEDIUM" : "LOW";
+            cycleDataList.add(new CycleData(i + 1, cycle.size(), path, impact));
+        }
+        
+        Platform.runLater(() -> {
+            if (cyclesTable != null) {
+                cyclesTable.setItems(cycleDataList);
+            }
+        });
+        
+        // Populate Critical Edges table
+        Map<Line, Integer> edgeCycleCount = calculateEdgeCycleCount(cycleInfo);
+        List<Map.Entry<Line, Integer>> sortedEdges = new ArrayList<>(edgeCycleCount.entrySet());
+        sortedEdges.sort((a, b) -> b.getValue().compareTo(a.getValue()));
+        
+        ObservableList<EdgeData> edgeDataList = FXCollections.observableArrayList();
+        int rank = 1;
+        for (Map.Entry<Line, Integer> entry : sortedEdges.stream().limit(20).collect(Collectors.toList())) {
+            Line edge = entry.getKey();
+            int cycleCount = entry.getValue();
+            String recommendation = cycleCount >= 4 ? "HIGH PRIORITY" : cycleCount >= 2 ? "MEDIUM PRIORITY" : "LOW PRIORITY";
+            List<Integer> edgeCycles = findEdgeCycles(edge, cycleInfo);
+            String cyclesStr = edgeCycles.stream().map(String::valueOf).collect(Collectors.joining(", "));
+            double dist = edge.getDistance();
+            String distStr = dist > 0 ? String.format("%.2f km", dist) : "? km";
+            
+            edgeDataList.add(new EdgeData(rank++, edge.getDepartureStationId() + " -> " + edge.getArrivalStationId(), 
+                distStr, cyclesStr, recommendation));
+        }
+        
+        Platform.runLater(() -> {
+            if (criticalEdgesTable != null) {
+                criticalEdgesTable.setItems(edgeDataList);
+            }
+        });
+        
+        // Build technical log for cycles
+        sb.append("RESULT: CYCLES DETECTED\n");
+        sb.append("-".repeat(80)).append("\n");
+        sb.append("A valid topological order cannot be determined due to circular dependencies.\n\n");
+        sb.append(String.format("- %d of %d stations (%.1f%%) are involved in circular dependencies\n",
+            finalCycleNodeIdsSize, finalTotalStations, percentage));
+        sb.append(String.format("- %d distinct cycles identified in the network\n", finalCyclesSize));
+        if (maxCycleSize > 0) {
+            sb.append(String.format("- Largest cycle: %d stations (Cycle %d)\n", maxCycleSize, finalLargestCycleIndex + 1));
+        }
+        if (maxCycles > 0) {
+            sb.append(String.format("- Most problematic station: ID %s (appears in %d cycles)\n", finalMostProblematic, maxCycles));
+        }
+        
+        // Refresh graph visualization
+        refreshGraphVisualization();
+    }
+    
+    /**
+     * Exports graph to DOT file.
+     */
+    private void exportDOTFile() {
+        if (controller == null) return;
+        
+        try {
+            String dotContent = generateDOTContent();
+            FileChooser fileChooser = new FileChooser();
+            fileChooser.setTitle("Export DOT File");
+            fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("DOT files", "*.dot"));
+            fileChooser.setInitialFileName("graph.dot");
+            File file = fileChooser.showSaveDialog(stage);
+            
+            if (file != null) {
+                Files.write(Paths.get(file.getAbsolutePath()), dotContent.getBytes());
+                Alert alert = new Alert(Alert.AlertType.INFORMATION);
+                alert.setTitle("Export Successful");
+                alert.setHeaderText(null);
+                alert.setContentText("DOT file exported successfully!");
+                alert.showAndWait();
+            }
+        } catch (Exception e) {
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("Export Error");
+            alert.setHeaderText(null);
+            alert.setContentText("Failed to export DOT file: " + e.getMessage());
+            alert.showAndWait();
+        }
+    }
+    
+    /**
+     * Exports graph to SVG file using Graphviz.
+     */
+    private void exportSVGFile() {
+        if (controller == null) return;
+        
+        try {
+            String dotContent = generateDOTContent();
+            File tempDot = File.createTempFile("graph", ".dot");
+            Files.write(Paths.get(tempDot.getAbsolutePath()), dotContent.getBytes());
+            
+            // Try to convert using neato (Graphviz)
+            ProcessBuilder pb = new ProcessBuilder("neato", "-Tsvg", tempDot.getAbsolutePath());
+            Process process = pb.start();
+            
+            FileChooser fileChooser = new FileChooser();
+            fileChooser.setTitle("Export SVG File");
+            fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("SVG files", "*.svg"));
+            fileChooser.setInitialFileName("graph.svg");
+            File file = fileChooser.showSaveDialog(stage);
+            
+            if (file != null) {
+                try (InputStream is = process.getInputStream();
+                     FileOutputStream fos = new FileOutputStream(file)) {
+                    byte[] buffer = new byte[1024];
+                    int bytesRead;
+                    while ((bytesRead = is.read(buffer)) != -1) {
+                        fos.write(buffer, 0, bytesRead);
+                    }
+                }
+                
+                Alert alert = new Alert(Alert.AlertType.INFORMATION);
+                alert.setTitle("Export Successful");
+                alert.setHeaderText(null);
+                alert.setContentText("SVG file exported successfully!");
+                alert.showAndWait();
+            }
+            
+            tempDot.delete();
+        } catch (Exception e) {
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("Export Error");
+            alert.setHeaderText(null);
+            alert.setContentText("Failed to export SVG file. Make sure Graphviz (neato) is installed and in PATH.\n" + e.getMessage());
+            alert.showAndWait();
+        }
+    }
+    
+    /**
+     * Generates DOT content for the graph.
+     */
+    private String generateDOTContent() {
+        if (controller == null) {
+            return "digraph G {\n  // No graph data available\n}\n";
+        }
+        
+        StringBuilder dot = new StringBuilder();
+        dot.append("digraph G {\n");
+        dot.append("  rankdir=LR;\n");
+        dot.append("  node [shape=circle, style=filled, fillcolor=lightblue, fontname=\"Segoe UI\"];\n");
+        dot.append("  edge [fontname=\"Segoe UI\", fontsize=10];\n");
+        
+        Set<Line> cycleEdges = currentCycleInfo != null ? currentCycleInfo.getCycleEdges() : new HashSet<>();
+        Set<String> cycleNodeIds = currentCycleInfo != null ? currentCycleInfo.getCycleNodeIds() : new HashSet<>();
+        
+        try {
+            // Add all nodes - mark cycle nodes in red
+            Collection<Station> allStations = controller.getAllStations();
+            for (Station station : allStations) {
+                String nodeId = station.getId().replaceAll("[^a-zA-Z0-9_]", "_");
+                String label = station.getName() != null && !station.getName().isEmpty() 
+                    ? station.getName() 
+                    : station.getId();
+                if (label.length() > 20) label = label.substring(0, 17) + "...";
+                
+                if (cycleNodeIds.contains(station.getId())) {
+                    dot.append(String.format("  %s [label=\"%s\", fillcolor=lightcoral];\n", nodeId, label));
+                } else {
+                    dot.append(String.format("  %s [label=\"%s\"];\n", nodeId, label));
+                }
+            }
+            
+            // Add edges - mark cycle edges in red
+            List<Line> allEdges = controller.getAllEdges();
+            for (Line edge : allEdges) {
+                String fromId = edge.getDepartureStationId().replaceAll("[^a-zA-Z0-9_]", "_");
+                String toId = edge.getArrivalStationId().replaceAll("[^a-zA-Z0-9_]", "_");
+                
+                if (cycleEdges.contains(edge)) {
+                    dot.append(String.format("  %s -> %s [color=red, penwidth=2];\n", fromId, toId));
+                } else {
+                    dot.append(String.format("  %s -> %s;\n", fromId, toId));
+                }
+            }
+        } catch (Exception e) {
+            dot.append("  // Error generating graph: ").append(e.getMessage()).append("\n");
+        }
+        
+        dot.append("}\n");
+        return dot.toString();
+    }
+    
+    /**
+     * Refreshes the graph visualization.
+     */
+    private void refreshGraphVisualization() {
+        if (controller == null || currentCycleInfo == null) {
+            Platform.runLater(() -> {
+                if (webEngine != null) {
+                    webEngine.loadContent("<html><body style='background:#1B2533;color:#E2E8F0;font-family:Segoe UI;padding:20px;'><h3>Graph Visualization</h3><p>No graph data available. Please calculate upgrade order first.</p></body></html>");
+                }
+            });
+            return;
+        }
+        
+        try {
+            // Generate DOT and convert to SVG
+            String dotContent = generateDOTContent();
+            File tempDot = File.createTempFile("graph", ".dot");
+            Files.write(Paths.get(tempDot.getAbsolutePath()), dotContent.getBytes());
+            
+            // Try to convert using neato
+            ProcessBuilder pb = new ProcessBuilder("neato", "-Tsvg", tempDot.getAbsolutePath());
+            Process process = pb.start();
+            
+            StringBuilder svgContent = new StringBuilder();
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    svgContent.append(line).append("\n");
+                }
+            }
+            
+            process.waitFor();
+            tempDot.delete();
+            
+            String finalSvg = svgContent.toString();
+            Platform.runLater(() -> {
+                if (webEngine != null) {
+                    webEngine.loadContent(finalSvg);
+                }
+            });
+        } catch (Exception e) {
+            // If Graphviz is not available, show a message
+            Platform.runLater(() -> {
+                if (webEngine != null) {
+                    webEngine.loadContent("<html><body style='background:#1B2533;color:#E2E8F0;font-family:Segoe UI;padding:20px;'><h3>Graph Visualization</h3><p>Graphviz (neato) is required for graph visualization.</p><p>Please install Graphviz and ensure 'neato' is in your PATH.</p><p>Error: " + e.getMessage() + "</p></body></html>");
+                }
+            });
+        }
     }
     
     /**
@@ -923,13 +1792,17 @@ public class UpgradePlanFXUI {
             sb.append("Cause: ").append(exception.getCause().getMessage()).append("\n\n");
         }
         
-        resultArea.setText(sb.toString());
-        resultArea.setStyle(
-            "-fx-font-family: 'Consolas', 'Monaco', monospace; " +
-            "-fx-font-size: 12px; " +
-            "-fx-background-color: #ffebee; " +
-            "-fx-text-fill: #c62828;"
-        );
+        if (technicalLogArea != null) {
+            Platform.runLater(() -> {
+                technicalLogArea.setText(sb.toString());
+                technicalLogArea.setStyle(
+                    "-fx-font-family: 'Consolas', 'Monaco', monospace; " +
+                    "-fx-font-size: 12px; " +
+                    "-fx-background-color: #ffebee; " +
+                    "-fx-text-fill: #c62828;"
+                );
+            });
+        }
         
         // Show alert dialog
         Platform.runLater(() -> {
@@ -939,6 +1812,73 @@ public class UpgradePlanFXUI {
             alert.setContentText(exception.getMessage());
             alert.showAndWait();
         });
+    }
+    
+    // Data classes for tables
+    public static class StationData {
+        private final String id;
+        private final String name;
+        private final int inDegree;
+        private final int outDegree;
+        private final int totalDegree;
+        private final String cycles;
+        
+        public StationData(String id, String name, int inDegree, int outDegree, int totalDegree, String cycles) {
+            this.id = id;
+            this.name = name;
+            this.inDegree = inDegree;
+            this.outDegree = outDegree;
+            this.totalDegree = totalDegree;
+            this.cycles = cycles;
+        }
+        
+        public String getId() { return id; }
+        public String getName() { return name; }
+        public int getInDegree() { return inDegree; }
+        public int getOutDegree() { return outDegree; }
+        public int getTotalDegree() { return totalDegree; }
+        public String getCycles() { return cycles; }
+    }
+    
+    public static class CycleData {
+        private final int cycleNumber;
+        private final int size;
+        private final String path;
+        private final String impact;
+        
+        public CycleData(int cycleNumber, int size, String path, String impact) {
+            this.cycleNumber = cycleNumber;
+            this.size = size;
+            this.path = path;
+            this.impact = impact;
+        }
+        
+        public int getCycleNumber() { return cycleNumber; }
+        public int getSize() { return size; }
+        public String getPath() { return path; }
+        public String getImpact() { return impact; }
+    }
+    
+    public static class EdgeData {
+        private final int rank;
+        private final String edge;
+        private final String distance;
+        private final String cycles;
+        private final String recommendation;
+        
+        public EdgeData(int rank, String edge, String distance, String cycles, String recommendation) {
+            this.rank = rank;
+            this.edge = edge;
+            this.distance = distance;
+            this.cycles = cycles;
+            this.recommendation = recommendation;
+        }
+        
+        public int getRank() { return rank; }
+        public String getEdge() { return edge; }
+        public String getDistance() { return distance; }
+        public String getCycles() { return cycles; }
+        public String getRecommendation() { return recommendation; }
     }
 }
 

@@ -215,6 +215,32 @@ public class UpgradePlanController {
     }
     
     /**
+     * Gets all stations in the graph.
+     * 
+     * @return a collection of all stations
+     * @throws IllegalStateException if data hasn't been loaded yet
+     */
+    public java.util.Collection<Station> getAllStations() {
+        if (graph == null) {
+            throw new IllegalStateException("Data must be loaded first");
+        }
+        return graph.getAllNodes();
+    }
+    
+    /**
+     * Gets all edges in the graph.
+     * 
+     * @return a list of all edges
+     * @throws IllegalStateException if data hasn't been loaded yet
+     */
+    public java.util.List<Line> getAllEdges() {
+        if (graph == null) {
+            throw new IllegalStateException("Data must be loaded first");
+        }
+        return graph.getAllEdges();
+    }
+    
+    /**
      * Represents degree information for a station.
      */
     public static class DegreeInfo {
