@@ -213,21 +213,33 @@ public class UpgradePlanFXUI {
      * Creates the Overview tab with metric cards.
      */
     private void createOverviewTab() {
-        overviewTab = new VBox(20);
-        overviewTab.setPadding(new Insets(25));
+        overviewTab = new VBox(30);
+        overviewTab.setPadding(new Insets(40, 40, 40, 40));
         overviewTab.setStyle("-fx-background-color: #1B2533;");
         
-        Label titleLabel = new Label("Overview");
+        // Header section with title and description
+        VBox headerBox = new VBox(8);
+        headerBox.setPadding(new Insets(0, 0, 20, 0));
+        
+        Label titleLabel = new Label("📊 Overview");
         titleLabel.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
-                           "-fx-font-size: 20px; " +
-                           "-fx-font-weight: 600; " +
+                           "-fx-font-size: 28px; " +
+                           "-fx-font-weight: 700; " +
                            "-fx-text-fill: #E2E8F0;");
         
-        // Grid for metric cards
+        Label descriptionLabel = new Label("Key metrics and statistics from the network analysis");
+        descriptionLabel.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
+                                 "-fx-font-size: 14px; " +
+                                 "-fx-text-fill: #94A3B8;");
+        
+        headerBox.getChildren().addAll(titleLabel, descriptionLabel);
+        
+        // Grid for metric cards with more spacing
         GridPane cardsGrid = new GridPane();
-        cardsGrid.setHgap(20);
-        cardsGrid.setVgap(20);
+        cardsGrid.setHgap(30);
+        cardsGrid.setVgap(30);
         cardsGrid.setAlignment(Pos.CENTER);
+        cardsGrid.setPadding(new Insets(20, 0, 20, 0));
         
         // Card 1: Total Nodes
         VBox card1 = createMetricCard("Total Nodes", "0", "#6366F1");
@@ -259,7 +271,8 @@ public class UpgradePlanFXUI {
         mostProblematicStationLabel = (Label) ((VBox) card6.getChildren().get(1)).getChildren().get(0);
         cardsGrid.add(card6, 2, 1);
         
-        overviewTab.getChildren().addAll(titleLabel, cardsGrid);
+        overviewTab.getChildren().addAll(headerBox, cardsGrid);
+        VBox.setVgrow(cardsGrid, Priority.ALWAYS);
         
         Tab tab = new Tab("Overview", overviewTab);
         tab.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
@@ -271,29 +284,43 @@ public class UpgradePlanFXUI {
      * Creates a metric card with rounded corners.
      */
     private VBox createMetricCard(String title, String value, String color) {
-        VBox card = new VBox(10);
-        card.setPadding(new Insets(20));
+        return createMetricCard(title, value, color, 24);
+    }
+    
+    /**
+     * Creates a metric card with rounded corners and custom font size.
+     */
+    private VBox createMetricCard(String title, String value, String color, double fontSize) {
+        VBox card = new VBox(15);
+        card.setPadding(new Insets(30, 25, 30, 25));
+        card.setAlignment(Pos.CENTER_LEFT);
         card.setStyle("-fx-background-color: #243447; " +
-                     "-fx-background-radius: 12px; " +
-                     "-fx-border-color: rgba(99, 102, 241, 0.2); " +
-                     "-fx-border-radius: 12px; " +
-                     "-fx-border-width: 1px; " +
-                     "-fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.2), 10, 0, 0, 3);");
-        card.setPrefWidth(200);
-        card.setPrefHeight(120);
+                     "-fx-background-radius: 16px; " +
+                     "-fx-border-color: rgba(99, 102, 241, 0.3); " +
+                     "-fx-border-radius: 16px; " +
+                     "-fx-border-width: 1.5px; " +
+                     "-fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.25), 15, 0, 0, 4);");
+        card.setPrefWidth(280);
+        card.setPrefHeight(160);
+        card.setMinWidth(250);
+        card.setMinHeight(140);
         
         Label titleLabel = new Label(title);
         titleLabel.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
-                           "-fx-font-size: 13px; " +
+                           "-fx-font-size: 14px; " +
                            "-fx-text-fill: #94A3B8; " +
-                           "-fx-font-weight: 500;");
+                           "-fx-font-weight: 500; " +
+                           "-fx-letter-spacing: 0.3px;");
         
-        VBox valueBox = new VBox();
+        VBox valueBox = new VBox(5);
+        valueBox.setAlignment(Pos.CENTER_LEFT);
         Label valueLabel = new Label(value);
         valueLabel.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
-                           "-fx-font-size: 28px; " +
+                           "-fx-font-size: " + fontSize + "px; " +
                            "-fx-font-weight: 700; " +
-                           "-fx-text-fill: " + color + ";");
+                           "-fx-text-fill: " + color + "; " +
+                           "-fx-letter-spacing: -0.5px; " +
+                           "-fx-wrap-text: true;");
         valueBox.getChildren().add(valueLabel);
         
         card.getChildren().addAll(titleLabel, valueBox);
@@ -449,7 +476,8 @@ public class UpgradePlanFXUI {
                             "-fx-border-width: 1px; " +
                             "-fx-border-radius: 8px; " +
                             "-fx-background-radius: 8px;");
-        cyclesTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        // Use UNCONSTRAINED_RESIZE_POLICY to allow columns to expand and show full content
+        cyclesTable.setColumnResizePolicy(TableView.UNCONSTRAINED_RESIZE_POLICY);
         
         // Enable row striping
         cyclesTable.setRowFactory(tv -> new javafx.scene.control.TableRow<CycleData>() {
@@ -483,9 +511,46 @@ public class UpgradePlanFXUI {
         
         TableColumn<CycleData, String> pathCol = new TableColumn<>();
         pathCol.setCellValueFactory(new PropertyValueFactory<>("path"));
-        formatTableColumn(pathCol, "Path", false);
-        pathCol.setMinWidth(300);
-        pathCol.setPrefWidth(400);
+        pathCol.setText("Path");
+        pathCol.setSortable(true);
+        pathCol.setResizable(true);
+        pathCol.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
+                        "-fx-font-size: 13px; " +
+                        "-fx-font-weight: 600; " +
+                        "-fx-text-fill: #FFFFFF; " +
+                        "-fx-background-color: #2D3748; " +
+                        "-fx-padding: 10 12;");
+        // Custom cell factory to show full path without truncation
+        pathCol.setCellFactory(tc -> new javafx.scene.control.TableCell<CycleData, String>() {
+            private final Label label = new Label();
+            
+            {
+                label.setStyle("-fx-font-family: 'Consolas', 'Monaco', 'Courier New', monospace; " +
+                              "-fx-font-size: 12px; " +
+                              "-fx-text-fill: #E2E8F0; " +
+                              "-fx-padding: 0; " +
+                              "-fx-alignment: CENTER-LEFT;");
+                label.setWrapText(false);
+                label.setMaxWidth(Double.MAX_VALUE);
+                setGraphic(label);
+            }
+            
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    label.setText(null);
+                    setGraphic(null);
+                } else {
+                    label.setText(item); // Show full path - no truncation
+                    setGraphic(label);
+                    setTooltip(new Tooltip(item)); // Show full path on hover
+                }
+            }
+        });
+        pathCol.setMinWidth(800);
+        pathCol.setPrefWidth(1500);
+        pathCol.setMaxWidth(Double.MAX_VALUE);
         
         TableColumn<CycleData, String> impactCol = new TableColumn<>();
         impactCol.setCellValueFactory(new PropertyValueFactory<>("impact"));
@@ -724,13 +789,81 @@ public class UpgradePlanFXUI {
                                "-fx-padding: 8 16;");
         exportSVGButton.setOnAction(e -> exportSVGFile());
         
-        buttonBox.getChildren().addAll(refreshGraphButton, exportDOTButton, exportSVGButton);
+        // Zoom controls
+        Button zoomInButton = new Button("🔍+");
+        zoomInButton.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
+                             "-fx-font-size: 13px; " +
+                             "-fx-font-weight: 500; " +
+                             "-fx-background-color: #475569; " +
+                             "-fx-text-fill: #E2E8F0; " +
+                             "-fx-background-radius: 8px; " +
+                             "-fx-cursor: hand; " +
+                             "-fx-padding: 8 12;");
+        zoomInButton.setTooltip(new Tooltip("Zoom In"));
+        
+        Button zoomOutButton = new Button("🔍-");
+        zoomOutButton.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
+                              "-fx-font-size: 13px; " +
+                              "-fx-font-weight: 500; " +
+                              "-fx-background-color: #475569; " +
+                              "-fx-text-fill: #E2E8F0; " +
+                              "-fx-background-radius: 8px; " +
+                              "-fx-cursor: hand; " +
+                              "-fx-padding: 8 12;");
+        zoomOutButton.setTooltip(new Tooltip("Zoom Out"));
+        
+        Button zoomResetButton = new Button("🔍↺");
+        zoomResetButton.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
+                               "-fx-font-size: 13px; " +
+                               "-fx-font-weight: 500; " +
+                               "-fx-background-color: #475569; " +
+                               "-fx-text-fill: #E2E8F0; " +
+                               "-fx-background-radius: 8px; " +
+                               "-fx-cursor: hand; " +
+                               "-fx-padding: 8 12;");
+        zoomResetButton.setTooltip(new Tooltip("Reset Zoom"));
+        
+        buttonBox.getChildren().addAll(refreshGraphButton, exportDOTButton, exportSVGButton, 
+                                       new Label("  "), zoomInButton, zoomOutButton, zoomResetButton);
         
         // WebView for SVG display
         graphWebView = new WebView();
         webEngine = graphWebView.getEngine();
         graphWebView.setPrefHeight(600);
         VBox.setVgrow(graphWebView, Priority.ALWAYS);
+        
+        // Zoom functionality - zoom only the container, not the body
+        zoomInButton.setOnAction(e -> {
+            if (webEngine != null) {
+                webEngine.executeScript("var container = document.getElementById('graphContainer'); " +
+                                       "if (!container) return; " +
+                                       "if (window.currentZoom === undefined) window.currentZoom = 1.0; " +
+                                       "window.currentZoom = Math.min(window.currentZoom * 1.2, 5.0); " +
+                                       "container.style.transform = 'scale(' + window.currentZoom + ')'; " +
+                                       "container.style.transformOrigin = 'top left';");
+            }
+        });
+        
+        zoomOutButton.setOnAction(e -> {
+            if (webEngine != null) {
+                webEngine.executeScript("var container = document.getElementById('graphContainer'); " +
+                                       "if (!container) return; " +
+                                       "if (window.currentZoom === undefined) window.currentZoom = 1.0; " +
+                                       "window.currentZoom = Math.max(window.currentZoom / 1.2, 0.2); " +
+                                       "container.style.transform = 'scale(' + window.currentZoom + ')'; " +
+                                       "container.style.transformOrigin = 'top left';");
+            }
+        });
+        
+        zoomResetButton.setOnAction(e -> {
+            if (webEngine != null) {
+                webEngine.executeScript("var container = document.getElementById('graphContainer'); " +
+                                       "if (!container) return; " +
+                                       "window.currentZoom = 1.0; " +
+                                       "container.style.transform = 'scale(1.0)'; " +
+                                       "container.style.transformOrigin = 'top left';");
+            }
+        });
         
         Label placeholderLabel = new Label("Graph visualization will appear here after calculation");
         placeholderLabel.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
@@ -1275,15 +1408,101 @@ public class UpgradePlanFXUI {
     private void exportSVGFile() {
         if (controller == null) return;
         
+        File tempDot = null;
         try {
             String dotContent = generateDOTContent();
-            File tempDot = File.createTempFile("graph", ".dot");
-            Files.write(Paths.get(tempDot.getAbsolutePath()), dotContent.getBytes());
+            tempDot = File.createTempFile("graph", ".dot");
+            Files.write(Paths.get(tempDot.getAbsolutePath()), dotContent.getBytes("UTF-8"));
             
             // Try to convert using neato (Graphviz)
-            ProcessBuilder pb = new ProcessBuilder("neato", "-Tsvg", tempDot.getAbsolutePath());
+            String neatoPath = "C:\\Program Files\\Graphviz\\bin\\neato.exe";
+            File neatoFile = new File(neatoPath);
+            if (!neatoFile.exists()) {
+                throw new Exception("neato.exe not found at: " + neatoPath);
+            }
+            
+            // Use the absolute path
+            String absolutePath = neatoFile.getAbsolutePath();
+            ProcessBuilder pb = new ProcessBuilder(absolutePath, "-Tsvg", tempDot.getAbsolutePath());
+            pb.redirectErrorStream(true);
             Process process = pb.start();
             
+            // Read the SVG output from the process
+            StringBuilder allOutput = new StringBuilder();
+            StringBuilder errorContent = new StringBuilder();
+            
+            // Read from stdout (warnings and SVG are mixed)
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream(), "UTF-8"))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    allOutput.append(line).append("\n");
+                }
+            }
+            
+            // Also read from stderr (in case errors are not redirected)
+            try (BufferedReader errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream(), "UTF-8"))) {
+                String line;
+                while ((line = errorReader.readLine()) != null) {
+                    errorContent.append(line).append("\n");
+                }
+            }
+            
+            // Wait for the process to complete
+            int exitCode = process.waitFor();
+            
+            // Check if we got any content
+            String allOutputStr = allOutput.toString();
+            String errorOutput = errorContent.toString();
+            
+            if (exitCode != 0) {
+                throw new Exception("neato process exited with code: " + exitCode + 
+                    (errorOutput.isEmpty() ? "" : "\nError output: " + errorOutput));
+            }
+            
+            if (allOutputStr.trim().isEmpty()) {
+                throw new Exception("neato produced empty output" + 
+                    (errorOutput.isEmpty() ? "" : "\nError output: " + errorOutput));
+            }
+            
+            // Extract SVG content - neato may output warnings before the actual SVG
+            // Find where the SVG actually starts (<?xml or <svg)
+            String svgOutput = null;
+            int xmlIndex = allOutputStr.indexOf("<?xml");
+            int svgIndex = allOutputStr.indexOf("<svg");
+            
+            if (xmlIndex >= 0) {
+                // SVG starts with <?xml, extract from there
+                svgOutput = allOutputStr.substring(xmlIndex);
+            } else if (svgIndex >= 0) {
+                // SVG starts with <svg, extract from there
+                svgOutput = allOutputStr.substring(svgIndex);
+            } else {
+                // No valid SVG found
+                String preview = allOutputStr.length() > 300 ? allOutputStr.substring(0, 300) + "..." : allOutputStr;
+                throw new Exception("Could not find SVG content in neato output.\n" +
+                    "Output preview: " + preview.replace("\n", "\\n") +
+                    (errorOutput.isEmpty() ? "" : "\nError output: " + errorOutput));
+            }
+            
+            // Clean up the SVG - remove leading/trailing whitespace but preserve structure
+            String finalSvg = svgOutput.trim();
+            
+            if (finalSvg.isEmpty()) {
+                throw new Exception("Extracted SVG content is empty");
+            }
+            
+            // Verify it's actually SVG - check if it starts with <?xml or <svg (case-insensitive)
+            String trimmedStart = finalSvg.trim();
+            if (!trimmedStart.startsWith("<?xml") && !trimmedStart.startsWith("<svg") && 
+                !trimmedStart.toLowerCase().startsWith("<?xml") && !trimmedStart.toLowerCase().startsWith("<svg")) {
+                // Show more context in error
+                String preview = trimmedStart.length() > 150 ? trimmedStart.substring(0, 150) : trimmedStart;
+                throw new Exception("neato output does not appear to be valid SVG.\n" +
+                    "Output starts with: " + preview.replace("\n", "\\n").replace("\r", "\\r") +
+                    (errorOutput.isEmpty() ? "" : "\nError output: " + errorOutput));
+            }
+            
+            // Now show the file chooser
             FileChooser fileChooser = new FileChooser();
             fileChooser.setTitle("Export SVG File");
             fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("SVG files", "*.svg"));
@@ -1291,14 +1510,8 @@ public class UpgradePlanFXUI {
             File file = fileChooser.showSaveDialog(stage);
             
             if (file != null) {
-                try (InputStream is = process.getInputStream();
-                     FileOutputStream fos = new FileOutputStream(file)) {
-                    byte[] buffer = new byte[1024];
-                    int bytesRead;
-                    while ((bytesRead = is.read(buffer)) != -1) {
-                        fos.write(buffer, 0, bytesRead);
-                    }
-                }
+                // Write the SVG content to the file with UTF-8 encoding
+                Files.write(Paths.get(file.getAbsolutePath()), finalSvg.getBytes("UTF-8"));
                 
                 Alert alert = new Alert(Alert.AlertType.INFORMATION);
                 alert.setTitle("Export Successful");
@@ -1307,13 +1520,24 @@ public class UpgradePlanFXUI {
                 alert.showAndWait();
             }
             
-            tempDot.delete();
         } catch (Exception e) {
             Alert alert = new Alert(Alert.AlertType.ERROR);
             alert.setTitle("Export Error");
             alert.setHeaderText(null);
-            alert.setContentText("Failed to export SVG file. Make sure Graphviz (neato) is installed and in PATH.\n" + e.getMessage());
+            alert.setContentText("Failed to export SVG file.\n\n" + 
+                "Make sure Graphviz (neato) is installed at:\n" +
+                "C:\\Program Files\\Graphviz\\bin\\neato.exe\n\n" +
+                "Error details: " + e.getMessage());
             alert.showAndWait();
+        } finally {
+            // Clean up temp file
+            if (tempDot != null && tempDot.exists()) {
+                try {
+                    tempDot.delete();
+                } catch (Exception e) {
+                    // Ignore cleanup errors
+                }
+            }
         }
     }
     
@@ -1328,7 +1552,11 @@ public class UpgradePlanFXUI {
         StringBuilder dot = new StringBuilder();
         dot.append("digraph G {\n");
         dot.append("  rankdir=LR;\n");
-        dot.append("  node [shape=circle, style=filled, fillcolor=lightblue, fontname=\"Segoe UI\"];\n");
+        dot.append("  nodesep=2.0;\n");  // Increased horizontal spacing between nodes
+        dot.append("  ranksep=3.0;\n");  // Increased vertical spacing between ranks
+        dot.append("  overlap=false;\n"); // Prevent node overlap
+        dot.append("  splines=true;\n");  // Use curved edges for better layout
+        dot.append("  node [shape=circle, style=filled, fillcolor=lightblue, fontname=\"Segoe UI\", width=0.8, height=0.8];\n");
         dot.append("  edge [fontname=\"Segoe UI\", fontsize=10];\n");
         
         Set<Line> cycleEdges = currentCycleInfo != null ? currentCycleInfo.getCycleEdges() : new HashSet<>();
@@ -1391,7 +1619,16 @@ public class UpgradePlanFXUI {
             Files.write(Paths.get(tempDot.getAbsolutePath()), dotContent.getBytes());
             
             // Try to convert using neato
-            ProcessBuilder pb = new ProcessBuilder("neato", "-Tsvg", tempDot.getAbsolutePath());
+            String neatoPath = "C:\\Program Files\\Graphviz\\bin\\neato.exe";
+            File neatoFile = new File(neatoPath);
+            if (!neatoFile.exists()) {
+                throw new Exception("neato.exe not found at: " + neatoPath);
+            }
+            
+            // Use the absolute path and ensure proper quoting for Windows paths with spaces
+            String absolutePath = neatoFile.getAbsolutePath();
+            ProcessBuilder pb = new ProcessBuilder(absolutePath, "-Tsvg", tempDot.getAbsolutePath());
+            pb.redirectErrorStream(true);
             Process process = pb.start();
             
             StringBuilder svgContent = new StringBuilder();
@@ -1406,16 +1643,66 @@ public class UpgradePlanFXUI {
             tempDot.delete();
             
             String finalSvg = svgContent.toString();
+            // Wrap SVG in HTML with zoom support and white background that stays visible
+            String htmlContent = "<!DOCTYPE html>\n" +
+                "<html>\n" +
+                "<head>\n" +
+                "  <style>\n" +
+                "    body {\n" +
+                "      margin: 0;\n" +
+                "      padding: 0;\n" +
+                "      background: #1B2533;\n" +
+                "      overflow: auto;\n" +
+                "      min-height: 100vh;\n" +
+                "    }\n" +
+                "    #graphContainer {\n" +
+                "      background: #FFFFFF;\n" +
+                "      padding: 20px;\n" +
+                "      display: inline-block;\n" +
+                "      min-width: 100%;\n" +
+                "      min-height: 100vh;\n" +
+                "      transform-origin: top left;\n" +
+                "    }\n" +
+                "    svg {\n" +
+                "      display: block;\n" +
+                "      max-width: 100%;\n" +
+                "      height: auto;\n" +
+                "      background: #FFFFFF;\n" +
+                "    }\n" +
+                "  </style>\n" +
+                "</head>\n" +
+                "<body>\n" +
+                "  <div id=\"graphContainer\">\n" +
+                finalSvg +
+                "  </div>\n" +
+                "<script>\n" +
+                "  window.currentZoom = 1.0;\n" +
+                "  var container = document.getElementById('graphContainer');\n" +
+                "  // Enable mouse wheel zoom\n" +
+                "  document.addEventListener('wheel', function(e) {\n" +
+                "    if (e.ctrlKey || e.metaKey) {\n" +
+                "      e.preventDefault();\n" +
+                "      var delta = e.deltaY > 0 ? 0.9 : 1.1;\n" +
+                "      window.currentZoom = Math.max(0.2, Math.min(5.0, window.currentZoom * delta));\n" +
+                "      container.style.transform = 'scale(' + window.currentZoom + ')';\n" +
+                "    }\n" +
+                "  }, { passive: false });\n" +
+                "</script>\n" +
+                "</body>\n" +
+                "</html>";
+            
             Platform.runLater(() -> {
                 if (webEngine != null) {
-                    webEngine.loadContent(finalSvg);
+                    webEngine.loadContent(htmlContent);
                 }
             });
         } catch (Exception e) {
             // If Graphviz is not available, show a message
+            String errorMsg = e.getMessage();
+            String neatoPath = "C:\\Program Files\\Graphviz\\bin\\neato.exe";
             Platform.runLater(() -> {
                 if (webEngine != null) {
-                    webEngine.loadContent("<html><body style='background:#1B2533;color:#E2E8F0;font-family:Segoe UI;padding:20px;'><h3>Graph Visualization</h3><p>Graphviz (neato) is required for graph visualization.</p><p>Please install Graphviz and ensure 'neato' is in your PATH.</p><p>Error: " + e.getMessage() + "</p></body></html>");
+                    webEngine.loadContent("<html><body style='background:#1B2533;color:#E2E8F0;font-family:Segoe UI;padding:20px;'><h3>Graph Visualization</h3><p>Graphviz (neato) is required for graph visualization.</p><p>Expected path: " + neatoPath + "</p><p>Error: " + errorMsg + "</p></body></html>");
                 }
             });
         }
