@@ -11,7 +11,7 @@ This folder contains all SQL scripts used to create, populate, and maintain the 
 ### Acessing the database
 - Host: vsgate-s1.dei.isep.ipp.pt
 - Username: System
-- Password: G0442526DB
+- Password: G0442526BD
 - Port: 10715
 - SID: XE
 
