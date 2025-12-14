@@ -5,6 +5,7 @@ import Sprint1.UI.*;
 import Sprint2.Controller.*;
 import Sprint2.Domain.StationLoader;
 import Sprint1.Domain.Warehouse;
+import UI.BackboneUI;
 import Sprint1.Domain.AuditLog;
 import Sprint1.Domain.ENUM.ReturnReason;
 import Sprint1.Repository.BoxRepository;
@@ -14,6 +15,7 @@ import Sprint1.Repository.TrolleyRepository;
 import Sprint1.Repository.WarehouseRepository;
 import Sprint1.Domain.DataLoader;
 import Sprint2.UI.*;
+import UI.BackboneUI;
 
 import java.util.Scanner;
 
@@ -184,7 +186,8 @@ public class Main {
             System.out.println("4. Proximity Search");
             System.out.println("5. Radius Search and Density Summary");
             System.out.println("6. Train Dispatcher");
-            System.out.println("7. Back");
+            System.out.println("7. Minimal Backbone Network (USEI12)");
+            System.out.println("8. Back");
 
             System.out.print("Select option: ");
             String choice = scanner.nextLine().trim();
@@ -548,5 +551,16 @@ public class Main {
             System.err.println("ERROR in radiusSearch: " + e.getMessage());
             e.printStackTrace();
         }
+    }
+    
+    /**
+     * Infrastructure Planner - Minimal Backbone Network (USEI12)
+     * Computes minimum spanning tree (MST) of the railway network.
+     */
+    private static void minimalBackboneNetwork() {
+        System.out.println("\n=== MINIMAL BACKBONE NETWORK (USEI12) ===");
+        
+        BackboneUI ui = new BackboneUI();
+        ui.showMainMenu();
     }
 }
