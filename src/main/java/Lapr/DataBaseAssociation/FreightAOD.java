@@ -1,4 +1,6 @@
-package Lapr;
+package Lapr.DataBaseAssociation;
+
+import Lapr.Domain.Freight;
 
 import java.sql.*;
 import java.util.ArrayList;

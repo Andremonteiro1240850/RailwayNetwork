@@ -1,4 +1,4 @@
-package Lapr;
+package Lapr.Domain;
 
 public class Freight {
     private int id;

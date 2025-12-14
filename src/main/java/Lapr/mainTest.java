@@ -1,5 +1,8 @@
 package Lapr;
 
+import Lapr.DataBaseAssociation.FreightAOD;
+import Lapr.Domain.Freight;
+
 import java.util.List;
 
 public class mainTest {
