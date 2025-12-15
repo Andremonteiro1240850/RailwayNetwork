@@ -5,8 +5,7 @@ import Domain.CycleDetection;
 import Domain.DataLoader;
 import Domain.Line;
 import Domain.Station;
-import Repository.StationRepository;
-import Repository.LineRepository;
+import Repository.RailwayGraphRepository;
 import javafx.application.Platform;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
@@ -1081,25 +1080,22 @@ public class UpgradePlanFXUI {
                     protected UpgradePlanController.UpgradePlanResult call() throws Exception {
                         updateMessage("Loading data...");
                         
-                        // STEP 1: Repository layer - Load data from CSV files
-                        DataLoader dataLoader = new DataLoader(false);
-                        dataLoader.loadAllData(DEFAULT_STATIONS_PATH, DEFAULT_EDGES_PATH);
+                        // STEP 1: Load data and build DIRECTED graph using RailwayGraphRepository
+                        // RailwayGraphRepository ensures the graph is directed, preserving
+                        // directional dependencies (A->B means A must be upgraded before B)
+                        RailwayGraphRepository graphRepo = new RailwayGraphRepository();
+                        graphRepo.loadData(DEFAULT_STATIONS_PATH, DEFAULT_EDGES_PATH);
                         
-                        // Get repositories with loaded data
-                        StationRepository stationRepo = dataLoader.getStationRepository();
-                        LineRepository lineRepo = dataLoader.getLineRepository();
+                        updateMessage("Building directed graph for USEI11...");
                         
-                        updateMessage("Building graph...");
-                        
-                        // STEP 2: Controller layer - Create controller with repositories
-                        controller = new UpgradePlanController(stationRepo, lineRepo);
-                        
-                        // Build graph from repositories
+                        // STEP 2: Create controller with RailwayGraphRepository
+                        // This ensures the graph used for analysis is DIRECTED (required for USEI11)
+                        controller = new UpgradePlanController(graphRepo);
                         controller.buildGraph();
                         
                         updateMessage("Calculating upgrade order...");
                         
-                        // STEP 3: Calculate upgrade plan
+                        // STEP 3: Calculate upgrade plan using the directed graph
                         return controller.calculateUpgradePlan();
                     }
                 };
