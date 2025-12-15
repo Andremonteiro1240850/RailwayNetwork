@@ -86,7 +86,7 @@ public class MaximumFlowFXUI {
         
         BorderPane root = new BorderPane();
         root.setStyle("-fx-background-color: #1B2533;");
-        root.setPadding(new Insets(20));
+        root.setPadding(new Insets(20, 20, 10, 20));
         
         // Top: Title
         VBox topBox = new VBox(15);
@@ -169,7 +169,7 @@ public class MaximumFlowFXUI {
         resultBox.setPadding(new Insets(15)); // Reduced padding from 20 to 15
         resultBox.setStyle("-fx-background-color: #2D3748; " +
                           "-fx-background-radius: 12px;");
-        resultBox.setMinHeight(400); // Ensure enough space for details
+        resultBox.setMinHeight(350); // Reduced to fit better with close button
         
         // Main result label
         resultLabel = new Label("Select stations and click 'Calculate Maximum Flow'");
@@ -204,9 +204,10 @@ public class MaximumFlowFXUI {
         // Details text area
         detailsArea = new TextArea();
         detailsArea.setEditable(false);
-        detailsArea.setPrefRowCount(12); // Increased from 8 to 12
-        detailsArea.setMinHeight(250); // Minimum height
-        detailsArea.setPrefHeight(300); // Preferred height
+        detailsArea.setPrefRowCount(10); // Reduced to fit better
+        detailsArea.setMinHeight(200); // Reduced minimum height
+        detailsArea.setPrefHeight(250); // Reduced preferred height
+        detailsArea.setMaxHeight(280); // Added max height to prevent overflow
         detailsArea.setPrefWidth(600);
         detailsArea.setWrapText(true); // Enable text wrapping
         detailsArea.setStyle("-fx-font-family: 'Consolas', 'Monaco', monospace; " +
@@ -265,15 +266,16 @@ public class MaximumFlowFXUI {
         
         HBox bottomContainer = new HBox(20);
         bottomContainer.setAlignment(Pos.CENTER);
+        bottomContainer.setPadding(new Insets(0, 0, 10, 0));
         bottomContainer.getChildren().addAll(bottomBox, closeButton);
         
         root.setBottom(bottomContainer);
         
-        Scene scene = new Scene(root, 700, 750); // Increased height to accommodate details
+        Scene scene = new Scene(root, 700, 800); // Increased height to accommodate details and close button
         stage.setScene(scene);
         stage.setResizable(true); // Allow resizing to see all content
         stage.setMinWidth(700);
-        stage.setMinHeight(750);
+        stage.setMinHeight(800);
         
         // Load data and populate stations
         loadDataAndPopulateStations();

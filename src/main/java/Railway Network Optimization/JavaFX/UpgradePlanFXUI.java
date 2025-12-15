@@ -95,7 +95,7 @@ public class UpgradePlanFXUI {
         
         BorderPane root = new BorderPane();
         root.setStyle("-fx-background-color: #1B2533;");
-        root.setPadding(new Insets(20));
+        root.setPadding(new Insets(20, 20, 10, 20));
         
         // Top: Title and button
         VBox topBox = new VBox(15);
@@ -181,6 +181,7 @@ public class UpgradePlanFXUI {
         
         HBox bottomContainer = new HBox(20);
         bottomContainer.setAlignment(Pos.CENTER);
+        bottomContainer.setPadding(new Insets(0, 0, 10, 0));
         bottomContainer.getChildren().addAll(bottomBox, closeButton);
         
         root.setBottom(bottomContainer);
