@@ -16,6 +16,7 @@ import Sprint2.JavaFX.*;
 import Sprint2.Repository.KDTreeRepository;
 import Sprint2.Repository.StationRepository;
 import JavaFX.UpgradePlanFXUI;
+import JavaFX.MaximumFlowFXUI;
 import javafx.fxml.FXML;
 import javafx.application.Platform;
 import javafx.scene.control.Alert;
@@ -25,9 +26,8 @@ import javafx.util.Duration;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import Sprint2.Controller.GeographicalSearchController;
-import JavaFX.HubScoreFXUI;
-import Controller.HubController ;
-import Repository.HubRepository ;
+import Controller.HubController;
+import Repository.HubRepository;
 
 
 
@@ -381,6 +381,24 @@ public class Controller {
             } catch (Exception e) {
                 Platform.runLater(() -> showError("Error", "Failed to start Hub Score Analysis: " + e.getMessage()));
                 e.printStackTrace();
+            }
+        });
+    }
+
+    /**
+     * Handles the Maximum Flow button click.
+     * Opens the Maximum Flow Between Two Stations window (USEI14).
+     */
+    @FXML
+    private void handleMaximumFlowButton() {
+        executorService.execute(() -> {
+            try {
+                Platform.runLater(() -> {
+                    MaximumFlowFXUI ui = new MaximumFlowFXUI();
+                    ui.show();
+                });
+            } catch (Exception e) {
+                Platform.runLater(() -> showError("Error", "Failed to start Maximum Flow: " + e.getMessage()));
             }
         });
     }
