@@ -1,91 +1,62 @@
 package Controller;
 
-
 import Domain.*;
-import Repository.StationRepository;
-import Repository.LineRepository;
+import Repository.RailwayGraphRepository;
 
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Controller that orchestrates the upgrade plan functionality.
+ * Controller that orchestrates the upgrade plan functionality for USEI11 (Directed Line Upgrade Plan).
  * 
- * This class follows the MVC pattern and acts as the "chef" that coordinates:
- * 1. Gets raw data from Repositories (StationRepository, LineRepository)
- * 2. Converts raw data into Domain objects (builds RailwayGraph)
- * 3. Calls Domain algorithms (TopologicalSort, CycleDetection)
- * 4. Processes and prepares results for UI
+ * This class follows the MVC pattern and coordinates:
+ * 1. Uses RailwayGraphRepository to build a DIRECTED graph (for USEI11)
+ * 2. Calls Domain algorithms (TopologicalSort, CycleDetection) on the directed graph
+ * 3. Processes and prepares results for UI
  * 
- * The Controller does NOT load data from files - it receives repositories
- * that are already populated. Data loading is handled elsewhere (e.g., in UI or initialization).
+ * The Controller uses RailwayGraphRepository which ensures the graph is DIRECTED,
+ * as required by USEI11 for analyzing upgrade dependencies.
  * 
  * @author Development Team
  * @version 1.0
  */
 public class UpgradePlanController {
-    private final StationRepository stationRepository;
-    private final LineRepository lineRepository;
+    private final RailwayGraphRepository graphRepository;
     private RailwayGraph graph;
     
     /**
-     * Constructs a new UpgradePlanController with repositories.
+     * Constructs a new UpgradePlanController with a RailwayGraphRepository.
+     * This ensures the graph is DIRECTED, as required for USEI11.
      * 
-     * The repositories should already be populated with data before constructing the controller.
-     * 
-     * @param stationRepository the repository containing stations
-     * @param lineRepository the repository containing lines/edges
-     * @throws IllegalArgumentException if repositories are null
+     * @param graphRepository the repository that builds the directed graph
+     * @throws IllegalArgumentException if graphRepository is null
      */
-    public UpgradePlanController(StationRepository stationRepository, LineRepository lineRepository) {
-        if (stationRepository == null) {
-            throw new IllegalArgumentException("StationRepository cannot be null");
+    public UpgradePlanController(RailwayGraphRepository graphRepository) {
+        if (graphRepository == null) {
+            throw new IllegalArgumentException("RailwayGraphRepository cannot be null");
         }
-        if (lineRepository == null) {
-            throw new IllegalArgumentException("LineRepository cannot be null");
-        }
-        this.stationRepository = stationRepository;
-        this.lineRepository = lineRepository;
+        this.graphRepository = graphRepository;
         this.graph = null;
     }
     
     /**
-     * Builds the railway graph from the repositories.
+     * Builds the railway graph using RailwayGraphRepository.
      * 
-     * This method belongs to the Controller layer as it orchestrates:
-     * - Getting raw data from Repositories (stations and lines)
-     * - Converting/constructing Domain objects (RailwayGraph)
+     * This method uses RailwayGraphRepository to build a DIRECTED graph,
+     * which is required for USEI11 (Directed Line Upgrade Plan).
+     * The RailwayGraphRepository ensures that edges are added in a single direction,
+     * preserving the directional dependencies for upgrade planning.
      * 
-     * The Domain layer (RailwayGraph) doesn't know about repositories,
-     * so the Controller bridges this gap.
-     * 
-     * @throws IllegalStateException if repositories are empty
+     * @throws IllegalStateException if repositories are empty or graph cannot be built
      */
     public void buildGraph() {
-        if (stationRepository.isEmpty()) {
-            throw new IllegalStateException("StationRepository is empty. Please load data first.");
-        }
-        if (lineRepository.isEmpty()) {
-            throw new IllegalStateException("LineRepository is empty. Please load data first.");
+        if (graphRepository == null) {
+            throw new IllegalStateException("RailwayGraphRepository is not initialized");
         }
         
-        // Build Domain graph structure from raw data in repositories
-        this.graph = new RailwayGraph();
-        
-        // Add all nodes (stations) to the graph
-        for (Station station : stationRepository.getAll()) {
-            graph.addNode(station);
-        }
-        
-        // Add all edges (lines) to the graph
-        for (Line line : lineRepository.getAll()) {
-            try {
-                graph.addEdge(line);
-            } catch (IllegalArgumentException e) {
-                // Skip invalid edges (shouldn't happen if data is consistent)
-                System.err.println("Warning: Skipped invalid edge: " + e.getMessage());
-            }
-        }
+        // Use RailwayGraphRepository to build the DIRECTED graph for USEI11
+        // This ensures the graph maintains directional dependencies (A->B means A must be upgraded before B)
+        this.graph = graphRepository.buildGraph();
     }
     
     /**
@@ -157,48 +128,6 @@ public class UpgradePlanController {
     }
     
     /**
-     * Gets the in-degree (number of incoming edges) of a station.
-     * 
-     * @param stationId the station ID
-     * @return the in-degree of the station
-     * @throws IllegalStateException if data hasn't been loaded yet
-     */
-    public int getStationInDegree(String stationId) {
-        if (graph == null) {
-            throw new IllegalStateException("Data must be loaded first");
-        }
-        return graph.getIncomingEdges(stationId).size();
-    }
-    
-    /**
-     * Gets the out-degree (number of outgoing edges) of a station.
-     * 
-     * @param stationId the station ID
-     * @return the out-degree of the station
-     * @throws IllegalStateException if data hasn't been loaded yet
-     */
-    public int getStationOutDegree(String stationId) {
-        if (graph == null) {
-            throw new IllegalStateException("Data must be loaded first");
-        }
-        return graph.getOutgoingEdges(stationId).size();
-    }
-    
-    /**
-     * Gets the total degree (in-degree + out-degree) of a station.
-     * 
-     * @param stationId the station ID
-     * @return the total degree of the station
-     * @throws IllegalStateException if data hasn't been loaded yet
-     */
-    public int getStationDegree(String stationId) {
-        if (graph == null) {
-            throw new IllegalStateException("Data must be loaded first");
-        }
-        return getStationInDegree(stationId) + getStationOutDegree(stationId);
-    }
-    
-    /**
      * Gets degree information for a station.
      * 
      * @param stationId the station ID
@@ -209,8 +138,8 @@ public class UpgradePlanController {
         if (graph == null) {
             throw new IllegalStateException("Data must be loaded first");
         }
-        int inDegree = getStationInDegree(stationId);
-        int outDegree = getStationOutDegree(stationId);
+        int inDegree = graph.getIncomingEdges(stationId).size();
+        int outDegree = graph.getOutgoingEdges(stationId).size();
         return new DegreeInfo(inDegree, outDegree);
     }
     
@@ -240,8 +169,12 @@ public class UpgradePlanController {
         return graph.getAllEdges();
     }
     
+    // ============================================================================
+    // Inner Classes
+    // ============================================================================
+    
     /**
-     * Represents degree information for a station.
+     * Represents degree information for a station in the directed graph.
      */
     public static class DegreeInfo {
         private final int inDegree;
