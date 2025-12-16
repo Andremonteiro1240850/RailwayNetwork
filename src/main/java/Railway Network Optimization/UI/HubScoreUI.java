@@ -24,8 +24,8 @@ public class HubScoreUI implements Runnable {
         Map<Station, Map<Station, Double>> uGraph = hubController.getHubRepository().getLoader().buildGraph();
         Map<Station, Integer> degrees = hubController.calculateDegree(uGraph);
         Map<Station, Double> strengths = hubController.calculateStrengthNorm(uGraph);
-        Map<Station, Double> betweennesses = hubController.calculateBetweennessCentrality(uGraph);
-        Map<Station, Double> harmonics = hubController.calculateHarmonicCloseness(uGraph);
+        Map<Station, Double> betweennesses = hubController.normalizeBetweenness(hubController.calculateBetweennessCentrality(uGraph));
+        Map<Station, Double> harmonics = hubController.normalizeHarmonicCloseness(hubController.calculateHarmonicCloseness(uGraph));
         Map<Station, Double> hubScores = hubController.calculateHubScore(strengths, harmonics, betweennesses,
                 hubController.getHubRepository().getUndirectedStations());
 

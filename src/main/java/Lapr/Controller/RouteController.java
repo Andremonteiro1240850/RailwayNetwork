@@ -8,11 +8,11 @@ import Lapr.Domain.Route;
 import java.util.ArrayList;
 import java.util.List;
 
-public class AssignRouteController {
+public class RouteController {
     private final FreightAOD freightAOD;
     private final RouteAOD routeAOD;
 
-    public AssignRouteController(FreightAOD freightAOD, RouteAOD routeAOD) {
+    public RouteController(FreightAOD freightAOD, RouteAOD routeAOD) {
         this.freightAOD = freightAOD;
         this.routeAOD = routeAOD;
     }
@@ -32,6 +32,13 @@ public class AssignRouteController {
         }
         return freightsNotAssigned;
    }
+//   public List<Freight> createNewRoute (List<Freight> dismissedFreights){
+//        if(dismissedFreights.size() == 1){
+//            Route simpleRoute = new Route();
+//        } else {
+//            Route compositeRoute = new Route();
+//        }
+//   }
 
 
 }

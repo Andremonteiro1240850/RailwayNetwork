@@ -216,22 +216,61 @@ public class HubController {
 
         return normalizedStrength;
     }
+    public Map<Station, Double> normalizeHarmonicCloseness(Map<Station, Double> harmonicCloseness) {
+        Map<Station, Double> normalized = new HashMap<>();
+
+        double maxValue = harmonicCloseness.values().stream()
+                .max(Double::compareTo)
+                .orElse(0.0);
+
+        if(maxValue > 0.0) {
+            for(Map.Entry<Station, Double> entry : harmonicCloseness.entrySet()) {
+                normalized.put(entry.getKey(), entry.getValue() / maxValue);
+            }
+        } else {
+            for(Station s : harmonicCloseness.keySet()) {
+                normalized.put(s, 0.0);
+            }
+        }
+
+        return normalized;
+    }
+
+    public Map<Station, Double> normalizeBetweenness(Map<Station, Double> betweenness) {
+        Map<Station, Double> normalized = new HashMap<>();
+
+        double maxValue = betweenness.values().stream()
+                .max(Double::compareTo)
+                .orElse(0.0);
+
+        if(maxValue > 0.0) {
+            for(Map.Entry<Station, Double> entry : betweenness.entrySet()) {
+                normalized.put(entry.getKey(), entry.getValue() / maxValue);
+            }
+        } else {
+            for(Station s : betweenness.keySet()) {
+                normalized.put(s, 0.0);
+            }
+        }
+
+        return normalized;
+    }
+
     public Map<Station, Double> calculateHubScore(
             Map<Station, Double> força,
-            Map<Station, Double> harmonicCloseness,
-            Map<Station, Double> betweness,
+            Map<Station, Double> harmonicClosenessNorm,
+            Map<Station, Double> betweenessNorm,
             Set<Station> allStations) {
 
         Map<Station, Double> hubScores = new HashMap<>();
 
         for(Station s : allStations) {
-            // Verificar se a estação existe em todos os mapas
-            if(!força.containsKey(s) || !harmonicCloseness.containsKey(s) || !betweness.containsKey(s)) {
+            if(!força.containsKey(s) || !harmonicClosenessNorm.containsKey(s) || !betweenessNorm.containsKey(s)) {
                 throw new IllegalStateException("Estação " + s + " não encontrada em todos os mapas de métricas");
             }
 
-            double hubScore = (0.35 * betweness.get(s)) +
-                    (0.35 * harmonicCloseness.get(s)) +
+            double hubScore = (0.35 * betweenessNorm.get(s)) +
+                    (0.35 * harmonicClosenessNorm.get(s)) +
                     (0.30 * força.get(s));
 
             hubScores.put(s, hubScore);
@@ -263,6 +302,7 @@ public class HubController {
 
         return degree;
     }
+
 
     public HubRepository getHubRepository() {
         return hubRepository;

@@ -245,7 +245,7 @@ public class HubScoreFXUI {
         degreeColumn.setPrefWidth(80);
         degreeColumn.setStyle("-fx-alignment: CENTER-RIGHT;");
 
-        // Strength column
+        // Strength column (normalizado)
         TableColumn<StationMetrics, Double> strengthColumn = new TableColumn<>("Strength");
         strengthColumn.setCellValueFactory(new PropertyValueFactory<>("strength"));
         strengthColumn.setPrefWidth(100);
@@ -262,7 +262,7 @@ public class HubScoreFXUI {
             }
         });
 
-        // Betweenness column
+        // Betweenness column (valores reais)
         TableColumn<StationMetrics, Double> betweennessColumn = new TableColumn<>("Betweenness");
         betweennessColumn.setCellValueFactory(new PropertyValueFactory<>("betweenness"));
         betweennessColumn.setPrefWidth(120);
@@ -274,12 +274,12 @@ public class HubScoreFXUI {
                 if (empty || item == null) {
                     setText(null);
                 } else {
-                    setText(String.format("%.4f", item));
+                    setText(String.format("%.2f", item));
                 }
             }
         });
 
-        // Harmonic Closeness column
+        // Harmonic Closeness column (valores reais)
         TableColumn<StationMetrics, Double> harmonicColumn = new TableColumn<>("Harmonic Closeness");
         harmonicColumn.setCellValueFactory(new PropertyValueFactory<>("harmonicCloseness"));
         harmonicColumn.setPrefWidth(150);
@@ -291,12 +291,12 @@ public class HubScoreFXUI {
                 if (empty || item == null) {
                     setText(null);
                 } else {
-                    setText(String.format("%.4f", item));
+                    setText(String.format("%.2f", item));
                 }
             }
         });
 
-        // Hub Score column - highlighted
+        // Hub Score column - highlighted (normalizado)
         TableColumn<StationMetrics, Double> scoreColumn = new TableColumn<>("Hub Score");
         scoreColumn.setCellValueFactory(new PropertyValueFactory<>("hubScore"));
         scoreColumn.setPrefWidth(120);
@@ -404,9 +404,15 @@ public class HubScoreFXUI {
                         Map<Station, Double> harmonics =
                                 controller.calculateHarmonicCloseness(uGraph);
 
+                        updateMessage("Normalizing metrics...");
+                        Map<Station, Double> betweennessNorm =
+                                controller.normalizeBetweenness(betweennesses);
+                        Map<Station, Double> harmonicsNorm =
+                                controller.normalizeHarmonicCloseness(harmonics);
+
                         updateMessage("Calculating hub scores...");
                         Map<Station, Double> hubScores = controller.calculateHubScore(
-                                strengths, harmonics, betweennesses,
+                                strengths, harmonicsNorm, betweennessNorm,
                                 controller.getHubRepository().getUndirectedStations()
                         );
 
@@ -420,9 +426,9 @@ public class HubScoreFXUI {
                                     s.getName() != null ? s.getName() : "N/A",
                                     degrees.get(s),
                                     strengths.get(s),
-                                    betweennesses.get(s),
-                                    harmonics.get(s),
-                                    hubScores.get(s)
+                                    betweennesses.get(s),  // valores reais
+                                    harmonics.get(s),      // valores reais
+                                    hubScores.get(s)       // normalizado
                             ));
                         }
 

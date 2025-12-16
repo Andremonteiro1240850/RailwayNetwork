@@ -1,11 +1,11 @@
 package Lapr.UI;
 
-import Lapr.Controller.AssignRouteController;
+import Lapr.Controller.RouteController;
 import Lapr.Domain.Freight;
 
 public class RoutePlannerUI implements Runnable{
-    private final AssignRouteController assignRouteController;
-    public RoutePlannerUI(AssignRouteController assignRouteController) {
+    private final RouteController assignRouteController;
+    public RoutePlannerUI(RouteController assignRouteController) {
         this.assignRouteController = assignRouteController;
     }
     @Override
@@ -19,6 +19,7 @@ public class RoutePlannerUI implements Runnable{
             System.out.println(f);
         }
     }
+
 
 
 }
