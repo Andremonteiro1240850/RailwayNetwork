@@ -547,6 +547,142 @@ void free_log_query_result(LogQueryResult *result) {
     result->capacity = 0;
 }
 
+/**
+ * Get username by user_id
+ */
+static const char* get_username_by_id(User *users, int user_count, int user_id) {
+    if (users == NULL) return "unknown";
+    
+    for (int i = 0; i < user_count; i++) {
+        if (users[i].user_id == user_id) {
+            return users[i].username;
+        }
+    }
+    return "unknown";
+}
+
+/**
+ * Generate filename according to convention: user_actions_{username}_{date}.txt
+ */
+static int generate_filename(char *filename_buffer, int buffer_size, const char *username, const char *output_directory) {
+    if (filename_buffer == NULL || username == NULL || output_directory == NULL) {
+        return 0;
+    }
+    
+    // Get current date in format YYYYMMDD
+    time_t rawtime;
+    struct tm *timeinfo;
+    time(&rawtime);
+    timeinfo = localtime(&rawtime);
+    
+    char date_str[9]; // YYYYMMDD + null terminator
+    strftime(date_str, sizeof(date_str), "%Y%m%d", timeinfo);
+    
+    // Format: {directory}/user_actions_{username}_{date}.txt
+    int written = snprintf(filename_buffer, buffer_size, "%s/user_actions_%s_%s.txt", 
+                          output_directory, username, date_str);
+    
+    if (written < 0 || written >= buffer_size) {
+        return 0; // Buffer too small or error
+    }
+    
+    return 1;
+}
+
+/**
+ * Write user actions to .txt file
+ * Formats data according to specification and saves to designated directory
+ * 
+ * @param query_result The query result containing user actions (from query_user_actions)
+ * @param users Array of all users (to get username)
+ * @param user_count Number of users in the array
+ * @param user_id User ID to get username
+ * @param output_directory Directory where file should be saved (e.g., "./logs" or "/tmp")
+ * @return 1 on success, 0 on failure
+ */
+int write_user_actions_to_file(const LogQueryResult *query_result, User *users, int user_count, 
+                                int user_id, const char *output_directory) {
+    // Error handling: Validate inputs
+    if (query_result == NULL) {
+        return 0; // Invalid query result
+    }
+    
+    if (users == NULL || user_count <= 0) {
+        return 0; // Invalid users array
+    }
+    
+    if (user_id <= 0) {
+        return 0; // Invalid user ID
+    }
+    
+    if (output_directory == NULL) {
+        return 0; // Invalid output directory
+    }
+    
+    // Error handling: Check if query result has data
+    if (query_result->count == 0) {
+        return 0; // No data to write
+    }
+    
+    // Get username
+    const char *username = get_username_by_id(users, user_count, user_id);
+    
+    // Generate filename according to convention
+    char filename[512];
+    if (!generate_filename(filename, sizeof(filename), username, output_directory)) {
+        return 0; // Failed to generate filename
+    }
+    
+    // Open file for writing
+    FILE *file = fopen(filename, "w");
+    if (file == NULL) {
+        return 0; // Failed to open file (permissions or directory doesn't exist)
+    }
+    
+    // Write header according to specification
+    fprintf(file, "========================================\n");
+    fprintf(file, "USER ACTION LOG REPORT\n");
+    fprintf(file, "========================================\n\n");
+    fprintf(file, "User ID: %d\n", user_id);
+    fprintf(file, "Username: %s\n", username);
+    fprintf(file, "Total Actions: %d\n", query_result->count);
+    
+    // Get current timestamp for report generation
+    time_t rawtime;
+    struct tm *timeinfo;
+    time(&rawtime);
+    timeinfo = localtime(&rawtime);
+    char current_timestamp[50];
+    strftime(current_timestamp, sizeof(current_timestamp), "%Y-%m-%d %H:%M:%S", timeinfo);
+    fprintf(file, "Generated on: %s\n", current_timestamp);
+    
+    fprintf(file, "\n========================================\n");
+    fprintf(file, "LOG ENTRIES\n");
+    fprintf(file, "========================================\n\n");
+    
+    // Write log entries according to specification format
+    for (int i = 0; i < query_result->count; i++) {
+        fprintf(file, "Log ID: %d\n", query_result->entries[i].log_id);
+        fprintf(file, "User ID: %d\n", query_result->entries[i].user_id);
+        fprintf(file, "Username: %s\n", username);
+        fprintf(file, "Action Type: %s\n", query_result->entries[i].action_type);
+        fprintf(file, "Action Details: %s\n", query_result->entries[i].action_details);
+        fprintf(file, "Timestamp: %s\n", query_result->entries[i].timestamp);
+        fprintf(file, "----------------------------------------\n");
+    }
+    
+    fprintf(file, "\n========================================\n");
+    fprintf(file, "END OF REPORT\n");
+    fprintf(file, "========================================\n");
+    
+    // Close file
+    if (fclose(file) != 0) {
+        return 0; // Failed to close file
+    }
+    
+    return 1; // Success
+}
+
 
 /**
  * Main Manager algorithm as specified
