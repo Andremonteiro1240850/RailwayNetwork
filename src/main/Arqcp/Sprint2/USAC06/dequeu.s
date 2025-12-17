@@ -7,7 +7,7 @@ dequeue_value:
     beqz    t0, .empty
 
     # idx = *head
-    lw      t1, 0(a4)          # t1 = *head
+    lw      t1, 0(a3)          # t1 = *head
 
     # *value = buffer[idx]
     slli    t2, t1, 2          # t2 = idx * 4  (int = 4 bytes)
@@ -20,7 +20,7 @@ dequeue_value:
     bne     t1, a1, .no_wrap   # if (t1 != length) skip reset
     li      t1, 0              # t1 = 0 (wrap)
 .no_wrap:
-    sw      t1, 0(a4)          # *head = t1
+    sw      t1, 0(a3)          # *head = t1
 
     # *nelem -= 1
     addi    t0, t0, -1
