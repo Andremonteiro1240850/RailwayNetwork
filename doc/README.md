@@ -1,5 +1,5 @@
 # Documentation
-
+.
 This directory contains all project documentation including user story documentation, models, and analysis.
 
 ---
