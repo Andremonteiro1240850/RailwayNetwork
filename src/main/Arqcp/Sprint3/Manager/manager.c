@@ -8,6 +8,7 @@
 #include <ctype.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <errno.h>
 #ifdef _WIN32
 #include <io.h>
 #define chmod _chmod
@@ -594,7 +595,7 @@ static int generate_filename(char *filename_buffer, int buffer_size, const char 
         return 0; // Buffer too small or error
     }
     
-    return 1;
+        return 1;
 }
 
 /**
@@ -671,49 +672,65 @@ int write_user_actions_to_file(const User *requesting_user, const LogQueryResult
     if (!is_administrator(requesting_user)) {
         // Security audit trail: Log unauthorized access attempt
         log_audit_trail("FILE_CREATION_ATTEMPT", requesting_user, "Unauthorized access - not Administrator", 0);
+        // Clear error message for user
+        fprintf(stderr, "ERROR: Permission denied. Only Administrators can create log files.\n");
+        fprintf(stderr, "Your role: %s\n", (requesting_user != NULL) ? "Operator" : "Unknown");
         return 0; // Only Administrators can create files
     }
     
     // Authorization logic: Additional validation
     if (requesting_user == NULL) {
         log_audit_trail("FILE_CREATION_ATTEMPT", NULL, "Null user pointer", 0);
+        fprintf(stderr, "ERROR: Invalid user. User pointer is NULL.\n");
         return 0; // Invalid user
     }
     
     // Error handling: Validate inputs
     if (query_result == NULL) {
         log_audit_trail("FILE_CREATION_ATTEMPT", requesting_user, "Invalid query result", 0);
+        fprintf(stderr, "ERROR: Invalid query result. Cannot create file.\n");
         return 0; // Invalid query result
     }
     
     if (users == NULL || user_count <= 0) {
         log_audit_trail("FILE_CREATION_ATTEMPT", requesting_user, "Invalid users array", 0);
+        fprintf(stderr, "ERROR: Invalid users array. Cannot resolve username.\n");
         return 0; // Invalid users array
     }
     
     if (user_id <= 0) {
         log_audit_trail("FILE_CREATION_ATTEMPT", requesting_user, "Invalid target user ID", 0);
+        fprintf(stderr, "ERROR: Invalid user ID (%d). User ID must be greater than 0.\n", user_id);
         return 0; // Invalid user ID
     }
     
     if (output_directory == NULL) {
         log_audit_trail("FILE_CREATION_ATTEMPT", requesting_user, "Invalid output directory", 0);
+        fprintf(stderr, "ERROR: Invalid output directory. Directory path is NULL.\n");
         return 0; // Invalid output directory
     }
     
-    // Error handling: Check if query result has data
+    // Edge case: Check if query result has data
     if (query_result->count == 0) {
         log_audit_trail("FILE_CREATION_ATTEMPT", requesting_user, "No data to write", 0);
+        fprintf(stderr, "WARNING: No action data found for user ID %d.\n", user_id);
+        fprintf(stderr, "No file will be created as there are no actions to export.\n");
         return 0; // No data to write
     }
     
-    // Get username
+    // Edge case: Check if target user exists
     const char *username = get_username_by_id(users, user_count, user_id);
+    if (strcmp(username, "unknown") == 0) {
+        log_audit_trail("FILE_CREATION_ATTEMPT", requesting_user, "User not found", 0);
+        fprintf(stderr, "ERROR: User not found. User ID %d does not exist in the system.\n", user_id);
+        return 0; // User not found
+    }
     
     // Generate filename according to convention
     char filename[512];
     if (!generate_filename(filename, sizeof(filename), username, output_directory)) {
         log_audit_trail("FILE_CREATION_ATTEMPT", requesting_user, "Failed to generate filename", 0);
+        fprintf(stderr, "ERROR: Failed to generate filename. Filename buffer may be too small.\n");
         return 0; // Failed to generate filename
     }
     
@@ -722,11 +739,38 @@ int write_user_actions_to_file(const User *requesting_user, const LogQueryResult
     snprintf(audit_details, sizeof(audit_details), "Creating file: %s for user_id: %d", filename, user_id);
     log_audit_trail("FILE_CREATION_ATTEMPT", requesting_user, audit_details, 1);
     
+    // Edge case: Check if directory exists and is writable
+    // Try to create a test file to check permissions
+    FILE *test_file = fopen(filename, "w");
+    if (test_file == NULL) {
+        log_audit_trail("FILE_CREATION_FAILED", requesting_user, "Failed to open file", 0);
+        
+        // Determine specific error reason
+        if (errno == EACCES) {
+            fprintf(stderr, "ERROR: Permission denied. Cannot write to directory: %s\n", output_directory);
+            fprintf(stderr, "Please check directory permissions or choose a different location.\n");
+        } else if (errno == ENOENT) {
+            fprintf(stderr, "ERROR: Directory not found: %s\n", output_directory);
+            fprintf(stderr, "Please create the directory or specify a valid path.\n");
+        } else if (errno == ENOSPC) {
+            fprintf(stderr, "ERROR: Disk full. No space available to create file.\n");
+            fprintf(stderr, "Please free up disk space and try again.\n");
+    } else {
+            fprintf(stderr, "ERROR: Failed to create file: %s\n", filename);
+            fprintf(stderr, "Error code: %d. Please check directory permissions and disk space.\n", errno);
+        }
+        return 0; // Failed to open file
+    }
+    fclose(test_file);
+    // Remove test file (we'll create it properly below)
+    remove(filename);
+    
     // Open file for writing
     FILE *file = fopen(filename, "w");
     if (file == NULL) {
-        log_audit_trail("FILE_CREATION_FAILED", requesting_user, "Failed to open file", 0);
-        return 0; // Failed to open file (permissions or directory doesn't exist)
+        log_audit_trail("FILE_CREATION_FAILED", requesting_user, "Failed to open file after test", 0);
+        fprintf(stderr, "ERROR: Failed to open file for writing: %s\n", filename);
+        return 0; // Failed to open file
     }
     
     // Write header according to specification
@@ -751,23 +795,52 @@ int write_user_actions_to_file(const User *requesting_user, const LogQueryResult
     fprintf(file, "========================================\n\n");
     
     // Write log entries according to specification format
+    int write_errors = 0;
     for (int i = 0; i < query_result->count; i++) {
-        fprintf(file, "Log ID: %d\n", query_result->entries[i].log_id);
+        // Edge case: Check for disk space issues during write
+        int written = fprintf(file, "Log ID: %d\n", query_result->entries[i].log_id);
+        if (written < 0) {
+            write_errors++;
+            continue; // Skip this entry if write fails
+        }
+        
         fprintf(file, "User ID: %d\n", query_result->entries[i].user_id);
         fprintf(file, "Username: %s\n", username);
         fprintf(file, "Action Type: %s\n", query_result->entries[i].action_type);
         fprintf(file, "Action Details: %s\n", query_result->entries[i].action_details);
         fprintf(file, "Timestamp: %s\n", query_result->entries[i].timestamp);
         fprintf(file, "----------------------------------------\n");
+        
+        // Check for write errors
+        if (ferror(file)) {
+            write_errors++;
+            clearerr(file); // Clear error flag to continue
+        }
+    }
+    
+    // Edge case: Handle write errors
+    if (write_errors > 0) {
+        fprintf(stderr, "WARNING: %d log entries failed to write (possible disk space issue).\n", write_errors);
+        fprintf(stderr, "File may be incomplete.\n");
     }
     
     fprintf(file, "\n========================================\n");
     fprintf(file, "END OF REPORT\n");
     fprintf(file, "========================================\n");
     
+    // Flush data to disk before closing
+    if (fflush(file) != 0) {
+        log_audit_trail("FILE_CREATION_FAILED", requesting_user, "Failed to flush file", 0);
+        fprintf(stderr, "ERROR: Failed to flush data to disk.\n");
+        fclose(file);
+        remove(filename); // Clean up incomplete file
+        return 0;
+    }
+    
     // Close file
     if (fclose(file) != 0) {
         log_audit_trail("FILE_CREATION_FAILED", requesting_user, "Failed to close file", 0);
+        fprintf(stderr, "ERROR: Failed to close file properly. Data may be lost.\n");
         return 0; // Failed to close file
     }
     
@@ -775,11 +848,25 @@ int write_user_actions_to_file(const User *requesting_user, const LogQueryResult
     if (!set_restricted_file_permissions(filename)) {
         // Log warning but don't fail - file was created successfully
         log_audit_trail("FILE_PERMISSIONS_WARNING", requesting_user, "Failed to set restricted permissions", 0);
+        fprintf(stderr, "WARNING: File created but could not set restricted permissions.\n");
+        fprintf(stderr, "File location: %s\n", filename);
         // Continue anyway as file was created
     } else {
         // Log successful permission setting
         log_audit_trail("FILE_CREATION_SUCCESS", requesting_user, "File created with restricted permissions", 1);
     }
+    
+    // Success message with file location
+    printf("\n");
+    printf("========================================\n");
+    printf("FILE CREATION SUCCESSFUL\n");
+    printf("========================================\n");
+    printf("File created: %s\n", filename);
+    printf("Total actions exported: %d\n", query_result->count);
+    printf("Target user: %s (ID: %d)\n", username, user_id);
+    printf("Created by: %s (Administrator)\n", requesting_user->username);
+    printf("File permissions: Restricted (owner read/write only)\n");
+    printf("========================================\n\n");
     
     return 1; // Success
 }
