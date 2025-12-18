@@ -65,25 +65,13 @@ int manager_init(ManagerSystem *system) {
     }
     system->train_count = 0;
     
-    // Initialize sensor data with circular buffers
-    system->sensors.temp_buffer = (int*)malloc(sizeof(int) * SENSOR_BUFFER_SIZE);
-    system->sensors.humidity_buffer = (int*)malloc(sizeof(int) * SENSOR_BUFFER_SIZE);
-    if (system->sensors.temp_buffer == NULL || system->sensors.humidity_buffer == NULL) {
+    // Initialize sensor data with circular buffers (using default sizes)
+    if (!manager_init_sensor_data(&system->sensors, SENSOR_BUFFER_SIZE_DEFAULT, SENSOR_WINDOW_SIZE_DEFAULT)) {
         free(system->users);
         free(system->tracks);
         free(system->trains);
         return 0;
     }
-    system->sensors.temp_nelem = 0;
-    system->sensors.humidity_nelem = 0;
-    system->sensors.temp_head = 0;
-    system->sensors.temp_tail = 0;
-    system->sensors.humidity_head = 0;
-    system->sensors.humidity_tail = 0;
-    system->sensors.current_temp = 0;
-    system->sensors.current_humidity = 0;
-    strcpy(system->sensors.temp_unit, "Celsius");
-    strcpy(system->sensors.humidity_unit, "Percent");
     
     system->current_user = NULL;
     
@@ -96,8 +84,7 @@ void manager_cleanup(ManagerSystem *system) {
     if (system->users) free(system->users);
     if (system->tracks) free(system->tracks);
     if (system->trains) free(system->trains);
-    if (system->sensors.temp_buffer) free(system->sensors.temp_buffer);
-    if (system->sensors.humidity_buffer) free(system->sensors.humidity_buffer);
+    manager_cleanup_sensor_data(&system->sensors);
     
     memset(system, 0, sizeof(ManagerSystem));
 }
@@ -422,8 +409,77 @@ static int normalize_sensor_format(const char *str, char *normalized, int max_le
 }
 
 /**
+ * Initialize sensor data structure with circular buffers
+ * 
+ * @param sensors SensorData structure to initialize
+ * @param buffer_size Size of circular buffers (must be > 0)
+ * @param window_size Window size for Moving Median filter (must be > 0 and <= buffer_size)
+ * @return 1 on success, 0 on failure
+ */
+int manager_init_sensor_data(SensorData *sensors, int buffer_size, int window_size) {
+    if (sensors == NULL) return 0;
+    if (buffer_size <= 0 || window_size <= 0) return 0;
+    if (window_size > buffer_size) {
+        fprintf(stderr, "[Manager] WARNING: window_size (%d) > buffer_size (%d), using buffer_size\n", 
+                window_size, buffer_size);
+        window_size = buffer_size;
+    }
+    
+    // Allocate circular buffers
+    sensors->temp_buffer = (int*)malloc(sizeof(int) * buffer_size);
+    sensors->humidity_buffer = (int*)malloc(sizeof(int) * buffer_size);
+    
+    if (sensors->temp_buffer == NULL || sensors->humidity_buffer == NULL) {
+        if (sensors->temp_buffer) free(sensors->temp_buffer);
+        if (sensors->humidity_buffer) free(sensors->humidity_buffer);
+        return 0;
+    }
+    
+    // Initialize buffer state
+    sensors->buffer_size = buffer_size;
+    sensors->window_size = window_size;
+    sensors->temp_nelem = 0;
+    sensors->humidity_nelem = 0;
+    sensors->temp_head = 0;
+    sensors->temp_tail = 0;
+    sensors->humidity_head = 0;
+    sensors->humidity_tail = 0;
+    sensors->current_temp = 0;
+    sensors->current_humidity = 0;
+    strcpy(sensors->temp_unit, "Celsius");
+    strcpy(sensors->humidity_unit, "Percent");
+    
+    // Initialize buffers to zero
+    memset(sensors->temp_buffer, 0, sizeof(int) * buffer_size);
+    memset(sensors->humidity_buffer, 0, sizeof(int) * buffer_size);
+    
+    return 1;
+}
+
+/**
+ * Cleanup sensor data structure and free allocated memory
+ * 
+ * @param sensors SensorData structure to cleanup
+ */
+void manager_cleanup_sensor_data(SensorData *sensors) {
+    if (sensors == NULL) return;
+    
+    if (sensors->temp_buffer) {
+        free(sensors->temp_buffer);
+        sensors->temp_buffer = NULL;
+    }
+    if (sensors->humidity_buffer) {
+        free(sensors->humidity_buffer);
+        sensors->humidity_buffer = NULL;
+    }
+    
+    memset(sensors, 0, sizeof(SensorData));
+}
+
+/**
  * Extract data from sensor string using Assembly function extract_data
  * Handles format normalization (converts "::" to ":" for compatibility)
+ * Stores RAW readings in circular buffers for Moving Median filtering
  */
 int manager_extract_data(const char *str, SensorData *sensors) {
     if (str == NULL || sensors == NULL) return 0;
@@ -442,8 +498,9 @@ int manager_extract_data(const char *str, SensorData *sensors) {
     // Extract TEMP data using Assembly function extract_data
     strcpy(token, "TEMP");
     if (extract_data(normalized, token, unit, &value)) {
-        // Enqueue temperature value using Assembly function enqueue_value
-        enqueue_value(sensors->temp_buffer, SENSOR_BUFFER_SIZE,
+        // Enqueue RAW temperature value into circular buffer using Assembly function enqueue_value
+        // This stores the raw reading for Moving Median filtering
+        enqueue_value(sensors->temp_buffer, sensors->buffer_size,
                      &sensors->temp_nelem, &sensors->temp_head, &sensors->temp_tail, value);
         strncpy(sensors->temp_unit, unit, sizeof(sensors->temp_unit) - 1);
         sensors->temp_unit[sizeof(sensors->temp_unit) - 1] = '\0';
@@ -452,8 +509,9 @@ int manager_extract_data(const char *str, SensorData *sensors) {
     // Extract HUM data
     strcpy(token, "HUM");
     if (extract_data(normalized, token, unit, &value)) {
-        // Enqueue humidity value using Assembly function
-        enqueue_value(sensors->humidity_buffer, SENSOR_BUFFER_SIZE,
+        // Enqueue RAW humidity value into circular buffer using Assembly function
+        // This stores the raw reading for Moving Median filtering
+        enqueue_value(sensors->humidity_buffer, sensors->buffer_size,
                      &sensors->humidity_nelem, &sensors->humidity_head, &sensors->humidity_tail, value);
         strncpy(sensors->humidity_unit, unit, sizeof(sensors->humidity_unit) - 1);
         sensors->humidity_unit[sizeof(sensors->humidity_unit) - 1] = '\0';
@@ -463,45 +521,85 @@ int manager_extract_data(const char *str, SensorData *sensors) {
 }
 
 /**
- * Update sensors data using Moving Median 2 filter
+ * Update sensors data using Moving Median filter
+ * 
+ * This function applies Moving Median filter independently to temperature and humidity:
+ * 1. Extracts last N readings from circular buffer (where N = window_size)
+ * 2. Sorts the values using Assembly function sort_array
+ * 3. Calculates median using Assembly function median
+ * 4. Stores filtered value in current_temp/current_humidity
+ * 
+ * The filter reduces noise and errors in sensor readings by selecting the median
+ * value from a sliding window of recent readings.
+ * 
  * Uses Assembly functions: move_n_to_array, sort_array, median
+ * 
+ * @param sensors SensorData structure with circular buffers
+ * @return 1 on success, 0 on failure
  */
 int manager_update_sensors_data(SensorData *sensors) {
     if (sensors == NULL) return 0;
+    if (sensors->temp_buffer == NULL || sensors->humidity_buffer == NULL) return 0;
     
-    int temp_array[SENSOR_BUFFER_SIZE];
-    int humidity_array[SENSOR_BUFFER_SIZE];
+    // Determine actual window size (use minimum of window_size and available elements)
+    int temp_window = (sensors->temp_nelem < sensors->window_size) ? 
+                       sensors->temp_nelem : sensors->window_size;
+    int humidity_window = (sensors->humidity_nelem < sensors->window_size) ? 
+                           sensors->humidity_nelem : sensors->window_size;
+    
+    // Allocate arrays for median calculation (size = window_size)
+    int *temp_array = (int*)malloc(sizeof(int) * sensors->window_size);
+    int *humidity_array = (int*)malloc(sizeof(int) * sensors->window_size);
+    
+    if (temp_array == NULL || humidity_array == NULL) {
+        if (temp_array) free(temp_array);
+        if (humidity_array) free(humidity_array);
+        return 0;
+    }
+    
     int temp_median, humidity_median;
     
-    // Move temperature values to array using Assembly function move_n_to_array
-    if (sensors->temp_nelem > 0) {
-        move_n_to_array(sensors->temp_buffer, SENSOR_BUFFER_SIZE,
-                       &sensors->temp_nelem, &sensors->temp_tail, &sensors->temp_head,
-                       sensors->temp_nelem, temp_array);
-        
-        // Sort array using Assembly function (ascending order)
-        sort_array(temp_array, sensors->temp_nelem, 1);
-        
-        // Get median using Assembly function
-        if (median(temp_array, sensors->temp_nelem, &temp_median)) {
-            sensors->current_temp = temp_median;
+    // ========== TEMPERATURE FILTERING (Independent) ==========
+    if (temp_window > 0) {
+        // Move last N temperature values from circular buffer to array
+        // Using Assembly function move_n_to_array
+        if (move_n_to_array(sensors->temp_buffer, sensors->buffer_size,
+                           &sensors->temp_nelem, &sensors->temp_tail, &sensors->temp_head,
+                           temp_window, temp_array)) {
+            
+            // Sort array in ascending order using Assembly function sort_array
+            // order = 1 means ascending order
+            sort_array(temp_array, temp_window, 1);
+            
+            // Calculate median using Assembly function median
+            if (median(temp_array, temp_window, &temp_median)) {
+                sensors->current_temp = temp_median;
+            }
         }
     }
     
-    // Move humidity values to array using Assembly function
-    if (sensors->humidity_nelem > 0) {
-        move_n_to_array(sensors->humidity_buffer, SENSOR_BUFFER_SIZE,
-                       &sensors->humidity_nelem, &sensors->humidity_tail, &sensors->humidity_head,
-                       sensors->humidity_nelem, humidity_array);
-        
-        // Sort array using Assembly function (ascending order)
-        sort_array(humidity_array, sensors->humidity_nelem, 1);
-        
-        // Get median using Assembly function
-        if (median(humidity_array, sensors->humidity_nelem, &humidity_median)) {
-            sensors->current_humidity = humidity_median;
+    // ========== HUMIDITY FILTERING (Independent) ==========
+    if (humidity_window > 0) {
+        // Move last N humidity values from circular buffer to array
+        // Using Assembly function move_n_to_array
+        if (move_n_to_array(sensors->humidity_buffer, sensors->buffer_size,
+                           &sensors->humidity_nelem, &sensors->humidity_tail, &sensors->humidity_head,
+                           humidity_window, humidity_array)) {
+            
+            // Sort array in ascending order using Assembly function sort_array
+            // order = 1 means ascending order
+            sort_array(humidity_array, humidity_window, 1);
+            
+            // Calculate median using Assembly function median
+            if (median(humidity_array, humidity_window, &humidity_median)) {
+                sensors->current_humidity = humidity_median;
+            }
         }
     }
+    
+    // Free temporary arrays
+    free(temp_array);
+    free(humidity_array);
     
     return 1;
 }

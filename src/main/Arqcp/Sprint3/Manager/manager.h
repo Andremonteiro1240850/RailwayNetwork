@@ -65,20 +65,23 @@ typedef struct {
 } LogQueryResult;
 
 // Sensor data structure (for Moving Median 2 filter)
-#define SENSOR_BUFFER_SIZE 10
+#define SENSOR_BUFFER_SIZE_DEFAULT 10  // Default circular buffer size
+#define SENSOR_WINDOW_SIZE_DEFAULT 5  // Default window size for median calculation
 #define MAX_SENSOR_STR_LEN 200
 
 typedef struct {
-    int *temp_buffer;          // Circular buffer for temperature values
-    int *humidity_buffer;      // Circular buffer for humidity values
+    int *temp_buffer;          // Circular buffer for temperature values (dynamically allocated)
+    int *humidity_buffer;      // Circular buffer for humidity values (dynamically allocated)
+    int buffer_size;           // Size of circular buffers (configurable, default: SENSOR_BUFFER_SIZE_DEFAULT)
+    int window_size;           // Window size for Moving Median filter (configurable, default: SENSOR_WINDOW_SIZE_DEFAULT)
     int temp_nelem;            // Number of elements in temp buffer
     int humidity_nelem;        // Number of elements in humidity buffer
-    int temp_head;             // Head pointer for temp buffer
-    int temp_tail;             // Tail pointer for temp buffer
-    int humidity_head;         // Head pointer for humidity buffer
-    int humidity_tail;         // Tail pointer for humidity buffer
-    int current_temp;           // Current filtered temperature
-    int current_humidity;       // Current filtered humidity
+    int temp_head;             // Head pointer for temp buffer (circular queue)
+    int temp_tail;             // Tail pointer for temp buffer (circular queue)
+    int humidity_head;         // Head pointer for humidity buffer (circular queue)
+    int humidity_tail;         // Tail pointer for humidity buffer (circular queue)
+    int current_temp;           // Current filtered temperature (median value)
+    int current_humidity;       // Current filtered humidity (median value)
     char temp_unit[10];        // Temperature unit (e.g., "Celsius")
     char humidity_unit[10];    // Humidity unit (e.g., "Percent")
 } SensorData;
@@ -114,6 +117,8 @@ int manager_send_cmd_to_sensors(const char *cmd);
 char* manager_wait_for_data_from_sensors(void);
 int manager_extract_data(const char *str, SensorData *sensors);
 int manager_update_sensors_data(SensorData *sensors);
+int manager_init_sensor_data(SensorData *sensors, int buffer_size, int window_size);
+void manager_cleanup_sensor_data(SensorData *sensors);
 char* manager_wait_for_instructions_from_ui(void);
 int manager_process_instruction(ManagerSystem *system, const char *inst, char **data_out, char **cmd_out);
 int manager_send_data_to_board(const char *data);
