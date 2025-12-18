@@ -383,6 +383,35 @@ char* manager_wait_for_data_from_sensors(void) {
 }
 
 /**
+ * Validate sensor response string format
+ * Checks for basic structure: TEMP&...&value::XX#HUM&...&value::YY
+ * 
+ * @param str Input string to validate
+ * @return 1 if format appears valid, 0 otherwise
+ */
+static int validate_sensor_format(const char *str) {
+    if (str == NULL) return 0;
+    
+    // Check minimum length
+    if (strlen(str) < 20) return 0; // Minimum reasonable length
+    
+    // Check for required tokens
+    if (strstr(str, "TEMP") == NULL) return 0;
+    if (strstr(str, "HUM") == NULL) return 0;
+    if (strstr(str, "unit::") == NULL) return 0;
+    if (strstr(str, "value::") == NULL) return 0;
+    if (strstr(str, "#") == NULL) return 0; // Separator between TEMP and HUM
+    
+    // Check for proper structure: TEMP&...&value::...#HUM&...&value::...
+    const char *temp_start = strstr(str, "TEMP");
+    const char *hum_start = strstr(str, "HUM");
+    if (temp_start == NULL || hum_start == NULL) return 0;
+    if (hum_start <= temp_start) return 0; // HUM should come after TEMP
+    
+    return 1;
+}
+
+/**
  * Normalize sensor string format (convert "::" to ":" for extract_data compatibility)
  * The specification uses "unit::celsius&value::XX" but extract_data expects "unit:celsius&value:XX"
  * 
@@ -393,6 +422,12 @@ char* manager_wait_for_data_from_sensors(void) {
  */
 static int normalize_sensor_format(const char *str, char *normalized, int max_len) {
     if (str == NULL || normalized == NULL || max_len <= 0) return 0;
+    
+    int str_len = strlen(str);
+    if (str_len >= max_len) {
+        fprintf(stderr, "[Manager] ERROR: Input string too long (%d >= %d)\n", str_len, max_len);
+        return 0;
+    }
     
     int i = 0, j = 0;
     while (str[i] != '\0' && j < max_len - 1) {
@@ -477,14 +512,54 @@ void manager_cleanup_sensor_data(SensorData *sensors) {
 }
 
 /**
- * Extract data from sensor string using Assembly function extract_data
- * Handles format normalization (converts "::" to ":" for compatibility)
- * Stores RAW readings in circular buffers for Moving Median filtering
+ * Parse formatted sensor response string and extract temperature/humidity values
+ * 
+ * Parses string format: TEMP&unit::celsius&value::XX#HUM&unit::percentage&value::YY
+ * 
+ * Process:
+ * 1. Validates input string format
+ * 2. Normalizes format (converts "::" to ":" for extract_data compatibility)
+ * 3. Uses extract_data Assembly function to extract TEMP and HUM values
+ * 4. Validates extracted values
+ * 5. Stores RAW readings in circular buffers for Moving Median filtering
+ * 
+ * Error handling:
+ * - Validates string format before parsing
+ * - Checks for NULL pointers
+ * - Validates value ranges (temperature: -50 to 60°C, humidity: 0-100%)
+ * - Handles malformed response strings gracefully
+ * 
+ * @param str Input string in format: TEMP&unit::celsius&value::XX#HUM&unit::percentage&value::YY
+ * @param sensors SensorData structure to store extracted values
+ * @return 1 on success, 0 on failure (with error messages to stderr)
  */
 int manager_extract_data(const char *str, SensorData *sensors) {
-    if (str == NULL || sensors == NULL) return 0;
+    // Error handling: Validate input parameters
+    if (str == NULL) {
+        fprintf(stderr, "[Manager] ERROR: Cannot parse NULL sensor string\n");
+        return 0;
+    }
+    
+    if (sensors == NULL) {
+        fprintf(stderr, "[Manager] ERROR: Cannot parse to NULL SensorData structure\n");
+        return 0;
+    }
+    
+    if (sensors->temp_buffer == NULL || sensors->humidity_buffer == NULL) {
+        fprintf(stderr, "[Manager] ERROR: Sensor buffers not initialized\n");
+        return 0;
+    }
+    
+    // Error handling: Validate string format before parsing
+    if (!validate_sensor_format(str)) {
+        fprintf(stderr, "[Manager] ERROR: Malformed sensor response string\n");
+        fprintf(stderr, "[Manager] Expected format: TEMP&unit::celsius&value::XX#HUM&unit::percentage&value::YY\n");
+        fprintf(stderr, "[Manager] Received: %s\n", str);
+        return 0;
+    }
     
     // Normalize format: convert "::" to ":" for extract_data compatibility
+    // The specification uses "unit::celsius&value::XX" but extract_data expects "unit:celsius&value:XX"
     char normalized[MAX_SENSOR_STR_LEN];
     if (!normalize_sensor_format(str, normalized, MAX_SENSOR_STR_LEN)) {
         fprintf(stderr, "[Manager] ERROR: Failed to normalize sensor format\n");
@@ -494,27 +569,60 @@ int manager_extract_data(const char *str, SensorData *sensors) {
     char token[10];
     char unit[20];
     int value;
+    int parse_success = 0;
     
     // Extract TEMP data using Assembly function extract_data
     strcpy(token, "TEMP");
     if (extract_data(normalized, token, unit, &value)) {
+        // Error handling: Validate temperature value range
+        if (value < -50 || value > 60) {
+            fprintf(stderr, "[Manager] WARNING: Temperature value out of range: %d°C (expected -50 to 60)\n", value);
+            // Continue anyway - might be valid in extreme conditions
+        }
+        
         // Enqueue RAW temperature value into circular buffer using Assembly function enqueue_value
         // This stores the raw reading for Moving Median filtering
-        enqueue_value(sensors->temp_buffer, sensors->buffer_size,
-                     &sensors->temp_nelem, &sensors->temp_head, &sensors->temp_tail, value);
-        strncpy(sensors->temp_unit, unit, sizeof(sensors->temp_unit) - 1);
-        sensors->temp_unit[sizeof(sensors->temp_unit) - 1] = '\0';
+        if (enqueue_value(sensors->temp_buffer, sensors->buffer_size,
+                         &sensors->temp_nelem, &sensors->temp_head, &sensors->temp_tail, value)) {
+            strncpy(sensors->temp_unit, unit, sizeof(sensors->temp_unit) - 1);
+            sensors->temp_unit[sizeof(sensors->temp_unit) - 1] = '\0';
+            parse_success = 1;
+        } else {
+            fprintf(stderr, "[Manager] ERROR: Failed to enqueue temperature value (buffer full?)\n");
+        }
+    } else {
+        fprintf(stderr, "[Manager] ERROR: Failed to extract TEMP data from sensor string\n");
     }
     
-    // Extract HUM data
+    // Extract HUM data using Assembly function extract_data
     strcpy(token, "HUM");
     if (extract_data(normalized, token, unit, &value)) {
+        // Error handling: Validate humidity value range
+        if (value < 0 || value > 100) {
+            fprintf(stderr, "[Manager] WARNING: Humidity value out of range: %d%% (expected 0-100)\n", value);
+            // Clamp value to valid range
+            if (value < 0) value = 0;
+            if (value > 100) value = 100;
+        }
+        
         // Enqueue RAW humidity value into circular buffer using Assembly function
         // This stores the raw reading for Moving Median filtering
-        enqueue_value(sensors->humidity_buffer, sensors->buffer_size,
-                     &sensors->humidity_nelem, &sensors->humidity_head, &sensors->humidity_tail, value);
-        strncpy(sensors->humidity_unit, unit, sizeof(sensors->humidity_unit) - 1);
-        sensors->humidity_unit[sizeof(sensors->humidity_unit) - 1] = '\0';
+        if (enqueue_value(sensors->humidity_buffer, sensors->buffer_size,
+                         &sensors->humidity_nelem, &sensors->humidity_head, &sensors->humidity_tail, value)) {
+            strncpy(sensors->humidity_unit, unit, sizeof(sensors->humidity_unit) - 1);
+            sensors->humidity_unit[sizeof(sensors->humidity_unit) - 1] = '\0';
+            parse_success = 1;
+        } else {
+            fprintf(stderr, "[Manager] ERROR: Failed to enqueue humidity value (buffer full?)\n");
+        }
+    } else {
+        fprintf(stderr, "[Manager] ERROR: Failed to extract HUM data from sensor string\n");
+    }
+    
+    // Return success only if at least one value was extracted
+    if (!parse_success) {
+        fprintf(stderr, "[Manager] ERROR: Failed to extract any sensor data from string\n");
+        return 0;
     }
     
     return 1;
