@@ -1,233 +1,179 @@
-#include "LightSigns.h"
-#include <string.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <time.h>
+#include "DHT.h"
 
-// Para compatibilidade com Arduino/Pico
-#ifdef ARDUINO
-#include <Arduino.h>
-#else
-// Funções simuladas para ambiente não-Arduino
-#define LOW 0
-#define HIGH 1
-#define INPUT 0
-#define OUTPUT 1
+// --- Configuração de Hardware ---
+#define DHTPIN 28
+#define DHTTYPE DHT11
 
-unsigned long millis(void) {
-    return (unsigned long)clock() * 1000 / CLOCKS_PER_SEC;
-}
+// Configuração das Linhas (Tracks)
+#define NUM_TRACKS 2
 
-void pinMode(int pin, int mode) {
-    printf("pinMode(%d, %d)\n", pin, mode);
-}
+// Matriz de Pinos: [IndiceLinha][IndiceCor] -> 0=Vermelho, 1=Amarelo, 2=Verde
+// Linha 1 (Índice 0): GP15, GP14, GP13
+// Linha 2 (Índice 1): GP16, GP17, GP18
+const int TRACK_PINS[NUM_TRACKS][3] = {
+  {15, 14, 13},
+  {16, 17, 18}
+};
 
-void digitalWrite(int pin, int value) {
-    printf("digitalWrite(%d, %d)\n", pin, value);
-}
+// Índices de Cores
+#define RED 0
+#define YELLOW 1
+#define GREEN 2
 
-int digitalRead(int pin) {
-    return LOW;
-}
-#endif
+// --- Estado do Sistema ---
+// Configuração da Mediana Móvel
+#define WINDOW_SIZE 5
+float tempHistory[WINDOW_SIZE] = {0};
+float humHistory[WINDOW_SIZE] = {0};
+int historyIndex = 0;
+bool bufferFull = false;
 
-// Função auxiliar: limpar todos LEDs de um trilho
-static void clear_all_leds(LightSignsSystem* system, int trackIdx) {
-    if (trackIdx < 0 || trackIdx >= system->numTracksConfigured) return;
+// Gestão do Estado de Piscar (Blink)
+bool isBlinking[NUM_TRACKS] = {false, false};
+unsigned long lastBlinkTime = 0;
+bool blinkState = false;
 
-    TrackPins* pins = &system->pinConfig[trackIdx];
-
-    // Desliga fisicamente
-    digitalWrite(pins->redPin, LOW);
-    digitalWrite(pins->yellowPin, LOW);
-    digitalWrite(pins->greenPin, LOW);
-
-    // Atualiza estado na struct
-    system->tracks[trackIdx].redState = LED_OFF;
-    system->tracks[trackIdx].yellowState = LED_OFF;
-    system->tracks[trackIdx].greenState = LED_OFF;
-}
-
-// Função auxiliar: analisar comando no formato "CMD,xx"
-static int parse_command(const char* cmd, int* trackNum) {
-    char commandStr[10];
-
-    // Formato esperado: "CMD,xx" onde xx são 2 dígitos
-    if (sscanf(cmd, "%3[^,],%d", commandStr, trackNum) != 2) {
-        return -1; // Formato inválido
-    }
-
-    // Verificar se trackNum tem 2 dígitos (01-99)
-    if (*trackNum < 1 || *trackNum > 99) {
-        return -1;
-    }
-
-    // Identificar comando
-    if (strcmp(commandStr, "RE") == 0) return CMD_RE;
-    if (strcmp(commandStr, "YE") == 0) return CMD_YE;
-    if (strcmp(commandStr, "GE") == 0) return CMD_GE;
-    if (strcmp(commandStr, "RB") == 0) return CMD_RB;
-
-    return -1; // Comando desconhecido
-}
-
-// Inicialização do sistema
-void lightsigns_init(LightSignsSystem* system) {
-    if (system == NULL) return;
-
-    // Inicializar struct
-    system->numTracksConfigured = 2;
-    system->lastBlinkTime = 0;
-    system->initialized = 0;
-
-    // Configuração dos pinos
-    // Trilho 1: Pinos 2, 3, 4
-    system->pinConfig[0].redPin = 2;
-    system->pinConfig[0].yellowPin = 3;
-    system->pinConfig[0].greenPin = 4;
-
-    // Trilho 2: Pinos 5, 6, 7
-    system->pinConfig[1].redPin = 5;
-    system->pinConfig[1].yellowPin = 6;
-    system->pinConfig[1].greenPin = 7;
-
-    // Inicializar todos os trilhos
-    for (int i = 0; i < system->numTracksConfigured; i++) {
-        system->tracks[i].trackNumber = i + 1;
-        system->tracks[i].redState = LED_OFF;
-        system->tracks[i].yellowState = LED_OFF;
-        system->tracks[i].greenState = LED_OFF;
-
-        // Configurar pinos como OUTPUT
-        pinMode(system->pinConfig[i].redPin, OUTPUT);
-        pinMode(system->pinConfig[i].yellowPin, OUTPUT);
-        pinMode(system->pinConfig[i].greenPin, OUTPUT);
-
-        // Inicialmente todos desligados
-        digitalWrite(system->pinConfig[i].redPin, LOW);
-        digitalWrite(system->pinConfig[i].yellowPin, LOW);
-        digitalWrite(system->pinConfig[i].greenPin, LOW);
-    }
-
-    system->initialized = 1;
-    printf("LightSigns System Ready\n");
-    printf("Format: CMD,NN (RE/YE/GE/RB, 01-99)\n");
-}
-
-// Processar comando recebido
-void lightsigns_process_command(LightSignsSystem* system, const char* cmd) {
-    if (system == NULL || !system->initialized) {
-        printf("Error: System not initialized\n");
-        return;
-    }
-
-    int command;
-    int trackNum;
-
-    command = parse_command(cmd, &trackNum);
-
-    if (command == -1) {
-        printf("Error: Invalid command format: %s\n", cmd);
-        printf("Expected: CMD,NN (e.g., RE,01)\n");
-        return;
-    }
-
-    int trackIdx = trackNum - 1; // Converter para índice 0-based
-
-    if (trackIdx < 0 || trackIdx >= system->numTracksConfigured) {
-        printf("Error: Track %d not configured\n", trackNum);
-        return;
-    }
-
-    // 1. Primeiro apaga todos LEDs deste trilho
-    clear_all_leds(system, trackIdx);
-
-    // 2. Acende o LED correspondente
-    TrackPins* pins = &system->pinConfig[trackIdx];
-
-    switch(command) {
-        case CMD_RE: // Vermelho fixo
-            digitalWrite(pins->redPin, HIGH);
-            system->tracks[trackIdx].redState = LED_ON;
-            printf("Track %d: Red ON (Busy)\n", trackNum);
-            break;
-
-        case CMD_YE: // Amarelo fixo
-            digitalWrite(pins->yellowPin, HIGH);
-            system->tracks[trackIdx].yellowState = LED_ON;
-            printf("Track %d: Yellow ON (Assigned)\n", trackNum);
-            break;
-
-        case CMD_GE: // Verde fixo
-            digitalWrite(pins->greenPin, HIGH);
-            system->tracks[trackIdx].greenState = LED_ON;
-            printf("Track %d: Green ON (Free)\n", trackNum);
-            break;
-
-        case CMD_RB: // Vermelho piscando
-            system->tracks[trackIdx].redState = LED_BLINKING;
-            printf("Track %d: Red BLINKING (Inoperative)\n", trackNum);
-            break;
-
-        default:
-            printf("Error: Unknown command for track %d\n", trackNum);
-            break;
-    }
-}
-
-// Atualizar estados (para blinking)
-void lightsigns_update(LightSignsSystem* system) {
-    if (system == NULL || !system->initialized) return;
-
-    unsigned long currentTime = millis();
-
-    // Verifica se passaram 500ms desde o último blink
-    if (currentTime - system->lastBlinkTime >= 500) {
-        system->lastBlinkTime = currentTime;
-
-        // Percorre todos os trilhos configurados
-        for (int i = 0; i < system->numTracksConfigured; i++) {
-            if (system->tracks[i].redState == LED_BLINKING) {
-                // Alterna estado do LED vermelho
-                int currentState = digitalRead(system->pinConfig[i].redPin);
-                digitalWrite(system->pinConfig[i].redPin, !currentState);
-            }
-        }
-    }
-}
-
-// Função para uso no Arduino/Pico
-#ifdef ARDUINO
-LightSignsSystem lightsys;
+DHT dht(DHTPIN, DHTTYPE);
 
 void setup() {
-    // Alocação estática da struct
-    lightsigns_init(&lightsys);
+  Serial.begin(9600);
+  dht.begin();
+
+  // Inicializar todos os pinos das linhas como SAÍDA e desligados (LOW)
+  for (int i = 0; i < NUM_TRACKS; i++) {
+    for (int color = 0; color < 3; color++) {
+      pinMode(TRACK_PINS[i][color], OUTPUT);
+      digitalWrite(TRACK_PINS[i][color], LOW);
+    }
+  }
 }
 
 void loop() {
-    // Verificar comandos na serial
-    if (Serial.available() > 0) {
-        char buffer[20];
-        int index = 0;
+  // 1. Ler Sensores periodicamente (a cada 2 segundos)
+  static unsigned long lastSensorRead = 0;
+  if (millis() - lastSensorRead > 2000) {
+    updateSensors();
+    lastSensorRead = millis();
+  }
 
-        // Ler até newline ou buffer cheio
-        while (Serial.available() > 0 && index < sizeof(buffer)-1) {
-            char c = Serial.read();
-            if (c == '\n' || c == '\r') break;
-            buffer[index++] = c;
-        }
-        buffer[index] = '\0';
+  // 2. Processar Comandos via Série
+  if (Serial.available() > 0) {
+    String cmd = Serial.readStringUntil('\n');
+    cmd.trim();
+    processCommand(cmd);
+  }
 
-        // Processar se não estiver vazio
-        if (strlen(buffer) > 0) {
-            lightsigns_process_command(&lightsys, buffer);
-        }
+  // 3. Gerir Lógica de Piscar
+  if (millis() - lastBlinkTime > 500) { // Alternar a cada 500ms
+    blinkState = !blinkState;
+    lastBlinkTime = millis();
+
+    for (int i = 0; i < NUM_TRACKS; i++) {
+      if (isBlinking[i]) {
+        digitalWrite(TRACK_PINS[i][RED], blinkState);
+      }
+    }
+  }
+}
+
+// --- Funções Auxiliares ---
+
+void updateSensors() {
+  float t = dht.readTemperature();
+  float h = dht.readHumidity();
+
+  // Verificar falha de leitura
+  if (isnan(t) || isnan(h)) {
+    // Tratamento de erro (opcional: sinalizar erro via LED específico)
+  }
+  else {
+    // Atualizar buffer circular
+    tempHistory[historyIndex] = t;
+    humHistory[historyIndex] = h;
+    historyIndex = (historyIndex + 1) % WINDOW_SIZE;
+    if (historyIndex == 0) bufferFull = true;
+  }
+}
+
+float calculateMedian(float* arr, int n) {
+  float sorted[n];
+  // Copiar array para evitar modificar o buffer original
+  for(int i=0; i<n; i++) sorted[i] = arr[i];
+
+  // Ordenação Simples (Bubble Sort)
+  for(int i=0; i<n-1; i++) {
+    for(int j=0; j<n-i-1; j++) {
+      if(sorted[j] > sorted[j+1]) {
+        float temp = sorted[j];
+        sorted[j] = sorted[j+1];
+        sorted[j+1] = temp;
+      }
+    }
+  }
+  return sorted[n/2];
+}
+
+void setTrackLight(int trackIndex, int colorCode) {
+  // Validar limites do índice
+  if (trackIndex < 0 || trackIndex >= NUM_TRACKS) return;
+
+  // 1. Resetar estado de piscar para esta linha
+  isBlinking[trackIndex] = false;
+
+  // 2. Desligar todos os LEDs desta linha (Garantir exclusividade)
+  digitalWrite(TRACK_PINS[trackIndex][RED], LOW);
+  digitalWrite(TRACK_PINS[trackIndex][YELLOW], LOW);
+  digitalWrite(TRACK_PINS[trackIndex][GREEN], LOW);
+
+  // 3. Ligar o LED requisitado
+  if (colorCode >= 0 && colorCode <= 2) {
+    digitalWrite(TRACK_PINS[trackIndex][colorCode], HIGH);
+  }
+  // 4. Tratar estado Vermelho a Piscar (Código 3)
+  else if (colorCode == 3) {
+    isBlinking[trackIndex] = true;
+  }
+}
+
+void processCommand(String command) {
+  // --- Comando GTH (Obter Temp & Humidade) ---
+  if (command.equals("GTH")) {
+    int count = bufferFull ? WINDOW_SIZE : historyIndex;
+
+    // Tratar caso de buffer vazio
+    if (count == 0) {
+      Serial.println("TEMP&unit:celsius&value:0#HUM&unit:percentage&value:0");
+      return;
     }
 
-    // Atualizar estados (blinking)
-    lightsigns_update(&lightsys);
+    // Calcular valores da Mediana
+    float mTemp = calculateMedian(tempHistory, count);
+    float mHum = calculateMedian(humHistory, count);
 
-    delay(10); // Pequena pausa
+    // Enviar resposta formatada
+    Serial.print("TEMP&unit:celsius&value:"); Serial.print((int)mTemp);
+    Serial.print("#HUM&unit:percentage&value:"); Serial.println((int)mHum);
+    return;
+  }
+
+  // --- Comandos de Linha (RE,x | YE,x | GE,x | RB,x) ---
+  // Formato esperado: "CMD, x" onde x é o número da linha
+
+  int commaIndex = command.indexOf(',');
+  if (commaIndex == -1) return; // Formato inválido
+
+  String type = command.substring(0, commaIndex);
+  String trackStr = command.substring(commaIndex + 1);
+  int trackNum = trackStr.toInt();
+
+  // Converter número da linha (base 1) para índice (base 0)
+  int trackIndex = trackNum - 1;
+
+  // Executar comando se o índice da linha for válido
+  if (trackIndex >= 0 && trackIndex < NUM_TRACKS) {
+    if (type.equals("RE"))      setTrackLight(trackIndex, RED);
+    else if (type.equals("YE")) setTrackLight(trackIndex, YELLOW);
+    else if (type.equals("GE")) setTrackLight(trackIndex, GREEN);
+    else if (type.equals("RB")) setTrackLight(trackIndex, 3); // 3 = Código de Piscar
+  }
 }
-#endif
