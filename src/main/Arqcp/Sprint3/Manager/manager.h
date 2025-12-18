@@ -106,6 +106,10 @@ typedef struct {
 int manager_init(ManagerSystem *system);
 void manager_cleanup(ManagerSystem *system);
 User* manager_login(ManagerSystem *system, const char *username, const char *password);
+
+// Serial communication functions
+int manager_init_serial(const char *port);
+void manager_close_serial(void);
 int manager_send_cmd_to_sensors(const char *cmd);
 char* manager_wait_for_data_from_sensors(void);
 int manager_extract_data(const char *str, SensorData *sensors);

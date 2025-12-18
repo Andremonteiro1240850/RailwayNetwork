@@ -9,11 +9,14 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <errno.h>
+#include <unistd.h>
+#include <fcntl.h>
 #ifdef _WIN32
 #include <io.h>
 #define chmod _chmod
 #else
 #include <sys/stat.h>
+#include <termios.h>
 #endif
 
 #define INITIAL_CAPACITY 10
@@ -21,6 +24,16 @@
 #define MAX_INSTRUCTION_LEN 100
 #define MAX_DATA_LEN 500
 #define MAX_CMD_LEN 10
+
+// Serial communication constants
+#define SERIAL_PORT_DEFAULT "/dev/ttyUSB0"  // Default serial port (Linux)
+#define SERIAL_BAUD_RATE 9600
+#define SERIAL_TIMEOUT_SEC 1
+#define SERIAL_READ_TIMEOUT_MS 1000
+
+// Global serial port file descriptor (-1 = not open)
+static int g_serial_fd = -1;
+static char g_serial_port[256] = SERIAL_PORT_DEFAULT;
 
 // ==================== SYSTEM INITIALIZATION ====================
 
@@ -126,36 +139,301 @@ User* manager_login(ManagerSystem *system, const char *username, const char *pas
 }
 
 /**
- * Send command to sensors component
+ * Initialize serial communication with Sensors component
+ * 
+ * @param port Serial port path (e.g., "/dev/ttyUSB0" for Linux)
+ * @return 1 on success, 0 on failure
+ */
+int manager_init_serial(const char *port) {
+    if (port != NULL && strlen(port) > 0) {
+        strncpy(g_serial_port, port, sizeof(g_serial_port) - 1);
+        g_serial_port[sizeof(g_serial_port) - 1] = '\0';
+    }
+    
+    // Close existing connection if open
+    if (g_serial_fd >= 0) {
+        close(g_serial_fd);
+        g_serial_fd = -1;
+    }
+    
+#ifdef _WIN32
+    // Windows serial port handling (would use CreateFile, etc.)
+    // For now, use simulation mode on Windows
+    printf("[Manager] Serial communication initialized (simulation mode on Windows)\n");
+    printf("[Manager] Port: %s (simulated)\n", g_serial_port);
+    g_serial_fd = 0; // Mark as "open" in simulation mode
+    return 1;
+#else
+    // Linux serial port handling
+    g_serial_fd = open(g_serial_port, O_RDWR | O_NOCTTY | O_NDELAY);
+    if (g_serial_fd < 0) {
+        fprintf(stderr, "[Manager] ERROR: Failed to open serial port %s: %s\n", 
+                g_serial_port, strerror(errno));
+        return 0;
+    }
+    
+    // Configure serial port
+    struct termios options;
+    if (tcgetattr(g_serial_fd, &options) != 0) {
+        fprintf(stderr, "[Manager] ERROR: Failed to get serial port attributes: %s\n", 
+                strerror(errno));
+        close(g_serial_fd);
+        g_serial_fd = -1;
+        return 0;
+    }
+    
+    // Set baud rate
+    cfsetispeed(&options, B9600);
+    cfsetospeed(&options, B9600);
+    
+    // Configure port: 8N1 (8 data bits, no parity, 1 stop bit)
+    options.c_cflag &= ~PARENB;   // No parity
+    options.c_cflag &= ~CSTOPB;   // 1 stop bit
+    options.c_cflag &= ~CSIZE;    // Clear size bits
+    options.c_cflag |= CS8;       // 8 data bits
+    options.c_cflag |= (CLOCAL | CREAD); // Enable receiver, ignore modem control
+    
+    // Disable hardware flow control
+    options.c_cflag &= ~CRTSCTS;
+    
+    // Raw input mode
+    options.c_lflag &= ~(ICANON | ECHO | ECHOE | ISIG);
+    
+    // Disable software flow control
+    options.c_iflag &= ~(IXON | IXOFF | IXANY);
+    
+    // Raw output mode
+    options.c_oflag &= ~OPOST;
+    
+    // Set read timeout
+    options.c_cc[VMIN] = 0;
+    options.c_cc[VTIME] = 1; // 0.1 second timeout
+    
+    // Apply settings
+    if (tcsetattr(g_serial_fd, TCSANOW, &options) != 0) {
+        fprintf(stderr, "[Manager] ERROR: Failed to set serial port attributes: %s\n", 
+                strerror(errno));
+        close(g_serial_fd);
+        g_serial_fd = -1;
+        return 0;
+    }
+    
+    // Flush input/output buffers
+    tcflush(g_serial_fd, TCIOFLUSH);
+    
+    printf("[Manager] Serial communication initialized successfully\n");
+    printf("[Manager] Port: %s, Baud rate: %d\n", g_serial_port, SERIAL_BAUD_RATE);
+    return 1;
+#endif
+}
+
+/**
+ * Close serial communication
+ */
+void manager_close_serial(void) {
+    if (g_serial_fd >= 0) {
+#ifndef _WIN32
+        close(g_serial_fd);
+#endif
+        g_serial_fd = -1;
+        printf("[Manager] Serial communication closed\n");
+    }
+}
+
+/**
+ * Send command to sensors component via serial
+ * 
+ * @param cmd Command string to send (e.g., "GTH")
+ * @return 1 on success, 0 on failure
  */
 int manager_send_cmd_to_sensors(const char *cmd) {
-    // In real implementation, this would send via serial/communication
-    // For now, just validate and return success
-    if (cmd == NULL) return 0;
+    if (cmd == NULL) {
+        fprintf(stderr, "[Manager] ERROR: Cannot send NULL command\n");
+        return 0;
+    }
+    
+    // Check if serial port is open
+    if (g_serial_fd < 0) {
+        // Try to initialize serial communication
+        if (!manager_init_serial(NULL)) {
+            fprintf(stderr, "[Manager] ERROR: Serial communication not available\n");
+            return 0;
+        }
+    }
+    
+#ifdef _WIN32
+    // Windows simulation mode
     printf("[Manager->Sensors] Sending: %s\n", cmd);
+    return 1;
+#else
+    // Send command via serial port
+    int cmd_len = strlen(cmd);
+    ssize_t written = write(g_serial_fd, cmd, cmd_len);
+    
+    if (written < 0) {
+        fprintf(stderr, "[Manager] ERROR: Failed to write to serial port: %s\n", 
+                strerror(errno));
+        // Mark connection as failed
+        close(g_serial_fd);
+        g_serial_fd = -1;
+        return 0;
+    }
+    
+    if (written != cmd_len) {
+        fprintf(stderr, "[Manager] WARNING: Partial write to serial port (%zd/%d bytes)\n", 
+                written, cmd_len);
+    }
+    
+    // Send newline to terminate command
+    if (write(g_serial_fd, "\n", 1) < 0) {
+        fprintf(stderr, "[Manager] ERROR: Failed to send newline: %s\n", strerror(errno));
+        close(g_serial_fd);
+        g_serial_fd = -1;
+        return 0;
+    }
+    
+    // Flush output to ensure data is sent
+    fsync(g_serial_fd);
+    
+    printf("[Manager->Sensors] Sent: %s\n", cmd);
+    return 1;
+#endif
+}
+
+/**
+ * Wait for data from sensors component via serial
+ * Returns dynamically allocated string (caller must free)
+ * 
+ * @return Dynamically allocated string with sensor data, or NULL on error
+ */
+char* manager_wait_for_data_from_sensors(void) {
+    // Check if serial port is open
+    if (g_serial_fd < 0) {
+        fprintf(stderr, "[Manager] ERROR: Serial communication not initialized\n");
+        return NULL;
+    }
+    
+    // Allocate buffer for response
+    char *data = (char*)malloc(MAX_SENSOR_STR_LEN);
+    if (data == NULL) {
+        fprintf(stderr, "[Manager] ERROR: Memory allocation failed\n");
+        return NULL;
+    }
+    
+#ifdef _WIN32
+    // Windows simulation mode
+    // Simulated sensor data format: TEMP&unit::celsius&value::XX#HUM&unit::percentage&value::YY
+    snprintf(data, MAX_SENSOR_STR_LEN, "TEMP&unit::celsius&value::25#HUM&unit::percentage&value::65");
+    printf("[Manager<-Sensors] Received: %s\n", data);
+    return data;
+#else
+    // Read response from serial port with timeout
+    int bytes_read = 0;
+    char *buffer = data;
+    int remaining = MAX_SENSOR_STR_LEN - 1; // Reserve space for null terminator
+    time_t start_time = time(NULL);
+    
+    while (remaining > 0 && (time(NULL) - start_time) < SERIAL_TIMEOUT_SEC) {
+        ssize_t n = read(g_serial_fd, buffer, remaining);
+        
+        if (n < 0) {
+            if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                // No data available yet, continue waiting
+                usleep(10000); // Sleep 10ms
+                continue;
+            } else {
+                // Error reading
+                fprintf(stderr, "[Manager] ERROR: Failed to read from serial port: %s\n", 
+                        strerror(errno));
+                free(data);
+                close(g_serial_fd);
+                g_serial_fd = -1;
+                return NULL;
+            }
+        } else if (n == 0) {
+            // No data available, continue waiting
+            usleep(10000); // Sleep 10ms
+            continue;
+        } else {
+            // Data received
+            buffer += n;
+            bytes_read += n;
+            remaining -= n;
+            
+            // Check if we received a complete line (ends with \n or \r\n)
+            if (bytes_read > 0 && (data[bytes_read - 1] == '\n' || data[bytes_read - 1] == '\r')) {
+                break; // Complete line received
+            }
+        }
+    }
+    
+    // Check for timeout
+    if (bytes_read == 0) {
+        fprintf(stderr, "[Manager] ERROR: Timeout waiting for sensor response\n");
+        free(data);
+        return NULL;
+    }
+    
+    // Null terminate the string
+    data[bytes_read] = '\0';
+    
+    // Remove trailing newline/carriage return
+    while (bytes_read > 0 && (data[bytes_read - 1] == '\n' || data[bytes_read - 1] == '\r')) {
+        data[bytes_read - 1] = '\0';
+        bytes_read--;
+    }
+    
+    // Check if we got any data
+    if (strlen(data) == 0) {
+        fprintf(stderr, "[Manager] ERROR: Empty response from sensors\n");
+        free(data);
+        return NULL;
+    }
+    
+    printf("[Manager<-Sensors] Received: %s\n", data);
+    return data;
+#endif
+}
+
+/**
+ * Normalize sensor string format (convert "::" to ":" for extract_data compatibility)
+ * The specification uses "unit::celsius&value::XX" but extract_data expects "unit:celsius&value:XX"
+ * 
+ * @param str Input string (format: TEMP&unit::celsius&value::XX#HUM&unit::percentage&value::YY)
+ * @param normalized Output buffer (must be at least as large as input)
+ * @param max_len Maximum length of normalized buffer
+ * @return 1 on success, 0 on failure
+ */
+static int normalize_sensor_format(const char *str, char *normalized, int max_len) {
+    if (str == NULL || normalized == NULL || max_len <= 0) return 0;
+    
+    int i = 0, j = 0;
+    while (str[i] != '\0' && j < max_len - 1) {
+        // Convert "::" to ":"
+        if (str[i] == ':' && str[i + 1] == ':') {
+            normalized[j++] = ':';
+            i += 2; // Skip both colons
+        } else {
+            normalized[j++] = str[i++];
+        }
+    }
+    normalized[j] = '\0';
     return 1;
 }
 
 /**
- * Wait for data from sensors component
- * Returns dynamically allocated string (caller must free)
- */
-char* manager_wait_for_data_from_sensors(void) {
-    // In real implementation, this would read from serial/communication
-    // For simulation, return a sample string
-    char *data = (char*)malloc(MAX_SENSOR_STR_LEN);
-    if (data == NULL) return NULL;
-    
-    // Simulated sensor data format: TOKEN&unit:xxxxxxx&value:xx#TOKEN&unit:xxxxxxxx&value:xx
-    sprintf(data, "TEMP&unit:Celsius&value:25#HUM&unit:Percent&value:65");
-    return data;
-}
-
-/**
  * Extract data from sensor string using Assembly function extract_data
+ * Handles format normalization (converts "::" to ":" for compatibility)
  */
 int manager_extract_data(const char *str, SensorData *sensors) {
     if (str == NULL || sensors == NULL) return 0;
+    
+    // Normalize format: convert "::" to ":" for extract_data compatibility
+    char normalized[MAX_SENSOR_STR_LEN];
+    if (!normalize_sensor_format(str, normalized, MAX_SENSOR_STR_LEN)) {
+        fprintf(stderr, "[Manager] ERROR: Failed to normalize sensor format\n");
+        return 0;
+    }
     
     char token[10];
     char unit[20];
@@ -163,20 +441,22 @@ int manager_extract_data(const char *str, SensorData *sensors) {
     
     // Extract TEMP data using Assembly function extract_data
     strcpy(token, "TEMP");
-    if (extract_data(str, token, unit, &value)) {
+    if (extract_data(normalized, token, unit, &value)) {
         // Enqueue temperature value using Assembly function enqueue_value
         enqueue_value(sensors->temp_buffer, SENSOR_BUFFER_SIZE,
                      &sensors->temp_nelem, &sensors->temp_head, &sensors->temp_tail, value);
         strncpy(sensors->temp_unit, unit, sizeof(sensors->temp_unit) - 1);
+        sensors->temp_unit[sizeof(sensors->temp_unit) - 1] = '\0';
     }
     
     // Extract HUM data
     strcpy(token, "HUM");
-    if (extract_data(str, token, unit, &value)) {
+    if (extract_data(normalized, token, unit, &value)) {
         // Enqueue humidity value using Assembly function
         enqueue_value(sensors->humidity_buffer, SENSOR_BUFFER_SIZE,
                      &sensors->humidity_nelem, &sensors->humidity_head, &sensors->humidity_tail, value);
         strncpy(sensors->humidity_unit, unit, sizeof(sensors->humidity_unit) - 1);
+        sensors->humidity_unit[sizeof(sensors->humidity_unit) - 1] = '\0';
     }
     
     return 1;
