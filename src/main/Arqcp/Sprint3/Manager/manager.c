@@ -1360,67 +1360,149 @@ int write_user_actions_to_file(const User *requesting_user, const LogQueryResult
 
 /**
  * Main Manager algorithm as specified
+ * 
+ * CRITICAL: Manager MUST request sensor data BEFORE processing ANY user instruction.
+ * 
+ * Algorithm flow (per iteration):
+ * 1. send_cmd_to_sensors("GTH") - Request sensor data
+ * 2. wait_for_data_from_sensors() - Wait for response
+ * 3. extract_data() - Parse sensor response using Assembly function
+ * 4. update_sensors_data() - Apply Moving Median filter
+ * 5. wait_for_instructions_from_ui() - Get user instruction (ONLY after sensors updated)
+ * 6. process_instruction() - Process user command
+ * 7. send_data_to_board() - Display result
+ * 8. send_cmd_to_lightsigns() - Control lights
+ * 9. record_action() - Log user action
+ * 
+ * Timing and Synchronization:
+ * - Sensor polling happens BEFORE every user interaction
+ * - If sensor data fails, loop continues but does NOT process user instructions
+ * - This ensures sensor data is always up-to-date before processing commands
+ * 
+ * @param system Initialized ManagerSystem with logged-in user
+ * @return 1 on normal exit, 0 on error
  */
 int manager_main_loop(ManagerSystem *system) {
-    if (system == NULL || system->current_user == NULL) return 0;
+    if (system == NULL) {
+        fprintf(stderr, "[Manager] ERROR: System is NULL\n");
+        return 0;
+    }
+    
+    if (system->current_user == NULL) {
+        fprintf(stderr, "[Manager] ERROR: No user logged in\n");
+        return 0;
+    }
     
     char *sensor_str;
     char *instruction;
     char *data;
     char *cmd;
+    int iteration = 0;
+    
+    printf("\n========================================\n");
+    printf("Manager Main Loop Started\n");
+    printf("User: %s\n", system->current_user->username);
+    printf("Sensor polling enabled: ALWAYS before user instructions\n");
+    printf("========================================\n\n");
     
     while (1) {
-        // Step 3: send_cmd_to_sensors(cmd)
-        manager_send_cmd_to_sensors(SENSOR_CMD);
+        iteration++;
+        printf("\n--- Iteration %d ---\n", iteration);
         
-        // Step 4: str = wait_for_data_from_sensors()
-        sensor_str = manager_wait_for_data_from_sensors();
-        if (sensor_str == NULL) {
-            printf("Error: Failed to get sensor data\n");
+        // ========== SENSOR POLLING (ALWAYS FIRST) ==========
+        // Step 1: send_cmd_to_sensors("GTH")
+        // Manager MUST request sensor data BEFORE processing any user instruction
+        printf("[Manager] Step 1: Requesting sensor data...\n");
+        if (!manager_send_cmd_to_sensors(SENSOR_CMD)) {
+            fprintf(stderr, "[Manager] ERROR: Failed to send command to sensors\n");
+            fprintf(stderr, "[Manager] Skipping this iteration - will retry sensor polling\n");
+            // Continue loop to retry sensor polling (don't process user instructions)
             continue;
         }
         
-        // Step 5: extract_data(str, data) - using Assembly function
-        manager_extract_data(sensor_str, &system->sensors);
+        // Step 2: wait_for_data_from_sensors()
+        // Wait for sensor response with timeout
+        printf("[Manager] Step 2: Waiting for sensor response...\n");
+        sensor_str = manager_wait_for_data_from_sensors();
+        if (sensor_str == NULL) {
+            fprintf(stderr, "[Manager] ERROR: Failed to get sensor data (timeout or error)\n");
+            fprintf(stderr, "[Manager] Skipping this iteration - will retry sensor polling\n");
+            // Continue loop to retry sensor polling (don't process user instructions)
+            continue;
+        }
+        printf("[Manager] Sensor data received: %s\n", sensor_str);
+        
+        // Step 3: extract_data(str, sensors) - using Assembly function extract_data
+        // Parse sensor response and extract temperature/humidity values
+        printf("[Manager] Step 3: Extracting sensor data...\n");
+        if (!manager_extract_data(sensor_str, &system->sensors)) {
+            fprintf(stderr, "[Manager] ERROR: Failed to extract sensor data\n");
+            free(sensor_str);
+            fprintf(stderr, "[Manager] Skipping this iteration - will retry sensor polling\n");
+            // Continue loop to retry sensor polling (don't process user instructions)
+            continue;
+        }
         free(sensor_str);
         
-        // Step 6: update_sensors_data(data) - using Moving Median 2 filter
-        manager_update_sensors_data(&system->sensors);
+        // Step 4: update_sensors_data(sensors) - using Moving Median filter
+        // Apply Moving Median filter to reduce noise
+        printf("[Manager] Step 4: Applying Moving Median filter...\n");
+        if (!manager_update_sensors_data(&system->sensors)) {
+            fprintf(stderr, "[Manager] WARNING: Failed to update sensor data with filter\n");
+            // Continue anyway - we have raw data
+        } else {
+            printf("[Manager] Filtered values - Temp: %d°C, Hum: %d%%\n", 
+                   system->sensors.current_temp, system->sensors.current_humidity);
+        }
         
-        // Step 7: inst = wait_for_instructions_from_ui()
+        // ========== USER INSTRUCTION PROCESSING (ONLY AFTER SENSORS) ==========
+        // Step 5: wait_for_instructions_from_ui()
+        // ONLY request user instruction AFTER sensor data is updated
+        printf("[Manager] Step 5: Waiting for user instruction...\n");
         instruction = manager_wait_for_instructions_from_ui();
         if (instruction == NULL) {
-            printf("Error: Failed to get instruction\n");
+            fprintf(stderr, "[Manager] ERROR: Failed to get instruction from UI\n");
+            fprintf(stderr, "[Manager] Continuing loop - will poll sensors again\n");
             continue;
         }
         
         // Check for exit command
         if (strcmp(instruction, "exit") == 0 || strcmp(instruction, "quit") == 0) {
+            printf("[Manager] Exit command received. Shutting down...\n");
             free(instruction);
             break;
         }
         
-        // Step 8: {data, cmd} = process(inst)
+        // Step 6: process_instruction(inst) - Process user command
+        printf("[Manager] Step 6: Processing instruction: %s\n", instruction);
         if (manager_process_instruction(system, instruction, &data, &cmd)) {
-            // Step 9: send_data_to_board(data)
+            // Step 7: send_data_to_board(data) - Display result
+            printf("[Manager] Step 7: Sending data to Board...\n");
             manager_send_data_to_board(data);
             
-            // Step 10: send_cmd_to_lightsigns(cmd)
+            // Step 8: send_cmd_to_lightsigns(cmd) - Control lights
+            printf("[Manager] Step 8: Sending command to LightSigns...\n");
             manager_send_cmd_to_lightsigns(cmd);
             
-            // Step 11: record(user, inst)
+            // Step 9: record_action(user, inst) - Log user action
+            printf("[Manager] Step 9: Recording user action...\n");
             manager_record_action(system, instruction);
             
             free(data);
             free(cmd);
         } else {
-            printf("Error: Failed to process instruction\n");
+            printf("[Manager] Instruction processing failed or was invalid\n");
             if (data) free(data);
             if (cmd) free(cmd);
         }
         
         free(instruction);
     }
+    
+    printf("\n========================================\n");
+    printf("Manager Main Loop Ended\n");
+    printf("Total iterations: %d\n", iteration);
+    printf("========================================\n\n");
     
     return 1;
 }
