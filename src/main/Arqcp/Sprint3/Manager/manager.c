@@ -488,7 +488,7 @@ int manager_init_sensor_data(SensorData *sensors, int buffer_size, int window_si
     memset(sensors->temp_buffer, 0, sizeof(int) * buffer_size);
     memset(sensors->humidity_buffer, 0, sizeof(int) * buffer_size);
     
-    return 1;
+        return 1;
 }
 
 /**
@@ -721,13 +721,28 @@ char* manager_wait_for_instructions_from_ui(void) {
     char *instruction = (char*)malloc(MAX_INSTRUCTION_LEN);
     if (instruction == NULL) return NULL;
     
-    printf("Enter instruction: ");
+    printf("\nEnter instruction (or 'help' for commands, 'SENSORS' for sensor data): ");
     if (fgets(instruction, MAX_INSTRUCTION_LEN, stdin) != NULL) {
         // Remove newline
         size_t len = strlen(instruction);
         if (len > 0 && instruction[len-1] == '\n') {
             instruction[len-1] = '\0';
         }
+        
+        // Handle help command
+        if (strcmp(instruction, "help") == 0 || strcmp(instruction, "HELP") == 0) {
+            printf("\n=== AVAILABLE COMMANDS ===\n");
+            printf("SENSORS, TEMP, HUM - Display filtered sensor data (temperature & humidity)\n");
+            printf("GE[N] - Green LED for track N (default: track 1)\n");
+            printf("RE[N] - Red LED for track N (default: track 1)\n");
+            printf("YE[N] - Yellow LED for track N (default: track 1)\n");
+            printf("RB[N] - Red Blinking LED for track N (default: track 1)\n");
+            printf("exit, quit - Exit the system\n");
+            printf("==========================\n\n");
+            free(instruction);
+            return manager_wait_for_instructions_from_ui(); // Recursive call to get next instruction
+        }
+        
         return instruction;
     }
     
@@ -792,6 +807,24 @@ int manager_process_instruction(ManagerSystem *system, const char *inst, char **
             sprintf(*data_out, "Track %d: Red Blinking (Inoperative)", track_num);
         return 1;
         }
+    } else if (strcmp(inst, "SENSORS") == 0 || strcmp(inst, "sensors") == 0 || 
+               strcmp(inst, "TEMP") == 0 || strcmp(inst, "temp") == 0 ||
+               strcmp(inst, "HUM") == 0 || strcmp(inst, "hum") == 0 ||
+               strcmp(inst, "SENSOR") == 0 || strcmp(inst, "sensor") == 0) {
+        // Sensor data request command
+        // Display filtered (median) sensor values, not raw readings
+        char *sensor_display = manager_format_sensor_display(system);
+        if (sensor_display != NULL) {
+            strncpy(*data_out, sensor_display, MAX_DATA_LEN - 1);
+            (*data_out)[MAX_DATA_LEN - 1] = '\0';
+            strcpy(*cmd_out, ""); // No command for lightsigns
+            free(sensor_display);
+            return 1;
+        } else {
+            strcpy(*data_out, "Error: Sensor data not available");
+            strcpy(*cmd_out, "");
+            return 0;
+        }
     } else {
         // Unknown instruction
         strcpy(*data_out, "Unknown instruction");
@@ -800,6 +833,85 @@ int manager_process_instruction(ManagerSystem *system, const char *inst, char **
     }
     
     return 0;
+}
+
+/**
+ * Get filtered sensor data programmatically
+ * Returns filtered (median) values, not raw readings
+ * 
+ * @param system ManagerSystem with sensor data
+ * @param temp_out Output parameter for filtered temperature
+ * @param humidity_out Output parameter for filtered humidity
+ * @param temp_unit_out Output buffer for temperature unit (e.g., "Celsius")
+ * @param temp_unit_len Size of temp_unit_out buffer
+ * @param humidity_unit_out Output buffer for humidity unit (e.g., "Percent")
+ * @param humidity_unit_len Size of humidity_unit_out buffer
+ * @return 1 on success, 0 on failure
+ */
+int manager_get_sensor_data(const ManagerSystem *system, int *temp_out, int *humidity_out, 
+                            char *temp_unit_out, int temp_unit_len, 
+                            char *humidity_unit_out, int humidity_unit_len) {
+    if (system == NULL) return 0;
+    if (temp_out == NULL || humidity_out == NULL) return 0;
+    if (temp_unit_out == NULL || humidity_unit_out == NULL) return 0;
+    if (temp_unit_len <= 0 || humidity_unit_len <= 0) return 0;
+    
+    // Return filtered (median) values, not raw readings
+    *temp_out = system->sensors.current_temp;
+    *humidity_out = system->sensors.current_humidity;
+    
+    // Copy units
+    strncpy(temp_unit_out, system->sensors.temp_unit, temp_unit_len - 1);
+    temp_unit_out[temp_unit_len - 1] = '\0';
+    
+    strncpy(humidity_unit_out, system->sensors.humidity_unit, humidity_unit_len - 1);
+    humidity_unit_out[humidity_unit_len - 1] = '\0';
+    
+    return 1;
+}
+
+/**
+ * Format sensor data for display
+ * Returns filtered (median) values with clear unit indication
+ * 
+ * @param system ManagerSystem with sensor data
+ * @return Dynamically allocated string with formatted sensor data (caller must free), or NULL on error
+ */
+char* manager_format_sensor_display(const ManagerSystem *system) {
+    if (system == NULL) return NULL;
+    
+    // Get filtered (median) values, not raw readings
+    int temp = system->sensors.current_temp;
+    int humidity = system->sensors.current_humidity;
+    
+    // Allocate buffer for formatted string
+    char *display = (char*)malloc(MAX_DATA_LEN);
+    if (display == NULL) return NULL;
+    
+    // Format with clear unit indication
+    // Check if we have valid data (non-zero or if buffers have data)
+    int has_data = (system->sensors.temp_nelem > 0 || system->sensors.humidity_nelem > 0);
+    
+    if (!has_data) {
+        snprintf(display, MAX_DATA_LEN, 
+                 "Sensor Data: Not available yet\n"
+                 "Waiting for sensor readings...");
+    } else {
+        // Format with clear units
+        snprintf(display, MAX_DATA_LEN,
+                 "========================================\n"
+                 "SENSOR DATA (Filtered - Moving Median)\n"
+                 "========================================\n"
+                 "Temperature: %d %s\n"
+                 "Humidity: %d %s\n"
+                 "========================================\n"
+                 "Note: Values shown are filtered (median),\n"
+                 "      not raw sensor readings.",
+                 temp, system->sensors.temp_unit,
+                 humidity, system->sensors.humidity_unit);
+    }
+    
+    return display;
 }
 
 /**

@@ -125,6 +125,12 @@ int manager_send_data_to_board(const char *data);
 int manager_send_cmd_to_lightsigns(const char *cmd);
 int manager_record_action(ManagerSystem *system, const char *instruction);
 
+// Sensor data access functions
+int manager_get_sensor_data(const ManagerSystem *system, int *temp_out, int *humidity_out, 
+                            char *temp_unit_out, int temp_unit_len, 
+                            char *humidity_unit_out, int humidity_unit_len);
+char* manager_format_sensor_display(const ManagerSystem *system);
+
 // Log query functions
 int query_user_actions(int user_id, const char *start_date, const char *end_date, LogQueryResult *result);
 void free_log_query_result(LogQueryResult *result);
