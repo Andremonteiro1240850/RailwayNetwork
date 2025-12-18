@@ -123,5 +123,6 @@ int parse_timestamp(const char *timestamp_str, struct tm *tm_out);
 int compare_timestamps(const char *ts1, const char *ts2);
 
 // Log file export function
-int write_user_actions_to_file(const LogQueryResult *query_result, User *users, int user_count, 
-                                int user_id, const char *output_directory);
+int write_user_actions_to_file(const User *requesting_user, const LogQueryResult *query_result, 
+                                User *users, int user_count, int user_id, const char *output_directory);
+int is_administrator(const User *user);

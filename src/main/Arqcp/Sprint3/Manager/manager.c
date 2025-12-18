@@ -6,6 +6,14 @@
 #include <string.h>
 #include <time.h>
 #include <ctype.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#ifdef _WIN32
+#include <io.h>
+#define chmod _chmod
+#else
+#include <sys/stat.h>
+#endif
 
 #define INITIAL_CAPACITY 10
 #define SENSOR_CMD "GTH"
@@ -590,9 +598,66 @@ static int generate_filename(char *filename_buffer, int buffer_size, const char 
 }
 
 /**
+ * Check if user is Administrator
+ */
+int is_administrator(const User *user) {
+    if (user == NULL) return 0;
+    return user->role == USER_ROLE_ADMINISTRATOR;
+}
+
+/**
+ * Log security audit trail entry
+ */
+static void log_audit_trail(const char *action, const User *user, const char *details, int success) {
+    // In a real implementation, this would write to a secure audit log file
+    // For now, we'll use a simple approach - could be enhanced to write to dedicated audit log
+    time_t rawtime;
+    struct tm *timeinfo;
+    time(&rawtime);
+    timeinfo = localtime(&rawtime);
+    char timestamp[50];
+    strftime(timestamp, sizeof(timestamp), "%Y-%m-%d %H:%M:%S", timeinfo);
+    
+    const char *username = (user != NULL) ? user->username : "UNKNOWN";
+    const char *role = (user != NULL && is_administrator(user)) ? "Administrator" : "Operator";
+    const char *status = success ? "SUCCESS" : "FAILED";
+    
+    // Audit trail output (in production, this would go to secure log file)
+    printf("[AUDIT] %s | User: %s (%s) | Action: %s | Details: %s | Status: %s\n",
+           timestamp, username, role, action, (details != NULL) ? details : "N/A", status);
+}
+
+/**
+ * Set file permissions to restricted (read-only for owner, no access for others)
+ * On Unix/Linux: 0600 (rw-------)
+ * On Windows: uses _chmod equivalent
+ */
+static int set_restricted_file_permissions(const char *filename) {
+    if (filename == NULL) return 0;
+    
+#ifdef _WIN32
+    // Windows: Set file to read-only for owner only
+    // Note: Windows permissions are more limited, this sets basic read-only
+    if (_chmod(filename, _S_IREAD) != 0) {
+        return 0; // Failed to set permissions
+    }
+#else
+    // Unix/Linux: Set permissions to 0600 (rw-------)
+    // Only owner can read/write, no access for group/others
+    if (chmod(filename, S_IRUSR | S_IWUSR) != 0) {
+        return 0; // Failed to set permissions
+    }
+#endif
+    
+    return 1; // Success
+}
+
+/**
  * Write user actions to .txt file
  * Formats data according to specification and saves to designated directory
+ * Only Administrators can trigger file creation
  * 
+ * @param requesting_user The user requesting the file creation (must be Administrator)
  * @param query_result The query result containing user actions (from query_user_actions)
  * @param users Array of all users (to get username)
  * @param user_count Number of users in the array
@@ -600,27 +665,45 @@ static int generate_filename(char *filename_buffer, int buffer_size, const char 
  * @param output_directory Directory where file should be saved (e.g., "./logs" or "/tmp")
  * @return 1 on success, 0 on failure
  */
-int write_user_actions_to_file(const LogQueryResult *query_result, User *users, int user_count, 
-                                int user_id, const char *output_directory) {
+int write_user_actions_to_file(const User *requesting_user, const LogQueryResult *query_result, 
+                                User *users, int user_count, int user_id, const char *output_directory) {
+    // Authentication check: Verify user has Administrator role
+    if (!is_administrator(requesting_user)) {
+        // Security audit trail: Log unauthorized access attempt
+        log_audit_trail("FILE_CREATION_ATTEMPT", requesting_user, "Unauthorized access - not Administrator", 0);
+        return 0; // Only Administrators can create files
+    }
+    
+    // Authorization logic: Additional validation
+    if (requesting_user == NULL) {
+        log_audit_trail("FILE_CREATION_ATTEMPT", NULL, "Null user pointer", 0);
+        return 0; // Invalid user
+    }
+    
     // Error handling: Validate inputs
     if (query_result == NULL) {
+        log_audit_trail("FILE_CREATION_ATTEMPT", requesting_user, "Invalid query result", 0);
         return 0; // Invalid query result
     }
     
     if (users == NULL || user_count <= 0) {
+        log_audit_trail("FILE_CREATION_ATTEMPT", requesting_user, "Invalid users array", 0);
         return 0; // Invalid users array
     }
     
     if (user_id <= 0) {
+        log_audit_trail("FILE_CREATION_ATTEMPT", requesting_user, "Invalid target user ID", 0);
         return 0; // Invalid user ID
     }
     
     if (output_directory == NULL) {
+        log_audit_trail("FILE_CREATION_ATTEMPT", requesting_user, "Invalid output directory", 0);
         return 0; // Invalid output directory
     }
     
     // Error handling: Check if query result has data
     if (query_result->count == 0) {
+        log_audit_trail("FILE_CREATION_ATTEMPT", requesting_user, "No data to write", 0);
         return 0; // No data to write
     }
     
@@ -630,12 +713,19 @@ int write_user_actions_to_file(const LogQueryResult *query_result, User *users, 
     // Generate filename according to convention
     char filename[512];
     if (!generate_filename(filename, sizeof(filename), username, output_directory)) {
+        log_audit_trail("FILE_CREATION_ATTEMPT", requesting_user, "Failed to generate filename", 0);
         return 0; // Failed to generate filename
     }
+    
+    // Security audit trail: Log file creation attempt
+    char audit_details[256];
+    snprintf(audit_details, sizeof(audit_details), "Creating file: %s for user_id: %d", filename, user_id);
+    log_audit_trail("FILE_CREATION_ATTEMPT", requesting_user, audit_details, 1);
     
     // Open file for writing
     FILE *file = fopen(filename, "w");
     if (file == NULL) {
+        log_audit_trail("FILE_CREATION_FAILED", requesting_user, "Failed to open file", 0);
         return 0; // Failed to open file (permissions or directory doesn't exist)
     }
     
@@ -677,7 +767,18 @@ int write_user_actions_to_file(const LogQueryResult *query_result, User *users, 
     
     // Close file
     if (fclose(file) != 0) {
+        log_audit_trail("FILE_CREATION_FAILED", requesting_user, "Failed to close file", 0);
         return 0; // Failed to close file
+    }
+    
+    // Set restricted file permissions (only owner can read/write, no access for others)
+    if (!set_restricted_file_permissions(filename)) {
+        // Log warning but don't fail - file was created successfully
+        log_audit_trail("FILE_PERMISSIONS_WARNING", requesting_user, "Failed to set restricted permissions", 0);
+        // Continue anyway as file was created
+    } else {
+        // Log successful permission setting
+        log_audit_trail("FILE_CREATION_SUCCESS", requesting_user, "File created with restricted permissions", 1);
     }
     
     return 1; // Success
