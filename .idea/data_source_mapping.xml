@@ -1,6 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<project version="4">
-  <component name="DataSourcePerFileMappings">
-    <file url="file://$PROJECT_DIR$/src/main/sql-scripts/InitialSchema/initial_data.sql" value="5079775c-d926-48ef-b6d6-4acdba92fce2" />
-  </component>
-</project>
