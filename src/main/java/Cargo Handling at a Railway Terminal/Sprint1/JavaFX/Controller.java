@@ -17,6 +17,7 @@ import Sprint2.Repository.KDTreeRepository;
 import Sprint2.Repository.StationRepository;
 import JavaFX.UpgradePlanFXUI;
 import JavaFX.MaximumFlowFXUI;
+import JavaFX.BackboneFXUI;
 import javafx.fxml.FXML;
 import javafx.application.Platform;
 import javafx.scene.control.Alert;
@@ -399,6 +400,20 @@ public class Controller {
                 });
             } catch (Exception e) {
                 Platform.runLater(() -> showError("Error", "Failed to start Maximum Flow: " + e.getMessage()));
+            }
+        });
+    }
+
+    @FXML
+    private void handleMinimalBackboneButton() {
+        executorService.execute(() -> {
+            try {
+                Platform.runLater(() -> {
+                    BackboneFXUI ui = new BackboneFXUI();
+                    ui.show();
+                });
+            } catch (Exception e) {
+                Platform.runLater(() -> showError("Error", "Failed to start Minimal Backbone Network: " + e.getMessage()));
             }
         });
     }
