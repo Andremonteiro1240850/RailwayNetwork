@@ -143,3 +143,19 @@ int compare_timestamps(const char *ts1, const char *ts2);
 int write_user_actions_to_file(const User *requesting_user, const LogQueryResult *query_result, 
                                 User *users, int user_count, int user_id, const char *output_directory);
 int is_administrator(const User *user);
+
+//usac16
+Train* findTrain(ManagerSystem *system, int train_id);
+Track* findTrack(ManagerSystem *system, int track_id);
+void updateBoard(const char* message);  // Atualiza o Board (UI)
+void sendToLightSigns(const char* cmd); // Envia comando para LightSigns
+void logAction(int user_id, const char* action_type, const char* details); // Regista no log
+int assignArrivingTrain(ManagerSystem *system, int train_id, int track_id);
+int setTrackINOP(ManagerSystem *system, int track_id);
+int setTrackFree(ManagerSystem *system, int track_id);
+int departureTrain(ManagerSystem *system, int train_id, int track_id);
+int manageRailwayTracks(ManagerSystem *system, int operation, int train_id, int track_id);
+
+// Função Assembly do Sprint 2
+int asm_format_command(const char* op, int n, char* cmd);
+//fim usac16

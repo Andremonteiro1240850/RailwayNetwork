@@ -1837,6 +1837,299 @@ int manager_main_loop(ManagerSystem *system) {
     return 1;
 }
 
+// funções uteis
+
+Train* findTrain(ManagerSystem *system, int train_id) {
+    if (system == NULL || system->trains == NULL) return NULL;
+
+    for (int i = 0; i < system->train_count; i++) {
+        if (system->trains[i].id == train_id) {
+            return &system->trains[i];
+        }
+    }
+    return NULL;
+}
+
+
+Track* findTrack(ManagerSystem *system, int track_id) {
+    if (system == NULL || system->tracks == NULL) return NULL;
+
+    for (int i = 0; i < system->track_count; i++) {
+        if (system->tracks[i].id == track_id) {
+            return &system->tracks[i];
+        }
+    }
+    return NULL;
+}
+
+
+void updateBoard(const char* data) {
+    if (data == NULL) return;
+
+    printf("\n=== BOARD UPDATE ===\n");
+    printf("%s\n", data);
+    printf("===================\n\n");
+
+}
+
+
+void sendToLightSigns(const char* cmd) {
+    if (cmd == NULL) return;
+
+    printf("[LightSigns] Command: %s\n", cmd);
+
+}
+
+
+void logAction(int user_id, const char* action_type, const char* details) {
+    if (action_type == NULL || details == NULL) return;
+
+    // Get current timestamp
+    time_t now = time(NULL);
+    struct tm *tm_info = localtime(&now);
+    char timestamp[20];
+    strftime(timestamp, sizeof(timestamp), "%Y-%m-%d %H:%M:%S", tm_info);
+
+    printf("[LOG] %s | User:%d | Action:%s | Details:%s\n",
+           timestamp, user_id, action_type, details);
+
+}
+
+
+//================usac16===================================
+
+int assignArrivingTrain(ManagerSystem *system, int train_id, int track_id) {
+    Train *t = findTrain(system, train_id);
+    Track *tr = findTrack(system, track_id);
+
+    if (!t || !tr) {
+        updateBoard("ERROR: Train or Track not found");
+        return 0;
+    }
+
+    // Verificar se trem está em chegada
+    if (t->state != TRAIN_ARRIVING) {
+        char msg[100];
+        snprintf(msg, sizeof(msg), "Train %d not arriving (state: %d)", train_id, t->state);
+        updateBoard(msg);
+        return 0;
+    }
+
+    // Verificar se track está livre
+    if (tr->state == TRACK_FREE) {
+        // Atualizar estados
+        tr->state = TRACK_ASSIGNED;
+        t->state = TRAIN_STOPPED;
+        tr->trainId = train_id;
+
+        // Atualizar Board
+        char board_msg[100];
+        snprintf(board_msg, sizeof(board_msg), "✅ Train %d assigned to Track %d (YELLOW)",
+                train_id, track_id);
+        updateBoard(board_msg);
+
+        // Envia comando para LightSigns com a func. Assembly
+        char cmd[20];
+        if (asm_format_command("YE", track_id, cmd) == 1) {
+            sendToLightSigns(cmd);
+        } else {
+            updateBoard("WARNING: Failed to format LightSigns command");
+        }
+
+        // Registar no log
+        logAction(system->current_user->user_id, ACTION_ASSIGN_TRAIN, board_msg);
+
+        return 1;
+    }
+    else {
+        // Nenhuma track livre sinal de EMERGÊNCIA
+        char emergency_msg[150];
+        snprintf(emergency_msg, sizeof(emergency_msg),
+                "🚨 EMERGENCY STOP! Train %d - Track %d busy (state: %d)",
+                train_id, track_id, tr->state);
+        updateBoard(emergency_msg);
+        showEmergencyStop();
+
+        // Comando de emergência para LightSigns (Red para track atual)
+        char cmd[20];
+        asm_format_command("RE", track_id, cmd);
+        sendToLightSigns(cmd);
+
+        // Registar emergência no log
+        logAction(system->current_user->user_id, ACTION_EMERGENCY_STOP, emergency_msg);
+
+        return 0;
+    }
+}
+
+int setTrackINOP(ManagerSystem *system, int track_id) {
+    Track *t = findTrack(system, track_id);
+    if (!t) {
+        updateBoard("ERROR: Track not found");
+        return 0;
+    }
+
+    // Verificar se já está inoperacional
+    if (t->state == TRACK_INOP) {
+        char msg[100];
+        snprintf(msg, sizeof(msg), "Track %d already INOPERATIONAL", track_id);
+        updateBoard(msg);
+        return 1;
+    }
+
+    // Verificar se usa o trilho
+    if (t->state == TRACK_BUSY || t->state == TRACK_ASSIGNED) {
+        char msg[100];
+        snprintf(msg, sizeof(msg), "Cannot set INOP: Track %d in use by Train %d",
+                track_id, t->trainId);
+        updateBoard(msg);
+        return 0;
+    }
+
+    // Atualiza o estado
+    t->state = TRACK_INOP;
+    t->trainId = -1;
+
+    // Atualizar Board
+    char board_msg[100];
+    snprintf(board_msg, sizeof(board_msg), "🔴 Track %d set as INOPERATIONAL (RED BLINKING)",
+            track_id);
+    updateBoard(board_msg);
+    trackINOP();
+
+    // Enviar comando para LightSigns (Red blinking - RB)
+    char cmd[20];
+    if (asm_format_command("RB", track_id, cmd) == 1) {
+        sendToLightSigns(cmd);
+    }
+
+    // Registar no log
+    logAction(system->current_user->user_id, ACTION_SET_INOP, board_msg);
+
+    return 1;
+}
+
+int setTrackFree(ManagerSystem *system, int track_id) {
+    Track *t = findTrack(system, track_id);
+    if (!t) {
+        updateBoard("ERROR: Track not found");
+        return 0;
+    }
+
+    // Verificar se já está livre
+    if (t->state == TRACK_FREE) {
+        char msg[100];
+        snprintf(msg, sizeof(msg), "Track %d already FREE", track_id);
+        updateBoard(msg);
+        return 1;
+    }
+
+    // Não pode libertar se estiver inoperacional sem autorização prévia
+    if (t->state == TRACK_INOP) {
+        char msg[100];
+        snprintf(msg, sizeof(msg),
+                "Track %d is INOPERATIONAL. Requires maintenance override.", track_id);
+        updateBoard(msg);
+        return 0;
+    }
+
+    // Atualiza o estado
+    t->state = TRACK_FREE;
+    t->trainId = -1;
+
+    // Atualizar Board
+    char board_msg[100];
+    snprintf(board_msg, sizeof(board_msg), "🟢 Track %d set as FREE (GREEN)", track_id);
+    updateBoard(board_msg);
+    freeTrack();
+
+    // Enviar comando para LightSigns (Green - GE)
+    char cmd[20];
+    if (asm_format_command("GE", track_id, cmd) == 1) {
+        sendToLightSigns(cmd);
+    }
+
+    // Registar no log
+    logAction(system->current_user->user_id, ACTION_SET_FREE, board_msg);
+
+    return 1;
+}
+int departureTrain(ManagerSystem *system, int train_id, int track_id) {
+    Train *t = findTrain(system, train_id);
+    Track *tr = findTrack(system, track_id);
+
+    if (!t || !tr) {
+        updateBoard("ERROR: Train or Track not found");
+        return 0;
+    }
+
+    // Verificar condições: train deve estar parado na track correta
+    if (t->state != TRAIN_STOPPED) {
+        char msg[100];
+        snprintf(msg, sizeof(msg), "Train %d not stopped (state: %d)", train_id, t->state);
+        updateBoard(msg);
+        return 0;
+    }
+
+    if (tr->state != TRACK_BUSY) {
+        char msg[100];
+        snprintf(msg, sizeof(msg), "Track %d not busy (state: %d)", track_id, tr->state);
+        updateBoard(msg);
+        return 0;
+    }
+
+    if (tr->trainId != train_id) {
+        char msg[100];
+        snprintf(msg, sizeof(msg), "Train %d not on Track %d", train_id, track_id);
+        updateBoard(msg);
+        return 0;
+    }
+
+    // Atualizar estados
+    t->state = TRAIN_DEPARTING;
+    tr->state = TRACK_FREE;
+    tr->trainId = -1;
+
+    // Atualizar Board
+    char board_msg[100];
+    snprintf(board_msg, sizeof(board_msg), "🚂 Train %d DEPARTING from Track %d",
+            train_id, track_id);
+    updateBoard(board_msg);
+    showDepartingTrain();
+
+    // Enviar comando para LightSigns (Green - trilho livre)
+    char cmd[20];
+    if (asm_format_command("GE", track_id, cmd) == 1) {
+        sendToLightSigns(cmd);
+    }
+
+    // Registar no log
+    logAction(system->current_user->user_id, ACTION_TRAIN_DEPARTURE, board_msg);
+
+    return 1;
+}
+
+//função principal que chama as outras
+int manageRailwayTracks(ManagerSystem *system, int operation, int train_id, int track_id) {
+    switch(operation) {
+        case 1:  // Assign arriving train
+            return assignArrivingTrain(system, train_id, track_id);
+
+        case 2:  // Set track nonoperational
+            return setTrackINOP(system, track_id);
+
+        case 3:  // Set track free
+            return setTrackFree(system, track_id);
+
+        case 4:  // Give departure order
+            return departureTrain(system, train_id, track_id);
+
+        default:
+            updateBoard("ERROR: Invalid operation code");
+            return 0;
+    }
+}
+
 /**
  * Main entry point
  */
