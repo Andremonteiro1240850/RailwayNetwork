@@ -156,3 +156,27 @@ void showDepartingTrain() {
     printf("          _/oo OOOOO oo`  ooo   ooo   o^o       o^o   o^o     o^o                  \n");
     printf("    -+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-\n");
 }
+
+void updateBoard(const char *message) {
+
+    if (message == NULL) {
+        printf("ERROR: updateBoard recebeu mensagem nula\n");
+        return;
+    }
+
+
+    time_t now;
+    struct tm *timeinfo;
+    char timestamp[20];
+
+    time(&now);
+    timeinfo = localtime(&now);
+    strftime(timestamp, sizeof(timestamp), "%Y-%m-%d %H:%M:%S", timeinfo);
+
+
+
+    printf("=== PAINEL DO SISTEMA FERROVIÁRIO ===\n");
+    printf("[%s] %s\n", timestamp, message);
+    printf("====================================\n\n");
+
+}

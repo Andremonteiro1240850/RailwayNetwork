@@ -762,7 +762,7 @@ char* manager_wait_for_instructions_from_ui(void) {
  */
 int manager_process_instruction(ManagerSystem *system, const char *inst, char **data_out, char **cmd_out) {
     if (system == NULL || inst == NULL || data_out == NULL || cmd_out == NULL) return 0;
-    
+
     *data_out = (char*)malloc(MAX_DATA_LEN);
     *cmd_out = (char*)malloc(MAX_CMD_LEN);
     if (*data_out == NULL || *cmd_out == NULL) {
@@ -770,7 +770,7 @@ int manager_process_instruction(ManagerSystem *system, const char *inst, char **
         if (*cmd_out) free(*cmd_out);
         return 0;
     }
-    
+
     // Simple instruction processing examples
     if (strncmp(inst, "GE", 2) == 0) {
         // Green LED command
@@ -885,7 +885,7 @@ int manager_process_instruction(ManagerSystem *system, const char *inst, char **
             (*data_out)[pos] = '\0';
         return 1;
         }
-    } else if (strcmp(inst, "SENSORS") == 0 || strcmp(inst, "sensors") == 0 || 
+    } else if (strcmp(inst, "SENSORS") == 0 || strcmp(inst, "sensors") == 0 ||
                strcmp(inst, "TEMP") == 0 || strcmp(inst, "temp") == 0 ||
                strcmp(inst, "HUM") == 0 || strcmp(inst, "hum") == 0 ||
                strcmp(inst, "SENSOR") == 0 || strcmp(inst, "sensor") == 0) {
@@ -900,7 +900,7 @@ int manager_process_instruction(ManagerSystem *system, const char *inst, char **
                 i++;
             }
             (*data_out)[i] = '\0';
-            
+
             // Set cmd_out to empty string
             (*cmd_out)[0] = '\0';
             free(sensor_display);
@@ -2170,6 +2170,7 @@ int setTrackFree(ManagerSystem *system, int track_id) {
 
     return 1;
 }
+
 int departureTrain(ManagerSystem *system, int train_id, int track_id) {
     Train *t = findTrain(system, train_id);
     Track *tr = findTrack(system, track_id);
