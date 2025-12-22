@@ -1979,16 +1979,6 @@ Track* findTrack(ManagerSystem *system, int track_id) {
 }
 
 
-void updateBoard(const char* data) {
-    if (data == NULL) return;
-
-    printf("\n=== BOARD UPDATE ===\n");
-    printf("%s\n", data);
-    printf("===================\n\n");
-
-}
-
-
 void sendToLightSigns(const char* cmd) {
     if (cmd == NULL) return;
 
