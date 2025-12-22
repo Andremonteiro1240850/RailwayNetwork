@@ -2220,7 +2220,7 @@ int departureTrain(ManagerSystem *system, int train_id, int track_id) {
         sendToLightSigns(cmd);
     }
 
-    // Registar no log
+    // escrever no log
     logAction(system->current_user->user_id, ACTION_TRAIN_DEPARTURE, board_msg);
 
     return 1;
@@ -2246,6 +2246,8 @@ int manageRailwayTracks(ManagerSystem *system, int operation, int train_id, int 
             return 0;
     }
 }
+
+//fim usac16
 
 /**
  * Main entry point
