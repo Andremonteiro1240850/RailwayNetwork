@@ -291,47 +291,56 @@ int manager_send_cmd_to_sensors(const char *cmd) {
  * Wait for data from sensors component via serial
  * Returns dynamically allocated string (caller must free)
  * 
+ * Implementation using only basic ARQCP concepts:
+ * - Dynamic memory allocation (malloc)
+ * - Basic string manipulation (no snprintf)
+ * - Basic I/O operations
+ * 
  * @return Dynamically allocated string with sensor data, or NULL on error
  */
 char* manager_wait_for_data_from_sensors(void) {
     // Check if serial port is open
     if (g_serial_fd < 0) {
-        fprintf(stderr, "[Manager] ERROR: Serial communication not initialized\n");
         return NULL;
     }
     
     // Allocate buffer for response
     char *data = (char*)malloc(MAX_SENSOR_STR_LEN);
     if (data == NULL) {
-        fprintf(stderr, "[Manager] ERROR: Memory allocation failed\n");
         return NULL;
     }
     
 #ifdef _WIN32
     // Windows simulation mode
     // Simulated sensor data format: TEMP&unit::celsius&value::XX#HUM&unit::percentage&value::YY
-    snprintf(data, MAX_SENSOR_STR_LEN, "TEMP&unit::celsius&value::25#HUM&unit::percentage&value::65");
-    printf("[Manager<-Sensors] Received: %s\n", data);
+    // Build string using basic string manipulation (no snprintf)
+    const char *sensor_data = "TEMP&unit::celsius&value::25#HUM&unit::percentage&value::65";
+    int i = 0;
+    while (sensor_data[i] != '\0' && i < MAX_SENSOR_STR_LEN - 1) {
+        data[i] = sensor_data[i];
+        i++;
+    }
+    data[i] = '\0';
     return data;
 #else
-    // Read response from serial port with timeout
+    // Read response from serial port with basic timeout (simplified)
+    // Using simple counter instead of time() function
     int bytes_read = 0;
     char *buffer = data;
     int remaining = MAX_SENSOR_STR_LEN - 1; // Reserve space for null terminator
-    time_t start_time = time(NULL);
+    int timeout_counter = 0;
+    int max_iterations = SERIAL_TIMEOUT_SEC * 100; // Simple timeout approximation
     
-    while (remaining > 0 && (time(NULL) - start_time) < SERIAL_TIMEOUT_SEC) {
+    while (remaining > 0 && timeout_counter < max_iterations) {
         ssize_t n = read(g_serial_fd, buffer, remaining);
         
         if (n < 0) {
             if (errno == EAGAIN || errno == EWOULDBLOCK) {
                 // No data available yet, continue waiting
-                usleep(10000); // Sleep 10ms
+                timeout_counter++;
                 continue;
             } else {
                 // Error reading
-                fprintf(stderr, "[Manager] ERROR: Failed to read from serial port: %s\n", 
-                        strerror(errno));
                 free(data);
                 close(g_serial_fd);
                 g_serial_fd = -1;
@@ -339,7 +348,7 @@ char* manager_wait_for_data_from_sensors(void) {
             }
         } else if (n == 0) {
             // No data available, continue waiting
-            usleep(10000); // Sleep 10ms
+            timeout_counter++;
             continue;
         } else {
             // Data received
@@ -352,11 +361,11 @@ char* manager_wait_for_data_from_sensors(void) {
                 break; // Complete line received
             }
         }
+        timeout_counter++;
     }
     
     // Check for timeout
     if (bytes_read == 0) {
-        fprintf(stderr, "[Manager] ERROR: Timeout waiting for sensor response\n");
         free(data);
         return NULL;
     }
@@ -364,20 +373,18 @@ char* manager_wait_for_data_from_sensors(void) {
     // Null terminate the string
     data[bytes_read] = '\0';
     
-    // Remove trailing newline/carriage return
+    // Remove trailing newline/carriage return using basic loop
     while (bytes_read > 0 && (data[bytes_read - 1] == '\n' || data[bytes_read - 1] == '\r')) {
         data[bytes_read - 1] = '\0';
         bytes_read--;
     }
     
-    // Check if we got any data
-    if (strlen(data) == 0) {
-        fprintf(stderr, "[Manager] ERROR: Empty response from sensors\n");
+    // Check if we got any data using basic string length check
+    if (string_length(data) == 0) {
         free(data);
         return NULL;
     }
     
-    printf("[Manager<-Sensors] Received: %s\n", data);
     return data;
 #endif
 }
@@ -811,18 +818,32 @@ int manager_process_instruction(ManagerSystem *system, const char *inst, char **
                strcmp(inst, "TEMP") == 0 || strcmp(inst, "temp") == 0 ||
                strcmp(inst, "HUM") == 0 || strcmp(inst, "hum") == 0 ||
                strcmp(inst, "SENSOR") == 0 || strcmp(inst, "sensor") == 0) {
-        // Sensor data request command
+        // Sensor data request command (USAC13)
         // Display filtered (median) sensor values, not raw readings
         char *sensor_display = manager_format_sensor_display(system);
         if (sensor_display != NULL) {
-            strncpy(*data_out, sensor_display, MAX_DATA_LEN - 1);
-            (*data_out)[MAX_DATA_LEN - 1] = '\0';
-            strcpy(*cmd_out, ""); // No command for lightsigns
+            // Copy using basic string manipulation (no strncpy)
+            int i = 0;
+            while (sensor_display[i] != '\0' && i < MAX_DATA_LEN - 1) {
+                (*data_out)[i] = sensor_display[i];
+                i++;
+            }
+            (*data_out)[i] = '\0';
+            
+            // Set cmd_out to empty string
+            (*cmd_out)[0] = '\0';
             free(sensor_display);
             return 1;
         } else {
-            strcpy(*data_out, "Error: Sensor data not available");
-            strcpy(*cmd_out, "");
+            // Copy error message using basic string manipulation
+            const char *error_msg = "Error: Sensor data not available";
+            int i = 0;
+            while (error_msg[i] != '\0' && i < MAX_DATA_LEN - 1) {
+                (*data_out)[i] = error_msg[i];
+                i++;
+            }
+            (*data_out)[i] = '\0';
+            (*cmd_out)[0] = '\0';
             return 0;
         }
     } else {
@@ -835,9 +856,18 @@ int manager_process_instruction(ManagerSystem *system, const char *inst, char **
     return 0;
 }
 
+// ==================== USAC13: Get Data from Sensors Component ====================
+// USAC13 - As a User, I want to get data from the Sensors component.
+// Implementation using only basic ARQCP concepts: structures, pointers, arrays,
+// basic string manipulation (no strncpy, snprintf), and memory access through pointers.
+
 /**
  * Get filtered sensor data programmatically
  * Returns filtered (median) values, not raw readings
+ * 
+ * Implementation using only basic ARQCP concepts:
+ * - Structure access through pointers
+ * - Basic string copying (no strncpy)
  * 
  * @param system ManagerSystem with sensor data
  * @param temp_out Output parameter for filtered temperature
@@ -860,12 +890,22 @@ int manager_get_sensor_data(const ManagerSystem *system, int *temp_out, int *hum
     *temp_out = system->sensors.current_temp;
     *humidity_out = system->sensors.current_humidity;
     
-    // Copy units
-    strncpy(temp_unit_out, system->sensors.temp_unit, temp_unit_len - 1);
-    temp_unit_out[temp_unit_len - 1] = '\0';
+    // Copy units using basic string copying (no strncpy)
+    const char *src_temp = system->sensors.temp_unit;
+    int i = 0;
+    while (src_temp[i] != '\0' && i < temp_unit_len - 1) {
+        temp_unit_out[i] = src_temp[i];
+        i++;
+    }
+    temp_unit_out[i] = '\0';
     
-    strncpy(humidity_unit_out, system->sensors.humidity_unit, humidity_unit_len - 1);
-    humidity_unit_out[humidity_unit_len - 1] = '\0';
+    const char *src_humidity = system->sensors.humidity_unit;
+    i = 0;
+    while (src_humidity[i] != '\0' && i < humidity_unit_len - 1) {
+        humidity_unit_out[i] = src_humidity[i];
+        i++;
+    }
+    humidity_unit_out[i] = '\0';
     
     return 1;
 }
@@ -873,6 +913,11 @@ int manager_get_sensor_data(const ManagerSystem *system, int *temp_out, int *hum
 /**
  * Format sensor data for display
  * Returns filtered (median) values with clear unit indication
+ * 
+ * Implementation using only basic ARQCP concepts:
+ * - Dynamic memory allocation (malloc)
+ * - Basic string manipulation (no snprintf)
+ * - Integer to string conversion
  * 
  * @param system ManagerSystem with sensor data
  * @return Dynamically allocated string with formatted sensor data (caller must free), or NULL on error
@@ -888,29 +933,123 @@ char* manager_format_sensor_display(const ManagerSystem *system) {
     char *display = (char*)malloc(MAX_DATA_LEN);
     if (display == NULL) return NULL;
     
-    // Format with clear unit indication
     // Check if we have valid data (non-zero or if buffers have data)
     int has_data = (system->sensors.temp_nelem > 0 || system->sensors.humidity_nelem > 0);
     
+    int pos = 0;
+    
     if (!has_data) {
-        snprintf(display, MAX_DATA_LEN, 
-                 "Sensor Data: Not available yet\n"
-                 "Waiting for sensor readings...");
+        // Write "Sensor Data: Not available yet\nWaiting for sensor readings..."
+        const char *msg1 = "Sensor Data: Not available yet\n";
+        int i = 0;
+        while (msg1[i] != '\0' && pos < MAX_DATA_LEN - 1) {
+            display[pos++] = msg1[i++];
+        }
+        const char *msg2 = "Waiting for sensor readings...";
+        i = 0;
+        while (msg2[i] != '\0' && pos < MAX_DATA_LEN - 1) {
+            display[pos++] = msg2[i++];
+        }
     } else {
-        // Format with clear units
-        snprintf(display, MAX_DATA_LEN,
-                 "========================================\n"
-                 "SENSOR DATA (Filtered - Moving Median)\n"
-                 "========================================\n"
-                 "Temperature: %d %s\n"
-                 "Humidity: %d %s\n"
-                 "========================================\n"
-                 "Note: Values shown are filtered (median),\n"
-                 "      not raw sensor readings.",
-                 temp, system->sensors.temp_unit,
-                 humidity, system->sensors.humidity_unit);
+        // Format with clear units using basic string building
+        const char *header1 = "========================================\n";
+        int i = 0;
+        while (header1[i] != '\0' && pos < MAX_DATA_LEN - 1) {
+            display[pos++] = header1[i++];
+        }
+        
+        const char *header2 = "SENSOR DATA (Filtered - Moving Median)\n";
+        i = 0;
+        while (header2[i] != '\0' && pos < MAX_DATA_LEN - 1) {
+            display[pos++] = header2[i++];
+        }
+        
+        const char *header3 = "========================================\n";
+        i = 0;
+        while (header3[i] != '\0' && pos < MAX_DATA_LEN - 1) {
+            display[pos++] = header3[i++];
+        }
+        
+        const char *temp_label = "Temperature: ";
+        i = 0;
+        while (temp_label[i] != '\0' && pos < MAX_DATA_LEN - 1) {
+            display[pos++] = temp_label[i++];
+        }
+        
+        // Write temperature value
+        char temp_str[20];
+        int_to_string(temp, temp_str, sizeof(temp_str));
+        i = 0;
+        while (temp_str[i] != '\0' && pos < MAX_DATA_LEN - 1) {
+            display[pos++] = temp_str[i++];
+        }
+        
+        // Write space
+        if (pos < MAX_DATA_LEN - 1) {
+            display[pos++] = ' ';
+        }
+        
+        // Write temperature unit
+        i = 0;
+        while (system->sensors.temp_unit[i] != '\0' && pos < MAX_DATA_LEN - 1) {
+            display[pos++] = system->sensors.temp_unit[i++];
+        }
+        
+        // Write newline
+        if (pos < MAX_DATA_LEN - 1) {
+            display[pos++] = '\n';
+        }
+        
+        const char *hum_label = "Humidity: ";
+        i = 0;
+        while (hum_label[i] != '\0' && pos < MAX_DATA_LEN - 1) {
+            display[pos++] = hum_label[i++];
+        }
+        
+        // Write humidity value
+        char hum_str[20];
+        int_to_string(humidity, hum_str, sizeof(hum_str));
+        i = 0;
+        while (hum_str[i] != '\0' && pos < MAX_DATA_LEN - 1) {
+            display[pos++] = hum_str[i++];
+        }
+        
+        // Write space
+        if (pos < MAX_DATA_LEN - 1) {
+            display[pos++] = ' ';
+        }
+        
+        // Write humidity unit
+        i = 0;
+        while (system->sensors.humidity_unit[i] != '\0' && pos < MAX_DATA_LEN - 1) {
+            display[pos++] = system->sensors.humidity_unit[i++];
+        }
+        
+        // Write newline
+        if (pos < MAX_DATA_LEN - 1) {
+            display[pos++] = '\n';
+        }
+        
+        const char *footer1 = "========================================\n";
+        i = 0;
+        while (footer1[i] != '\0' && pos < MAX_DATA_LEN - 1) {
+            display[pos++] = footer1[i++];
+        }
+        
+        const char *footer2 = "Note: Values shown are filtered (median),\n";
+        i = 0;
+        while (footer2[i] != '\0' && pos < MAX_DATA_LEN - 1) {
+            display[pos++] = footer2[i++];
+        }
+        
+        const char *footer3 = "      not raw sensor readings.";
+        i = 0;
+        while (footer3[i] != '\0' && pos < MAX_DATA_LEN - 1) {
+            display[pos++] = footer3[i++];
+        }
     }
     
+    display[pos] = '\0';
     return display;
 }
 
@@ -1154,46 +1293,181 @@ void free_log_query_result(LogQueryResult *result) {
     result->capacity = 0;
 }
 
+// ==================== USAC12: Write User Actions to File ====================
+// USAC12 - As an Administrator, I want to create a text file (.txt file) with a sequence
+// of actions performed by a specific user.
+// Implementation using only basic ARQCP concepts: structures, pointers, arrays,
+// basic I/O (fopen, fputc, fclose), and basic string manipulation.
+
 /**
  * Get username by user_id
+ * Basic array search using pointers
  */
 static const char* get_username_by_id(User *users, int user_count, int user_id) {
     if (users == NULL) return "unknown";
     
-    for (int i = 0; i < user_count; i++) {
-        if (users[i].user_id == user_id) {
-            return users[i].username;
+    User *current = users;
+    int i;
+    for (i = 0; i < user_count; i++) {
+        if (current->user_id == user_id) {
+            return current->username;
         }
+        current++; // Move pointer to next User structure
     }
     return "unknown";
 }
 
 /**
- * Generate filename according to convention: user_actions_{username}_{date}.txt
+ * Convert integer to string (basic implementation without sprintf)
+ * Returns number of characters written
+ */
+static int int_to_string(int value, char *buffer, int buffer_size) {
+    if (buffer == NULL || buffer_size <= 0) return 0;
+    
+    int pos = 0;
+    int negative = 0;
+    
+    // Handle negative numbers
+    if (value < 0) {
+        negative = 1;
+        value = -value;
+    }
+    
+    // Handle zero case
+    if (value == 0) {
+        if (pos < buffer_size - 1) {
+            buffer[pos++] = '0';
+        }
+        buffer[pos] = '\0';
+        return pos;
+    }
+    
+    // Extract digits in reverse order
+    char digits[20];
+    int digit_count = 0;
+    while (value > 0 && digit_count < 19) {
+        digits[digit_count++] = '0' + (value % 10);
+        value = value / 10;
+    }
+    
+    // Write negative sign if needed
+    if (negative && pos < buffer_size - 1) {
+        buffer[pos++] = '-';
+    }
+    
+    // Write digits in correct order (reverse)
+    int i;
+    for (i = digit_count - 1; i >= 0 && pos < buffer_size - 1; i--) {
+        buffer[pos++] = digits[i];
+    }
+    buffer[pos] = '\0';
+    
+    return pos;
+}
+
+/**
+ * Copy string (basic implementation without strcpy)
+ * Returns 1 on success, 0 on failure
+ */
+static int copy_string(const char *src, char *dest, int dest_size) {
+    if (src == NULL || dest == NULL || dest_size <= 0) return 0;
+    
+    int i = 0;
+    while (src[i] != '\0' && i < dest_size - 1) {
+        dest[i] = src[i];
+        i++;
+    }
+    dest[i] = '\0';
+    return 1;
+}
+
+/**
+ * Get string length (basic implementation without strlen)
+ */
+static int string_length(const char *str) {
+    if (str == NULL) return 0;
+    int len = 0;
+    while (str[len] != '\0') {
+        len++;
+    }
+    return len;
+}
+
+/**
+ * Generate filename according to convention: user_actions_{username}.txt
+ * Simplified version without date (using basic string manipulation)
  */
 static int generate_filename(char *filename_buffer, int buffer_size, const char *username, const char *output_directory) {
     if (filename_buffer == NULL || username == NULL || output_directory == NULL) {
         return 0;
     }
     
-    // Get current date in format YYYYMMDD
-    time_t rawtime;
-    struct tm *timeinfo;
-    time(&rawtime);
-    timeinfo = localtime(&rawtime);
+    int pos = 0;
     
-    char date_str[9]; // YYYYMMDD + null terminator
-    strftime(date_str, sizeof(date_str), "%Y%m%d", timeinfo);
-    
-    // Format: {directory}/user_actions_{username}_{date}.txt
-    int written = snprintf(filename_buffer, buffer_size, "%s/user_actions_%s_%s.txt", 
-                          output_directory, username, date_str);
-    
-    if (written < 0 || written >= buffer_size) {
-        return 0; // Buffer too small or error
+    // Copy output_directory
+    int dir_len = string_length(output_directory);
+    int i;
+    for (i = 0; i < dir_len && pos < buffer_size - 1; i++) {
+        filename_buffer[pos++] = output_directory[i];
     }
     
+    // Add '/' if not present
+    if (pos > 0 && filename_buffer[pos - 1] != '/' && pos < buffer_size - 1) {
+        filename_buffer[pos++] = '/';
+    }
+    
+    // Add "user_actions_"
+    const char *prefix = "user_actions_";
+    int prefix_len = string_length(prefix);
+    for (i = 0; i < prefix_len && pos < buffer_size - 1; i++) {
+        filename_buffer[pos++] = prefix[i];
+    }
+    
+    // Add username
+    int username_len = string_length(username);
+    for (i = 0; i < username_len && pos < buffer_size - 1; i++) {
+        filename_buffer[pos++] = username[i];
+    }
+    
+    // Add ".txt"
+    const char *suffix = ".txt";
+    int suffix_len = string_length(suffix);
+    for (i = 0; i < suffix_len && pos < buffer_size - 1; i++) {
+        filename_buffer[pos++] = suffix[i];
+    }
+    
+    filename_buffer[pos] = '\0';
+    
         return 1;
+}
+
+/**
+ * Write string to file (basic implementation without fprintf)
+ * Returns 1 on success, 0 on failure
+ */
+static int write_string_to_file(FILE *file, const char *str) {
+    if (file == NULL || str == NULL) return 0;
+    
+    int i = 0;
+    while (str[i] != '\0') {
+        if (fputc(str[i], file) == EOF) {
+            return 0;
+        }
+        i++;
+    }
+    return 1;
+}
+
+/**
+ * Write integer to file (basic implementation without fprintf)
+ * Returns 1 on success, 0 on failure
+ */
+static int write_int_to_file(FILE *file, int value) {
+    if (file == NULL) return 0;
+    
+    char buffer[20];
+    int_to_string(value, buffer, sizeof(buffer));
+    return write_string_to_file(file, buffer);
 }
 
 /**
@@ -1256,6 +1530,12 @@ static int set_restricted_file_permissions(const char *filename) {
  * Formats data according to specification and saves to designated directory
  * Only Administrators can trigger file creation
  * 
+ * Implementation using only basic ARQCP concepts:
+ * - Structures, pointers, arrays
+ * - Basic I/O (fopen, fputc, fclose)
+ * - Basic string manipulation (no sprintf/snprintf)
+ * - Memory access through pointers
+ * 
  * @param requesting_user The user requesting the file creation (must be Administrator)
  * @param query_result The query result containing user actions (from query_user_actions)
  * @param users Array of all users (to get username)
@@ -1266,205 +1546,143 @@ static int set_restricted_file_permissions(const char *filename) {
  */
 int write_user_actions_to_file(const User *requesting_user, const LogQueryResult *query_result, 
                                 User *users, int user_count, int user_id, const char *output_directory) {
-    // Authentication check: Verify user has Administrator role
-    if (!is_administrator(requesting_user)) {
-        // Security audit trail: Log unauthorized access attempt
-        log_audit_trail("FILE_CREATION_ATTEMPT", requesting_user, "Unauthorized access - not Administrator", 0);
-        // Clear error message for user
-        fprintf(stderr, "ERROR: Permission denied. Only Administrators can create log files.\n");
-        fprintf(stderr, "Your role: %s\n", (requesting_user != NULL) ? "Operator" : "Unknown");
-        return 0; // Only Administrators can create files
-    }
-    
-    // Authorization logic: Additional validation
+    // Basic validation: Check if user is Administrator
     if (requesting_user == NULL) {
-        log_audit_trail("FILE_CREATION_ATTEMPT", NULL, "Null user pointer", 0);
-        fprintf(stderr, "ERROR: Invalid user. User pointer is NULL.\n");
-        return 0; // Invalid user
-    }
-    
-    // Error handling: Validate inputs
-    if (query_result == NULL) {
-        log_audit_trail("FILE_CREATION_ATTEMPT", requesting_user, "Invalid query result", 0);
-        fprintf(stderr, "ERROR: Invalid query result. Cannot create file.\n");
-        return 0; // Invalid query result
-    }
-    
-    if (users == NULL || user_count <= 0) {
-        log_audit_trail("FILE_CREATION_ATTEMPT", requesting_user, "Invalid users array", 0);
-        fprintf(stderr, "ERROR: Invalid users array. Cannot resolve username.\n");
-        return 0; // Invalid users array
-    }
-    
-    if (user_id <= 0) {
-        log_audit_trail("FILE_CREATION_ATTEMPT", requesting_user, "Invalid target user ID", 0);
-        fprintf(stderr, "ERROR: Invalid user ID (%d). User ID must be greater than 0.\n", user_id);
-        return 0; // Invalid user ID
-    }
-    
-    if (output_directory == NULL) {
-        log_audit_trail("FILE_CREATION_ATTEMPT", requesting_user, "Invalid output directory", 0);
-        fprintf(stderr, "ERROR: Invalid output directory. Directory path is NULL.\n");
-        return 0; // Invalid output directory
-    }
-    
-    // Edge case: Check if query result has data
-    if (query_result->count == 0) {
-        log_audit_trail("FILE_CREATION_ATTEMPT", requesting_user, "No data to write", 0);
-        fprintf(stderr, "WARNING: No action data found for user ID %d.\n", user_id);
-        fprintf(stderr, "No file will be created as there are no actions to export.\n");
-        return 0; // No data to write
-    }
-    
-    // Edge case: Check if target user exists
-    const char *username = get_username_by_id(users, user_count, user_id);
-    if (strcmp(username, "unknown") == 0) {
-        log_audit_trail("FILE_CREATION_ATTEMPT", requesting_user, "User not found", 0);
-        fprintf(stderr, "ERROR: User not found. User ID %d does not exist in the system.\n", user_id);
-        return 0; // User not found
-    }
-    
-    // Generate filename according to convention
-    char filename[512];
-    if (!generate_filename(filename, sizeof(filename), username, output_directory)) {
-        log_audit_trail("FILE_CREATION_ATTEMPT", requesting_user, "Failed to generate filename", 0);
-        fprintf(stderr, "ERROR: Failed to generate filename. Filename buffer may be too small.\n");
-        return 0; // Failed to generate filename
-    }
-    
-    // Security audit trail: Log file creation attempt
-    char audit_details[256];
-    snprintf(audit_details, sizeof(audit_details), "Creating file: %s for user_id: %d", filename, user_id);
-    log_audit_trail("FILE_CREATION_ATTEMPT", requesting_user, audit_details, 1);
-    
-    // Edge case: Check if directory exists and is writable
-    // Try to create a test file to check permissions
-    FILE *test_file = fopen(filename, "w");
-    if (test_file == NULL) {
-        log_audit_trail("FILE_CREATION_FAILED", requesting_user, "Failed to open file", 0);
-        
-        // Determine specific error reason
-        if (errno == EACCES) {
-            fprintf(stderr, "ERROR: Permission denied. Cannot write to directory: %s\n", output_directory);
-            fprintf(stderr, "Please check directory permissions or choose a different location.\n");
-        } else if (errno == ENOENT) {
-            fprintf(stderr, "ERROR: Directory not found: %s\n", output_directory);
-            fprintf(stderr, "Please create the directory or specify a valid path.\n");
-        } else if (errno == ENOSPC) {
-            fprintf(stderr, "ERROR: Disk full. No space available to create file.\n");
-            fprintf(stderr, "Please free up disk space and try again.\n");
-    } else {
-            fprintf(stderr, "ERROR: Failed to create file: %s\n", filename);
-            fprintf(stderr, "Error code: %d. Please check directory permissions and disk space.\n", errno);
-        }
-        return 0; // Failed to open file
-    }
-    fclose(test_file);
-    // Remove test file (we'll create it properly below)
-    remove(filename);
-    
-    // Open file for writing
-    FILE *file = fopen(filename, "w");
-    if (file == NULL) {
-        log_audit_trail("FILE_CREATION_FAILED", requesting_user, "Failed to open file after test", 0);
-        fprintf(stderr, "ERROR: Failed to open file for writing: %s\n", filename);
-        return 0; // Failed to open file
-    }
-    
-    // Write header according to specification
-    fprintf(file, "========================================\n");
-    fprintf(file, "USER ACTION LOG REPORT\n");
-    fprintf(file, "========================================\n\n");
-    fprintf(file, "User ID: %d\n", user_id);
-    fprintf(file, "Username: %s\n", username);
-    fprintf(file, "Total Actions: %d\n", query_result->count);
-    
-    // Get current timestamp for report generation
-    time_t rawtime;
-    struct tm *timeinfo;
-    time(&rawtime);
-    timeinfo = localtime(&rawtime);
-    char current_timestamp[50];
-    strftime(current_timestamp, sizeof(current_timestamp), "%Y-%m-%d %H:%M:%S", timeinfo);
-    fprintf(file, "Generated on: %s\n", current_timestamp);
-    
-    fprintf(file, "\n========================================\n");
-    fprintf(file, "LOG ENTRIES\n");
-    fprintf(file, "========================================\n\n");
-    
-    // Write log entries according to specification format
-    int write_errors = 0;
-    for (int i = 0; i < query_result->count; i++) {
-        // Edge case: Check for disk space issues during write
-        int written = fprintf(file, "Log ID: %d\n", query_result->entries[i].log_id);
-        if (written < 0) {
-            write_errors++;
-            continue; // Skip this entry if write fails
-        }
-        
-        fprintf(file, "User ID: %d\n", query_result->entries[i].user_id);
-        fprintf(file, "Username: %s\n", username);
-        fprintf(file, "Action Type: %s\n", query_result->entries[i].action_type);
-        fprintf(file, "Action Details: %s\n", query_result->entries[i].action_details);
-        fprintf(file, "Timestamp: %s\n", query_result->entries[i].timestamp);
-        fprintf(file, "----------------------------------------\n");
-        
-        // Check for write errors
-        if (ferror(file)) {
-            write_errors++;
-            clearerr(file); // Clear error flag to continue
-        }
-    }
-    
-    // Edge case: Handle write errors
-    if (write_errors > 0) {
-        fprintf(stderr, "WARNING: %d log entries failed to write (possible disk space issue).\n", write_errors);
-        fprintf(stderr, "File may be incomplete.\n");
-    }
-    
-    fprintf(file, "\n========================================\n");
-    fprintf(file, "END OF REPORT\n");
-    fprintf(file, "========================================\n");
-    
-    // Flush data to disk before closing
-    if (fflush(file) != 0) {
-        log_audit_trail("FILE_CREATION_FAILED", requesting_user, "Failed to flush file", 0);
-        fprintf(stderr, "ERROR: Failed to flush data to disk.\n");
-        fclose(file);
-        remove(filename); // Clean up incomplete file
         return 0;
     }
     
-    // Close file
+    if (requesting_user->role != USER_ROLE_ADMINISTRATOR) {
+        return 0; // Only Administrators can create files
+    }
+    
+    // Basic validation: Check inputs
+    if (query_result == NULL) {
+        return 0;
+    }
+    
+    if (users == NULL || user_count <= 0) {
+        return 0;
+    }
+    
+    if (user_id <= 0) {
+        return 0;
+    }
+    
+    if (output_directory == NULL) {
+        return 0;
+    }
+    
+    // Check if query result has data
+    if (query_result->count == 0) {
+        return 0; // No data to write
+    }
+    
+    // Get username using pointer arithmetic
+    const char *username = get_username_by_id(users, user_count, user_id);
+    if (username == NULL || string_length(username) == 0) {
+        return 0;
+    }
+    
+    // Check if username is "unknown" (user not found)
+    const char *unknown_str = "unknown";
+    int is_unknown = 1;
+    int i;
+    for (i = 0; unknown_str[i] != '\0' && username[i] != '\0'; i++) {
+        if (unknown_str[i] != username[i]) {
+            is_unknown = 0;
+            break;
+        }
+    }
+    if (is_unknown && unknown_str[i] == '\0' && username[i] == '\0') {
+        return 0; // User not found
+    }
+    
+    // Generate filename using basic string manipulation
+    char filename[512];
+    if (!generate_filename(filename, sizeof(filename), username, output_directory)) {
+        return 0;
+    }
+    
+    // Open file for writing (basic file I/O)
+    FILE *file = fopen(filename, "w");
+    if (file == NULL) {
+        return 0; // Failed to open file
+    }
+    
+    // Write header using basic string writing
+    write_string_to_file(file, "========================================\n");
+    write_string_to_file(file, "USER ACTION LOG REPORT\n");
+    write_string_to_file(file, "========================================\n\n");
+    
+    write_string_to_file(file, "User ID: ");
+    write_int_to_file(file, user_id);
+    write_string_to_file(file, "\n");
+    
+    write_string_to_file(file, "Username: ");
+    write_string_to_file(file, username);
+    write_string_to_file(file, "\n");
+    
+    write_string_to_file(file, "Total Actions: ");
+    write_int_to_file(file, query_result->count);
+    write_string_to_file(file, "\n\n");
+    
+    write_string_to_file(file, "========================================\n");
+    write_string_to_file(file, "LOG ENTRIES\n");
+    write_string_to_file(file, "========================================\n\n");
+    
+    // Write log entries using pointer access to structure array
+    Log *current_log = query_result->entries;
+    for (i = 0; i < query_result->count; i++) {
+        // Write Log ID
+        write_string_to_file(file, "Log ID: ");
+        write_int_to_file(file, current_log->log_id);
+        write_string_to_file(file, "\n");
+        
+        // Write User ID
+        write_string_to_file(file, "User ID: ");
+        write_int_to_file(file, current_log->user_id);
+        write_string_to_file(file, "\n");
+        
+        // Write Username
+        write_string_to_file(file, "Username: ");
+        write_string_to_file(file, username);
+        write_string_to_file(file, "\n");
+        
+        // Write Action Type
+        write_string_to_file(file, "Action Type: ");
+        write_string_to_file(file, current_log->action_type);
+        write_string_to_file(file, "\n");
+        
+        // Write Action Details
+        write_string_to_file(file, "Action Details: ");
+        write_string_to_file(file, current_log->action_details);
+        write_string_to_file(file, "\n");
+        
+        // Write Timestamp
+        write_string_to_file(file, "Timestamp: ");
+        write_string_to_file(file, current_log->timestamp);
+        write_string_to_file(file, "\n");
+        
+        write_string_to_file(file, "----------------------------------------\n");
+        
+        // Move pointer to next Log structure
+        current_log++;
+    }
+    
+    // Write footer
+    write_string_to_file(file, "\n========================================\n");
+    write_string_to_file(file, "END OF REPORT\n");
+    write_string_to_file(file, "========================================\n");
+    
+    // Flush and close file
+    if (fflush(file) != 0) {
+        fclose(file);
+        return 0;
+    }
+    
     if (fclose(file) != 0) {
-        log_audit_trail("FILE_CREATION_FAILED", requesting_user, "Failed to close file", 0);
-        fprintf(stderr, "ERROR: Failed to close file properly. Data may be lost.\n");
-        return 0; // Failed to close file
+        return 0;
     }
-    
-    // Set restricted file permissions (only owner can read/write, no access for others)
-    if (!set_restricted_file_permissions(filename)) {
-        // Log warning but don't fail - file was created successfully
-        log_audit_trail("FILE_PERMISSIONS_WARNING", requesting_user, "Failed to set restricted permissions", 0);
-        fprintf(stderr, "WARNING: File created but could not set restricted permissions.\n");
-        fprintf(stderr, "File location: %s\n", filename);
-        // Continue anyway as file was created
-    } else {
-        // Log successful permission setting
-        log_audit_trail("FILE_CREATION_SUCCESS", requesting_user, "File created with restricted permissions", 1);
-    }
-    
-    // Success message with file location
-    printf("\n");
-    printf("========================================\n");
-    printf("FILE CREATION SUCCESSFUL\n");
-    printf("========================================\n");
-    printf("File created: %s\n", filename);
-    printf("Total actions exported: %d\n", query_result->count);
-    printf("Target user: %s (ID: %d)\n", username, user_id);
-    printf("Created by: %s (Administrator)\n", requesting_user->username);
-    printf("File permissions: Restricted (owner read/write only)\n");
-    printf("========================================\n\n");
     
     return 1; // Success
 }
