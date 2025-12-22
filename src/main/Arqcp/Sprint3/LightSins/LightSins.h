@@ -3,7 +3,7 @@
 
 #include <Arduino.h>
 
-#define MAX_TRACKS 4   // número razoável para o Pico
+#define MAX_TRACKS 4  // número razoável para o Pico
 
 // Comandos
 #define CMD_RE 0   // Red ON
