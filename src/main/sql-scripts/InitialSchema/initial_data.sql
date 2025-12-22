@@ -92,11 +92,11 @@ INSERT INTO SegmentType (trackType, numberOfTracks) VALUES ('SINGLE', 1);
 INSERT INTO SegmentType (trackType, numberOfTracks) VALUES ('DOUBLE', 2);
 INSERT INTO SegmentType (trackType, numberOfTracks) VALUES ('QUAD', 4);
 
--- 8. Siding - inventar dados para alguns segmentos (apenas 2 segmentos têm siding no dataset)
-INSERT INTO Siding (SIding_id, "Size") VALUES (1, 864); -- Para segmento ID 21
-INSERT INTO Siding (SIding_id, "Size") VALUES (2, 266); -- Para segmento ID 25
+-- 8. Siding
+INSERT INTO Siding (SIding_id, "Size") VALUES (1, 864);
+INSERT INTO Siding (SIding_id, "Size") VALUES (2, 266);
 
--- 9. Segment - usar dados da sheet Segment
+-- 9. Segment
 INSERT INTO Segment (segment_id, line_id, length_m, segment_order, electrified_flag, SegmentTypetrackNumber, SegmentTypetrackType, SidingSIding_id)
 VALUES (1, 1, 2618, 1, 'Y', 4, 'QUAD', NULL);
 
@@ -193,15 +193,15 @@ VALUES (60, 36, 16310, 31, 'Y', 2, 'DOUBLE', NULL);
 INSERT INTO Segment (segment_id, line_id, length_m, segment_order, electrified_flag, SegmentTypetrackNumber, SegmentTypetrackType, SidingSIding_id)
 VALUES (61, 37, 15200, 32, 'Y', 2, 'DOUBLE', NULL);
 
--- 10. WagonType - inventar dados (baseado no Type da sheet Wagon Model)
+-- 10. WagonType
 INSERT INTO WagonType (type_id, type_name) VALUES (1, 'Cereal wagon');
 INSERT INTO WagonType (type_id, type_name) VALUES (2, 'Covered wagon with sliding door');
 INSERT INTO WagonType (type_id, type_name) VALUES (3, 'Container wagon (max 40'' HC)');
 INSERT INTO WagonType (type_id, type_name) VALUES (4, 'Biodiesel wagon');
 INSERT INTO WagonType (type_id, type_name) VALUES (5, 'Wood wagon');
 
--- 11. WagonModel - usar dados da sheet Wagon Model
--- Nota: Bogies column tem "Duplo" e "Simples" - vou converter para números
+-- 11. WagonModel
+
 INSERT INTO WagonModel (modelID, name, maker, bogies_number, lenght, height, width, weight_t, max_speed, payload, volume, WagonTypetype_id)
 VALUES (1245, 'Tadgs 32 94 082 3', 'Metalsines', 2, 17240, 4270, 3072, 24, 120, 56, 75, 1);
 
@@ -232,8 +232,8 @@ VALUES (1523, 'Zaes 81 94 788', 'Equimetal', 2, 13800, 4226, 2950, 22, 120, 57, 
 INSERT INTO WagonModel (modelID, name, maker, bogies_number, lenght, height, width, weight_t, max_speed, payload, volume, WagonTypetype_id)
 VALUES (1212, 'Kbs 41 94 333', 'Simmering', 2, 14020, 3300, 2842, 14, 100, 25, 62, 5);
 
--- 12. LocomotiveModel - criar modelos baseados nos dados da sheet Locomotive
--- Vou criar IDs para os modelos: Eurosprinter, CP 1900, E4000
+-- 12. LocomotiveModel
+
 INSERT INTO LocomotiveModel (locomotive_model_id, power, acelaration, make, lenght, weight, heigth, max_speed, bogies_number)
 VALUES ('Eurosprinter', 5600, 300, 'Siemens', 19200, 87, 4375, 220, 2);
 
@@ -243,20 +243,19 @@ VALUES ('CP 1900', 1623, 396, 'Sorefame - Alsthom', 19084, 117, 4310, 100, 2);
 INSERT INTO LocomotiveModel (locomotive_model_id, power, acelaration, make, lenght, weight, heigth, max_speed, bogies_number)
 VALUES ('E4000', 3178, 400, 'Stadler', 23020, 124, 4264, 120, 3);
 
--- 13. Diesel_Locomotive - para modelos diesel
+-- 13. Diesel_Locomotive
 INSERT INTO Diesel_Locomotive (LocomotiveModellocomotive_model_id, fuelCapacity)
 VALUES ('CP 1900', 4882);
 
 INSERT INTO Diesel_Locomotive (LocomotiveModellocomotive_model_id, fuelCapacity)
 VALUES ('E4000', 6700);
 
--- 14. Electric_Locomotive - para modelos elétricos
+-- 14. Electric_Locomotive
 INSERT INTO Electric_Locomotive (LocomotiveModellocomotive_model_id, Voltage)
 VALUES ('Eurosprinter', 25000); -- 25 KV = 25000 volts
 
--- 15. Locomotive - usar dados da sheet Locomotive
--- Vou criar IDs sequenciais para as locomotivas
--- Para entry_year vou extrair o ano da data de Service Start
+-- 15. Locomotive
+
 INSERT INTO Locomotive (locomotive_id, operator_id, entry_year, locomotive_model_id, Traintrain_id, Trainoperator_id)
 VALUES (5621, 'Medway', 1995, 'Eurosprinter', 5421, 'Medway'); -- inventar dados para train
 
@@ -275,7 +274,7 @@ VALUES (5034, 'Medway', 2017, 'E4000', 5437, 'Medway');
 INSERT INTO Locomotive (locomotive_id, operator_id, entry_year, locomotive_model_id, Traintrain_id, Trainoperator_id)
 VALUES (5036, 'Medway', 2017, 'E4000', 5437, 'Medway');
 
--- O dataset tem duplicado o 5036 com bitola diferente, vou criar outro ID
+
 INSERT INTO Locomotive (locomotive_id, operator_id, entry_year, locomotive_model_id, Traintrain_id, Trainoperator_id)
 VALUES (5037, 'Medway', 2017, 'E4000', 5437, 'Medway');
 
@@ -285,7 +284,7 @@ VALUES (335001, 'Captrain', 2019, 'E4000', 5437, 'Medway'); -- inventar dados pa
 INSERT INTO Locomotive (locomotive_id, operator_id, entry_year, locomotive_model_id, Traintrain_id, Trainoperator_id)
 VALUES (335003, 'Captrain', 2019, 'E4000', 5437, 'Medway');
 
--- 16. Locomotive_Gauge - associar locomotivas às bitolas
+-- 16. Locomotive_Gauge
 INSERT INTO Locomotive_Gauge (Locomotivelocomotive_id, Gaugecode)
 VALUES (5621, 1668);
 
@@ -313,9 +312,8 @@ VALUES (335001, 1668);
 INSERT INTO Locomotive_Gauge (Locomotivelocomotive_id, Gaugecode)
 VALUES (335003, 1668);
 
--- 17. Wagon - usar dados da sheet Wagon
--- Preciso converter Number para ID numérico e service_year da data
--- Vou usar os últimos dígitos como ID
+-- 17. Wagon
+
 INSERT INTO Wagon (wagon_id, operator_id, service_year, WagonModelmodelID)
 VALUES (77077, 'Medway', 1987, 1104); -- 356 3 077
 
@@ -439,19 +437,17 @@ VALUES (2009, 'Medway', 2005, 1212); -- 333 0 009
 INSERT INTO Wagon (wagon_id, operator_id, service_year, WagonModelmodelID)
 VALUES (2010, 'Medway', 2005, 1212); -- 333 0 010
 
--- 18. Gauge_Wagon - associar vagões às bitolas
--- Para modelos com bitola 1435
-INSERT INTO Gauge_Wagon (Gaugecode, Wagonwagon_id) VALUES (1435, 5037); -- Para locomotiva
--- Para vagões com bitola específica (do WagonModel sheet)
+-- 18. Gauge_Wagon
+
 INSERT INTO Gauge_Wagon (Gaugecode, Wagonwagon_id) SELECT 1668, wagon_id FROM Wagon WHERE WagonModelmodelID IN (1245, 1278, 1325, 1104, 985, 987, 1525, 1212);
 INSERT INTO Gauge_Wagon (Gaugecode, Wagonwagon_id) SELECT 1435, wagon_id FROM Wagon WHERE WagonModelmodelID IN (988, 1523);
 
--- 19. Train - criar comboios baseados na sheet Train
-INSERT INTO Train (train_id, operator_id, max_length) VALUES (5421, 'Medway', 500); -- inventar dados para max_length
+-- 19. Train
+INSERT INTO Train (train_id, operator_id, max_length) VALUES (5421, 'Medway', 500);
 INSERT INTO Train (train_id, operator_id, max_length) VALUES (5435, 'Medway', 400);
 INSERT INTO Train (train_id, operator_id, max_length) VALUES (5437, 'Medway', 600);
 
--- 20. Locomotive_Train - inventar dados (associação locomotivas-comboios)
+-- 20. Locomotive_Train
 INSERT INTO Locomotive_Train (Locomotivelocomotive_id, Traintrain_id, Trainoperator_id, Adddate)
 VALUES (5621, 5421, 'Medway', TO_TIMESTAMP('2025-10-03 08:00:00', 'YYYY-MM-DD HH24:MI:SS'));
 
@@ -464,7 +460,7 @@ VALUES (1903, 5435, 'Medway', TO_TIMESTAMP('2025-10-03 17:00:00', 'YYYY-MM-DD HH
 INSERT INTO Locomotive_Train (Locomotivelocomotive_id, Traintrain_id, Trainoperator_id, Adddate)
 VALUES (5034, 5437, 'Medway', TO_TIMESTAMP('2025-10-06 09:00:00', 'YYYY-MM-DD HH24:MI:SS'));
 
--- 21. FreighTrain - inventar dados (associação frete-comboio)
+-- 21. FreighTrain
 INSERT INTO FreighTrain (Freigth_id, Traintrain_id, TrainLocomotivelocomotive_id, Trainoperator_id)
 VALUES (2001, 5421, 5621, 'Medway');
 
@@ -492,7 +488,7 @@ VALUES (2050, 5437, 5034, 'Medway');
 INSERT INTO FreighTrain (Freigth_id, Traintrain_id, TrainLocomotivelocomotive_id, Trainoperator_id)
 VALUES (2051, 5437, 5034, 'Medway');
 
--- 22. Freight - usar dados da sheet Freights
+-- 22. Freight
 INSERT INTO Freight (freight_id, Originfacility_id, Destinationfacility_id, FreighTrainFreigth_id, createDate, FreighTrainTraintrain_id)
 VALUES (2001, 50, 12, 2001, TO_TIMESTAMP('2025-10-03 00:00:00', 'YYYY-MM-DD HH24:MI:SS'), 5421);
 
@@ -520,7 +516,7 @@ VALUES (2050, 12, 50, 2050, TO_TIMESTAMP('2025-10-06 00:00:00', 'YYYY-MM-DD HH24
 INSERT INTO Freight (freight_id, Originfacility_id, Destinationfacility_id, FreighTrainFreigth_id, createDate, FreighTrainTraintrain_id)
 VALUES (2051, 11, 50, 2051, TO_TIMESTAMP('2025-10-06 00:00:00', 'YYYY-MM-DD HH24:MI:SS'), 5437);
 
--- 23. Wagon_In_Freight - associar vagões aos fretes (usar dados da sheet Freights)
+-- 23. Wagon_In_Freight
 INSERT INTO Wagon_In_Freight (Wagon_id, Freight_id) VALUES (2001, 2001); -- 333 0 001
 INSERT INTO Wagon_In_Freight (Wagon_id, Freight_id) VALUES (2002, 2001); -- 333 0 002
 INSERT INTO Wagon_In_Freight (Wagon_id, Freight_id) VALUES (2004, 2001); -- 333 0 004
@@ -559,8 +555,8 @@ INSERT INTO Wagon_In_Freight (Wagon_id, Freight_id) VALUES (78078, 2051); -- 356
 INSERT INTO Wagon_In_Freight (Wagon_id, Freight_id) VALUES (79079, 2051); -- 356 3 079
 INSERT INTO Wagon_In_Freight (Wagon_id, Freight_id) VALUES (80080, 2051); -- 356 3 080
 
--- 24. Train_route - inventar dados (rotas dos comboios baseadas no Path da sheet Train)
--- Para comboio 5421: 50, 48, 45, 43, 13, 20, 8, 12, 17, 21, 16, 11
+-- 24. Train_route
+
 INSERT INTO Train_route (Facility_id, Train_id, "Order", TrainLocomotivelocomotive_id, Trainoperator_id, departure_time, Arrival_Time)
 VALUES (50, 5421, 1, 5621, 'Medway', 945, 950); -- 09:45 como 945
 
@@ -597,16 +593,35 @@ VALUES (16, 5421, 11, 5621, 'Medway', 1430, 1435);
 INSERT INTO Train_route (Facility_id, Train_id, "Order", TrainLocomotivelocomotive_id, Trainoperator_id, departure_time, Arrival_Time)
 VALUES (11, 5421, 12, 5621, 'Medway', 1500, 1505);
 
--- Para comboio 5435: 11, 16, 21, 17, 12, 8, 20, 13, 43, 45, 48, 50
+
 INSERT INTO Train_route (Facility_id, Train_id, "Order", TrainLocomotivelocomotive_id, Trainoperator_id, departure_time, Arrival_Time)
 VALUES (11, 5435, 1, 1903, 'Medway', 1800, 1805); -- 18:00 como 1800
 
 INSERT INTO Train_route (Facility_id, Train_id, "Order", TrainLocomotivelocomotive_id, Trainoperator_id, departure_time, Arrival_Time)
 VALUES (16, 5435, 2, 1903, 'Medway', 1830, 1835);
+INSERT INTO Train_route (Facility_id, Train_id, "Order", TrainLocomotivelocomotive_id, Trainoperator_id, departure_time, Arrival_Time)
+VALUES (21, 5435, 2, 1903, 'Medway', 1830, 1835);
+INSERT INTO Train_route (Facility_id, Train_id, "Order", TrainLocomotivelocomotive_id, Trainoperator_id, departure_time, Arrival_Time)
+VALUES (17, 5435, 2, 1903, 'Medway', 1830, 1835);
+INSERT INTO Train_route (Facility_id, Train_id, "Order", TrainLocomotivelocomotive_id, Trainoperator_id, departure_time, Arrival_Time)
+VALUES (12, 5435, 2, 1903, 'Medway', 1830, 1835);
+INSERT INTO Train_route (Facility_id, Train_id, "Order", TrainLocomotivelocomotive_id, Trainoperator_id, departure_time, Arrival_Time)
+VALUES (8, 5435, 2, 1903, 'Medway', 1830, 1835);
+INSERT INTO Train_route (Facility_id, Train_id, "Order", TrainLocomotivelocomotive_id, Trainoperator_id, departure_time, Arrival_Time)
+VALUES (20, 5435, 2, 1903, 'Medway', 1830, 1835);
+INSERT INTO Train_route (Facility_id, Train_id, "Order", TrainLocomotivelocomotive_id, Trainoperator_id, departure_time, Arrival_Time)
+VALUES (13, 5435, 2, 1903, 'Medway', 1830, 1835);
+INSERT INTO Train_route (Facility_id, Train_id, "Order", TrainLocomotivelocomotive_id, Trainoperator_id, departure_time, Arrival_Time)
+VALUES (43, 5435, 2, 1903, 'Medway', 1830, 1835);
+INSERT INTO Train_route (Facility_id, Train_id, "Order", TrainLocomotivelocomotive_id, Trainoperator_id, departure_time, Arrival_Time)
+VALUES (45, 5435, 2, 1903, 'Medway', 1830, 1835);
+INSERT INTO Train_route (Facility_id, Train_id, "Order", TrainLocomotivelocomotive_id, Trainoperator_id, departure_time, Arrival_Time)
+VALUES (48, 5435, 2, 1903, 'Medway', 1830, 1835);
+INSERT INTO Train_route (Facility_id, Train_id, "Order", TrainLocomotivelocomotive_id, Trainoperator_id, departure_time, Arrival_Time)
+VALUES (50, 5435, 2, 1903, 'Medway', 1830, 1835);
 
--- ... continuar para os outros pontos (similar ao acima)
 
--- 25. TrainLog - inventar dados (logs de chegada dos comboios)
+-- 25. TrainLog
 INSERT INTO TrainLog (Traintrain_id, Trainoperator_id, Arrival, TrainLogTraintrain_id)
 VALUES (5421, 'Medway', TO_TIMESTAMP('2025-10-03 15:05:00', 'YYYY-MM-DD HH24:MI:SS'), 5421);
 
@@ -616,7 +631,7 @@ VALUES (5435, 'Medway', TO_TIMESTAMP('2025-10-03 22:00:00', 'YYYY-MM-DD HH24:MI:
 INSERT INTO TrainLog (Traintrain_id, Trainoperator_id, Arrival, TrainLogTraintrain_id)
 VALUES (5437, 'Medway', TO_TIMESTAMP('2025-10-06 18:00:00', 'YYYY-MM-DD HH24:MI:SS'), 5437);
 
--- 26. TrainLogDeparture - inventar dados (logs de partida dos comboios)
+-- 26. TrainLogDeparture
 INSERT INTO TrainLogDeparture (TrainLogTraintrain_id, Departure)
 VALUES (5421, TO_TIMESTAMP('2025-10-03 09:45:00', 'YYYY-MM-DD HH24:MI:SS'));
 
@@ -626,34 +641,45 @@ VALUES (5435, TO_TIMESTAMP('2025-10-03 18:00:00', 'YYYY-MM-DD HH24:MI:SS'));
 INSERT INTO TrainLogDeparture (TrainLogTraintrain_id, Departure)
 VALUES (5437, TO_TIMESTAMP('2025-10-06 10:00:00', 'YYYY-MM-DD HH24:MI:SS'));
 
--- 27. FreightLog - inventar dados (logs de descarga de fretes)
+-- 27. FreightLog
 INSERT INTO FreightLog (Freightfreight_id, unloadFreightDate)
 VALUES (2001, TO_TIMESTAMP('2025-10-03 16:00:00', 'YYYY-MM-DD HH24:MI:SS'));
 
 INSERT INTO FreightLog (Freightfreight_id, unloadFreightDate)
 VALUES (2002, TO_TIMESTAMP('2025-10-03 16:30:00', 'YYYY-MM-DD HH24:MI:SS'));
+INSERT INTO FreightLog (Freightfreight_id, unloadFreightDate)
+VALUES (2003, TO_TIMESTAMP('2025-10-03 16:30:00', 'YYYY-MM-DD HH24:MI:SS'));
+INSERT INTO FreightLog (Freightfreight_id, unloadFreightDate)
+VALUES (2004, TO_TIMESTAMP('2025-10-03 17:30:00', 'YYYY-MM-DD HH24:MI:SS'));
+INSERT INTO FreightLog (Freightfreight_id, unloadFreightDate)
+VALUES (2005, TO_TIMESTAMP('2025-13-03 16:30:00', 'YYYY-MM-DD HH24:MI:SS'));
+INSERT INTO FreightLog (Freightfreight_id, unloadFreightDate)
+VALUES (2006, TO_TIMESTAMP('2025-29-03 16:30:00', 'YYYY-MM-DD HH24:MI:SS'));
+INSERT INTO FreightLog (Freightfreight_id, unloadFreightDate)
+VALUES (2007, TO_TIMESTAMP('2025-30-03 18:30:00', 'YYYY-MM-DD HH24:MI:SS'));
+INSERT INTO FreightLog (Freightfreight_id, unloadFreightDate)
+VALUES (2050, TO_TIMESTAMP('2025-7-04 16:00:00', 'YYYY-MM-DD HH24:MI:SS'));
+INSERT INTO FreightLog (Freightfreight_id, unloadFreightDate)
+VALUES (2051, TO_TIMESTAMP('2025-7-04 16:30:00', 'YYYY-MM-DD HH24:MI:SS'));
 
--- ... continuar para outros fretes
 
--- 28. BuildingType - inventar dados (tipos de edifícios)
+-- 28. BuildingType
 INSERT INTO BuildingType (ID, name) VALUES (1, 'Warehouse');
-INSERT INTO BuildingType (ID, name) VALUES (2, 'Office');
-INSERT INTO BuildingType (ID, name) VALUES (3, 'Maintenance');
-INSERT INTO BuildingType (ID, name) VALUES (4, 'Passenger Terminal');
+INSERT INTO BuildingType (ID, name) VALUES (2, 'Grain Silos');
+INSERT INTO BuildingType (ID, name) VALUES (3, 'Cold Areas');
 
--- 29. Building - inventar dados (edifícios nas instalações)
--- Vou criar alguns edifícios para instalações principais
-INSERT INTO Building (ID, name, number, BuildingTypeID, Facilityfacility_id)
+-- 29. Building
+INSERT INTO Building (ID, name, NUMBEROFBUILDINGS, BuildingTypeID, Facilityfacility_id)
 VALUES (1, 'Main Warehouse Leixões', 1, 1, 50);
 
-INSERT INTO Building (ID, name, number, BuildingTypeID, Facilityfacility_id)
-VALUES (2, 'Office Building Leixões', 1, 2, 50);
+INSERT INTO Building (ID, name, NUMBEROFBUILDINGS, BuildingTypeID, Facilityfacility_id)
+VALUES (2, 'Grain Silo Leixões', 1, 2, 50);
 
-INSERT INTO Building (ID, name, number, BuildingTypeID, Facilityfacility_id)
-VALUES (3, 'Main Warehouse Valença', 1, 1, 11);
+INSERT INTO Building (ID, name, NUMBEROFBUILDINGS, BuildingTypeID, Facilityfacility_id)
+VALUES (3, 'Refrigerated Area Valença', 1, 1, 11);
 
-INSERT INTO Building (ID, name, number, BuildingTypeID, Facilityfacility_id)
-VALUES (4, 'Maintenance Depot', 1, 3, 5);
+INSERT INTO Building (ID, name, NUMBEROFBUILDINGS, BuildingTypeID, Facilityfacility_id)
+VALUES (1, 'Campanhã Warehouse', 1, 3, 5);
 
-INSERT INTO Building (ID, name, number, BuildingTypeID, Facilityfacility_id)
-VALUES (5, 'Passenger Terminal São Bento', 1, 4, 7);
+INSERT INTO Building (ID, name, NUMBEROFBUILDINGS, BuildingTypeID, Facilityfacility_id)
+VALUES (2, 'Grain Silo of São Bento', 1, 4, 7);
