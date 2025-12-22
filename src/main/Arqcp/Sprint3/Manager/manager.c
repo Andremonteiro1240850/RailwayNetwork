@@ -291,47 +291,56 @@ int manager_send_cmd_to_sensors(const char *cmd) {
  * Wait for data from sensors component via serial
  * Returns dynamically allocated string (caller must free)
  * 
+ * Implementation using only basic ARQCP concepts:
+ * - Dynamic memory allocation (malloc)
+ * - Basic string manipulation (no snprintf)
+ * - Basic I/O operations
+ * 
  * @return Dynamically allocated string with sensor data, or NULL on error
  */
 char* manager_wait_for_data_from_sensors(void) {
     // Check if serial port is open
     if (g_serial_fd < 0) {
-        fprintf(stderr, "[Manager] ERROR: Serial communication not initialized\n");
         return NULL;
     }
     
     // Allocate buffer for response
     char *data = (char*)malloc(MAX_SENSOR_STR_LEN);
     if (data == NULL) {
-        fprintf(stderr, "[Manager] ERROR: Memory allocation failed\n");
         return NULL;
     }
     
 #ifdef _WIN32
     // Windows simulation mode
     // Simulated sensor data format: TEMP&unit::celsius&value::XX#HUM&unit::percentage&value::YY
-    snprintf(data, MAX_SENSOR_STR_LEN, "TEMP&unit::celsius&value::25#HUM&unit::percentage&value::65");
-    printf("[Manager<-Sensors] Received: %s\n", data);
+    // Build string using basic string manipulation (no snprintf)
+    const char *sensor_data = "TEMP&unit::celsius&value::25#HUM&unit::percentage&value::65";
+    int i = 0;
+    while (sensor_data[i] != '\0' && i < MAX_SENSOR_STR_LEN - 1) {
+        data[i] = sensor_data[i];
+        i++;
+    }
+    data[i] = '\0';
     return data;
 #else
-    // Read response from serial port with timeout
+    // Read response from serial port with basic timeout (simplified)
+    // Using simple counter instead of time() function
     int bytes_read = 0;
     char *buffer = data;
     int remaining = MAX_SENSOR_STR_LEN - 1; // Reserve space for null terminator
-    time_t start_time = time(NULL);
+    int timeout_counter = 0;
+    int max_iterations = SERIAL_TIMEOUT_SEC * 100; // Simple timeout approximation
     
-    while (remaining > 0 && (time(NULL) - start_time) < SERIAL_TIMEOUT_SEC) {
+    while (remaining > 0 && timeout_counter < max_iterations) {
         ssize_t n = read(g_serial_fd, buffer, remaining);
         
         if (n < 0) {
             if (errno == EAGAIN || errno == EWOULDBLOCK) {
                 // No data available yet, continue waiting
-                usleep(10000); // Sleep 10ms
+                timeout_counter++;
                 continue;
             } else {
                 // Error reading
-                fprintf(stderr, "[Manager] ERROR: Failed to read from serial port: %s\n", 
-                        strerror(errno));
                 free(data);
                 close(g_serial_fd);
                 g_serial_fd = -1;
@@ -339,7 +348,7 @@ char* manager_wait_for_data_from_sensors(void) {
             }
         } else if (n == 0) {
             // No data available, continue waiting
-            usleep(10000); // Sleep 10ms
+            timeout_counter++;
             continue;
         } else {
             // Data received
@@ -352,11 +361,11 @@ char* manager_wait_for_data_from_sensors(void) {
                 break; // Complete line received
             }
         }
+        timeout_counter++;
     }
     
     // Check for timeout
     if (bytes_read == 0) {
-        fprintf(stderr, "[Manager] ERROR: Timeout waiting for sensor response\n");
         free(data);
         return NULL;
     }
@@ -364,20 +373,18 @@ char* manager_wait_for_data_from_sensors(void) {
     // Null terminate the string
     data[bytes_read] = '\0';
     
-    // Remove trailing newline/carriage return
+    // Remove trailing newline/carriage return using basic loop
     while (bytes_read > 0 && (data[bytes_read - 1] == '\n' || data[bytes_read - 1] == '\r')) {
         data[bytes_read - 1] = '\0';
         bytes_read--;
     }
     
-    // Check if we got any data
-    if (strlen(data) == 0) {
-        fprintf(stderr, "[Manager] ERROR: Empty response from sensors\n");
+    // Check if we got any data using basic string length check
+    if (string_length(data) == 0) {
         free(data);
         return NULL;
     }
     
-    printf("[Manager<-Sensors] Received: %s\n", data);
     return data;
 #endif
 }
@@ -811,18 +818,32 @@ int manager_process_instruction(ManagerSystem *system, const char *inst, char **
                strcmp(inst, "TEMP") == 0 || strcmp(inst, "temp") == 0 ||
                strcmp(inst, "HUM") == 0 || strcmp(inst, "hum") == 0 ||
                strcmp(inst, "SENSOR") == 0 || strcmp(inst, "sensor") == 0) {
-        // Sensor data request command
+        // Sensor data request command (USAC13)
         // Display filtered (median) sensor values, not raw readings
         char *sensor_display = manager_format_sensor_display(system);
         if (sensor_display != NULL) {
-            strncpy(*data_out, sensor_display, MAX_DATA_LEN - 1);
-            (*data_out)[MAX_DATA_LEN - 1] = '\0';
-            strcpy(*cmd_out, ""); // No command for lightsigns
+            // Copy using basic string manipulation (no strncpy)
+            int i = 0;
+            while (sensor_display[i] != '\0' && i < MAX_DATA_LEN - 1) {
+                (*data_out)[i] = sensor_display[i];
+                i++;
+            }
+            (*data_out)[i] = '\0';
+            
+            // Set cmd_out to empty string
+            (*cmd_out)[0] = '\0';
             free(sensor_display);
             return 1;
         } else {
-            strcpy(*data_out, "Error: Sensor data not available");
-            strcpy(*cmd_out, "");
+            // Copy error message using basic string manipulation
+            const char *error_msg = "Error: Sensor data not available";
+            int i = 0;
+            while (error_msg[i] != '\0' && i < MAX_DATA_LEN - 1) {
+                (*data_out)[i] = error_msg[i];
+                i++;
+            }
+            (*data_out)[i] = '\0';
+            (*cmd_out)[0] = '\0';
             return 0;
         }
     } else {
@@ -835,9 +856,18 @@ int manager_process_instruction(ManagerSystem *system, const char *inst, char **
     return 0;
 }
 
+// ==================== USAC13: Get Data from Sensors Component ====================
+// USAC13 - As a User, I want to get data from the Sensors component.
+// Implementation using only basic ARQCP concepts: structures, pointers, arrays,
+// basic string manipulation (no strncpy, snprintf), and memory access through pointers.
+
 /**
  * Get filtered sensor data programmatically
  * Returns filtered (median) values, not raw readings
+ * 
+ * Implementation using only basic ARQCP concepts:
+ * - Structure access through pointers
+ * - Basic string copying (no strncpy)
  * 
  * @param system ManagerSystem with sensor data
  * @param temp_out Output parameter for filtered temperature
@@ -860,12 +890,22 @@ int manager_get_sensor_data(const ManagerSystem *system, int *temp_out, int *hum
     *temp_out = system->sensors.current_temp;
     *humidity_out = system->sensors.current_humidity;
     
-    // Copy units
-    strncpy(temp_unit_out, system->sensors.temp_unit, temp_unit_len - 1);
-    temp_unit_out[temp_unit_len - 1] = '\0';
+    // Copy units using basic string copying (no strncpy)
+    const char *src_temp = system->sensors.temp_unit;
+    int i = 0;
+    while (src_temp[i] != '\0' && i < temp_unit_len - 1) {
+        temp_unit_out[i] = src_temp[i];
+        i++;
+    }
+    temp_unit_out[i] = '\0';
     
-    strncpy(humidity_unit_out, system->sensors.humidity_unit, humidity_unit_len - 1);
-    humidity_unit_out[humidity_unit_len - 1] = '\0';
+    const char *src_humidity = system->sensors.humidity_unit;
+    i = 0;
+    while (src_humidity[i] != '\0' && i < humidity_unit_len - 1) {
+        humidity_unit_out[i] = src_humidity[i];
+        i++;
+    }
+    humidity_unit_out[i] = '\0';
     
     return 1;
 }
@@ -873,6 +913,11 @@ int manager_get_sensor_data(const ManagerSystem *system, int *temp_out, int *hum
 /**
  * Format sensor data for display
  * Returns filtered (median) values with clear unit indication
+ * 
+ * Implementation using only basic ARQCP concepts:
+ * - Dynamic memory allocation (malloc)
+ * - Basic string manipulation (no snprintf)
+ * - Integer to string conversion
  * 
  * @param system ManagerSystem with sensor data
  * @return Dynamically allocated string with formatted sensor data (caller must free), or NULL on error
@@ -888,29 +933,123 @@ char* manager_format_sensor_display(const ManagerSystem *system) {
     char *display = (char*)malloc(MAX_DATA_LEN);
     if (display == NULL) return NULL;
     
-    // Format with clear unit indication
     // Check if we have valid data (non-zero or if buffers have data)
     int has_data = (system->sensors.temp_nelem > 0 || system->sensors.humidity_nelem > 0);
     
+    int pos = 0;
+    
     if (!has_data) {
-        snprintf(display, MAX_DATA_LEN, 
-                 "Sensor Data: Not available yet\n"
-                 "Waiting for sensor readings...");
+        // Write "Sensor Data: Not available yet\nWaiting for sensor readings..."
+        const char *msg1 = "Sensor Data: Not available yet\n";
+        int i = 0;
+        while (msg1[i] != '\0' && pos < MAX_DATA_LEN - 1) {
+            display[pos++] = msg1[i++];
+        }
+        const char *msg2 = "Waiting for sensor readings...";
+        i = 0;
+        while (msg2[i] != '\0' && pos < MAX_DATA_LEN - 1) {
+            display[pos++] = msg2[i++];
+        }
     } else {
-        // Format with clear units
-        snprintf(display, MAX_DATA_LEN,
-                 "========================================\n"
-                 "SENSOR DATA (Filtered - Moving Median)\n"
-                 "========================================\n"
-                 "Temperature: %d %s\n"
-                 "Humidity: %d %s\n"
-                 "========================================\n"
-                 "Note: Values shown are filtered (median),\n"
-                 "      not raw sensor readings.",
-                 temp, system->sensors.temp_unit,
-                 humidity, system->sensors.humidity_unit);
+        // Format with clear units using basic string building
+        const char *header1 = "========================================\n";
+        int i = 0;
+        while (header1[i] != '\0' && pos < MAX_DATA_LEN - 1) {
+            display[pos++] = header1[i++];
+        }
+        
+        const char *header2 = "SENSOR DATA (Filtered - Moving Median)\n";
+        i = 0;
+        while (header2[i] != '\0' && pos < MAX_DATA_LEN - 1) {
+            display[pos++] = header2[i++];
+        }
+        
+        const char *header3 = "========================================\n";
+        i = 0;
+        while (header3[i] != '\0' && pos < MAX_DATA_LEN - 1) {
+            display[pos++] = header3[i++];
+        }
+        
+        const char *temp_label = "Temperature: ";
+        i = 0;
+        while (temp_label[i] != '\0' && pos < MAX_DATA_LEN - 1) {
+            display[pos++] = temp_label[i++];
+        }
+        
+        // Write temperature value
+        char temp_str[20];
+        int_to_string(temp, temp_str, sizeof(temp_str));
+        i = 0;
+        while (temp_str[i] != '\0' && pos < MAX_DATA_LEN - 1) {
+            display[pos++] = temp_str[i++];
+        }
+        
+        // Write space
+        if (pos < MAX_DATA_LEN - 1) {
+            display[pos++] = ' ';
+        }
+        
+        // Write temperature unit
+        i = 0;
+        while (system->sensors.temp_unit[i] != '\0' && pos < MAX_DATA_LEN - 1) {
+            display[pos++] = system->sensors.temp_unit[i++];
+        }
+        
+        // Write newline
+        if (pos < MAX_DATA_LEN - 1) {
+            display[pos++] = '\n';
+        }
+        
+        const char *hum_label = "Humidity: ";
+        i = 0;
+        while (hum_label[i] != '\0' && pos < MAX_DATA_LEN - 1) {
+            display[pos++] = hum_label[i++];
+        }
+        
+        // Write humidity value
+        char hum_str[20];
+        int_to_string(humidity, hum_str, sizeof(hum_str));
+        i = 0;
+        while (hum_str[i] != '\0' && pos < MAX_DATA_LEN - 1) {
+            display[pos++] = hum_str[i++];
+        }
+        
+        // Write space
+        if (pos < MAX_DATA_LEN - 1) {
+            display[pos++] = ' ';
+        }
+        
+        // Write humidity unit
+        i = 0;
+        while (system->sensors.humidity_unit[i] != '\0' && pos < MAX_DATA_LEN - 1) {
+            display[pos++] = system->sensors.humidity_unit[i++];
+        }
+        
+        // Write newline
+        if (pos < MAX_DATA_LEN - 1) {
+            display[pos++] = '\n';
+        }
+        
+        const char *footer1 = "========================================\n";
+        i = 0;
+        while (footer1[i] != '\0' && pos < MAX_DATA_LEN - 1) {
+            display[pos++] = footer1[i++];
+        }
+        
+        const char *footer2 = "Note: Values shown are filtered (median),\n";
+        i = 0;
+        while (footer2[i] != '\0' && pos < MAX_DATA_LEN - 1) {
+            display[pos++] = footer2[i++];
+        }
+        
+        const char *footer3 = "      not raw sensor readings.";
+        i = 0;
+        while (footer3[i] != '\0' && pos < MAX_DATA_LEN - 1) {
+            display[pos++] = footer3[i++];
+        }
     }
     
+    display[pos] = '\0';
     return display;
 }
 
@@ -1154,6 +1293,12 @@ void free_log_query_result(LogQueryResult *result) {
     result->capacity = 0;
 }
 
+// ==================== USAC12: Write User Actions to File ====================
+// USAC12 - As an Administrator, I want to create a text file (.txt file) with a sequence
+// of actions performed by a specific user.
+// Implementation using only basic ARQCP concepts: structures, pointers, arrays,
+// basic I/O (fopen, fputc, fclose), and basic string manipulation.
+
 /**
  * Get username by user_id
  * Basic array search using pointers
@@ -1293,7 +1438,7 @@ static int generate_filename(char *filename_buffer, int buffer_size, const char 
     
     filename_buffer[pos] = '\0';
     
-    return 1;
+        return 1;
 }
 
 /**
