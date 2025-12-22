@@ -1,6 +1,6 @@
 -- 1. Facility_type
-INSERT INTO Facility_type (type_id, name) VALUES (1, 'Terminal'); -- Terminal
-INSERT INTO Facility_type (type_id, name) VALUES (2, 'Regular Station'); -- Regular
+INSERT INTO Facility_type (type_id, name) VALUES (1, 'Terminal');
+INSERT INTO Facility_type (type_id, name) VALUES (2, 'Regular Station');
 
 -- 2. Facility
 INSERT INTO Facility (facility_id, name, Facility_typetype_id) VALUES (1, 'São Romão', 2);
@@ -652,11 +652,11 @@ VALUES (2003, TO_TIMESTAMP('2025-10-03 16:30:00', 'YYYY-MM-DD HH24:MI:SS'));
 INSERT INTO FreightLog (Freightfreight_id, unloadFreightDate)
 VALUES (2004, TO_TIMESTAMP('2025-10-03 17:30:00', 'YYYY-MM-DD HH24:MI:SS'));
 INSERT INTO FreightLog (Freightfreight_id, unloadFreightDate)
-VALUES (2005, TO_TIMESTAMP('2025-13-03 16:30:00', 'YYYY-MM-DD HH24:MI:SS'));
+VALUES (2005, TO_TIMESTAMP('2025-11-03 16:30:00', 'YYYY-MM-DD HH24:MI:SS'));
 INSERT INTO FreightLog (Freightfreight_id, unloadFreightDate)
-VALUES (2006, TO_TIMESTAMP('2025-29-03 16:30:00', 'YYYY-MM-DD HH24:MI:SS'));
+VALUES (2006, TO_TIMESTAMP('2025-12-03 16:35:00', 'YYYY-MM-DD HH24:MI:SS'));
 INSERT INTO FreightLog (Freightfreight_id, unloadFreightDate)
-VALUES (2007, TO_TIMESTAMP('2025-30-03 18:30:00', 'YYYY-MM-DD HH24:MI:SS'));
+VALUES (2007, TO_TIMESTAMP('2025-11-03 18:30:00', 'YYYY-MM-DD HH24:MI:SS'));
 INSERT INTO FreightLog (Freightfreight_id, unloadFreightDate)
 VALUES (2050, TO_TIMESTAMP('2025-7-04 16:00:00', 'YYYY-MM-DD HH24:MI:SS'));
 INSERT INTO FreightLog (Freightfreight_id, unloadFreightDate)
@@ -676,10 +676,10 @@ INSERT INTO Building (ID, name, NUMBEROFBUILDINGS, BuildingTypeID, Facilityfacil
 VALUES (2, 'Grain Silo Leixões', 1, 2, 50);
 
 INSERT INTO Building (ID, name, NUMBEROFBUILDINGS, BuildingTypeID, Facilityfacility_id)
-VALUES (3, 'Refrigerated Area Valença', 1, 1, 11);
+VALUES (3, 'Refrigerated Area Valença', 1, 3, 11);
 
 INSERT INTO Building (ID, name, NUMBEROFBUILDINGS, BuildingTypeID, Facilityfacility_id)
-VALUES (1, 'Campanhã Warehouse', 1, 3, 5);
+VALUES (4, 'Campanhã Warehouse', 1, 1, 5);
 
 INSERT INTO Building (ID, name, NUMBEROFBUILDINGS, BuildingTypeID, Facilityfacility_id)
-VALUES (2, 'Grain Silo of São Bento', 1, 4, 7);
+VALUES (5, 'Grain Silo of São Bento', 1, 2, 7);
