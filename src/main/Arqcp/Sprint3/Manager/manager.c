@@ -2018,6 +2018,8 @@ int assignArrivingTrain(ManagerSystem *system, int train_id, int track_id) {
     Train *t = findTrain(system, train_id);
     Track *tr = findTrack(system, track_id);
 
+
+    //error handling
     if (!t || !tr) {
         updateBoard("ERROR: Train or Track not found");
         return 0;
@@ -2080,6 +2082,8 @@ int assignArrivingTrain(ManagerSystem *system, int train_id, int track_id) {
 
 int setTrackINOP(ManagerSystem *system, int track_id) {
     Track *t = findTrack(system, track_id);
+
+    //error handling
     if (!t) {
         updateBoard("ERROR: Track not found");
         return 0;
@@ -2127,6 +2131,7 @@ int setTrackINOP(ManagerSystem *system, int track_id) {
 
 int setTrackFree(ManagerSystem *system, int track_id) {
     Track *t = findTrack(system, track_id);
+    //error handling
     if (!t) {
         updateBoard("ERROR: Track not found");
         return 0;
@@ -2175,6 +2180,7 @@ int departureTrain(ManagerSystem *system, int train_id, int track_id) {
     Train *t = findTrain(system, train_id);
     Track *tr = findTrack(system, track_id);
 
+    //error handling
     if (!t || !tr) {
         updateBoard("ERROR: Train or Track not found");
         return 0;
