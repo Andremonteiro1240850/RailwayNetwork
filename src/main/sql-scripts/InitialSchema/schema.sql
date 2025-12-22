@@ -14,7 +14,7 @@ CREATE TABLE Operator (
 
 CREATE TABLE Facility_type (
                                type_id number(10) NOT NULL,
-                               name    number(10) NOT NULL UNIQUE,
+                               name    varchar2(255) NOT NULL UNIQUE,
                                PRIMARY KEY (type_id)
 );
 
@@ -150,7 +150,7 @@ CREATE TABLE Segment (
                          CONSTRAINT ck_seg_electr
                              CHECK (electrified_flag IN ('Y','N')),
                          CONSTRAINT ck_seg_track
-                             CHECK (SegmentTypetrackType IN ('SINGLE','DOUBLE'))
+                             CHECK (SegmentTypetrackType IN ('SINGLE','DOUBLE','QUAD'))
 );
 
 -- Adicionar constraint UNIQUE para segment_order (após criar a tabela)
