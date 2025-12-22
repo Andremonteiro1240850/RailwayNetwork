@@ -146,8 +146,7 @@ int manager_init_serial(const char *port) {
 #ifdef _WIN32
     // Windows serial port handling (would use CreateFile, etc.)
     // For now, use simulation mode on Windows
-    printf("[Manager] Serial communication initialized (simulation mode on Windows)\n");
-    printf("[Manager] Port: %s (simulated)\n", g_serial_port);
+    // No printf - initialization is internal (ARQCP requirement)
     g_serial_fd = 0; // Mark as "open" in simulation mode
     return 1;
 #else
@@ -208,8 +207,7 @@ int manager_init_serial(const char *port) {
     // Flush input/output buffers
     tcflush(g_serial_fd, TCIOFLUSH);
     
-    printf("[Manager] Serial communication initialized successfully\n");
-    printf("[Manager] Port: %s, Baud rate: %d\n", g_serial_port, SERIAL_BAUD_RATE);
+    // No printf - initialization is internal (ARQCP requirement)
     return 1;
 #endif
 }
@@ -223,7 +221,7 @@ void manager_close_serial(void) {
         close(g_serial_fd);
 #endif
         g_serial_fd = -1;
-        printf("[Manager] Serial communication closed\n");
+        // No printf - cleanup is internal (ARQCP requirement)
     }
 }
 
@@ -250,7 +248,7 @@ int manager_send_cmd_to_sensors(const char *cmd) {
     
 #ifdef _WIN32
     // Windows simulation mode
-    printf("[Manager->Sensors] Sending: %s\n", cmd);
+    // No printf - command is sent internally (ARQCP requirement)
     return 1;
 #else
     // Send command via serial port
@@ -282,7 +280,7 @@ int manager_send_cmd_to_sensors(const char *cmd) {
     // Flush output to ensure data is sent
     fsync(g_serial_fd);
     
-    printf("[Manager->Sensors] Sent: %s\n", cmd);
+    // No printf - command sent internally (ARQCP requirement)
     return 1;
 #endif
 }
@@ -728,7 +726,8 @@ char* manager_wait_for_instructions_from_ui(void) {
     char *instruction = (char*)malloc(MAX_INSTRUCTION_LEN);
     if (instruction == NULL) return NULL;
     
-    printf("\nEnter instruction (or 'help' for commands, 'SENSORS' for sensor data): ");
+    // Display prompt using board (ARQCP requirement: no printf in manager)
+    board_send_message("\nEnter instruction (or 'help' for commands, 'SENSORS' for sensor data): ");
     if (fgets(instruction, MAX_INSTRUCTION_LEN, stdin) != NULL) {
         // Remove newline
         size_t len = strlen(instruction);
@@ -736,16 +735,16 @@ char* manager_wait_for_instructions_from_ui(void) {
             instruction[len-1] = '\0';
         }
         
-        // Handle help command
+        // Handle help command - send to board
         if (strcmp(instruction, "help") == 0 || strcmp(instruction, "HELP") == 0) {
-            printf("\n=== AVAILABLE COMMANDS ===\n");
-            printf("SENSORS, TEMP, HUM - Display filtered sensor data (temperature & humidity)\n");
-            printf("GE[N] - Green LED for track N (default: track 1)\n");
-            printf("RE[N] - Red LED for track N (default: track 1)\n");
-            printf("YE[N] - Yellow LED for track N (default: track 1)\n");
-            printf("RB[N] - Red Blinking LED for track N (default: track 1)\n");
-            printf("exit, quit - Exit the system\n");
-            printf("==========================\n\n");
+            board_send_message("\n=== AVAILABLE COMMANDS ===\n");
+            board_send_message("SENSORS, TEMP, HUM - Display filtered sensor data (temperature & humidity)\n");
+            board_send_message("GE[N] - Green LED for track N (default: track 1)\n");
+            board_send_message("RE[N] - Red LED for track N (default: track 1)\n");
+            board_send_message("YE[N] - Yellow LED for track N (default: track 1)\n");
+            board_send_message("RB[N] - Red Blinking LED for track N (default: track 1)\n");
+            board_send_message("exit, quit - Exit the system\n");
+            board_send_message("==========================\n\n");
             free(instruction);
             return manager_wait_for_instructions_from_ui(); // Recursive call to get next instruction
         }
@@ -781,7 +780,25 @@ int manager_process_instruction(ManagerSystem *system, const char *inst, char **
         }
         // Format command using Assembly function format_command
         if (format_command("GE", track_num, *cmd_out)) {
-            sprintf(*data_out, "Track %d: Green (Free)", track_num);
+            // Build message using basic string manipulation (no sprintf)
+            const char *prefix = "Track ";
+            int pos = 0;
+            int i = 0;
+            while (prefix[i] != '\0' && pos < MAX_DATA_LEN - 1) {
+                (*data_out)[pos++] = prefix[i++];
+            }
+            char track_str[20];
+            int_to_string(track_num, track_str, sizeof(track_str));
+            i = 0;
+            while (track_str[i] != '\0' && pos < MAX_DATA_LEN - 1) {
+                (*data_out)[pos++] = track_str[i++];
+            }
+            const char *suffix = ": Green (Free)";
+            i = 0;
+            while (suffix[i] != '\0' && pos < MAX_DATA_LEN - 1) {
+                (*data_out)[pos++] = suffix[i++];
+            }
+            (*data_out)[pos] = '\0';
             return 1;
         }
     } else if (strncmp(inst, "RE", 2) == 0) {
@@ -791,7 +808,25 @@ int manager_process_instruction(ManagerSystem *system, const char *inst, char **
             track_num = atoi(inst + 2);
         }
         if (format_command("RE", track_num, *cmd_out)) {
-            sprintf(*data_out, "Track %d: Red (Busy)", track_num);
+            // Build message using basic string manipulation (no sprintf)
+            const char *prefix = "Track ";
+            int pos = 0;
+            int i = 0;
+            while (prefix[i] != '\0' && pos < MAX_DATA_LEN - 1) {
+                (*data_out)[pos++] = prefix[i++];
+            }
+            char track_str[20];
+            int_to_string(track_num, track_str, sizeof(track_str));
+            i = 0;
+            while (track_str[i] != '\0' && pos < MAX_DATA_LEN - 1) {
+                (*data_out)[pos++] = track_str[i++];
+            }
+            const char *suffix = ": Red (Busy)";
+            i = 0;
+            while (suffix[i] != '\0' && pos < MAX_DATA_LEN - 1) {
+                (*data_out)[pos++] = suffix[i++];
+            }
+            (*data_out)[pos] = '\0';
             return 1;
         }
     } else if (strncmp(inst, "YE", 2) == 0) {
@@ -801,7 +836,25 @@ int manager_process_instruction(ManagerSystem *system, const char *inst, char **
             track_num = atoi(inst + 2);
         }
         if (format_command("YE", track_num, *cmd_out)) {
-            sprintf(*data_out, "Track %d: Yellow (Assigned)", track_num);
+            // Build message using basic string manipulation (no sprintf)
+            const char *prefix = "Track ";
+            int pos = 0;
+            int i = 0;
+            while (prefix[i] != '\0' && pos < MAX_DATA_LEN - 1) {
+                (*data_out)[pos++] = prefix[i++];
+            }
+            char track_str[20];
+            int_to_string(track_num, track_str, sizeof(track_str));
+            i = 0;
+            while (track_str[i] != '\0' && pos < MAX_DATA_LEN - 1) {
+                (*data_out)[pos++] = track_str[i++];
+            }
+            const char *suffix = ": Yellow (Assigned)";
+            i = 0;
+            while (suffix[i] != '\0' && pos < MAX_DATA_LEN - 1) {
+                (*data_out)[pos++] = suffix[i++];
+            }
+            (*data_out)[pos] = '\0';
             return 1;
         }
     } else if (strncmp(inst, "RB", 2) == 0) {
@@ -811,7 +864,25 @@ int manager_process_instruction(ManagerSystem *system, const char *inst, char **
             track_num = atoi(inst + 2);
         }
         if (format_command("RB", track_num, *cmd_out)) {
-            sprintf(*data_out, "Track %d: Red Blinking (Inoperative)", track_num);
+            // Build message using basic string manipulation (no sprintf)
+            const char *prefix = "Track ";
+            int pos = 0;
+            int i = 0;
+            while (prefix[i] != '\0' && pos < MAX_DATA_LEN - 1) {
+                (*data_out)[pos++] = prefix[i++];
+            }
+            char track_str[20];
+            int_to_string(track_num, track_str, sizeof(track_str));
+            i = 0;
+            while (track_str[i] != '\0' && pos < MAX_DATA_LEN - 1) {
+                (*data_out)[pos++] = track_str[i++];
+            }
+            const char *suffix = ": Red Blinking (Inoperative)";
+            i = 0;
+            while (suffix[i] != '\0' && pos < MAX_DATA_LEN - 1) {
+                (*data_out)[pos++] = suffix[i++];
+            }
+            (*data_out)[pos] = '\0';
         return 1;
         }
     } else if (strcmp(inst, "SENSORS") == 0 || strcmp(inst, "sensors") == 0 || 
@@ -1055,24 +1126,24 @@ char* manager_format_sensor_display(const ManagerSystem *system) {
 
 /**
  * Send data to Board component
+ * Uses board_display_text instead of printf (ARQCP requirement)
  */
 int manager_send_data_to_board(const char *data) {
     if (data == NULL) return 0;
-    // Board component displays the data
-    printf("\n=== BOARD DISPLAY ===\n");
-    printf("%s\n", data);
-    printf("====================\n\n");
+    // Board component displays the data using board functions
+    board_display_text(data);
     return 1;
 }
 
 /**
  * Send command to LightSigns component
+ * No printf - command is sent internally (ARQCP requirement)
  */
 int manager_send_cmd_to_lightsigns(const char *cmd) {
     if (cmd == NULL) return 0;
     // In real implementation, this would send via serial/communication
-    printf("[Manager->LightSigns] Sending: %s\n", cmd);
-        return 1;
+    // No printf in manager - command is sent internally
+    return 1;
 }
 
 /**
@@ -1459,6 +1530,51 @@ static int write_string_to_file(FILE *file, const char *str) {
 }
 
 /**
+ * Build message string and send to board (ARQCP requirement: no printf in manager)
+ * Uses basic string manipulation
+ */
+static void board_send_message(const char *message) {
+    if (message == NULL) return;
+    board_display_text(message);
+}
+
+/**
+ * Build message with integer value and send to board
+ * Uses basic string manipulation (no sprintf)
+ */
+static void board_send_message_with_int(const char *prefix, int value, const char *suffix) {
+    char buffer[200];
+    int pos = 0;
+    
+    // Copy prefix
+    if (prefix != NULL) {
+        int i = 0;
+        while (prefix[i] != '\0' && pos < 199) {
+            buffer[pos++] = prefix[i++];
+        }
+    }
+    
+    // Convert integer to string
+    char int_str[20];
+    int_to_string(value, int_str, sizeof(int_str));
+    int i = 0;
+    while (int_str[i] != '\0' && pos < 199) {
+        buffer[pos++] = int_str[i++];
+    }
+    
+    // Copy suffix
+    if (suffix != NULL) {
+        i = 0;
+        while (suffix[i] != '\0' && pos < 199) {
+            buffer[pos++] = suffix[i++];
+        }
+    }
+    
+    buffer[pos] = '\0';
+    board_display_text(buffer);
+}
+
+/**
  * Write integer to file (basic implementation without fprintf)
  * Returns 1 on success, 0 on failure
  */
@@ -1496,8 +1612,8 @@ static void log_audit_trail(const char *action, const User *user, const char *de
     const char *status = success ? "SUCCESS" : "FAILED";
     
     // Audit trail output (in production, this would go to secure log file)
-    printf("[AUDIT] %s | User: %s (%s) | Action: %s | Details: %s | Status: %s\n",
-           timestamp, username, role, action, (details != NULL) ? details : "N/A", status);
+    // No printf - audit trail is internal logging (ARQCP requirement)
+    // Logging would be done through file I/O or internal structures
 }
 
 /**
@@ -1729,46 +1845,57 @@ int manager_main_loop(ManagerSystem *system) {
     char *cmd;
     int iteration = 0;
     
-    printf("\n========================================\n");
-    printf("Manager Main Loop Started\n");
-    printf("User: %s\n", system->current_user->username);
-    printf("Sensor polling enabled: ALWAYS before user instructions\n");
-    printf("========================================\n\n");
+    // Display startup message using board (ARQCP requirement: no printf in manager)
+    board_send_message("\n========================================\n");
+    board_send_message("Manager Main Loop Started\n");
+    
+    // Build message with username using basic string manipulation
+    char user_msg[200];
+    int pos = 0;
+    const char *user_prefix = "User: ";
+    int i = 0;
+    while (user_prefix[i] != '\0' && pos < 199) {
+        user_msg[pos++] = user_prefix[i++];
+    }
+    i = 0;
+    while (system->current_user->username[i] != '\0' && pos < 199) {
+        user_msg[pos++] = system->current_user->username[i++];
+    }
+    user_msg[pos++] = '\n';
+    user_msg[pos] = '\0';
+    board_send_message(user_msg);
+    
+    board_send_message("Sensor polling enabled: ALWAYS before user instructions\n");
+    board_send_message("========================================\n\n");
     
     while (1) {
         iteration++;
-        printf("\n--- Iteration %d ---\n", iteration);
+        board_send_message_with_int("\n--- Iteration ", iteration, " ---\n");
         
         // ========== SENSOR POLLING (ALWAYS FIRST) ==========
         // Step 1: send_cmd_to_sensors("GTH")
         // Manager MUST request sensor data BEFORE processing any user instruction
-        printf("[Manager] Step 1: Requesting sensor data...\n");
+        // No printf - sensor communication is internal
         if (!manager_send_cmd_to_sensors(SENSOR_CMD)) {
-            fprintf(stderr, "[Manager] ERROR: Failed to send command to sensors\n");
-            fprintf(stderr, "[Manager] Skipping this iteration - will retry sensor polling\n");
+            // Error handling - minimal, no printf
             // Continue loop to retry sensor polling (don't process user instructions)
             continue;
         }
         
         // Step 2: wait_for_data_from_sensors()
         // Wait for sensor response with timeout
-        printf("[Manager] Step 2: Waiting for sensor response...\n");
         sensor_str = manager_wait_for_data_from_sensors();
         if (sensor_str == NULL) {
-            fprintf(stderr, "[Manager] ERROR: Failed to get sensor data (timeout or error)\n");
-            fprintf(stderr, "[Manager] Skipping this iteration - will retry sensor polling\n");
+            // Error handling - minimal, no printf
             // Continue loop to retry sensor polling (don't process user instructions)
             continue;
         }
-        printf("[Manager] Sensor data received: %s\n", sensor_str);
         
         // Step 3: extract_data(str, sensors) - using Assembly function extract_data
         // Parse sensor response and extract temperature/humidity values
-        printf("[Manager] Step 3: Extracting sensor data...\n");
         if (!manager_extract_data(sensor_str, &system->sensors)) {
-            fprintf(stderr, "[Manager] ERROR: Failed to extract sensor data\n");
             free(sensor_str);
-            fprintf(stderr, "[Manager] Skipping this iteration - will retry sensor polling\n");
+            // Error handling - minimal, no printf
             // Continue loop to retry sensor polling (don't process user instructions)
             continue;
         }
@@ -1776,52 +1903,41 @@ int manager_main_loop(ManagerSystem *system) {
         
         // Step 4: update_sensors_data(sensors) - using Moving Median filter
         // Apply Moving Median filter to reduce noise
-        printf("[Manager] Step 4: Applying Moving Median filter...\n");
         if (!manager_update_sensors_data(&system->sensors)) {
-            fprintf(stderr, "[Manager] WARNING: Failed to update sensor data with filter\n");
-            // Continue anyway - we have raw data
-        } else {
-            printf("[Manager] Filtered values - Temp: %d°C, Hum: %d%%\n", 
-                   system->sensors.current_temp, system->sensors.current_humidity);
+            // Warning - continue anyway, we have raw data
         }
         
         // ========== USER INSTRUCTION PROCESSING (ONLY AFTER SENSORS) ==========
         // Step 5: wait_for_instructions_from_ui()
         // ONLY request user instruction AFTER sensor data is updated
-        printf("[Manager] Step 5: Waiting for user instruction...\n");
         instruction = manager_wait_for_instructions_from_ui();
         if (instruction == NULL) {
-            fprintf(stderr, "[Manager] ERROR: Failed to get instruction from UI\n");
-            fprintf(stderr, "[Manager] Continuing loop - will poll sensors again\n");
+            // Error handling - minimal, no printf
             continue;
         }
         
         // Check for exit command
         if (strcmp(instruction, "exit") == 0 || strcmp(instruction, "quit") == 0) {
-            printf("[Manager] Exit command received. Shutting down...\n");
+            board_send_message("[Manager] Exit command received. Shutting down...\n");
             free(instruction);
             break;
         }
         
         // Step 6: process_instruction(inst) - Process user command
-        printf("[Manager] Step 6: Processing instruction: %s\n", instruction);
         if (manager_process_instruction(system, instruction, &data, &cmd)) {
             // Step 7: send_data_to_board(data) - Display result
-            printf("[Manager] Step 7: Sending data to Board...\n");
             manager_send_data_to_board(data);
             
             // Step 8: send_cmd_to_lightsigns(cmd) - Control lights
-            printf("[Manager] Step 8: Sending command to LightSigns...\n");
             manager_send_cmd_to_lightsigns(cmd);
             
             // Step 9: record_action(user, inst) - Log user action
-            printf("[Manager] Step 9: Recording user action...\n");
             manager_record_action(system, instruction);
             
             free(data);
             free(cmd);
         } else {
-            printf("[Manager] Instruction processing failed or was invalid\n");
+            // Invalid instruction - data already sent to board by process_instruction
             if (data) free(data);
             if (cmd) free(cmd);
         }
@@ -1829,10 +1945,10 @@ int manager_main_loop(ManagerSystem *system) {
         free(instruction);
     }
     
-    printf("\n========================================\n");
-    printf("Manager Main Loop Ended\n");
-    printf("Total iterations: %d\n", iteration);
-    printf("========================================\n\n");
+    board_send_message("\n========================================\n");
+    board_send_message("Manager Main Loop Ended\n");
+    board_send_message_with_int("Total iterations: ", iteration, "\n");
+    board_send_message("========================================\n\n");
     
     return 1;
 }
@@ -2138,7 +2254,8 @@ int main(void) {
     
     // Initialize system
     if (!manager_init(&system)) {
-        printf("Error: Failed to initialize system\n");
+        // Error - send to board instead of printf (ARQCP requirement)
+        board_send_message("Error: Failed to initialize system\n");
         return 1;
     }
     
@@ -2146,8 +2263,9 @@ int main(void) {
     
     // Step 1: user = login(username, password)
     // For now, simulate login
-    printf("=== Railway Station Management System ===\n");
-    printf("Login required\n");
+    // Display using board instead of printf (ARQCP requirement)
+    board_send_message("=== Railway Station Management System ===\n");
+    board_send_message("Login required\n");
     // In real implementation, get username/password from UI
     // User* user = manager_login(&system, "admin", "PASSWORD");
     

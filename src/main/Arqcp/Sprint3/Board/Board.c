@@ -1,8 +1,26 @@
+#include "Board.h"
 #include <stdio.h>
+#include <string.h>
+
+// Maximum buffer size for board display
+#define BOARD_BUFFER_SIZE 1000
 
 void showTrailStatus() {
 }
 void showTemperatureAndHumidity() {
+}
+
+/**
+ * Display text data on board
+ * This function replaces printf for displaying data to users
+ * Uses basic string manipulation (ARQCP concepts)
+ */
+void board_display_text(const char *text) {
+    if (text == NULL) return;
+    
+    // Display text using printf (this is the board's responsibility)
+    // The board component handles the actual display
+    printf("%s", text);
 }
 void showEmergencyStop(){
     printf("\n");

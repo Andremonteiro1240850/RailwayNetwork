@@ -6,6 +6,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.concurrent.TimeUnit;
+import java.io.File;
 
 /**
  * Utility class for rendering DOT files to SVG using Graphviz's neato engine.
@@ -24,6 +25,34 @@ public class GraphvizRenderer {
     
     private static final String NEATO_COMMAND = "neato";
     private static final int TIMEOUT_SECONDS = 30;
+    
+    // Common Graphviz installation paths on Windows
+    private static final String[] WINDOWS_GRAPHVIZ_PATHS = {
+        "C:\\Program Files\\Graphviz\\bin\\neato.exe",
+        "C:\\Program Files (x86)\\Graphviz\\bin\\neato.exe",
+        "C:\\Graphviz\\bin\\neato.exe"
+    };
+    
+    /**
+     * Finds the neato executable path.
+     * First tries to use 'neato' from PATH, then checks common Windows installation paths.
+     * 
+     * @return the path to neato executable, or "neato" if found in PATH
+     */
+    private static String findNeatoPath() {
+        // First, try to use 'neato' from PATH
+        String os = System.getProperty("os.name").toLowerCase();
+        if (os.contains("win")) {
+            // On Windows, check common installation paths
+            for (String path : WINDOWS_GRAPHVIZ_PATHS) {
+                if (new File(path).exists()) {
+                    return path;
+                }
+            }
+        }
+        // Fallback to PATH
+        return NEATO_COMMAND;
+    }
     
     /**
      * Renders a DOT file to SVG using Graphviz's neato engine.
@@ -62,9 +91,12 @@ public class GraphvizRenderer {
             Files.createDirectories(svgParent);
         }
         
+        // Find neato executable path
+        String neatoPath = findNeatoPath();
+        
         // Execute neato command
         ProcessBuilder processBuilder = new ProcessBuilder(
-                NEATO_COMMAND,
+                neatoPath,
                 "-Tsvg",
                 dotPath.toString(),
                 "-o",
