@@ -2,7 +2,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <time.h>
 #include <math.h>
 
 // For Arduino/Raspberry Pi Pico compatibility
@@ -15,7 +14,7 @@
 
 // Sensor state for simulation
 static int g_sensor_initialized = 0;
-static time_t g_last_read_time = 0;
+static int g_read_counter = 0; // Simple counter instead of time_t
 
 /**
  * Read raw temperature from sensor
@@ -33,12 +32,11 @@ int sensors_read_temperature(void) {
     
     // Simulate temperature variation (20-30°C)
     static int base_temp = 25;
-    time_t now = time(NULL);
-    if (now != g_last_read_time) {
-        // Add small random variation
-        int variation = (now % 10) - 5; // -5 to +5
+    g_read_counter++;
+    if (g_read_counter % 10 == 0) {
+        // Add small variation based on counter
+        int variation = (g_read_counter % 10) - 5; // -5 to +5
         base_temp = 25 + variation;
-        g_last_read_time = now;
     }
     return base_temp;
 #else
@@ -66,14 +64,13 @@ int sensors_read_humidity(void) {
     
     // Simulate humidity variation (60-70%)
     static int base_hum = 65;
-    time_t now = time(NULL);
-    if (now != g_last_read_time) {
-        // Add small random variation
-        int variation = (now % 10) - 5; // -5 to +5
+    g_read_counter++;
+    if (g_read_counter % 10 == 0) {
+        // Add small variation based on counter
+        int variation = (g_read_counter % 10) - 5; // -5 to +5
         base_hum = 65 + variation;
         if (base_hum < 0) base_hum = 0;
         if (base_hum > 100) base_hum = 100;
-        g_last_read_time = now;
     }
     return base_hum;
 #else
@@ -155,7 +152,7 @@ void sensors_init(void) {
     
     // Initialize sensor state
     g_sensor_initialized = 1;
-    g_last_read_time = 0;
+    g_read_counter = 0;
     
     // For simulation/testing:
     printf("[Sensors] Initializing...\n");
