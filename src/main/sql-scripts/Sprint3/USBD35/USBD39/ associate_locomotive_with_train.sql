@@ -6,31 +6,28 @@ CREATE OR REPLACE FUNCTION associate_locomotive_with_train(
     -- Variáveis para validação
     v_locomotive_exists NUMBER;
     v_train_exists NUMBER;
-    v_operator_match NUMBER;
-    v_association_exists NUMBER;
-    v_gauge_compatible NUMBER;
     v_locomotive_operator VARCHAR2(255);
-    v_train_operator VARCHAR2(255);
+    v_association_exists NUMBER;
 
     -- Exceções personalizadas
     locomotive_not_found EXCEPTION;
     train_not_found EXCEPTION;
     operator_mismatch EXCEPTION;
     association_already_exists EXCEPTION;
-    gauge_incompatible EXCEPTION;
 
 BEGIN
-    -- Verificar se a locomotiva existe
-SELECT COUNT(*)
-INTO v_locomotive_exists
+    -- 1. Verificar se a locomotiva existe
+BEGIN
+SELECT operator_id
+INTO v_locomotive_operator
 FROM Locomotive
 WHERE locomotive_id = p_locomotive_id;
+EXCEPTION
+        WHEN NO_DATA_FOUND THEN
+            RAISE locomotive_not_found;
+END;
 
-IF v_locomotive_exists = 0 THEN
-        RAISE locomotive_not_found;
-END IF;
-
-    -- Verificar se o comboio existe
+    -- 2. Verificar se o comboio existe com o operador especificado
 SELECT COUNT(*)
 INTO v_train_exists
 FROM Train
@@ -41,25 +38,12 @@ IF v_train_exists = 0 THEN
         RAISE train_not_found;
 END IF;
 
-    -- Obter o operador da locomotiva
-SELECT operator_id
-INTO v_locomotive_operator
-FROM Locomotive
-WHERE locomotive_id = p_locomotive_id;
-
--- Obter o operador do comboio
-SELECT operator_id
-INTO v_train_operator
-FROM Train
-WHERE train_id = p_train_id
-  AND operator_id = p_operator_id;
-
--- Verificar se o operador da locomotiva corresponde ao operador do comboio
-IF v_locomotive_operator != v_train_operator THEN
+    -- 3. Verificar se o operador da locomotiva corresponde ao operador fornecido
+    IF v_locomotive_operator != p_operator_id THEN
         RAISE operator_mismatch;
 END IF;
 
-    -- Verificar se a associação já existe
+    -- 4. Verificar se a associação já existe
 SELECT COUNT(*)
 INTO v_association_exists
 FROM Locomotive_Train
@@ -71,19 +55,7 @@ IF v_association_exists > 0 THEN
         RAISE association_already_exists;
 END IF;
 
-    -- Verificar compatibilidade de bitola (gauge)
-    -- Uma locomotiva pode ser associada se existir pelo menos uma bitola comum
-SELECT COUNT(*)
-INTO v_gauge_compatible
-FROM Locomotive_Gauge lg
-         INNER JOIN Line l ON lg.Gaugecode = l.Gaugecode
-WHERE lg.Locomotivelocomotive_id = p_locomotive_id;
-
-IF v_gauge_compatible = 0 THEN
-        RAISE gauge_incompatible;
-END IF;
-
-    -- Inserir a associação
+    -- 5. Inserir a associação entre locomotiva e comboio
 INSERT INTO Locomotive_Train (
     Locomotivelocomotive_id,
     Traintrain_id,
@@ -102,29 +74,20 @@ RETURN 1; -- Sucesso
 
 EXCEPTION
     WHEN locomotive_not_found THEN
-        RAISE_APPLICATION_ERROR(-20001, 'Locomotiva não encontrada com o ID: ' || p_locomotive_id);
-RETURN 0;
+        RAISE_APPLICATION_ERROR(-20001, 'Locomotiva com ID ' || p_locomotive_id || ' não encontrada.');
 
 WHEN train_not_found THEN
-        RAISE_APPLICATION_ERROR(-20002, 'Comboio não encontrado com o ID: ' || p_train_id || ' e operador: ' || p_operator_id);
-RETURN 0;
+        RAISE_APPLICATION_ERROR(-20002, 'Comboio com ID ' || p_train_id || ' e operador ' || p_operator_id || ' não encontrado.');
 
 WHEN operator_mismatch THEN
-        RAISE_APPLICATION_ERROR(-20003, 'O operador da locomotiva (' || v_locomotive_operator || ') não corresponde ao operador do comboio (' || v_train_operator || ')');
-RETURN 0;
+        RAISE_APPLICATION_ERROR(-20003, 'A locomotiva pertence ao operador ' || v_locomotive_operator || ' mas foi especificado o operador ' || p_operator_id || '.');
 
 WHEN association_already_exists THEN
-        RAISE_APPLICATION_ERROR(-20004, 'A locomotiva ' || p_locomotive_id || ' já está associada ao comboio ' || p_train_id);
-RETURN 0;
-
-WHEN gauge_incompatible THEN
-        RAISE_APPLICATION_ERROR(-20005, 'A locomotiva não tem bitola compatível com as linhas disponíveis');
-RETURN 0;
+        RAISE_APPLICATION_ERROR(-20004, 'A locomotiva ' || p_locomotive_id || ' já está associada ao comboio ' || p_train_id || '.');
 
 WHEN OTHERS THEN
         ROLLBACK;
-        RAISE_APPLICATION_ERROR(-20999, 'Erro inesperado: ' || SQLERRM);
-RETURN 0;
+        RAISE_APPLICATION_ERROR(-20999, 'Erro inesperado ao associar locomotiva ao comboio: ' || SQLERRM);
 
 END associate_locomotive_with_train;
 /
