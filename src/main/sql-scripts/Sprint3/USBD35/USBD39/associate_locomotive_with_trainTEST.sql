@@ -1,6 +1,5 @@
-SET SERVEROUTPUT ON;
-
 -- Limpar associações de teste anteriores (se existirem)
+-- Nota: SET SERVEROUTPUT ON não é necessário no IntelliJ SQL Console
 DELETE FROM Locomotive_Train
 WHERE Locomotivelocomotive_id = 5630
   AND Traintrain_id = 5421;
@@ -19,12 +18,14 @@ BEGIN
     v_result := associate_locomotive_with_train(5630, 5421, 'Medway');
 
     IF v_result = 1 THEN
+        COMMIT; -- Confirmar a transação após sucesso
         DBMS_OUTPUT.PUT_LINE('✓ SUCESSO: Locomotiva 5630 associada ao comboio 5421');
-END IF;
+    END IF;
 
     DBMS_OUTPUT.PUT_LINE(' ');
 EXCEPTION
     WHEN OTHERS THEN
+        ROLLBACK; -- Reverter em caso de erro
         DBMS_OUTPUT.PUT_LINE('✗ ERRO: ' || SQLERRM);
         DBMS_OUTPUT.PUT_LINE(' ');
 END;
@@ -130,9 +131,12 @@ END;
 -- ========================================
 -- VERIFICAÇÃO FINAL: Consultar associações
 -- ========================================
-DBMS_OUTPUT.PUT_LINE('========================================');
-DBMS_OUTPUT.PUT_LINE('VERIFICAÇÃO: Associações existentes');
-DBMS_OUTPUT.PUT_LINE('========================================');
+BEGIN
+    DBMS_OUTPUT.PUT_LINE('========================================');
+    DBMS_OUTPUT.PUT_LINE('VERIFICAÇÃO: Associações existentes');
+    DBMS_OUTPUT.PUT_LINE('========================================');
+END;
+/
 
 SELECT
     lt.Locomotivelocomotive_id AS "ID Locomotiva",

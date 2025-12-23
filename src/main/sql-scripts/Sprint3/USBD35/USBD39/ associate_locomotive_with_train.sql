@@ -4,7 +4,6 @@ CREATE OR REPLACE FUNCTION associate_locomotive_with_train(
     p_operator_id IN VARCHAR2
 ) RETURN NUMBER IS
     -- Variáveis para validação
-    v_locomotive_exists NUMBER;
     v_train_exists NUMBER;
     v_locomotive_operator VARCHAR2(255);
     v_association_exists NUMBER;
@@ -68,26 +67,28 @@ INSERT INTO Locomotive_Train (
              SYSTIMESTAMP
          );
 
-COMMIT;
-
 RETURN 1; -- Sucesso
 
 EXCEPTION
     WHEN locomotive_not_found THEN
         RAISE_APPLICATION_ERROR(-20001, 'Locomotiva com ID ' || p_locomotive_id || ' não encontrada.');
+        RETURN NULL;
 
-WHEN train_not_found THEN
+    WHEN train_not_found THEN
         RAISE_APPLICATION_ERROR(-20002, 'Comboio com ID ' || p_train_id || ' e operador ' || p_operator_id || ' não encontrado.');
+        RETURN NULL;
 
-WHEN operator_mismatch THEN
+    WHEN operator_mismatch THEN
         RAISE_APPLICATION_ERROR(-20003, 'A locomotiva pertence ao operador ' || v_locomotive_operator || ' mas foi especificado o operador ' || p_operator_id || '.');
+        RETURN NULL;
 
-WHEN association_already_exists THEN
+    WHEN association_already_exists THEN
         RAISE_APPLICATION_ERROR(-20004, 'A locomotiva ' || p_locomotive_id || ' já está associada ao comboio ' || p_train_id || '.');
+        RETURN NULL;
 
-WHEN OTHERS THEN
-        ROLLBACK;
+    WHEN OTHERS THEN
         RAISE_APPLICATION_ERROR(-20999, 'Erro inesperado ao associar locomotiva ao comboio: ' || SQLERRM);
+        RETURN NULL;
 
 END associate_locomotive_with_train;
 /
