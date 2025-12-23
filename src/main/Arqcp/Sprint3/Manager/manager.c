@@ -5,6 +5,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+
+
 #define INITIAL_CAPACITY 10
 #define SENSOR_CMD "GTH"
 #define MAX_INSTRUCTION_LEN 100
