@@ -1,23 +1,9 @@
--- ===========================================
--- USBD34 - Associate Freight with Train
--- ===========================================
--- User Story: As a Freight Manager, I want to associate a freight with a train.
---            All the wagons included in the freight will be associated with the train.
---
--- Description: This procedure associates a freight with a train. The association
---              is stored in the FreighTrain table, and the Freight table is updated
---              to reference this association. All wagons already included in the
---              freight are automatically associated with the train through this
---              freight-train relationship.
---
 -- Parameters:
 --   p_freight_id    - ID of the freight to associate
 --   p_train_id      - ID of the train
 --   p_operator_id   - ID of the train operator
 --   p_locomotive_id - ID of the locomotive (required for FreighTrain table)
---
--- Returns: None (PROCEDURE)
---
+
 -- Exceptions:
 --   -20001: Freight not found
 --   -20002: Train not found with specified operator
@@ -25,7 +11,7 @@
 --   -20004: Locomotive is not associated with the specified train
 --   -20005: Freight has no wagons associated
 --   -20006: Freight is already associated with a different train
--- ===========================================
+
 
 CREATE OR REPLACE PROCEDURE prc_usbd34_associate_freight_with_train(
     p_freight_id    IN NUMBER,
