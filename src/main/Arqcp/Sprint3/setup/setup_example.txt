@@ -1,0 +1,39 @@
+# Initial Setup Configuration File
+# Format: TYPE:field1:field2:field3:...
+# Lines starting with # are comments
+# Empty lines are ignored
+
+# User Data
+# Format: USER:name:username:password:caesar_key
+# Password must contain only capital letters (A-Z)
+USER:John Doe:johndoe:PASSWORD:5
+USER:Jane Smith:janesmith:ADMIN123:3
+USER:Bob Johnson:bobjohnson:TESTKEY:7
+
+# Sensor Configuration
+# Format: SENSOR:temp_buffer_length:temp_median_window:humidity_buffer_length:humidity_median_window
+SENSOR:100:5:100:5
+
+# Track Data
+# Format: TRACK:id:state:trainId
+# State: 0=Free, 1=Busy, 2=Assigned, 3=Inoperative
+# trainId is optional (defaults to 0 if not provided)
+TRACK:1:0:0
+TRACK:2:0:0
+TRACK:3:1:101
+TRACK:4:2:102
+TRACK:5:0:0
+
+# Train Data
+# Format: TRAIN:id
+TRAIN:101
+TRAIN:102
+TRAIN:103
+
+# Log Data
+# Format: LOG:id:user_identification:action:timestamp
+# Timestamp can be Unix timestamp (number) or format YYYY-MM-DD HH:MM:SS
+LOG:1:johndoe:LOGIN:1704067200
+LOG:2:janesmith:LOGOUT:2024-01-01 12:00:00
+LOG:3:bobjohnson:VIEW_TRACKS:1704153600
+
