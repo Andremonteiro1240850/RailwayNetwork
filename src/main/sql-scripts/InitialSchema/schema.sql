@@ -191,6 +191,7 @@ CREATE TABLE Train_route (
                              Trainoperator_id             varchar2(255) NOT NULL,
                              departure_time               number(10) NOT NULL,
                              Arrival_Time                 number(10) NOT NULL,
+                             routeDate                         timestamp(0) NOT NULL,
                              PRIMARY KEY (Facility_id,
                                           Train_id,
                                           TrainLocomotivelocomotive_id,
@@ -311,7 +312,7 @@ ALTER TABLE Line ADD CONSTRAINT End_facility FOREIGN KEY (end_facility_id) REFER
 -- DROP TABLE FreightLog CASCADE CONSTRAINTS;
 -- DROP TABLE TrainLogDeparture CASCADE CONSTRAINTS;
 -- DROP TABLE TrainLog CASCADE CONSTRAINTS;
--- DROP TABLE Train_route CASCADE CONSTRAINTS;
+ --DROP TABLE Train_route CASCADE CONSTRAINTS;
 -- DROP TABLE Wagon_In_Freight CASCADE CONSTRAINTS;
 -- DROP TABLE Gauge_Wagon CASCADE CONSTRAINTS;
 -- DROP TABLE Locomotive_Gauge CASCADE CONSTRAINTS;

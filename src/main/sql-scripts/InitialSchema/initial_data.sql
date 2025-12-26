@@ -557,69 +557,104 @@ INSERT INTO Wagon_In_Freight (Wagon_id, Freight_id) VALUES (80080, 2051); -- 356
 
 -- 24. Train_route
 
-INSERT INTO Train_route (Facility_id, Train_id, "Order", TrainLocomotivelocomotive_id, Trainoperator_id, departure_time, Arrival_Time)
-VALUES (50, 5421, 1, 5621, 'Medway', 945, 950); -- 09:45 como 945
+INSERT INTO Train_route (Facility_id, Train_id, "Order", TrainLocomotivelocomotive_id, Trainoperator_id, departure_time, Arrival_Time,ROUTEDATE)
+VALUES (50, 5421, 1, 5621, 'Medway', 945, 950, TO_TIMESTAMP('2025-10-03', 'YYYY-MM-DD')); -- 09:45 como 945
 
-INSERT INTO Train_route (Facility_id, Train_id, "Order", TrainLocomotivelocomotive_id, Trainoperator_id, departure_time, Arrival_Time)
-VALUES (48, 5421, 2, 5621, 'Medway', 1000, 1005);
+INSERT INTO Train_route (Facility_id, Train_id, "Order", TrainLocomotivelocomotive_id, Trainoperator_id, departure_time, Arrival_Time,ROUTEDATE)
+VALUES (48, 5421, 2, 5621, 'Medway', 1000, 1005,TO_TIMESTAMP('2025-10-03', 'YYYY-MM-DD'));
 
-INSERT INTO Train_route (Facility_id, Train_id, "Order", TrainLocomotivelocomotive_id, Trainoperator_id, departure_time, Arrival_Time)
-VALUES (45, 5421, 3, 5621, 'Medway', 1030, 1035);
+INSERT INTO Train_route (Facility_id, Train_id, "Order", TrainLocomotivelocomotive_id, Trainoperator_id, departure_time, Arrival_Time,ROUTEDATE)
+VALUES (45, 5421, 3, 5621, 'Medway', 1030, 1035,TO_TIMESTAMP('2025-10-03', 'YYYY-MM-DD'));
 
-INSERT INTO Train_route (Facility_id, Train_id, "Order", TrainLocomotivelocomotive_id, Trainoperator_id, departure_time, Arrival_Time)
-VALUES (43, 5421, 4, 5621, 'Medway', 1100, 1105);
+INSERT INTO Train_route (Facility_id, Train_id, "Order", TrainLocomotivelocomotive_id, Trainoperator_id, departure_time, Arrival_Time,ROUTEDATE)
+VALUES (43, 5421, 4, 5621, 'Medway', 1100, 1105,TO_TIMESTAMP('2025-10-03', 'YYYY-MM-DD'));
 
-INSERT INTO Train_route (Facility_id, Train_id, "Order", TrainLocomotivelocomotive_id, Trainoperator_id, departure_time, Arrival_Time)
-VALUES (13, 5421, 5, 5621, 'Medway', 1130, 1135);
+INSERT INTO Train_route (Facility_id, Train_id, "Order", TrainLocomotivelocomotive_id, Trainoperator_id, departure_time, Arrival_Time,ROUTEDATE)
+VALUES (13, 5421, 5, 5621, 'Medway', 1130, 1135,TO_TIMESTAMP('2025-10-03', 'YYYY-MM-DD'));
 
-INSERT INTO Train_route (Facility_id, Train_id, "Order", TrainLocomotivelocomotive_id, Trainoperator_id, departure_time, Arrival_Time)
-VALUES (20, 5421, 6, 5621, 'Medway', 1200, 1205);
+INSERT INTO Train_route (Facility_id, Train_id, "Order", TrainLocomotivelocomotive_id, Trainoperator_id, departure_time, Arrival_Time,ROUTEDATE)
+VALUES (20, 5421, 6, 5621, 'Medway', 1200, 1205,TO_TIMESTAMP('2025-10-03', 'YYYY-MM-DD'));
 
-INSERT INTO Train_route (Facility_id, Train_id, "Order", TrainLocomotivelocomotive_id, Trainoperator_id, departure_time, Arrival_Time)
-VALUES (8, 5421, 7, 5621, 'Medway', 1230, 1235);
+INSERT INTO Train_route (Facility_id, Train_id, "Order", TrainLocomotivelocomotive_id, Trainoperator_id, departure_time, Arrival_Time,ROUTEDATE)
+VALUES (8, 5421, 7, 5621, 'Medway', 1230, 1235,TO_TIMESTAMP('2025-10-03', 'YYYY-MM-DD'));
 
-INSERT INTO Train_route (Facility_id, Train_id, "Order", TrainLocomotivelocomotive_id, Trainoperator_id, departure_time, Arrival_Time)
-VALUES (12, 5421, 8, 5621, 'Medway', 1300, 1305);
+INSERT INTO Train_route (Facility_id, Train_id, "Order", TrainLocomotivelocomotive_id, Trainoperator_id, departure_time, Arrival_Time,ROUTEDATE)
+VALUES (12, 5421, 8, 5621, 'Medway', 1300, 1305,TO_TIMESTAMP('2025-10-03', 'YYYY-MM-DD'));
 
-INSERT INTO Train_route (Facility_id, Train_id, "Order", TrainLocomotivelocomotive_id, Trainoperator_id, departure_time, Arrival_Time)
-VALUES (17, 5421, 9, 5621, 'Medway', 1330, 1335);
+INSERT INTO Train_route (Facility_id, Train_id, "Order", TrainLocomotivelocomotive_id, Trainoperator_id, departure_time, Arrival_Time,ROUTEDATE)
+VALUES (17, 5421, 9, 5621, 'Medway', 1330, 1335,TO_TIMESTAMP('2025-10-03', 'YYYY-MM-DD'));
 
-INSERT INTO Train_route (Facility_id, Train_id, "Order", TrainLocomotivelocomotive_id, Trainoperator_id, departure_time, Arrival_Time)
-VALUES (21, 5421, 10, 5621, 'Medway', 1400, 1405);
+INSERT INTO Train_route (Facility_id, Train_id, "Order", TrainLocomotivelocomotive_id, Trainoperator_id, departure_time, Arrival_Time,ROUTEDATE)
+VALUES (21, 5421, 10, 5621, 'Medway', 1400, 1405,TO_TIMESTAMP('2025-10-03', 'YYYY-MM-DD'));
 
-INSERT INTO Train_route (Facility_id, Train_id, "Order", TrainLocomotivelocomotive_id, Trainoperator_id, departure_time, Arrival_Time)
-VALUES (16, 5421, 11, 5621, 'Medway', 1430, 1435);
+INSERT INTO Train_route (Facility_id, Train_id, "Order", TrainLocomotivelocomotive_id, Trainoperator_id, departure_time, Arrival_Time,ROUTEDATE)
+VALUES (16, 5421, 11, 5621, 'Medway', 1430, 1435,TO_TIMESTAMP('2025-10-03', 'YYYY-MM-DD'));
 
-INSERT INTO Train_route (Facility_id, Train_id, "Order", TrainLocomotivelocomotive_id, Trainoperator_id, departure_time, Arrival_Time)
-VALUES (11, 5421, 12, 5621, 'Medway', 1500, 1505);
+INSERT INTO Train_route (Facility_id, Train_id, "Order", TrainLocomotivelocomotive_id, Trainoperator_id, departure_time, Arrival_Time,ROUTEDATE)
+VALUES (11, 5421, 12, 5621, 'Medway', 1500, 1505,TO_TIMESTAMP('2025-10-03', 'YYYY-MM-DD'));
 
 
-INSERT INTO Train_route (Facility_id, Train_id, "Order", TrainLocomotivelocomotive_id, Trainoperator_id, departure_time, Arrival_Time)
-VALUES (11, 5435, 1, 1903, 'Medway', 1800, 1805); -- 18:00 como 1800
+INSERT INTO Train_route (Facility_id, Train_id, "Order", TrainLocomotivelocomotive_id, Trainoperator_id, departure_time, Arrival_Time,ROUTEDATE)
+VALUES (11, 5435, 1, 1903, 'Medway', 1800, 1805,TO_TIMESTAMP('2025-10-03', 'YYYY-MM-DD')); -- 18:00 como 1800
 
-INSERT INTO Train_route (Facility_id, Train_id, "Order", TrainLocomotivelocomotive_id, Trainoperator_id, departure_time, Arrival_Time)
-VALUES (16, 5435, 2, 1903, 'Medway', 1830, 1835);
-INSERT INTO Train_route (Facility_id, Train_id, "Order", TrainLocomotivelocomotive_id, Trainoperator_id, departure_time, Arrival_Time)
-VALUES (21, 5435, 2, 1903, 'Medway', 1830, 1835);
-INSERT INTO Train_route (Facility_id, Train_id, "Order", TrainLocomotivelocomotive_id, Trainoperator_id, departure_time, Arrival_Time)
-VALUES (17, 5435, 2, 1903, 'Medway', 1830, 1835);
-INSERT INTO Train_route (Facility_id, Train_id, "Order", TrainLocomotivelocomotive_id, Trainoperator_id, departure_time, Arrival_Time)
-VALUES (12, 5435, 2, 1903, 'Medway', 1830, 1835);
-INSERT INTO Train_route (Facility_id, Train_id, "Order", TrainLocomotivelocomotive_id, Trainoperator_id, departure_time, Arrival_Time)
-VALUES (8, 5435, 2, 1903, 'Medway', 1830, 1835);
-INSERT INTO Train_route (Facility_id, Train_id, "Order", TrainLocomotivelocomotive_id, Trainoperator_id, departure_time, Arrival_Time)
-VALUES (20, 5435, 2, 1903, 'Medway', 1830, 1835);
-INSERT INTO Train_route (Facility_id, Train_id, "Order", TrainLocomotivelocomotive_id, Trainoperator_id, departure_time, Arrival_Time)
-VALUES (13, 5435, 2, 1903, 'Medway', 1830, 1835);
-INSERT INTO Train_route (Facility_id, Train_id, "Order", TrainLocomotivelocomotive_id, Trainoperator_id, departure_time, Arrival_Time)
-VALUES (43, 5435, 2, 1903, 'Medway', 1830, 1835);
-INSERT INTO Train_route (Facility_id, Train_id, "Order", TrainLocomotivelocomotive_id, Trainoperator_id, departure_time, Arrival_Time)
-VALUES (45, 5435, 2, 1903, 'Medway', 1830, 1835);
-INSERT INTO Train_route (Facility_id, Train_id, "Order", TrainLocomotivelocomotive_id, Trainoperator_id, departure_time, Arrival_Time)
-VALUES (48, 5435, 2, 1903, 'Medway', 1830, 1835);
-INSERT INTO Train_route (Facility_id, Train_id, "Order", TrainLocomotivelocomotive_id, Trainoperator_id, departure_time, Arrival_Time)
-VALUES (50, 5435, 2, 1903, 'Medway', 1830, 1835);
+INSERT INTO Train_route (Facility_id, Train_id, "Order", TrainLocomotivelocomotive_id, Trainoperator_id, departure_time, Arrival_Time,ROUTEDATE)
+VALUES (16, 5435, 2, 1903, 'Medway', 1830, 1835,TO_TIMESTAMP('2025-10-03', 'YYYY-MM-DD'));
+INSERT INTO Train_route (Facility_id, Train_id, "Order", TrainLocomotivelocomotive_id, Trainoperator_id, departure_time, Arrival_Time,ROUTEDATE)
+VALUES (21, 5435, 2, 1903, 'Medway', 1830, 1835,TO_TIMESTAMP('2025-10-03', 'YYYY-MM-DD'));
+INSERT INTO Train_route (Facility_id, Train_id, "Order", TrainLocomotivelocomotive_id, Trainoperator_id, departure_time, Arrival_Time,ROUTEDATE)
+VALUES (17, 5435, 2, 1903, 'Medway', 1830, 1835,TO_TIMESTAMP('2025-10-03', 'YYYY-MM-DD'));
+INSERT INTO Train_route (Facility_id, Train_id, "Order", TrainLocomotivelocomotive_id, Trainoperator_id, departure_time, Arrival_Time,ROUTEDATE)
+VALUES (12, 5435, 2, 1903, 'Medway', 1830, 1835,TO_TIMESTAMP('2025-10-03', 'YYYY-MM-DD'));
+INSERT INTO Train_route (Facility_id, Train_id, "Order", TrainLocomotivelocomotive_id, Trainoperator_id, departure_time, Arrival_Time,ROUTEDATE)
+VALUES (8, 5435, 2, 1903, 'Medway', 1830, 1835,TO_TIMESTAMP('2025-10-03', 'YYYY-MM-DD'));
+INSERT INTO Train_route (Facility_id, Train_id, "Order", TrainLocomotivelocomotive_id, Trainoperator_id, departure_time, Arrival_Time,ROUTEDATE)
+VALUES (20, 5435, 2, 1903, 'Medway', 1830, 1835,TO_TIMESTAMP('2025-10-03', 'YYYY-MM-DD'));
+INSERT INTO Train_route (Facility_id, Train_id, "Order", TrainLocomotivelocomotive_id, Trainoperator_id, departure_time, Arrival_Time,ROUTEDATE)
+VALUES (13, 5435, 2, 1903, 'Medway', 1830, 1835,TO_TIMESTAMP('2025-10-03', 'YYYY-MM-DD'));
+INSERT INTO Train_route (Facility_id, Train_id, "Order", TrainLocomotivelocomotive_id, Trainoperator_id, departure_time, Arrival_Time,ROUTEDATE)
+VALUES (43, 5435, 2, 1903, 'Medway', 1830, 1835,TO_TIMESTAMP('2025-10-03', 'YYYY-MM-DD'));
+INSERT INTO Train_route (Facility_id, Train_id, "Order", TrainLocomotivelocomotive_id, Trainoperator_id, departure_time, Arrival_Time,ROUTEDATE)
+VALUES (45, 5435, 2, 1903, 'Medway', 1830, 1835,TO_TIMESTAMP('2025-10-03', 'YYYY-MM-DD'));
+INSERT INTO Train_route (Facility_id, Train_id, "Order", TrainLocomotivelocomotive_id, Trainoperator_id, departure_time, Arrival_Time,ROUTEDATE)
+VALUES (48, 5435, 2, 1903, 'Medway', 1830, 1835,TO_TIMESTAMP('2025-10-03', 'YYYY-MM-DD'));
+INSERT INTO Train_route (Facility_id, Train_id, "Order", TrainLocomotivelocomotive_id, Trainoperator_id, departure_time, Arrival_Time,ROUTEDATE)
+VALUES (50, 5435, 2, 1903, 'Medway', 1830, 1835,TO_TIMESTAMP('2025-10-03', 'YYYY-MM-DD'));
 
+INSERT INTO Train_route (Facility_id, Train_id, "Order", TrainLocomotivelocomotive_id, Trainoperator_id, departure_time, Arrival_Time, ROUTEDATE)
+VALUES (11, 5437, 1, 5621, 'Medway', 1000, 1000, TO_TIMESTAMP('2025-10-06', 'YYYY-MM-DD'));
+
+INSERT INTO Train_route (Facility_id, Train_id, "Order", TrainLocomotivelocomotive_id, Trainoperator_id, departure_time, Arrival_Time, ROUTEDATE)
+VALUES (16, 5437, 2, 5621, 'Medway', 1005, 1005, TO_TIMESTAMP('2025-10-06', 'YYYY-MM-DD'));
+
+INSERT INTO Train_route (Facility_id, Train_id, "Order", TrainLocomotivelocomotive_id, Trainoperator_id, departure_time, Arrival_Time, ROUTEDATE)
+VALUES (21, 5437, 3, 5621, 'Medway', 1010, 1010, TO_TIMESTAMP('2025-10-06', 'YYYY-MM-DD'));
+
+INSERT INTO Train_route (Facility_id, Train_id, "Order", TrainLocomotivelocomotive_id, Trainoperator_id, departure_time, Arrival_Time, ROUTEDATE)
+VALUES (17, 5437, 4, 5621, 'Medway', 1015, 1015, TO_TIMESTAMP('2025-10-06', 'YYYY-MM-DD'));
+
+INSERT INTO Train_route (Facility_id, Train_id, "Order", TrainLocomotivelocomotive_id, Trainoperator_id, departure_time, Arrival_Time, ROUTEDATE)
+VALUES (12, 5437, 5, 5621, 'Medway', 1020, 1020, TO_TIMESTAMP('2025-10-06', 'YYYY-MM-DD'));
+
+INSERT INTO Train_route (Facility_id, Train_id, "Order", TrainLocomotivelocomotive_id, Trainoperator_id, departure_time, Arrival_Time, ROUTEDATE)
+VALUES (8, 5437, 6, 5621, 'Medway', 1025, 1025, TO_TIMESTAMP('2025-10-06', 'YYYY-MM-DD'));
+
+INSERT INTO Train_route (Facility_id, Train_id, "Order", TrainLocomotivelocomotive_id, Trainoperator_id, departure_time, Arrival_Time, ROUTEDATE)
+VALUES (20, 5437, 7, 5621, 'Medway', 1030, 1030, TO_TIMESTAMP('2025-10-06', 'YYYY-MM-DD'));
+
+INSERT INTO Train_route (Facility_id, Train_id, "Order", TrainLocomotivelocomotive_id, Trainoperator_id, departure_time, Arrival_Time, ROUTEDATE)
+VALUES (13, 5437, 8, 5621, 'Medway', 1035, 1035, TO_TIMESTAMP('2025-10-06', 'YYYY-MM-DD'));
+
+INSERT INTO Train_route (Facility_id, Train_id, "Order", TrainLocomotivelocomotive_id, Trainoperator_id, departure_time, Arrival_Time, ROUTEDATE)
+VALUES (43, 5437, 9, 5621, 'Medway', 1040, 1040, TO_TIMESTAMP('2025-10-06', 'YYYY-MM-DD'));
+
+INSERT INTO Train_route (Facility_id, Train_id, "Order", TrainLocomotivelocomotive_id, Trainoperator_id, departure_time, Arrival_Time, ROUTEDATE)
+VALUES (45, 5437, 10, 5621, 'Medway', 1045, 1045, TO_TIMESTAMP('2025-10-06', 'YYYY-MM-DD'));
+
+INSERT INTO Train_route (Facility_id, Train_id, "Order", TrainLocomotivelocomotive_id, Trainoperator_id, departure_time, Arrival_Time, ROUTEDATE)
+VALUES (48, 5437, 11, 5621, 'Medway', 1050, 1050, TO_TIMESTAMP('2025-10-06', 'YYYY-MM-DD'));
+
+INSERT INTO Train_route (Facility_id, Train_id, "Order", TrainLocomotivelocomotive_id, Trainoperator_id, departure_time, Arrival_Time, ROUTEDATE)
+VALUES (50, 5437, 12, 5621, 'Medway', 1055, 1055, TO_TIMESTAMP('2025-10-06', 'YYYY-MM-DD'));
 
 -- 25. TrainLog
 INSERT INTO TrainLog (Traintrain_id, Trainoperator_id, Arrival, TrainLogTraintrain_id)

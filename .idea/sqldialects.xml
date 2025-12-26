@@ -8,6 +8,7 @@
     <file url="file://$PROJECT_DIR$/src/main/sql-scripts/Sprint3/USBD34/USBD34Test.sql" dialect="Oracle" />
     <file url="file://$PROJECT_DIR$/src/main/sql-scripts/Sprint3/USBD35/registFacilityTest.sql" dialect="Oracle" />
     <file url="file://$PROJECT_DIR$/src/main/sql-scripts/Sprint3/USBD35/registeFacility.sql" dialect="Oracle" />
+    <file url="file://$PROJECT_DIR$/src/main/sql-scripts/Sprint3/USBD41/removeFreight.sql" dialect="Oracle" />
     <file url="file://$PROJECT_DIR$/src/main/sql-scripts/Sprint3/USBD44/USBD44.sql" dialect="Oracle" />
     <file url="file://$PROJECT_DIR$/src/main/sql-scripts/Sprint3/USBD44/USBD44Test.sql" dialect="Oracle" />
   </component>
