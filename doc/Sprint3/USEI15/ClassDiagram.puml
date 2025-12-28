@@ -1,0 +1,144 @@
+@startuml
+'https://plantuml.com/class-diagram
+
+' --- USEI15: Risk-Aware Shortest Paths ---
+' Computes shortest path between two stations using costs that may be negative
+' Detects negative cycles and provides path with accumulated costs
+
+' --- UI Layer ---
+class ShortestPathFXUI {
+    - controller: ShortestPathController
+    + show()
+    + handleCalculate()
+    + displayResult(result: ControllerShortestPathResult)
+}
+
+' --- Controller Layer ---
+class ShortestPathController {
+    - graphRepository: RailwayGraphRepository
+    - graph: RailwayGraph
+    + ShortestPathController(graphRepository: RailwayGraphRepository)
+    + buildGraph()
+    + calculateShortestPath(sourceId: String, targetId: String): ControllerShortestPathResult
+    + getAllStations(): Collection<Station>
+    + getStationById(stationId: String): Station
+}
+
+class ControllerShortestPathResult {
+    - domainResult: DomainShortestPathResult
+    + hasPath(): boolean
+    + hasNegativeCycle(): boolean
+    + getPathString(): String
+    + getTotalCost(): double
+    + getCycleString(): String
+}
+
+' --- Domain Layer ---
+class BellmanFord {
+    + {static} findShortestPath(graph: RailwayGraph, sourceId: String, targetId: String): DomainShortestPathResult
+    - {static} detectNegativeCycle(...): NegativeCycleInfo
+    - {static} reconstructPath(...): List<PathStep>
+}
+
+class DomainShortestPathResult {
+    - path: List<PathStep>
+    - totalCost: double
+    - hasPath: boolean
+    - hasNegativeCycle: boolean
+    - cycleInfo: NegativeCycleInfo
+    + getPath(): List<PathStep>
+    + getTotalCost(): double
+    + hasPath(): boolean
+    + hasNegativeCycle(): boolean
+    + getCycleInfo(): NegativeCycleInfo
+}
+
+class PathStep {
+    - stationId: String
+    - accumulatedCost: double
+    + getStationId(): String
+    + getAccumulatedCost(): double
+}
+
+class NegativeCycleInfo {
+    - cycleStations: List<String>
+    - cycleEdges: List<CycleEdge>
+    - cycleCost: double
+    + getCycleStations(): List<String>
+    + getCycleEdges(): List<CycleEdge>
+    + getCycleCost(): double
+}
+
+class CycleEdge {
+    - from: String
+    - to: String
+    - cost: double
+    + getFrom(): String
+    + getTo(): String
+    + getCost(): double
+}
+
+' --- Graph Structure (Reused from USEI11) ---
+class RailwayGraph {
+    - nodes: Map<String, Station>
+    - allEdges: List<Line>
+    + getAllNodes(): Collection<Station>
+    + getAllEdges(): List<Line>
+    + getOutgoingEdges(stationId: String): List<Line>
+    + getNodeCount(): int
+    + containsNode(stationId: String): boolean
+}
+
+class Station {
+    - id: String
+    - name: String
+    + getId(): String
+    + getName(): String
+}
+
+class Line {
+    - departureStationId: String
+    - arrivalStationId: String
+    - cost: double
+    + getDepartureStationId(): String
+    + getArrivalStationId(): String
+    + getCost(): double
+}
+
+' --- Repository Layer (Reused from USEI11) ---
+class RailwayGraphRepository {
+    + buildGraph(): RailwayGraph
+}
+
+' --- Relações ---
+ShortestPathFXUI --> ShortestPathController : uses
+ShortestPathController --> RailwayGraphRepository : uses
+ShortestPathController --> BellmanFord : uses
+ShortestPathController --> RailwayGraph : manages
+ShortestPathController ..> ControllerShortestPathResult : creates
+
+BellmanFord --> RailwayGraph : processes
+BellmanFord --> Station : uses
+BellmanFord --> Line : uses
+BellmanFord ..> DomainShortestPathResult : creates
+BellmanFord ..> PathStep : creates
+BellmanFord ..> NegativeCycleInfo : creates
+BellmanFord ..> CycleEdge : creates
+
+DomainShortestPathResult "1" --> "0..*" PathStep : contains
+DomainShortestPathResult "1" --> "0..1" NegativeCycleInfo : contains
+NegativeCycleInfo "1" --> "0..*" CycleEdge : contains
+
+ControllerShortestPathResult --> DomainShortestPathResult : wraps
+
+RailwayGraph "1" --> "0..*" Station : contains
+RailwayGraph "1" --> "0..*" Line : contains
+Line --> Station : connects
+
+RailwayGraphRepository --> RailwayGraph : builds
+
+' Note: DomainShortestPathResult, PathStep, NegativeCycleInfo, and CycleEdge
+' are inner classes of BellmanFord in the actual implementation.
+' ControllerShortestPathResult is an inner class of ShortestPathController.
+
+@enduml
