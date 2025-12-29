@@ -40,18 +40,48 @@ public class GraphvizRenderer {
      * @return the path to neato executable, or "neato" if found in PATH
      */
     private static String findNeatoPath() {
-        // First, try to use 'neato' from PATH
         String os = System.getProperty("os.name").toLowerCase();
+        
+        // First, try to verify if 'neato' is available in PATH
+        if (isCommandAvailable(NEATO_COMMAND)) {
+            return NEATO_COMMAND;
+        }
+        
+        // If not in PATH, check common Windows installation paths
         if (os.contains("win")) {
-            // On Windows, check common installation paths
             for (String path : WINDOWS_GRAPHVIZ_PATHS) {
-                if (new File(path).exists()) {
+                File neatoFile = new File(path);
+                if (neatoFile.exists() && neatoFile.isFile()) {
                     return path;
                 }
             }
         }
-        // Fallback to PATH
+        
+        // Fallback to PATH (will fail with better error message if not found)
         return NEATO_COMMAND;
+    }
+    
+    /**
+     * Checks if a command is available in the system PATH.
+     * 
+     * @param command the command name to check
+     * @return true if the command is available, false otherwise
+     */
+    private static boolean isCommandAvailable(String command) {
+        try {
+            ProcessBuilder pb = new ProcessBuilder(command, "-V");
+            pb.redirectErrorStream(true);
+            pb.redirectOutput(ProcessBuilder.Redirect.DISCARD);
+            Process process = pb.start();
+            boolean finished = process.waitFor(2, TimeUnit.SECONDS);
+            if (finished) {
+                return process.exitValue() == 0;
+            }
+            process.destroyForcibly();
+            return false;
+        } catch (Exception e) {
+            return false;
+        }
     }
     
     /**
