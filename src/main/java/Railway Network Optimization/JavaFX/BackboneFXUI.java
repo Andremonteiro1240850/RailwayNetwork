@@ -355,8 +355,8 @@ public class BackboneFXUI {
         exportInfoArea.setWrapText(true);
         exportInfoArea.setStyle("-fx-font-family: 'Courier New', monospace; " +
                                "-fx-font-size: 12px; " +
-                               "-fx-background-color: #243447; " +
-                               "-fx-text-fill: #E2E8F0; " +
+                               "-fx-background-color: #FFFFFF; " +
+                               "-fx-text-fill: #000000; " +
                                "-fx-border-color: rgba(99, 102, 241, 0.2); " +
                                "-fx-border-width: 1px; " +
                                "-fx-border-radius: 8px; " +
@@ -434,8 +434,8 @@ public class BackboneFXUI {
         technicalLogArea.setWrapText(false);
         technicalLogArea.setStyle("-fx-font-family: 'Courier New', monospace; " +
                                  "-fx-font-size: 12px; " +
-                                 "-fx-background-color: #243447; " +
-                                 "-fx-text-fill: #E2E8F0; " +
+                                 "-fx-background-color: #FFFFFF; " +
+                                 "-fx-text-fill: #000000; " +
                                  "-fx-border-color: rgba(99, 102, 241, 0.2); " +
                                  "-fx-border-width: 1px; " +
                                  "-fx-border-radius: 8px; " +
@@ -543,15 +543,42 @@ public class BackboneFXUI {
         int fullConnectionsTemp = 0;
         try {
             String stats = controller.getGraphStatistics();
+            // Debug: print stats to see format
+            System.out.println("Graph Statistics:\n" + stats);
+            
             String[] lines = stats.split("\n");
             for (String line : lines) {
+                line = line.trim(); // Remove leading/trailing whitespace
                 if (line.contains("Stations:")) {
-                    fullStationsTemp = Integer.parseInt(line.replaceAll("[^0-9]", ""));
+                    // Extract number after "Stations:"
+                    String numberStr = line.substring(line.indexOf("Stations:") + "Stations:".length()).trim();
+                    fullStationsTemp = Integer.parseInt(numberStr.split("\\s")[0]);
                 } else if (line.contains("Connections:")) {
-                    fullConnectionsTemp = Integer.parseInt(line.replaceAll("[^0-9]", ""));
+                    // Extract number after "Connections:"
+                    String numberStr = line.substring(line.indexOf("Connections:") + "Connections:".length()).trim();
+                    fullConnectionsTemp = Integer.parseInt(numberStr.split("\\s")[0]);
+                }
+            }
+            
+            // If still 0, try alternative parsing
+            if (fullStationsTemp == 0 || fullConnectionsTemp == 0) {
+                // Try parsing with regex
+                java.util.regex.Pattern stationsPattern = java.util.regex.Pattern.compile("Stations:\\s*(\\d+)");
+                java.util.regex.Pattern connectionsPattern = java.util.regex.Pattern.compile("Connections:\\s*(\\d+)");
+                
+                java.util.regex.Matcher stationsMatcher = stationsPattern.matcher(stats);
+                if (stationsMatcher.find()) {
+                    fullStationsTemp = Integer.parseInt(stationsMatcher.group(1));
+                }
+                
+                java.util.regex.Matcher connectionsMatcher = connectionsPattern.matcher(stats);
+                if (connectionsMatcher.find()) {
+                    fullConnectionsTemp = Integer.parseInt(connectionsMatcher.group(1));
                 }
             }
         } catch (Exception e) {
+            System.err.println("Error parsing graph statistics: " + e.getMessage());
+            e.printStackTrace();
             // Use MST values as fallback
             fullStationsTemp = currentMST.getStationCount();
             fullConnectionsTemp = currentMST.getConnectionCount();
