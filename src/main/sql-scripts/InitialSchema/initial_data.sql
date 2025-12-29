@@ -257,7 +257,7 @@ VALUES ('Eurosprinter', 25000); -- 25 KV = 25000 volts
 -- 15. Locomotive
 
 INSERT INTO Locomotive (locomotive_id, operator_id, entry_year, locomotive_model_id, Traintrain_id, Trainoperator_id)
-VALUES (5621, 'Medway', 1995, 'Eurosprinter', 5421, 'Medway'); -- inventar dados para train
+VALUES (5621, 'Medway', 1995, 'Eurosprinter', 5421, 'Medway');
 
 INSERT INTO Locomotive (locomotive_id, operator_id, entry_year, locomotive_model_id, Traintrain_id, Trainoperator_id)
 VALUES (5623, 'Medway', 1995, 'Eurosprinter', 5421, 'Medway');
@@ -460,33 +460,6 @@ VALUES (1903, 5435, 'Medway', TO_TIMESTAMP('2025-10-03 17:00:00', 'YYYY-MM-DD HH
 INSERT INTO Locomotive_Train (Locomotivelocomotive_id, Traintrain_id, Trainoperator_id, Adddate)
 VALUES (5034, 5437, 'Medway', TO_TIMESTAMP('2025-10-06 09:00:00', 'YYYY-MM-DD HH24:MI:SS'));
 
--- 21. FreighTrain
-INSERT INTO FreighTrain (Freigth_id, Traintrain_id, TrainLocomotivelocomotive_id, Trainoperator_id)
-VALUES (2001, 5421, 5621, 'Medway');
-
-INSERT INTO FreighTrain (Freigth_id, Traintrain_id, TrainLocomotivelocomotive_id, Trainoperator_id)
-VALUES (2002, 5421, 5621, 'Medway');
-
-INSERT INTO FreighTrain (Freigth_id, Traintrain_id, TrainLocomotivelocomotive_id, Trainoperator_id)
-VALUES (2003, 5421, 5621, 'Medway');
-
-INSERT INTO FreighTrain (Freigth_id, Traintrain_id, TrainLocomotivelocomotive_id, Trainoperator_id)
-VALUES (2004, 5421, 5621, 'Medway');
-
-INSERT INTO FreighTrain (Freigth_id, Traintrain_id, TrainLocomotivelocomotive_id, Trainoperator_id)
-VALUES (2005, 5421, 5621, 'Medway');
-
-INSERT INTO FreighTrain (Freigth_id, Traintrain_id, TrainLocomotivelocomotive_id, Trainoperator_id)
-VALUES (2006, 5435, 1903, 'Medway');
-
-INSERT INTO FreighTrain (Freigth_id, Traintrain_id, TrainLocomotivelocomotive_id, Trainoperator_id)
-VALUES (2007, 5435, 1903, 'Medway');
-
-INSERT INTO FreighTrain (Freigth_id, Traintrain_id, TrainLocomotivelocomotive_id, Trainoperator_id)
-VALUES (2050, 5437, 5034, 'Medway');
-
-INSERT INTO FreighTrain (Freigth_id, Traintrain_id, TrainLocomotivelocomotive_id, Trainoperator_id)
-VALUES (2051, 5437, 5034, 'Medway');
 
 -- 22. Freight
 INSERT INTO Freight (freight_id, Originfacility_id, Destinationfacility_id, FreighTrainFreigth_id, createDate, FreighTrainTraintrain_id)
@@ -515,6 +488,37 @@ VALUES (2050, 12, 50, 2050, TO_TIMESTAMP('2025-10-06 00:00:00', 'YYYY-MM-DD HH24
 
 INSERT INTO Freight (freight_id, Originfacility_id, Destinationfacility_id, FreighTrainFreigth_id, createDate, FreighTrainTraintrain_id)
 VALUES (2051, 11, 50, 2051, TO_TIMESTAMP('2025-10-06 00:00:00', 'YYYY-MM-DD HH24:MI:SS'), 5437);
+
+
+
+-- 21. FreighTrain
+INSERT INTO FreighTrain (FREIGHTFREIGHT_ID, Traintrain_id, TrainLocomotivelocomotive_id, Trainoperator_id)
+VALUES (2001, 5421, 5621, 'Medway');
+
+INSERT INTO FreighTrain (FREIGHTFREIGHT_ID, Traintrain_id, TrainLocomotivelocomotive_id, Trainoperator_id)
+VALUES (2002, 5421, 5621, 'Medway');
+
+INSERT INTO FreighTrain (FREIGHTFREIGHT_ID, Traintrain_id, TrainLocomotivelocomotive_id, Trainoperator_id)
+VALUES (2003, 5421, 5621, 'Medway');
+
+INSERT INTO FreighTrain (FREIGHTFREIGHT_ID, Traintrain_id, TrainLocomotivelocomotive_id, Trainoperator_id)
+VALUES (2004, 5421, 5621, 'Medway');
+
+INSERT INTO FreighTrain (FREIGHTFREIGHT_ID, Traintrain_id, TrainLocomotivelocomotive_id, Trainoperator_id)
+VALUES (2005, 5421, 5621, 'Medway');
+
+INSERT INTO FreighTrain (FREIGHTFREIGHT_ID, Traintrain_id, TrainLocomotivelocomotive_id, Trainoperator_id)
+VALUES (2006, 5435, 1903, 'Medway');
+
+INSERT INTO FreighTrain (FREIGHTFREIGHT_ID, Traintrain_id, TrainLocomotivelocomotive_id, Trainoperator_id)
+VALUES (2007, 5435, 1903, 'Medway');
+
+INSERT INTO FreighTrain (FREIGHTFREIGHT_ID, Traintrain_id, TrainLocomotivelocomotive_id, Trainoperator_id)
+VALUES (2050, 5437, 5034, 'Medway');
+
+INSERT INTO FreighTrain (FREIGHTFREIGHT_ID, Traintrain_id, TrainLocomotivelocomotive_id, Trainoperator_id)
+VALUES (2051, 5437, 5034, 'Medway');
+
 
 -- 23. Wagon_In_Freight
 INSERT INTO Wagon_In_Freight (Wagon_id, Freight_id) VALUES (2001, 2001); -- 333 0 001
@@ -704,17 +708,17 @@ INSERT INTO BuildingType (ID, name) VALUES (2, 'Grain Silos');
 INSERT INTO BuildingType (ID, name) VALUES (3, 'Cold Areas');
 
 -- 29. Building
-INSERT INTO Building (ID, name, NUMBEROFBUILDINGS, BuildingTypeID, Facilityfacility_id)
+INSERT INTO Building (ID, name, BUILDINGNUMBER, BuildingTypeID, Facilityfacility_id)
 VALUES (1, 'Main Warehouse Leixões', 1, 1, 50);
 
-INSERT INTO Building (ID, name, NUMBEROFBUILDINGS, BuildingTypeID, Facilityfacility_id)
+INSERT INTO Building (ID, name, BUILDINGNUMBER, BuildingTypeID, Facilityfacility_id)
 VALUES (2, 'Grain Silo Leixões', 1, 2, 50);
 
-INSERT INTO Building (ID, name, NUMBEROFBUILDINGS, BuildingTypeID, Facilityfacility_id)
+INSERT INTO Building (ID, name, BUILDINGNUMBER, BuildingTypeID, Facilityfacility_id)
 VALUES (3, 'Refrigerated Area Valença', 1, 3, 11);
 
-INSERT INTO Building (ID, name, NUMBEROFBUILDINGS, BuildingTypeID, Facilityfacility_id)
+INSERT INTO Building (ID, name, BUILDINGNUMBER, BuildingTypeID, Facilityfacility_id)
 VALUES (4, 'Campanhã Warehouse', 1, 1, 5);
 
-INSERT INTO Building (ID, name, NUMBEROFBUILDINGS, BuildingTypeID, Facilityfacility_id)
+INSERT INTO Building (ID, name, BUILDINGNUMBER, BuildingTypeID, Facilityfacility_id)
 VALUES (5, 'Grain Silo of São Bento', 1, 2, 7);
