@@ -1,4 +1,4 @@
-//sucesso
+--sucesso
 
 DECLARE
 v_id NUMBER;
@@ -13,7 +13,7 @@ END;
 /
 
 
-//facility nao existe
+--facility nao existe
 DECLARE
 v_id NUMBER;
 BEGIN
@@ -31,7 +31,8 @@ END;
 /
 
 
-//building type nao existe
+--buildingtype nao existe
+
 DECLARE
 v_id NUMBER;
 BEGIN
@@ -49,7 +50,7 @@ END;
 /
 
 
-//numberOfBuildings inválido
+--numberOfBuildings inválido
 DECLARE
 v_id NUMBER;
 BEGIN
@@ -67,7 +68,7 @@ END;
 /
 
 
-//duplicado(mesmo nome ou id)
+--duplicado(mesmo nome ou id)
 DECLARE
 v_id NUMBER;
 BEGIN

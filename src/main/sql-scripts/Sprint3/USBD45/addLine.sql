@@ -88,7 +88,9 @@ RETURN p_line_id;
 EXCEPTION
     WHEN DUP_VAL_ON_INDEX THEN
         raise_application_error(-20045, 'DUPLICATE_KEY');
+        return null;
 WHEN OTHERS THEN
         raise_application_error(-20045, 'ERROR ' || SQLERRM);
+        return null;
 END;
 /
