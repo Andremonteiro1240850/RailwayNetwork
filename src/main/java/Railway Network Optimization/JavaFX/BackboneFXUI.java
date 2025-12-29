@@ -485,13 +485,11 @@ public class BackboneFXUI {
                         long startTime = System.currentTimeMillis();
                         updateMessage("Loading graph...");
                         
-                        // Load full graph to get statistics
+                        // Get graph statistics first (this loads the full graph)
                         try {
-                            fullGraph = controller.generateBackbone(); // This loads and computes MST
+                            controller.getGraphStatistics();
                         } catch (Exception e) {
-                            // If generateBackbone fails, try to get statistics from repository
-                            String stats = controller.getGraphStatistics();
-                            // Parse stats if needed
+                            // Ignore - will use MST values as fallback
                         }
                         
                         updateMessage("Computing minimum spanning tree...");
@@ -541,28 +539,32 @@ public class BackboneFXUI {
         }
         
         // Get full graph statistics
-        int fullStations = 0;
-        int fullConnections = 0;
+        int fullStationsTemp = 0;
+        int fullConnectionsTemp = 0;
         try {
             String stats = controller.getGraphStatistics();
             String[] lines = stats.split("\n");
             for (String line : lines) {
                 if (line.contains("Stations:")) {
-                    fullStations = Integer.parseInt(line.replaceAll("[^0-9]", ""));
+                    fullStationsTemp = Integer.parseInt(line.replaceAll("[^0-9]", ""));
                 } else if (line.contains("Connections:")) {
-                    fullConnections = Integer.parseInt(line.replaceAll("[^0-9]", ""));
+                    fullConnectionsTemp = Integer.parseInt(line.replaceAll("[^0-9]", ""));
                 }
             }
         } catch (Exception e) {
             // Use MST values as fallback
-            fullStations = currentMST.getStationCount();
-            fullConnections = currentMST.getConnectionCount();
+            fullStationsTemp = currentMST.getStationCount();
+            fullConnectionsTemp = currentMST.getConnectionCount();
         }
         
-        int mstStations = currentMST.getStationCount();
-        int mstConnections = currentMST.getConnectionCount();
-        double reduction = fullConnections > 0 ? 
+        // Make final for lambda
+        final int fullStations = fullStationsTemp;
+        final int fullConnections = fullConnectionsTemp;
+        final int mstStations = currentMST.getStationCount();
+        final int mstConnections = currentMST.getConnectionCount();
+        final double reduction = fullConnections > 0 ? 
             (1.0 - (double) mstConnections / fullConnections) * 100.0 : 0.0;
+        final long computationTime = computationTimeMs;
         
         // Update Overview cards
         Platform.runLater(() -> {
@@ -572,7 +574,7 @@ public class BackboneFXUI {
             if (mstConnectionsLabel != null) mstConnectionsLabel.setText(String.valueOf(mstConnections));
             if (reductionLabel != null) reductionLabel.setText(String.format("%.1f%%", reduction));
             if (complexityLabel != null) {
-                complexityLabel.setText("O(E log E)\n(" + computationTimeMs + " ms)");
+                complexityLabel.setText("O(E log E)\n(" + computationTime + " ms)");
             }
         });
         
@@ -594,7 +596,7 @@ public class BackboneFXUI {
         
         sb.append("TEMPORAL ANALYSIS\n");
         sb.append("-".repeat(80)).append("\n");
-        sb.append(String.format("Computation Time: %d ms\n", computationTimeMs));
+        sb.append(String.format("Computation Time: %d ms\n", computationTime));
         sb.append("Algorithm: Kruskal's with Union-Find\n");
         sb.append("Time Complexity: O(E log E) where E is the number of edges\n");
         sb.append("Space Complexity: O(V + E) where V is the number of vertices\n\n");
