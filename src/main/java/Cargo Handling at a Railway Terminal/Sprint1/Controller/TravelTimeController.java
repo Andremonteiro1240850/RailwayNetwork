@@ -54,6 +54,29 @@ public class TravelTimeController {
         
         this.service = new TravelCalculationService(lineSegments);
     }
+    
+    /**
+     * Constructs a new TravelTimeController with pre-loaded data from database.
+     * USLP10: Use this constructor to load data from database instead of CSV.
+     * 
+     * @param facilities list of facilities loaded from database
+     * @param lineSegments list of line segments loaded from database
+     */
+    public TravelTimeController(List<Facility> facilities, List<LineSegment> lineSegments) {
+        if (facilities == null || lineSegments == null) {
+            throw new IllegalArgumentException("Facilities and line segments cannot be null");
+        }
+        
+        this.dataLoader = null; // No CSV loader needed
+        this.facilities = new ArrayList<>(facilities);
+        this.lineSegments = new ArrayList<>(lineSegments);
+        this.service = new TravelCalculationService(lineSegments);
+        
+        System.out.println("=== LOADING RAILWAY DATA FROM DATABASE ===");
+        System.out.println("  Database data loaded successfully!");
+        System.out.println("   Stations: " + this.facilities.size());
+        System.out.println("   Line segments: " + this.lineSegments.size());
+    }
 
     /**
      * Gets the travel calculation service.
@@ -89,7 +112,15 @@ public class TravelTimeController {
      * @return the station or null if not found
      */
     public Facility getStationById(String id) {
-        return dataLoader.getStationById(id);
+        if (dataLoader != null) {
+            return dataLoader.getStationById(id);
+        } else {
+            // Search in facilities list when loaded from database
+            return facilities.stream()
+                .filter(f -> f.getId().equals(id))
+                .findFirst()
+                .orElse(null);
+        }
     }
 
     /**

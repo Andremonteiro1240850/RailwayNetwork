@@ -48,6 +48,14 @@ public class SchedulerService {
         this.physicsCalculationService = new CalculationService();
         this.lineSegmentAOD = new LineSegmentAOD();
         this.locomotiveAOD = new LocomotiveAOD();
+        
+        System.out.println("SchedulerService initialized with " + this.lineSegments.size() + " line segments");
+        if (!this.lineSegments.isEmpty()) {
+            System.out.println("Sample segments (first 5):");
+            this.lineSegments.stream().limit(5).forEach(seg -> 
+                System.out.println("  - " + seg.getId() + ": " + seg.getStartStation().getId() + " -> " + seg.getEndStation().getId())
+            );
+        }
     }
 
     /**
@@ -84,10 +92,20 @@ public class SchedulerService {
             try {
                 DispatchReport.TrainSchedule schedule = calculateTrainSchedule(train);
                 schedules.add(schedule);
+                System.out.println("Successfully scheduled train " + train.getTrainId());
             } catch (Exception e) {
                 // Log error but continue with other trains
-                System.err.println("Error scheduling train " + train.getTrainId() + ": " + e.getMessage());
+                System.err.println("ERROR scheduling train " + train.getTrainId() + ": " + e.getMessage());
+                System.err.println("  Route: " + train.getRoute().stream()
+                    .map(Facility::getId)
+                    .reduce((a, b) -> a + " -> " + b)
+                    .orElse("empty"));
+                e.printStackTrace();
             }
+        }
+        
+        if (schedules.isEmpty() && !adjustedTrains.isEmpty()) {
+            System.err.println("WARNING: No trains were successfully scheduled out of " + adjustedTrains.size() + " train(s)!");
         }
 
         // Step 3: Detect remaining conflicts between trains
@@ -124,10 +142,11 @@ public class SchedulerService {
     /**
      * Calculates the schedule for a single train.
      * This method reuses TravelCalculationService for each segment.
+     * If the route only has start and end stations, automatically finds the fastest path.
      *
      * @param train the train to schedule
      * @return the train schedule with ETAs
-     * @throws IllegalStateException if route segments are not directly connected
+     * @throws IllegalStateException if route segments are not directly connected and no path can be found
      */
     private DispatchReport.TrainSchedule calculateTrainSchedule(Train train) {
         List<DispatchReport.TrainSchedule.StationETA> routeWithETAs = new ArrayList<>();
@@ -135,6 +154,27 @@ public class SchedulerService {
         
         LocalDateTime currentTime = train.getDeparturePlannedDateTime();
         List<Facility> route = train.getRoute();
+        
+        // If route only has 2 stations (start and end), find the fastest path automatically
+        if (route.size() == 2) {
+            Facility startStation = route.get(0);
+            Facility endStation = route.get(1);
+            
+            // Check if directly connected
+            if (findConnectingSegment(startStation, endStation) == null) {
+                // Find path using shortest path algorithm (based on travel time)
+                List<Facility> foundPath = findFastestPath(startStation, endStation, train);
+                if (foundPath != null && foundPath.size() >= 2) {
+                    System.out.println("Found path from " + startStation.getId() + " to " + endStation.getId() + 
+                                     " via " + (foundPath.size() - 2) + " intermediate stations");
+                    route = foundPath;
+                } else {
+                    throw new IllegalStateException(
+                        String.format("No path found between stations %s and %s for train %s",
+                                    startStation.getId(), endStation.getId(), train.getTrainId()));
+                }
+            }
+        }
 
         // Add departure station (first station)
         routeWithETAs.add(new DispatchReport.TrainSchedule.StationETA(
@@ -167,17 +207,24 @@ public class SchedulerService {
             // USLP10: Load segment data from database (inclination, etc.)
             LineSegment segmentWithData = loadSegmentDataFromDatabase(segment);
             
+            // Debug: Log segment information
+            System.out.println("Calculating travel time for segment " + segmentWithData.getId() + 
+                             " (length: " + segmentWithData.getLengthKm() + " km, " +
+                             "inclination: " + segmentWithData.getInclinationPercent() + "%)");
+            
             // USLP10: Calculate travel time using physics (2nd Law of Newton)
             CalculationService.SegmentCalculationResult result =
                 physicsCalculationService.calculateSegment(train, segmentWithData, initialVelocityMs);
             
             double travelTimeHours = result.getTravelTimeHours();
+            System.out.println("  Calculated travel time: " + travelTimeHours + " hours (" + 
+                             (travelTimeHours * 3600) + " seconds)");
             
             // Calculate segment start and end times
             LocalDateTime segmentStartTime = currentTime;
-            // Convert hours to minutes for more accurate time calculation
-            long totalMinutes = (long) (travelTimeHours * 60);
-            LocalDateTime segmentEndTime = currentTime.plusMinutes(totalMinutes);
+            // Convert hours to seconds for more accurate time calculation (handles sub-minute times)
+            long totalSeconds = Math.round(travelTimeHours * 3600.0);
+            LocalDateTime segmentEndTime = currentTime.plusSeconds(totalSeconds);
 
             // Create segment time
             DispatchReport.TrainSchedule.SegmentTime segmentTime = new DispatchReport.TrainSchedule.SegmentTime(
@@ -209,12 +256,128 @@ public class SchedulerService {
         // This ensures the displayed total travel time matches the actual time difference
         LocalDateTime departureTime = routeWithETAs.get(0).getEta();
         LocalDateTime arrivalTime = routeWithETAs.get(routeWithETAs.size() - 1).getEta();
-        long totalMinutesActual = java.time.Duration.between(departureTime, arrivalTime).toMinutes();
-        double totalTravelTimeActual = totalMinutesActual / 60.0;
+        // Use seconds for more accurate calculation (handles sub-minute times)
+        long totalSecondsActual = java.time.Duration.between(departureTime, arrivalTime).getSeconds();
+        double totalTravelTimeActual = totalSecondsActual / 3600.0;
 
         return new DispatchReport.TrainSchedule(train.getTrainId(), routeWithETAs, segmentTimes, totalTravelTimeActual, train.getSelectedStations());
     }
 
+    /**
+     * Finds the fastest path between two stations using Dijkstra's algorithm.
+     * The path is optimized based on estimated travel time.
+     *
+     * @param startStation the starting station
+     * @param endStation   the ending station
+     * @param train        the train (used for calculating travel time estimates)
+     * @return list of stations representing the fastest path, or null if no path exists
+     */
+    private List<Facility> findFastestPath(Facility startStation, Facility endStation, Train train) {
+        if (startStation == null || endStation == null || train == null) {
+            return null;
+        }
+        
+        if (startStation.getId().equals(endStation.getId())) {
+            return java.util.Arrays.asList(startStation);
+        }
+        
+        // Check if directly connected first
+        if (findConnectingSegment(startStation, endStation) != null) {
+            return java.util.Arrays.asList(startStation, endStation);
+        }
+        
+        // Dijkstra's algorithm to find fastest path
+        java.util.Map<String, Double> distances = new java.util.HashMap<>(); // Station ID -> travel time in hours
+        java.util.Map<String, Facility> previous = new java.util.HashMap<>(); // Station ID -> previous station
+        java.util.Set<String> visited = new java.util.HashSet<>();
+        java.util.PriorityQueue<PathNode> queue = new java.util.PriorityQueue<>(
+            (a, b) -> Double.compare(a.time, b.time)
+        );
+        
+        // Initialize distances
+        for (LineSegment segment : lineSegments) {
+            distances.put(segment.getStartStation().getId(), Double.MAX_VALUE);
+            distances.put(segment.getEndStation().getId(), Double.MAX_VALUE);
+        }
+        distances.put(startStation.getId(), 0.0);
+        
+        queue.add(new PathNode(startStation, 0.0));
+        
+        while (!queue.isEmpty()) {
+            PathNode current = queue.poll();
+            String currentId = current.station.getId();
+            
+            if (visited.contains(currentId)) {
+                continue;
+            }
+            
+            visited.add(currentId);
+            
+            // If we reached the destination, reconstruct path
+            if (currentId.equals(endStation.getId())) {
+                java.util.List<Facility> path = new java.util.ArrayList<>();
+                Facility node = endStation;
+                while (node != null) {
+                    path.add(0, node);
+                    node = previous.get(node.getId());
+                }
+                return path;
+            }
+            
+            // Find all neighbors (stations directly connected to current)
+            for (LineSegment segment : lineSegments) {
+                Facility neighbor = null;
+                if (segment.getStartStation().getId().equals(currentId)) {
+                    neighbor = segment.getEndStation();
+                } else if (segment.getEndStation().getId().equals(currentId)) {
+                    neighbor = segment.getStartStation();
+                }
+                
+                if (neighbor != null && !visited.contains(neighbor.getId())) {
+                    // Estimate travel time for this segment
+                    LineSegment segmentWithData = loadSegmentDataFromDatabase(segment);
+                    if (segmentWithData == null) {
+                        segmentWithData = segment; // Use original if database load fails
+                    }
+                    
+                    // Use a simplified travel time estimate (distance / average speed)
+                    // For more accuracy, we could calculate actual physics, but that's expensive
+                    double estimatedSpeedKmH = Math.min(
+                        train.getEffectiveMaxSpeedKmH(),
+                        segmentWithData.hasSpeedLimit() ? segmentWithData.getSpeedLimitKmH() : train.getEffectiveMaxSpeedKmH()
+                    );
+                    if (estimatedSpeedKmH <= 0) {
+                        estimatedSpeedKmH = 50.0; // Default speed
+                    }
+                    
+                    double segmentTimeHours = segmentWithData.getLengthKm() / estimatedSpeedKmH;
+                    double newDistance = distances.get(currentId) + segmentTimeHours;
+                    
+                    if (newDistance < distances.get(neighbor.getId())) {
+                        distances.put(neighbor.getId(), newDistance);
+                        previous.put(neighbor.getId(), current.station);
+                        queue.add(new PathNode(neighbor, newDistance));
+                    }
+                }
+            }
+        }
+        
+        return null; // No path found
+    }
+    
+    /**
+     * Helper class for Dijkstra's algorithm.
+     */
+    private static class PathNode {
+        final Facility station;
+        final double time;
+        
+        PathNode(Facility station, double time) {
+            this.station = station;
+            this.time = time;
+        }
+    }
+    
     /**
      * Finds a line segment connecting two stations.
      *
@@ -223,10 +386,30 @@ public class SchedulerService {
      * @return the connecting segment, or null if not found
      */
     private LineSegment findConnectingSegment(Facility startStation, Facility endStation) {
-        return lineSegments.stream()
-                .filter(segment -> segment.connectsStations(startStation, endStation))
+        System.out.println("Searching for segment between stations: " + startStation.getId() + " -> " + endStation.getId());
+        System.out.println("  Total segments available: " + lineSegments.size());
+        
+        LineSegment found = lineSegments.stream()
+                .filter(segment -> {
+                    boolean connects = segment.connectsStations(startStation, endStation);
+                    if (connects) {
+                        System.out.println("  Found segment: " + segment.getId() + " (" + 
+                            segment.getStartStation().getId() + " -> " + segment.getEndStation().getId() + ")");
+                    }
+                    return connects;
+                })
                 .findFirst()
                 .orElse(null);
+        
+        if (found == null) {
+            System.err.println("  ERROR: No segment found between " + startStation.getId() + " and " + endStation.getId());
+            System.err.println("  Available segments (first 10):");
+            lineSegments.stream().limit(10).forEach(seg -> 
+                System.err.println("    - " + seg.getId() + ": " + seg.getStartStation().getId() + " -> " + seg.getEndStation().getId())
+            );
+        }
+        
+        return found;
     }
     
     /**
