@@ -1,7 +1,7 @@
 package Sprint1.Domain;
 
 import Sprint2.Domain.LineSegment;
-import Sprint2.Domain.Train;
+import Lapr.Domain.Train;
 
 import java.util.List;
 
