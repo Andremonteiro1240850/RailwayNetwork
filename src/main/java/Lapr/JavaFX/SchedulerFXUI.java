@@ -6,9 +6,10 @@ import Lapr.Domain.Train;
 import Sprint1.Domain.Facility;
 import Sprint1.Domain.Locomotive;
 import Sprint1.Domain.Wagon;
-import Sprint1.Domain.RailwayDataLoader;
 import Sprint1.Domain.TravelCalculationService;
 import Sprint1.Domain.IncompatibleGaugeException;
+import Lapr.DataBaseAssociation.LocomotiveAOD;
+import Lapr.DataBaseAssociation.WagonAOD;
 
 import javafx.application.Platform;
 import javafx.concurrent.Service;
@@ -87,9 +88,10 @@ public class SchedulerFXUI {
     
     /**
      * Constructs a new SchedulerFXUI with default controller.
+     * USLP10: Loads all data from database, not CSV files.
      */
     public SchedulerFXUI() {
-        this.controller = new DispatchController();
+        this.controller = DispatchController.createFromDatabase();
         initializeData();
     }
     
@@ -104,23 +106,33 @@ public class SchedulerFXUI {
     }
     
     /**
-     * Initializes data from controller and CSV files.
+     * Initializes data from controller and database.
+     * USLP10: All data must come from database, not CSV files.
      */
     private void initializeData() {
         facilities = FXCollections.observableArrayList(controller.getStations());
-        
-        RailwayDataLoader dataLoader = new RailwayDataLoader();
+
+        // Load locomotives and wagons from database (USLP10 requirement)
+        LocomotiveAOD locomotiveAOD = new LocomotiveAOD();
+        WagonAOD wagonAOD = new WagonAOD();
+
         try {
-            locomotives = FXCollections.observableArrayList(
-                dataLoader.loadLocomotivesFromCSV("train_station_dataset/locomotives.csv"));
-            wagons = FXCollections.observableArrayList(
-                dataLoader.loadWagonsFromCSV("train_station_dataset/wagons.csv"));
+            locomotives = FXCollections.observableArrayList(locomotiveAOD.getAllLocomotives());
+            wagons = FXCollections.observableArrayList(wagonAOD.getAllWagons());
+
+            if (locomotives.isEmpty()) {
+                System.err.println("WARNING: No locomotives loaded from database");
+            }
+            if (wagons.isEmpty()) {
+                System.err.println("WARNING: No wagons loaded from database");
+            }
         } catch (Exception e) {
-            System.err.println("Error loading data: " + e.getMessage());
+            System.err.println("Error loading data from database: " + e.getMessage());
+            e.printStackTrace();
             locomotives = FXCollections.observableArrayList();
             wagons = FXCollections.observableArrayList();
         }
-        
+
         trains = FXCollections.observableArrayList();
         trains.addListener((javafx.collections.ListChangeListener.Change<? extends Train> c) -> updateSummary());
     }
@@ -161,7 +173,7 @@ public class SchedulerFXUI {
         topBox.setPadding(new Insets(0, 0, 20, 0));
         
         Label titleLabel = new Label("Train Dispatch Scheduler");
-        titleLabel.setStyle("-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: #E4E4E7;");
+        titleLabel.setStyle("-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: white;");
         
         HBox buttonBox = new HBox(10);
         buttonBox.setAlignment(Pos.CENTER_RIGHT);
@@ -177,7 +189,7 @@ public class SchedulerFXUI {
         progressIndicator.setPrefSize(24, 24);
         
         statusLabel = new Label();
-        statusLabel.setStyle("-fx-text-fill: #A1A1AA; -fx-font-size: 13px;");
+        statusLabel.setStyle("-fx-text-fill: white; -fx-font-size: 13px;");
         
         buttonBox.getChildren().addAll(dispatchButton, progressIndicator, statusLabel);
         
@@ -264,7 +276,7 @@ public class SchedulerFXUI {
                     "-fx-border-color: rgba(99, 102, 241, 0.15); -fx-border-radius: 12; -fx-border-width: 1;");
         
         Label sectionLabel = new Label("Train Configuration");
-        sectionLabel.setStyle("-fx-font-size: 18px; -fx-font-weight: 600; -fx-text-fill: #E4E4E7;");
+        sectionLabel.setStyle("-fx-font-size: 18px; -fx-font-weight: 600; -fx-text-fill: white;");
         
         GridPane grid = new GridPane();
         grid.setHgap(20);
@@ -274,56 +286,56 @@ public class SchedulerFXUI {
         // Column 1
         // Train ID
         Label trainIdLabel = new Label("Train ID:");
-        trainIdLabel.setStyle("-fx-text-fill: #A1A1AA; -fx-font-size: 13px;");
+        trainIdLabel.setStyle("-fx-text-fill: white; -fx-font-size: 13px;");
         trainIdField = new TextField();
         trainIdField.setPrefWidth(250);
-        trainIdField.setStyle("-fx-background-color: #0D1117; -fx-text-fill: #E4E4E7; -fx-border-color: #27272A; -fx-border-radius: 6;");
+        trainIdField.setStyle("-fx-background-color: #0D1117; -fx-text-fill: white; -fx-border-color: #27272A; -fx-border-radius: 6;");
         grid.add(trainIdLabel, 0, 0);
         grid.add(trainIdField, 1, 0);
         
         // End Station
         Label endStationLabel = new Label("End Station:");
-        endStationLabel.setStyle("-fx-text-fill: #E4E4E7; -fx-font-size: 13px;");
+        endStationLabel.setStyle("-fx-text-fill: white; -fx-font-size: 13px;");
         endStationCombo = new ComboBox<>(facilities);
         endStationCombo.setConverter(new FacilityStringConverter());
         endStationCombo.setPrefWidth(250);
-        endStationCombo.setStyle("-fx-background-color: #0D1117; -fx-text-fill: #E4E4E7;");
+        endStationCombo.setStyle("-fx-background-color: #0D1117; -fx-text-fill: white;");
         grid.add(endStationLabel, 0, 1);
         grid.add(endStationCombo, 1, 1);
         
         // Departure Time
         Label departureTimeLabel = new Label("Departure Time:");
-        departureTimeLabel.setStyle("-fx-text-fill: #A1A1AA; -fx-font-size: 13px;");
+        departureTimeLabel.setStyle("-fx-text-fill: white; -fx-font-size: 13px;");
         departureTimeField = new TextField();
         departureTimeField.setPrefWidth(250);
         departureTimeField.setPromptText("HH:mm");
-        departureTimeField.setStyle("-fx-background-color: #0D1117; -fx-text-fill: #E4E4E7; -fx-border-color: #27272A; -fx-border-radius: 6;");
+        departureTimeField.setStyle("-fx-background-color: #0D1117; -fx-text-fill: white; -fx-border-color: #27272A; -fx-border-radius: 6;");
         grid.add(departureTimeLabel, 0, 2);
         grid.add(departureTimeField, 1, 2);
         
         // Column 2
         // Start Station
         Label startStationLabel = new Label("Start Station:");
-        startStationLabel.setStyle("-fx-text-fill: #A1A1AA; -fx-font-size: 13px;");
+        startStationLabel.setStyle("-fx-text-fill: white; -fx-font-size: 13px;");
         startStationCombo = new ComboBox<>(facilities);
         startStationCombo.setConverter(new FacilityStringConverter());
         startStationCombo.setPrefWidth(250);
-        startStationCombo.setStyle("-fx-background-color: #0D1117; -fx-text-fill: #E4E4E7;");
+        startStationCombo.setStyle("-fx-background-color: #0D1117; -fx-text-fill: white;");
         grid.add(startStationLabel, 2, 0);
         grid.add(startStationCombo, 3, 0);
         
         // Departure Date
         Label departureDateLabel = new Label("Departure Date:");
-        departureDateLabel.setStyle("-fx-text-fill: #A1A1AA; -fx-font-size: 13px;");
+        departureDateLabel.setStyle("-fx-text-fill: white; -fx-font-size: 13px;");
         departureDatePicker = new DatePicker();
         departureDatePicker.setPrefWidth(250);
-        departureDatePicker.setStyle("-fx-background-color: #0D1117; -fx-text-fill: #E4E4E7;");
+        departureDatePicker.setStyle("-fx-background-color: #0D1117; -fx-text-fill: white;");
         grid.add(departureDateLabel, 2, 1);
         grid.add(departureDatePicker, 3, 1);
         
         // Cargo status
         wagonsLoadedCheckBox = new CheckBox("Cargo status: Loaded");
-        wagonsLoadedCheckBox.setStyle("-fx-text-fill: #A1A1AA; -fx-font-size: 13px;");
+        wagonsLoadedCheckBox.setStyle("-fx-text-fill: white; -fx-font-size: 13px;");
         grid.add(wagonsLoadedCheckBox, 2, 2);
         
         box.getChildren().addAll(sectionLabel, grid);
@@ -360,14 +372,14 @@ public class SchedulerFXUI {
                     "-fx-border-color: rgba(99, 102, 241, 0.15); -fx-border-radius: 12; -fx-border-width: 1;");
         
         Label sectionLabel = new Label("Locomotives");
-        sectionLabel.setStyle("-fx-font-size: 16px; -fx-font-weight: 600; -fx-text-fill: #E4E4E7;");
+        sectionLabel.setStyle("-fx-font-size: 16px; -fx-font-weight: 600; -fx-text-fill: white;");
         
         HBox listsBox = new HBox(10);
         
         // Available locomotives
         VBox availableBox = new VBox(5);
         Label availableLabel = new Label("Available:");
-        availableLabel.setStyle("-fx-text-fill: #A1A1AA; -fx-font-size: 12px;");
+        availableLabel.setStyle("-fx-text-fill: white; -fx-font-size: 12px;");
         availableLocomotivesList = new ListView<>();
         availableLocomotivesList.setItems(locomotives);
         availableLocomotivesList.setCellFactory(list -> new LocomotiveListCell());
@@ -389,7 +401,7 @@ public class SchedulerFXUI {
         // Selected locomotives
         VBox selectedBox = new VBox(5);
         Label selectedLabel = new Label("Selected:");
-        selectedLabel.setStyle("-fx-text-fill: #A1A1AA; -fx-font-size: 12px;");
+        selectedLabel.setStyle("-fx-text-fill: white; -fx-font-size: 12px;");
         selectedLocomotivesList = new ListView<>();
         selectedLocomotivesList.setCellFactory(list -> new LocomotiveListCell());
         selectedLocomotivesList.setPrefHeight(200);
@@ -416,14 +428,14 @@ public class SchedulerFXUI {
                     "-fx-border-color: rgba(99, 102, 241, 0.15); -fx-border-radius: 12; -fx-border-width: 1;");
         
         Label sectionLabel = new Label("Wagons");
-        sectionLabel.setStyle("-fx-font-size: 16px; -fx-font-weight: 600; -fx-text-fill: #E4E4E7;");
+        sectionLabel.setStyle("-fx-font-size: 16px; -fx-font-weight: 600; -fx-text-fill: white;");
         
         HBox listsBox = new HBox(10);
         
         // Available wagons
         VBox availableBox = new VBox(5);
         Label availableLabel = new Label("Available:");
-        availableLabel.setStyle("-fx-text-fill: #A1A1AA; -fx-font-size: 12px;");
+        availableLabel.setStyle("-fx-text-fill: white; -fx-font-size: 12px;");
         availableWagonsList = new ListView<>();
         availableWagonsList.setItems(wagons);
         availableWagonsList.setCellFactory(list -> new WagonListCell());
@@ -445,7 +457,7 @@ public class SchedulerFXUI {
         // Selected wagons
         VBox selectedBox = new VBox(5);
         Label selectedLabel = new Label("Selected:");
-        selectedLabel.setStyle("-fx-text-fill: #A1A1AA; -fx-font-size: 12px;");
+        selectedLabel.setStyle("-fx-text-fill: white; -fx-font-size: 12px;");
         selectedWagonsList = new ListView<>();
         selectedWagonsList.setCellFactory(list -> new WagonListCell());
         selectedWagonsList.setPrefHeight(200);
@@ -475,7 +487,7 @@ public class SchedulerFXUI {
         headerBox.setAlignment(Pos.CENTER_LEFT);
         
         Label sectionLabel = new Label("Dispatch Queue");
-        sectionLabel.setStyle("-fx-font-size: 16px; -fx-font-weight: 600; -fx-text-fill: #E4E4E7;");
+        sectionLabel.setStyle("-fx-font-size: 16px; -fx-font-weight: 600; -fx-text-fill: white;");
         
         addTrainButton = new Button("Add Train");
         addTrainButton.setStyle("-fx-background-color: #6366F1; -fx-text-fill: white; -fx-font-size: 13px; " +
@@ -510,7 +522,7 @@ public class SchedulerFXUI {
                     "-fx-border-color: rgba(16, 185, 129, 0.2); -fx-border-radius: 12; -fx-border-width: 1;");
         
         summaryTitle = new Label("Train Summary");
-        summaryTitle.setStyle("-fx-font-size: 18px; -fx-font-weight: 600; -fx-text-fill: #E4E4E7;");
+        summaryTitle.setStyle("-fx-font-size: 18px; -fx-font-weight: 600; -fx-text-fill: white;");
         
         Separator separator = new Separator();
         separator.setStyle("-fx-background-color: rgba(16, 185, 129, 0.3);");
@@ -536,7 +548,7 @@ public class SchedulerFXUI {
                 selectedLocomotivesList.getItems().isEmpty() && 
                 selectedWagonsList.getItems().isEmpty()) {
                 Label emptyLabel = new Label("Configure a train to see summary");
-                emptyLabel.setStyle("-fx-text-fill: #71717A; -fx-font-size: 13px; -fx-font-style: italic;");
+                emptyLabel.setStyle("-fx-text-fill: white; -fx-font-size: 13px; -fx-font-style: italic;");
                 summaryContent.getChildren().add(emptyLabel);
                 return;
             }
@@ -565,7 +577,7 @@ public class SchedulerFXUI {
             if (!selectedLocos.isEmpty()) {
                 VBox locosBox = new VBox(5);
                 Label locosLabel = new Label("Locomotives:");
-                locosLabel.setStyle("-fx-text-fill: #A1A1AA; -fx-font-size: 13px; -fx-font-weight: 500;");
+                locosLabel.setStyle("-fx-text-fill: white; -fx-font-size: 13px; -fx-font-weight: 500;");
                 locosBox.getChildren().add(locosLabel);
                 
                 double totalPower = 0;
@@ -574,11 +586,11 @@ public class SchedulerFXUI {
                     totalPower += power;
                     Label locoLabel = new Label(String.format("• %s — %s\n  Power: %.0f kW | Max speed: %.0f km/h", 
                         loco.getId(), loco.getType(), power, loco.getMaxSpeedKmH()));
-                    locoLabel.setStyle("-fx-text-fill: #E4E4E7; -fx-font-size: 12px;");
+                    locoLabel.setStyle("-fx-text-fill: white; -fx-font-size: 12px;");
                     locosBox.getChildren().add(locoLabel);
                 }
                 Label totalPowerLabel = new Label(String.format("Total power: %.0f kW", totalPower));
-                totalPowerLabel.setStyle("-fx-text-fill: #10B981; -fx-font-size: 12px; -fx-font-weight: 500;");
+                totalPowerLabel.setStyle("-fx-text-fill: white; -fx-font-size: 12px; -fx-font-weight: 500;");
                 locosBox.getChildren().add(totalPowerLabel);
                 summaryContent.getChildren().add(locosBox);
             }
@@ -588,7 +600,7 @@ public class SchedulerFXUI {
             if (!selectedWags.isEmpty()) {
                 VBox wagonsBox = new VBox(5);
                 Label wagonsLabel = new Label("Wagons:");
-                wagonsLabel.setStyle("-fx-text-fill: #A1A1AA; -fx-font-size: 13px; -fx-font-weight: 500;");
+                wagonsLabel.setStyle("-fx-text-fill: white; -fx-font-size: 13px; -fx-font-weight: 500;");
                 wagonsBox.getChildren().add(wagonsLabel);
                 
                 double totalMass = 0;
@@ -600,11 +612,11 @@ public class SchedulerFXUI {
                 
                 Label countLabel = new Label(String.format("%d wagons (%s)", 
                     selectedWags.size(), loaded ? "loaded" : "empty"));
-                countLabel.setStyle("-fx-text-fill: #E4E4E7; -fx-font-size: 12px;");
+                countLabel.setStyle("-fx-text-fill: white; -fx-font-size: 12px;");
                 wagonsBox.getChildren().add(countLabel);
                 
                 Label totalMassLabel = new Label(String.format("Total mass: %.1f t", totalMass / 1000.0));
-                totalMassLabel.setStyle("-fx-text-fill: #10B981; -fx-font-size: 12px; -fx-font-weight: 500;");
+                totalMassLabel.setStyle("-fx-text-fill: white; -fx-font-size: 12px; -fx-font-weight: 500;");
                 wagonsBox.getChildren().add(totalMassLabel);
                 summaryContent.getChildren().add(wagonsBox);
             }
@@ -617,9 +629,9 @@ public class SchedulerFXUI {
     private void addSummaryItem(String label, String value) {
         HBox item = new HBox(10);
         Label labelLabel = new Label(label);
-        labelLabel.setStyle("-fx-text-fill: #A1A1AA; -fx-font-size: 13px; -fx-min-width: 90;");
+        labelLabel.setStyle("-fx-text-fill: white; -fx-font-size: 13px; -fx-min-width: 90;");
         Label valueLabel = new Label(value);
-        valueLabel.setStyle("-fx-text-fill: #E4E4E7; -fx-font-size: 13px;");
+        valueLabel.setStyle("-fx-text-fill: white; -fx-font-size: 13px;");
         item.getChildren().addAll(labelLabel, valueLabel);
         summaryContent.getChildren().add(item);
     }
@@ -640,7 +652,7 @@ public class SchedulerFXUI {
         resultsContent.setPadding(new Insets(10));
         
         Label emptyLabel = new Label("No dispatch report available. Dispatch trains to see results.");
-        emptyLabel.setStyle("-fx-text-fill: #71717A; -fx-font-size: 14px; -fx-font-style: italic;");
+        emptyLabel.setStyle("-fx-text-fill: white; -fx-font-size: 14px; -fx-font-style: italic;");
         resultsContent.getChildren().add(emptyLabel);
         
         resultsScrollPane.setContent(resultsContent);
@@ -731,9 +743,11 @@ public class SchedulerFXUI {
             );
             
             // Create route (simple route with start and end)
+            // The SchedulerService will automatically find the fastest path if stations are not directly connected
             Facility startStation = startStationCombo.getSelectionModel().getSelectedItem();
             Facility endStation = endStationCombo.getSelectionModel().getSelectedItem();
             List<Facility> route = Arrays.asList(startStation, endStation);
+            List<Facility> selectedStations = Arrays.asList(startStation, endStation); // User-selected stations
             
             // Calculate total weight
             double totalWeight = selectedWagonsList.getItems().stream()
@@ -743,10 +757,11 @@ public class SchedulerFXUI {
                 .sum();
             
             // Create train
+            // Note: route will be expanded automatically by SchedulerService if stations are not directly connected
             Train train = new Train(
                 trainIdField.getText().trim(),
-                route,
-                route,
+                route,                    // Full route (will be expanded if needed)
+                selectedStations,         // User-selected stations (start and end only)
                 new ArrayList<>(selectedLocomotivesList.getItems()),
                 new ArrayList<>(selectedWagonsList.getItems()),
                 departureTime,
@@ -792,7 +807,7 @@ public class SchedulerFXUI {
         dispatchButton.setDisable(true);
         progressIndicator.setVisible(true);
         statusLabel.setText("Dispatching trains...");
-        statusLabel.setStyle("-fx-text-fill: #A1A1AA; -fx-font-size: 13px;");
+        statusLabel.setStyle("-fx-text-fill: white; -fx-font-size: 13px;");
         
         Service<DispatchReport> service = new Service<DispatchReport>() {
             @Override
@@ -800,6 +815,12 @@ public class SchedulerFXUI {
                 return new Task<DispatchReport>() {
                     @Override
                     protected DispatchReport call() throws Exception {
+                        System.out.println("Dispatching " + trains.size() + " train(s)...");
+                        for (Train train : trains) {
+                            System.out.println("  - Train " + train.getTrainId() + ": " + 
+                                train.getRoute().get(0).getId() + " -> " + 
+                                train.getRoute().get(train.getRoute().size() - 1).getId());
+                        }
                         return controller.scheduleTrains(new ArrayList<>(trains));
                     }
                 };
@@ -814,21 +835,34 @@ public class SchedulerFXUI {
             
             // Professional success message
             DispatchReport.Summary summary = currentReport.getSummary();
-            String successMsg = String.format("✓ Dispatch completed successfully\n%d trains scheduled\n%d conflict%s resolved automatically",
-                summary.getTotalTrainsDispatched(),
-                summary.getNumberOfResolvableConflicts(),
-                summary.getNumberOfResolvableConflicts() != 1 ? "s" : "");
-            statusLabel.setText(successMsg);
-            statusLabel.setStyle("-fx-text-fill: #10B981; -fx-font-size: 13px; -fx-font-weight: 500;");
             
-            mainTabPane.getSelectionModel().select(1); // Switch to results tab
+            // Check if any trains were actually scheduled
+            if (summary.getTotalTrainsDispatched() == 0) {
+                statusLabel.setText("⚠ No trains scheduled - check console for errors");
+                statusLabel.setStyle("-fx-text-fill: white; -fx-font-size: 13px; -fx-font-weight: 500;");
+                showAlert(Alert.AlertType.WARNING, "Warning", 
+                    "No trains were successfully scheduled. Check the console for error messages.\n\n" +
+                    "Common issues:\n" +
+                    "- Stations may not be directly connected\n" +
+                    "- Missing segment data in database\n" +
+                    "Total trains attempted: " + trains.size());
+            } else {
+                String successMsg = String.format("✓ Dispatch completed successfully\n%d train%s scheduled\n%d conflict%s resolved automatically",
+                    summary.getTotalTrainsDispatched(),
+                    summary.getTotalTrainsDispatched() != 1 ? "s" : "",
+                    summary.getNumberOfResolvableConflicts(),
+                    summary.getNumberOfResolvableConflicts() != 1 ? "s" : "");
+                statusLabel.setText(successMsg);
+                statusLabel.setStyle("-fx-text-fill: white; -fx-font-size: 13px; -fx-font-weight: 500;");
+                mainTabPane.getSelectionModel().select(1); // Switch to results tab
+            }
         });
         
         service.setOnFailed(e -> {
             dispatchButton.setDisable(false);
             progressIndicator.setVisible(false);
             statusLabel.setText("✗ Dispatch failed!");
-            statusLabel.setStyle("-fx-text-fill: #EF4444; -fx-font-size: 13px; -fx-font-weight: 500;");
+            statusLabel.setStyle("-fx-text-fill: white; -fx-font-size: 13px; -fx-font-weight: 500;");
             showAlert(Alert.AlertType.ERROR, "Error", 
                 "Failed to dispatch trains: " + service.getException().getMessage());
         });
@@ -854,7 +888,7 @@ public class SchedulerFXUI {
                               "-fx-border-color: rgba(16, 185, 129, 0.2); -fx-border-radius: 12; -fx-border-width: 1;");
             
             Label summaryTitle = new Label("Dispatch Summary");
-            summaryTitle.setStyle("-fx-font-size: 18px; -fx-font-weight: 600; -fx-text-fill: #E4E4E7;");
+            summaryTitle.setStyle("-fx-font-size: 18px; -fx-font-weight: 600; -fx-text-fill: white;");
             
             HBox summaryStats = new HBox(30);
             addStatItem(summaryStats, "Total Trains", String.valueOf(summary.getTotalTrainsDispatched()));
@@ -879,7 +913,7 @@ public class SchedulerFXUI {
                                     "-fx-border-color: rgba(239, 68, 68, 0.2); -fx-border-radius: 12; -fx-border-width: 1;");
                 
                 Label conflictsTitle = new Label("Conflicts");
-                conflictsTitle.setStyle("-fx-font-size: 18px; -fx-font-weight: 600; -fx-text-fill: #E4E4E7;");
+                conflictsTitle.setStyle("-fx-font-size: 18px; -fx-font-weight: 600; -fx-text-fill: white;");
                 conflictsBox.getChildren().add(conflictsTitle);
                 
                 for (DispatchReport.Conflict conflict : currentReport.getConflicts()) {
@@ -903,19 +937,32 @@ public class SchedulerFXUI {
         
         // Header
         Label trainHeader = new Label("Train " + schedule.getTrainId());
-        trainHeader.setStyle("-fx-font-size: 16px; -fx-font-weight: 600; -fx-text-fill: #E4E4E7;");
+        trainHeader.setStyle("-fx-font-size: 16px; -fx-font-weight: 600; -fx-text-fill: white;");
         
         Separator separator = new Separator();
         separator.setStyle("-fx-background-color: rgba(99, 102, 241, 0.3);");
         
-        // Route
+        // Route - show full route with all intermediate stations
         StringBuilder routeStr = new StringBuilder();
-        for (Facility station : schedule.getSelectedStations()) {
+        List<Facility> stationsToShow = schedule.getRouteWithETAs().stream()
+            .map(eta -> eta.getStation())
+            .collect(java.util.stream.Collectors.toList());
+        
+        for (Facility station : stationsToShow) {
             if (routeStr.length() > 0) routeStr.append(" → ");
             routeStr.append(station.getId());
         }
-        Label routeLabel = new Label("Route: " + routeStr.toString());
-        routeLabel.setStyle("-fx-text-fill: #A1A1AA; -fx-font-size: 13px;");
+        
+        // If route is long, show simplified version: start -> ... -> end
+        String routeDisplay = routeStr.toString();
+        if (stationsToShow.size() > 4) {
+            routeDisplay = stationsToShow.get(0).getId() + " → ... (" + 
+                          (stationsToShow.size() - 2) + " stations) → " + 
+                          stationsToShow.get(stationsToShow.size() - 1).getId();
+        }
+        
+        Label routeLabel = new Label("Route: " + routeDisplay);
+        routeLabel.setStyle("-fx-text-fill: white; -fx-font-size: 13px;");
         
         // Departure and arrival
         String departure = "N/A";
@@ -932,24 +979,24 @@ public class SchedulerFXUI {
         }
         
         Label departureLabel = new Label("Departure: " + departure);
-        departureLabel.setStyle("-fx-text-fill: #A1A1AA; -fx-font-size: 13px;");
+        departureLabel.setStyle("-fx-text-fill: white; -fx-font-size: 13px;");
         
         Label arrivalLabel = new Label("Arrival: " + arrival);
-        arrivalLabel.setStyle("-fx-text-fill: #A1A1AA; -fx-font-size: 13px;");
+        arrivalLabel.setStyle("-fx-text-fill: white; -fx-font-size: 13px;");
         
         Label timeLabel = new Label("Total time: " + totalTime);
-        timeLabel.setStyle("-fx-text-fill: #10B981; -fx-font-size: 13px; -fx-font-weight: 500;");
+        timeLabel.setStyle("-fx-text-fill: white; -fx-font-size: 13px; -fx-font-weight: 500;");
         
         // Stations list
         VBox stationsBox = new VBox(5);
         Label stationsLabel = new Label("Stations:");
-        stationsLabel.setStyle("-fx-text-fill: #A1A1AA; -fx-font-size: 13px; -fx-font-weight: 500;");
+        stationsLabel.setStyle("-fx-text-fill: white; -fx-font-size: 13px; -fx-font-weight: 500;");
         stationsBox.getChildren().add(stationsLabel);
         
         for (DispatchReport.TrainSchedule.StationETA routeETA : schedule.getRouteWithETAs()) {
             String stationTime = routeETA.getEta().format(DateTimeFormatter.ofPattern("HH:mm"));
             Label stationLabel = new Label("• " + routeETA.getStation().getId() + " " + stationTime);
-            stationLabel.setStyle("-fx-text-fill: #E4E4E7; -fx-font-size: 12px;");
+            stationLabel.setStyle("-fx-text-fill: white; -fx-font-size: 12px;");
             stationsBox.getChildren().add(stationLabel);
         }
         
@@ -968,16 +1015,16 @@ public class SchedulerFXUI {
                     "-fx-border-color: rgba(239, 68, 68, 0.3); -fx-border-radius: 8; -fx-border-width: 1;");
         
         Label warningLabel = new Label("⚠ Conflict detected");
-        warningLabel.setStyle("-fx-text-fill: #F59E0B; -fx-font-size: 13px; -fx-font-weight: 600;");
+        warningLabel.setStyle("-fx-text-fill: white; -fx-font-size: 13px; -fx-font-weight: 600;");
         
         Label segmentLabel = new Label("Segment: " + conflict.getSegmentId());
-        segmentLabel.setStyle("-fx-text-fill: #A1A1AA; -fx-font-size: 12px;");
+        segmentLabel.setStyle("-fx-text-fill: white; -fx-font-size: 12px;");
         
         Label trainsLabel = new Label("Trains: " + conflict.getTrain1Id() + " / " + conflict.getTrain2Id());
-        trainsLabel.setStyle("-fx-text-fill: #A1A1AA; -fx-font-size: 12px;");
+        trainsLabel.setStyle("-fx-text-fill: white; -fx-font-size: 12px;");
         
         Label resolutionLabel = new Label("Resolution: " + conflict.getDescription());
-        resolutionLabel.setStyle("-fx-text-fill: #10B981; -fx-font-size: 12px;");
+        resolutionLabel.setStyle("-fx-text-fill: white; -fx-font-size: 12px;");
         
         box.getChildren().addAll(warningLabel, segmentLabel, trainsLabel, resolutionLabel);
         
@@ -990,9 +1037,9 @@ public class SchedulerFXUI {
     private void addStatItem(HBox box, String label, String value) {
         VBox statBox = new VBox(3);
         Label labelLabel = new Label(label);
-        labelLabel.setStyle("-fx-text-fill: #A1A1AA; -fx-font-size: 12px;");
+        labelLabel.setStyle("-fx-text-fill: white; -fx-font-size: 12px;");
         Label valueLabel = new Label(value);
-        valueLabel.setStyle("-fx-text-fill: #E4E4E7; -fx-font-size: 16px; -fx-font-weight: 600;");
+        valueLabel.setStyle("-fx-text-fill: white; -fx-font-size: 16px; -fx-font-weight: 600;");
         statBox.getChildren().addAll(labelLabel, valueLabel);
         box.getChildren().add(statBox);
     }
@@ -1055,7 +1102,7 @@ public class SchedulerFXUI {
                     item.getLocomotives().size(), item.getLocomotives().size() != 1 ? "s" : "",
                     item.getWagons().size(), item.getWagons().size() != 1 ? "s" : "",
                     item.getDeparturePlannedDateTime().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))));
-                setStyle("-fx-text-fill: #E4E4E7; -fx-font-size: 12px;");
+                setStyle("-fx-text-fill: white; -fx-font-size: 12px;");
             }
         }
     }

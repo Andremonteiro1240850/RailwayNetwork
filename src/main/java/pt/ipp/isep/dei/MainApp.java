@@ -24,18 +24,8 @@ public class MainApp extends Application {
                 return;
             }
 
-            // Verificar se o controller pode ser carregado antes de carregar o FXML
-            try {
-                Class<?> controllerClass = Class.forName("Sprint1.JavaFX.Controller");
-                System.out.println("Controller encontrado: " + controllerClass.getName());
-            } catch (ClassNotFoundException e) {
-                System.err.println("ERRO CRÍTICO: Controller não encontrado: Sprint1.JavaFX.Controller");
-                System.err.println("Verifica se o ficheiro Controller.java existe e está no package correto.");
-                System.err.println("Caminho esperado: src/main/java/Cargo Handling at a Railway Terminal/Sprint1/JavaFX/Controller.java");
-                e.printStackTrace();
-                return;
-            }
-
+            // Carregar o FXML - o controller será carregado automaticamente pelo FXMLLoader
+            // O package do Controller é Sprint1.JavaFX (verificado no ficheiro Controller.java)
             Scene scene = new Scene(loader.load(), 1100, 750);
 
             // Adicionar estilos CSS (opcional - pode não existir)
