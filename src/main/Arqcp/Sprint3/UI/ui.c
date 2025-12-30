@@ -68,29 +68,13 @@ static void ui_display_separator(void) {
 }
 
 /**
- * Display error message
+ * Main UI loop (alias for ui_main_loop)
+ * Maintains backward compatibility
+ * 
+ * @return 1 on normal exit, 0 on error
  */
-void ui_show_error(const char *message) {
-    if (message == NULL) return;
-    
-    printf("\n");
-    printf("*** ERROR: %s ***\n", message);
-    printf("\n");
-    
-    // Also send to board
-    char buffer[UI_BUFFER_SIZE];
-    int pos = 0;
-    const char *prefix = "ERROR: ";
-    int i = 0;
-    while (prefix[i] != '\0' && pos < UI_BUFFER_SIZE - 1) {
-        buffer[pos++] = prefix[i++];
-    }
-    i = 0;
-    while (message[i] != '\0' && pos < UI_BUFFER_SIZE - 1) {
-        buffer[pos++] = message[i++];
-    }
-    buffer[pos] = '\0';
-    board_send_message(buffer);
+int ui_run(void) {
+    return ui_main_loop();
 }
 
 /**
