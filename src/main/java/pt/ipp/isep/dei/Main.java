@@ -15,6 +15,8 @@ import Sprint1.Repository.TrolleyRepository;
 import Sprint1.Repository.WarehouseRepository;
 import Sprint1.Domain.DataLoader;
 import Sprint2.UI.*;
+import Lapr.Controller.DispatchController;
+import Lapr.UI.SchedulerUI;
 import UI.BackboneUI;
 
 import java.util.Scanner;
@@ -405,8 +407,8 @@ public class Main {
     private static void freightManager() {
         System.out.println("\n=== FREIGHT MANAGER - TRAIN DISPATCH SCHEDULER ===");
         
-        DispatchController controller = new DispatchController();
-        SchedulerUI ui = new SchedulerUI(controller);
+        Lapr.Controller.DispatchController controller = new Lapr.Controller.DispatchController();
+        Lapr.UI.SchedulerUI ui = new Lapr.UI.SchedulerUI(controller);
         ui.showMainMenu();
     }
     

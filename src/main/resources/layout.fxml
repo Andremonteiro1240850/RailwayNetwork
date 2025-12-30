@@ -553,7 +553,74 @@
                             </VBox>
                         </content>
                     </Tab>
-                    <!-- Tab 4: Settings -->
+                    
+                    <!-- Tab 4: Traffic and Freight Manager -->
+                    <Tab text="Traffic and Freight Manager"
+                         style="-fx-background-color: #161B22;
+            -fx-text-base-color: rgba(255, 255, 255, 0.8);
+            -fx-font-family: 'Segoe UI Variable', 'Inter', 'Segoe UI', sans-serif;
+            -fx-font-size: 13px;
+            -fx-font-weight: 500;
+            -fx-padding: 12px 24px;">
+                        <content>
+                            <VBox spacing="25" style="-fx-padding: 35; -fx-background-color: #0D1117;">
+
+                                <!-- Section Header -->
+                                <VBox spacing="12" alignment="CENTER_LEFT">
+                                    <Label text="Traffic and Freight Manager"
+                                           style="-fx-font-family: 'Segoe UI Variable', 'Inter', 'Segoe UI', sans-serif;
+                              -fx-font-size: 24px;
+                              -fx-font-weight: 600;
+                              -fx-text-fill: rgba(255, 255, 255, 0.9);
+                              -fx-letter-spacing: 0.5px;"/>
+                                    <Separator prefWidth="600"
+                                               style="-fx-background-color: linear-gradient(to right, transparent, rgba(99, 102, 241, 0.25), transparent);
+                                  -fx-pref-height: 1.5;"/>
+                                </VBox>
+
+                                <!-- Button Cards Grid -->
+                                <GridPane hgap="25" vgap="20" alignment="CENTER">
+                                    <columnConstraints>
+                                        <ColumnConstraints percentWidth="50" halignment="CENTER"/>
+                                        <ColumnConstraints percentWidth="50" halignment="CENTER"/>
+                                    </columnConstraints>
+
+                                    <!-- Row 1: Train Dispatch Scheduler -->
+                                    <VBox spacing="12" alignment="CENTER"
+                                          style="-fx-background-color: #161B22;
+                             -fx-background-radius: 20px;
+                             -fx-border-color: rgba(16, 185, 129, 0.2);
+                             -fx-border-radius: 20px;
+                             -fx-border-width: 1;
+                             -fx-padding: 18px;
+                             -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.2), 10, 0, 0, 3);"
+                                          GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="0" GridPane.halignment="CENTER">
+                                        <Button text="Train Dispatch Scheduler"
+                                                onAction="#handleTrainDispatchButton"
+                                                prefWidth="400" prefHeight="50"
+                                                style="-fx-font-family: 'Segoe UI Variable', 'Inter', 'Segoe UI', sans-serif;
+                                   -fx-font-size: 15px;
+                                   -fx-font-weight: 600;
+                                   -fx-background-color: #10B981;
+                                   -fx-text-fill: #FFFFFF;
+                                   -fx-background-radius: 16px;
+                                   -fx-cursor: hand;
+                                   -fx-letter-spacing: 0.3px;
+                                   -fx-effect: dropshadow(gaussian, rgba(16, 185, 129, 0.4), 8, 0, 0, 2);"/>
+                                        <Label text="Dispatch trains with physics-based scheduling and conflict detection (USLP07/USLP10)"
+                                               style="-fx-font-family: 'Segoe UI Variable', 'Inter', 'Segoe UI', sans-serif;
+                                  -fx-text-fill: rgba(255, 255, 255, 0.7);
+                                  -fx-font-size: 12px;
+                                  -fx-font-weight: 400;
+                                  -fx-opacity: 0.85;"/>
+                                    </VBox>
+
+                                </GridPane>
+                            </VBox>
+                        </content>
+                    </Tab>
+                    
+                    <!-- Tab 5: Settings -->
                     <Tab text="Settings" 
                          style="-fx-background-color: #161B22; 
                                 -fx-text-base-color: rgba(255, 255, 255, 0.8); 

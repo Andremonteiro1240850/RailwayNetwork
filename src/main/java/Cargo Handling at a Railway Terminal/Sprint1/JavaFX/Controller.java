@@ -18,6 +18,7 @@ import Sprint2.Repository.StationRepository;
 import JavaFX.UpgradePlanFXUI;
 import JavaFX.MaximumFlowFXUI;
 import JavaFX.BackboneFXUI;
+import Lapr.JavaFX.SchedulerFXUI;
 import javafx.fxml.FXML;
 import javafx.application.Platform;
 import javafx.scene.control.Alert;
@@ -414,6 +415,25 @@ public class Controller {
                 });
             } catch (Exception e) {
                 Platform.runLater(() -> showError("Error", "Failed to start Minimal Backbone Network: " + e.getMessage()));
+            }
+        });
+    }
+
+    /**
+     * Handles the Train Dispatch Scheduler button click.
+     * Opens the Train Dispatch Scheduler window (USLP07/USLP10).
+     */
+    @FXML
+    private void handleTrainDispatchButton() {
+        executorService.execute(() -> {
+            try {
+                Platform.runLater(() -> {
+                    SchedulerFXUI ui = new SchedulerFXUI();
+                    ui.show();
+                });
+            } catch (Exception e) {
+                Platform.runLater(() -> showError("Error", "Failed to start Train Dispatch Scheduler: " + e.getMessage()));
+                e.printStackTrace();
             }
         });
     }

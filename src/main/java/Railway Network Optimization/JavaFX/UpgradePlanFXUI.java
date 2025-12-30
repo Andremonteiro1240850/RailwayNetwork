@@ -221,7 +221,7 @@ public class UpgradePlanFXUI {
         VBox headerBox = new VBox(8);
         headerBox.setPadding(new Insets(0, 0, 20, 0));
         
-        Label titleLabel = new Label("📊 Overview");
+        Label titleLabel = new Label("Overview");
         titleLabel.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
                            "-fx-font-size: 28px; " +
                            "-fx-font-weight: 700; " +
