@@ -13,6 +13,7 @@ public class Locomotive {
     private final String type;
     private final double maxSpeedKmH;
     private final double gauge;
+    private final double powerKw; // Power in kilowatts (for USLP10 physics calculations)
 
     /**
      * Constructs a new Locomotive with the specified parameters.
@@ -24,6 +25,20 @@ public class Locomotive {
      * @throws IllegalArgumentException if parameters are invalid
      */
     public Locomotive(String id, String type, double maxSpeedKmH, double gauge) {
+        this(id, type, maxSpeedKmH, gauge, 0.0); // Default power 0 if not specified
+    }
+    
+    /**
+     * Constructs a new Locomotive with all parameters including power.
+     *
+     * @param id          the unique identifier for the locomotive
+     * @param type        the type of locomotive ("diesel" or "electric")
+     * @param maxSpeedKmH the maximum speed in kilometers per hour
+     * @param gauge       the track gauge in millimeters
+     * @param powerKw     the power in kilowatts
+     * @throws IllegalArgumentException if parameters are invalid
+     */
+    public Locomotive(String id, String type, double maxSpeedKmH, double gauge, double powerKw) {
         if (id == null || id.trim().isEmpty()) {
             throw new IllegalArgumentException("Locomotive ID cannot be null or empty");
         }
@@ -36,11 +51,15 @@ public class Locomotive {
         if (gauge <= 0) {
             throw new IllegalArgumentException("Gauge must be positive");
         }
+        if (powerKw < 0) {
+            throw new IllegalArgumentException("Power cannot be negative");
+        }
         
         this.id = id.trim();
         this.type = type.trim().toLowerCase();
         this.maxSpeedKmH = maxSpeedKmH;
         this.gauge = gauge;
+        this.powerKw = powerKw;
     }
 
     /**
@@ -97,6 +116,15 @@ public class Locomotive {
         return "diesel".equals(type);
     }
 
+    /**
+     * Gets the power of the locomotive in kilowatts.
+     *
+     * @return the power in kW
+     */
+    public double getPowerKw() {
+        return powerKw;
+    }
+    
     /**
      * Checks if this locomotive's gauge is compatible with the given gauge.
      *

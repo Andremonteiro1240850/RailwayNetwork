@@ -19,6 +19,7 @@ public class LineSegment {
     private final double gauge;
     private final boolean electrified;
     private final Double speedLimitKmH; // Speed limit of the track segment (null if unlimited)
+    private final double inclinationPercent; // Inclination in percentage (e.g., 2.5 for 2.5%) - for USLP10
 
     /**
      * Constructs a new LineSegment with the specified parameters.
@@ -33,7 +34,7 @@ public class LineSegment {
      */
     public LineSegment(String id, Facility startFacility, Facility endFacility,
                        double lengthKm, double gauge, boolean electrified) {
-        this(id, "", startFacility, endFacility, lengthKm, gauge, electrified, null);
+        this(id, "", startFacility, endFacility, lengthKm, gauge, electrified, null, 0.0);
     }
 
     /**
@@ -50,7 +51,7 @@ public class LineSegment {
      */
     public LineSegment(String id, String name, Facility startFacility, Facility endFacility,
                        double lengthKm, double gauge, boolean electrified) {
-        this(id, name, startFacility, endFacility, lengthKm, gauge, electrified, null);
+        this(id, name, startFacility, endFacility, lengthKm, gauge, electrified, null, 0.0);
     }
 
     /**
@@ -68,6 +69,26 @@ public class LineSegment {
      */
     public LineSegment(String id, String name, Facility startFacility, Facility endFacility,
                        double lengthKm, double gauge, boolean electrified, Double speedLimitKmH) {
+        this(id, name, startFacility, endFacility, lengthKm, gauge, electrified, speedLimitKmH, 0.0);
+    }
+    
+    /**
+     * Constructs a new LineSegment with all parameters including speed limit and inclination.
+     *
+     * @param id           the unique identifier for the line segment
+     * @param name         the name of the line segment
+     * @param startFacility the starting station
+     * @param endFacility   the ending station
+     * @param lengthKm     the length of the segment in kilometers
+     * @param gauge        the track gauge in millimeters
+     * @param electrified  whether the segment is electrified
+     * @param speedLimitKmH the speed limit in km/h (null if unlimited)
+     * @param inclinationPercent the inclination in percentage (e.g., 2.5 for 2.5%)
+     * @throws IllegalArgumentException if parameters are invalid
+     */
+    public LineSegment(String id, String name, Facility startFacility, Facility endFacility,
+                       double lengthKm, double gauge, boolean electrified, Double speedLimitKmH,
+                       double inclinationPercent) {
         if (id == null || id.trim().isEmpty()) {
             throw new IllegalArgumentException("Line segment ID cannot be null or empty");
         }
@@ -98,6 +119,7 @@ public class LineSegment {
         this.gauge = gauge;
         this.electrified = electrified;
         this.speedLimitKmH = speedLimitKmH;
+        this.inclinationPercent = inclinationPercent;
     }
 
     /**
@@ -179,6 +201,16 @@ public class LineSegment {
      */
     public boolean hasSpeedLimit() {
         return speedLimitKmH != null;
+    }
+    
+    /**
+     * Gets the inclination of the segment in percentage.
+     * Positive values indicate uphill, negative values indicate downhill.
+     *
+     * @return the inclination in percentage (e.g., 2.5 for 2.5%)
+     */
+    public double getInclinationPercent() {
+        return inclinationPercent;
     }
 
     /**
