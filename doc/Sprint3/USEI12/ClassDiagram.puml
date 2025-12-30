@@ -1,0 +1,206 @@
+@startuml
+'https://plantuml.com/class-diagram
+
+' --- USEI12: Minimal Backbone Network ---
+' Computes Minimum Spanning Tree (MST) of railway network using Kruskal's algorithm
+' Exports graph to DOT and SVG formats for visualization
+
+' --- UI Layer ---
+class BackboneFXUI {
+    - controller: BackboneController
+    - stage: Stage
+    - calculateButton: Button
+    - progressIndicator: ProgressIndicator
+    - statusLabel: Label
+    - resultTabPane: TabPane
+    - overviewTab: VBox
+    - totalStationsLabel: Label
+    - totalConnectionsLabel: Label
+    - mstStationsLabel: Label
+    - mstConnectionsLabel: Label
+    - reductionLabel: Label
+    - complexityLabel: Label
+    - exportTab: VBox
+    - exportDotButton: Button
+    - exportSvgButton: Button
+    - exportStatusLabel: Label
+    - exportInfoArea: TextArea
+    - technicalLogArea: TextArea
+    - currentMST: Graph
+    - fullGraph: Graph
+    - rawTechnicalLog: String
+    - computationTimeMs: long
+    + BackboneFXUI()
+    + BackboneFXUI(controller: BackboneController)
+    + show(): void
+    - createOverviewTab(): void
+    - createMetricCard(title: String, value: String, color: String): VBox
+    - createExportTab(): void
+    - createExportButton(text: String, color: String): Button
+    - createTechnicalLogTab(): void
+    - handleCalculate(): void
+    - displayResult(): void
+    - handleExportDot(): void
+    - handleExportSvg(): void
+    - handleExportLog(): void
+    - showError(title: String, header: String, content: Object): void
+}
+
+' --- Controller Layer ---
+class BackboneController {
+    - graphRepository: GraphRepository
+    - backboneService: MinimalBackboneService
+    - dotExporter: DotExporter
+    - graphvizRenderer: GraphvizRenderer
+    + BackboneController()
+    + BackboneController(graphRepository: GraphRepository, backboneService: MinimalBackboneService, dotExporter: DotExporter, graphvizRenderer: GraphvizRenderer)
+    + generateBackbone(): Graph
+    + exportDot(graph: Graph, outputPath: String): String
+    + exportSvg(graph: Graph, outputPath: String): String
+    + generateAndExportDot(outputPath: String): String
+    + generateAndExportSvg(outputPath: String): String
+    + getGraphStatistics(): String
+}
+
+' --- Domain Layer ---
+class MinimalBackboneService {
+    + computeMinimalBackbone(graph: Graph): Graph
+}
+
+class UnionFind {
+    - parent: Map<String, String>
+    - rank: Map<String, Integer>
+    + UnionFind(stationIds: List<String>)
+    + find(stationId: String): String
+    + union(stationId1: String, stationId2: String): boolean
+}
+
+class EdgeComparator {
+    + compare(c1: Connection, c2: Connection): int
+}
+
+class Graph {
+    - stations: List<Station>
+    - stationById: Map<String, Station>
+    - adjacencyMap: Map<String, List<Connection>>
+    + Graph()
+    + addStation(station: Station): void
+    + addConnection(connection: Connection): void
+    + getStations(): List<Station>
+    + getStation(stationId: String): Station
+    + getNeighbors(stationId: String): List<String>
+    + getConnections(stationId: String): List<Connection>
+    + getAllConnections(): List<Connection>
+    + getAllUniqueConnections(): Set<Connection>
+    + getStationCount(): int
+    + getConnectionCount(): int
+    + containsStation(stationId: String): boolean
+    + toString(): String
+}
+
+' --- Domain Model Classes (from Domain Model) ---
+class Station {
+    - id: String
+    - name: String
+    - latitude: double
+    - longitude: double
+    - coordX: double
+    - coordY: double
+    + Station(id: String, name: String, latitude: double, longitude: double, coordX: double, coordY: double)
+    + getId(): String
+    + getName(): String
+    + getLatitude(): double
+    + getLongitude(): double
+    + getCoordX(): double
+    + getCoordY(): double
+}
+
+class Connection {
+    - originId: String
+    - destinationId: String
+    - distance: double
+    + Connection(originId: String, destinationId: String, distance: double)
+    + getOriginId(): String
+    + getDestinationId(): String
+    + getDistance(): double
+    + reverse(): Connection
+}
+
+class DotExporter {
+    + exportToDot(graph: Graph): String
+    - escapeNodeId(nodeId: String): String
+    - escapeLabel(label: String): String
+}
+
+class GraphvizRenderer {
+    + renderSvg(inputDotPath: String, outputSvgPath: String): void
+    - findNeatoPath(): String
+    - isCommandAvailable(command: String): boolean
+}
+
+class GraphvizException {
+    + GraphvizException(message: String)
+    + GraphvizException(message: String, cause: Throwable)
+}
+
+' --- Repository Layer ---
+interface GraphRepository {
+    + loadGraph(): Graph
+    + getLoadedStationCount(): int
+    + getLoadedConnectionCount(): int
+    + getRejectedStationCount(): int
+    + getRejectedConnectionCount(): int
+}
+
+class BelgiumGraphRepository {
+    - stationsFilePath: String
+    - linesFilePath: String
+    - loadedStationCount: int
+    - loadedConnectionCount: int
+    - rejectedStationCount: int
+    - rejectedConnectionCount: int
+    + BelgiumGraphRepository()
+    + BelgiumGraphRepository(stationsFilePath: String, linesFilePath: String)
+    + loadGraph(): Graph
+    - loadStations(graph: Graph): void
+    - loadConnections(graph: Graph): void
+    + getLoadedStationCount(): int
+    + getLoadedConnectionCount(): int
+    + getRejectedStationCount(): int
+    + getRejectedConnectionCount(): int
+}
+
+' --- Relações ---
+BackboneFXUI --> BackboneController : uses
+BackboneController --> GraphRepository : uses
+BackboneController --> MinimalBackboneService : uses
+BackboneController --> DotExporter : uses
+BackboneController --> GraphvizRenderer : uses
+
+MinimalBackboneService --> Graph : processes
+MinimalBackboneService --> Station : uses
+MinimalBackboneService --> Connection : uses
+MinimalBackboneService +-- UnionFind
+MinimalBackboneService +-- EdgeComparator
+
+Graph "1" --> "0..*" Station : contains
+Graph "1" --> "0..*" Connection : contains
+Connection --> Station : connects
+
+DotExporter --> Graph : exports
+DotExporter --> Station : uses
+DotExporter --> Connection : uses
+
+GraphvizRenderer +-- GraphvizException
+
+BelgiumGraphRepository ..|> GraphRepository : implements
+BelgiumGraphRepository --> Graph : builds
+BelgiumGraphRepository --> Station : creates
+BelgiumGraphRepository --> Connection : creates
+
+' Note: UnionFind and EdgeComparator are inner classes of MinimalBackboneService.
+' GraphvizException is an inner class of GraphvizRenderer.
+' Station and Connection are domain model classes used across multiple USEIs.
+' Graph is a domain class specific to USEI12 for representing undirected graphs.
+
+@enduml
