@@ -21,7 +21,11 @@
 // Global serial port state (simulation mode)
 static int g_serial_initialized = 0;
 
-// ==================== SYSTEM INITIALIZATION ====================
+// Function to get manager system instance
+ManagerSystem* get_manager_system(void) {
+    extern ManagerSystem g_manager_system;
+    return &g_manager_system;
+}
 
 int manager_init(ManagerSystem *system) {
     if (system == NULL) return 0;

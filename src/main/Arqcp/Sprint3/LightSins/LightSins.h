@@ -1,7 +1,21 @@
 #ifndef LIGHTSIGNS_H
 #define LIGHTSIGNS_H
 
-#include <Arduino.h>
+#ifdef ARDUINO
+    #include <Arduino.h>
+#else
+    // Arduino compatibility for Linux testing
+    #include <stdint.h>
+    typedef uint8_t byte;
+    typedef bool boolean;
+    typedef uint16_t word;
+    typedef unsigned long unsigned_long;
+    #define HIGH 1
+    #define LOW 0
+    #define INPUT 0
+    #define OUTPUT 1
+    #define INPUT_PULLUP 2
+#endif
 
 #define MAX_TRACKS 4  // número razoável para o Pico
 

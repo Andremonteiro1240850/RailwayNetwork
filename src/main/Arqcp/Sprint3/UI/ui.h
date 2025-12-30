@@ -53,6 +53,14 @@ void ui_cleanup(void);
 int ui_main_loop(void);
 
 /**
+ * Main UI loop (alias for ui_main_loop)
+ * Maintains backward compatibility
+ * 
+ * @return 1 on normal exit, 0 on error
+ */
+int ui_run(void);
+
+/**
  * Display login screen and authenticate user
  * 
  * @return 1 on successful login, 0 on failure or cancel

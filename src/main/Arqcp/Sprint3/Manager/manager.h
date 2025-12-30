@@ -108,6 +108,7 @@ typedef struct {
 // Function declarations for Manager algorithm
 int manager_init(ManagerSystem *system);
 void manager_cleanup(ManagerSystem *system);
+ManagerSystem* get_manager_system(void);
 User* manager_login(ManagerSystem *system, const char *username, const char *password);
 
 // Serial communication functions
