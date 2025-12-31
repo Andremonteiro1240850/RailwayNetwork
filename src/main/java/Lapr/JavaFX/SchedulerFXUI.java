@@ -57,10 +57,10 @@ public class SchedulerFXUI {
     private DatePicker departureDatePicker;
     private TextField departureTimeField;
     private CheckBox wagonsLoadedCheckBox;
-    private ListView<Locomotive> availableLocomotivesList;
-    private ListView<Locomotive> selectedLocomotivesList;
-    private ListView<Wagon> availableWagonsList;
-    private ListView<Wagon> selectedWagonsList;
+    private TableView<Locomotive> availableLocomotivesTable;
+    private TableView<Locomotive> selectedLocomotivesTable;
+    private TableView<Wagon> availableWagonsTable;
+    private TableView<Wagon> selectedWagonsTable;
     private Button addLocomotiveButton;
     private Button removeLocomotiveButton;
     private Button addWagonButton;
@@ -157,6 +157,20 @@ public class SchedulerFXUI {
         BorderPane.setMargin(mainTabPane, Insets.EMPTY);
 
         Scene scene = new Scene(root, 1400, 900);
+        
+        // Add global CSS to ensure all text is white
+        scene.getStylesheets().add(getClass().getResource("/styles.css").toExternalForm());
+        String globalStyle = 
+            ".combo-box .list-cell { -fx-text-fill: white; } " +
+            ".combo-box-popup .list-view .list-cell { -fx-text-fill: white; -fx-background-color: #0D1117; } " +
+            ".combo-box-popup .list-view .list-cell:hover { -fx-background-color: #27272A; } " +
+            ".combo-box-popup .list-view .list-cell:selected { -fx-background-color: #6366F1; } " +
+            ".date-picker .text-field { -fx-text-fill: white; } " +
+            ".list-view .list-cell { -fx-text-fill: white; -fx-background-color: #0D1117; } " +
+            ".list-view .list-cell:selected { -fx-background-color: #6366F1; } " +
+            ".list-view .list-cell:hover { -fx-background-color: #27272A; }";
+        root.setStyle(root.getStyle() + globalStyle);
+        
         stage.setScene(scene);
         stage.setMinWidth(1200);
         stage.setMinHeight(800);
@@ -237,7 +251,7 @@ public class SchedulerFXUI {
         HBox.setHgrow(leftColumn, Priority.ALWAYS);
 
         VBox trainConfigBox = createCompactTrainConfigSection();
-        HBox resourcesBox = createResourcesSection();
+        VBox resourcesBox = createResourcesSection();
         VBox dispatchQueueBox = createDispatchQueueSection();
 
         leftColumn.getChildren().addAll(
@@ -346,8 +360,8 @@ public class SchedulerFXUI {
     /**
      * Creates the resources section (locomotives and wagons).
      */
-    private HBox createResourcesSection() {
-        HBox box = new HBox(15);
+    private VBox createResourcesSection() {
+        VBox box = new VBox(15);
         
         // Locomotives section
         VBox locomotivesBox = createLocomotivesSection();
@@ -356,8 +370,8 @@ public class SchedulerFXUI {
         VBox wagonsBox = createWagonsSection();
         
         box.getChildren().addAll(locomotivesBox, wagonsBox);
-        HBox.setHgrow(locomotivesBox, Priority.ALWAYS);
-        HBox.setHgrow(wagonsBox, Priority.ALWAYS);
+        VBox.setVgrow(locomotivesBox, Priority.ALWAYS);
+        VBox.setVgrow(wagonsBox, Priority.ALWAYS);
         
         return box;
     }
@@ -366,112 +380,590 @@ public class SchedulerFXUI {
      * Creates the locomotives section with professional formatting.
      */
     private VBox createLocomotivesSection() {
-        VBox box = new VBox(10);
+        VBox box = new VBox(15);
         box.setPadding(new Insets(20));
         box.setStyle("-fx-background-color: #161B22; -fx-background-radius: 12; " +
                     "-fx-border-color: rgba(99, 102, 241, 0.15); -fx-border-radius: 12; -fx-border-width: 1;");
         
         Label sectionLabel = new Label("Locomotives");
-        sectionLabel.setStyle("-fx-font-size: 16px; -fx-font-weight: 600; -fx-text-fill: white;");
+        sectionLabel.setStyle("-fx-font-size: 18px; -fx-font-weight: 700; -fx-text-fill: #FFFFFF; " +
+                             "-fx-font-family: 'Segoe UI', 'Roboto', sans-serif;");
         
-        HBox listsBox = new HBox(10);
+        Separator separator = new Separator();
+        separator.setStyle("-fx-background-color: rgba(99, 102, 241, 0.3); -fx-pref-height: 1;");
         
-        // Available locomotives
-        VBox availableBox = new VBox(5);
-        Label availableLabel = new Label("Available:");
-        availableLabel.setStyle("-fx-text-fill: white; -fx-font-size: 12px;");
-        availableLocomotivesList = new ListView<>();
-        availableLocomotivesList.setItems(locomotives);
-        availableLocomotivesList.setCellFactory(list -> new LocomotiveListCell());
-        availableLocomotivesList.setPrefHeight(200);
-        availableLocomotivesList.setStyle("-fx-background-color: #0D1117;");
-        availableBox.getChildren().addAll(availableLabel, availableLocomotivesList);
+        HBox tablesBox = new HBox(15);
+        
+        // Available locomotives table
+        VBox availableBox = new VBox(8);
+        Label availableLabel = new Label("Available");
+        availableLabel.setStyle("-fx-text-fill: #E2E8F0; -fx-font-size: 13px; -fx-font-weight: 600; " +
+                               "-fx-font-family: 'Segoe UI', 'Roboto', sans-serif;");
+        availableLocomotivesTable = createLocomotiveTable();
+        availableLocomotivesTable.setItems(locomotives);
+        availableLocomotivesTable.setPrefHeight(200);
+        availableLocomotivesTable.setPrefWidth(900);
+        availableBox.getChildren().addAll(availableLabel, availableLocomotivesTable);
+        VBox.setVgrow(availableLocomotivesTable, Priority.ALWAYS);
         
         // Buttons
-        VBox buttonsBox = new VBox(10);
+        VBox buttonsBox = new VBox(12);
         buttonsBox.setAlignment(Pos.CENTER);
+        buttonsBox.setPadding(new Insets(0, 5, 0, 5));
         addLocomotiveButton = new Button("→");
-        addLocomotiveButton.setStyle("-fx-background-color: #10B981; -fx-text-fill: white; -fx-min-width: 40; -fx-pref-height: 30;");
+        addLocomotiveButton.setStyle("-fx-background-color: #10B981; -fx-text-fill: white; " +
+                                   "-fx-font-size: 16px; -fx-font-weight: bold; " +
+                                   "-fx-min-width: 45; -fx-pref-height: 45; " +
+                                   "-fx-background-radius: 8; -fx-cursor: hand; " +
+                                   "-fx-effect: dropshadow(gaussian, rgba(16, 185, 129, 0.4), 6, 0, 0, 2);");
         addLocomotiveButton.setOnAction(e -> addLocomotive());
+        addLocomotiveButton.setOnMouseEntered(e -> addLocomotiveButton.setStyle(
+            "-fx-background-color: #059669; -fx-text-fill: white; " +
+            "-fx-font-size: 16px; -fx-font-weight: bold; " +
+            "-fx-min-width: 45; -fx-pref-height: 45; " +
+            "-fx-background-radius: 8; -fx-cursor: hand; " +
+            "-fx-effect: dropshadow(gaussian, rgba(16, 185, 129, 0.6), 8, 0, 0, 3);"));
+        addLocomotiveButton.setOnMouseExited(e -> addLocomotiveButton.setStyle(
+            "-fx-background-color: #10B981; -fx-text-fill: white; " +
+            "-fx-font-size: 16px; -fx-font-weight: bold; " +
+            "-fx-min-width: 45; -fx-pref-height: 45; " +
+            "-fx-background-radius: 8; -fx-cursor: hand; " +
+            "-fx-effect: dropshadow(gaussian, rgba(16, 185, 129, 0.4), 6, 0, 0, 2);"));
         removeLocomotiveButton = new Button("←");
-        removeLocomotiveButton.setStyle("-fx-background-color: #EF4444; -fx-text-fill: white; -fx-min-width: 40; -fx-pref-height: 30;");
+        removeLocomotiveButton.setStyle("-fx-background-color: #EF4444; -fx-text-fill: white; " +
+                                      "-fx-font-size: 16px; -fx-font-weight: bold; " +
+                                      "-fx-min-width: 45; -fx-pref-height: 45; " +
+                                      "-fx-background-radius: 8; -fx-cursor: hand; " +
+                                      "-fx-effect: dropshadow(gaussian, rgba(239, 68, 68, 0.4), 6, 0, 0, 2);");
         removeLocomotiveButton.setOnAction(e -> removeLocomotive());
+        removeLocomotiveButton.setOnMouseEntered(e -> removeLocomotiveButton.setStyle(
+            "-fx-background-color: #DC2626; -fx-text-fill: white; " +
+            "-fx-font-size: 16px; -fx-font-weight: bold; " +
+            "-fx-min-width: 45; -fx-pref-height: 45; " +
+            "-fx-background-radius: 8; -fx-cursor: hand; " +
+            "-fx-effect: dropshadow(gaussian, rgba(239, 68, 68, 0.6), 8, 0, 0, 3);"));
+        removeLocomotiveButton.setOnMouseExited(e -> removeLocomotiveButton.setStyle(
+            "-fx-background-color: #EF4444; -fx-text-fill: white; " +
+            "-fx-font-size: 16px; -fx-font-weight: bold; " +
+            "-fx-min-width: 45; -fx-pref-height: 45; " +
+            "-fx-background-radius: 8; -fx-cursor: hand; " +
+            "-fx-effect: dropshadow(gaussian, rgba(239, 68, 68, 0.4), 6, 0, 0, 2);"));
         buttonsBox.getChildren().addAll(addLocomotiveButton, removeLocomotiveButton);
         
-        // Selected locomotives
-        VBox selectedBox = new VBox(5);
-        Label selectedLabel = new Label("Selected:");
-        selectedLabel.setStyle("-fx-text-fill: white; -fx-font-size: 12px;");
-        selectedLocomotivesList = new ListView<>();
-        selectedLocomotivesList.setCellFactory(list -> new LocomotiveListCell());
-        selectedLocomotivesList.setPrefHeight(200);
-        selectedLocomotivesList.setStyle("-fx-background-color: #0D1117;");
-        selectedLocomotivesList.getItems().addListener((javafx.collections.ListChangeListener.Change<? extends Locomotive> c) -> updateSummary());
-        selectedBox.getChildren().addAll(selectedLabel, selectedLocomotivesList);
+        // Selected locomotives table
+        VBox selectedBox = new VBox(8);
+        Label selectedLabel = new Label("Selected");
+        selectedLabel.setStyle("-fx-text-fill: #E2E8F0; -fx-font-size: 8px; -fx-font-weight: 600; " +
+                             "-fx-font-family: 'Segoe UI', 'Roboto', sans-serif;");
+        selectedLocomotivesTable = createLocomotiveTable();
+        selectedLocomotivesTable.getItems().addListener((javafx.collections.ListChangeListener.Change<? extends Locomotive> c) -> updateSummary());
+        selectedLocomotivesTable.setPrefHeight(150);
+        selectedLocomotivesTable.setPrefWidth(900);
+        selectedBox.getChildren().addAll(selectedLabel, selectedLocomotivesTable);
+        VBox.setVgrow(selectedLocomotivesTable, Priority.ALWAYS);
         
-        listsBox.getChildren().addAll(availableBox, buttonsBox, selectedBox);
+        tablesBox.getChildren().addAll(availableBox, buttonsBox, selectedBox);
         HBox.setHgrow(availableBox, Priority.ALWAYS);
         HBox.setHgrow(selectedBox, Priority.ALWAYS);
         
-        box.getChildren().addAll(sectionLabel, listsBox);
+        box.getChildren().addAll(sectionLabel, separator, tablesBox);
         
         return box;
+    }
+    
+    /**
+     * Creates a modern TableView for locomotives with dark theme styling.
+     */
+    private TableView<Locomotive> createLocomotiveTable() {
+        TableView<Locomotive> table = new TableView<>();
+        table.setStyle("-fx-background-color: #1E293B; " +
+                      "-fx-background-radius: 8; " +
+                      "-fx-border-color: rgba(99, 102, 241, 0.2); " +
+                      "-fx-border-radius: 8; " +
+                      "-fx-border-width: 1;");
+        // Ajuste automático de colunas - usar CONSTRAINED para evitar coluna vazia
+        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        table.setFixedCellSize(35); // Altura menor para ver mais linhas
+        
+        // ID Column
+        TableColumn<Locomotive, String> idCol = new TableColumn<>("ID");
+        idCol.setCellValueFactory(loco -> new javafx.beans.property.SimpleStringProperty(loco.getValue().getId()));
+        idCol.setMinWidth(60);
+        idCol.setPrefWidth(70);
+        idCol.setSortable(true);
+        idCol.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
+                      "-fx-font-size: 11px; " +
+                      "-fx-font-weight: 700; " +
+                      "-fx-text-fill: #FFFFFF; " +
+                      "-fx-background-color: #2D3748; " +
+                      "-fx-padding: 6 8;");
+        idCol.setCellFactory(col -> new TableCell<Locomotive, String>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                    setStyle("");
+                } else {
+                    setText(item);
+                    setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
+                            "-fx-font-size: 11px; " +
+                            "-fx-font-weight: 700; " +
+                            "-fx-text-fill: #60A5FA; " +
+                            "-fx-padding: 6 8; " +
+                            "-fx-alignment: CENTER-LEFT;");
+                }
+            }
+        });
+        
+        // Type Column - texto completo (Diesel/Electric)
+        TableColumn<Locomotive, String> typeCol = new TableColumn<>("Type");
+        typeCol.setCellValueFactory(loco -> {
+            String type = loco.getValue().getType();
+            // Garantir texto completo
+            if (type != null) {
+                type = type.substring(0, 1).toUpperCase() + type.substring(1).toLowerCase();
+            }
+            return new javafx.beans.property.SimpleStringProperty(type);
+        });
+        typeCol.setMinWidth(80);
+        typeCol.setPrefWidth(90);
+        typeCol.setSortable(true);
+        typeCol.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
+                        "-fx-font-size: 11px; " +
+                        "-fx-font-weight: 700; " +
+                        "-fx-text-fill: #FFFFFF; " +
+                        "-fx-background-color: #2D3748; " +
+                        "-fx-padding: 6 8;");
+        typeCol.setCellFactory(col -> new TableCell<Locomotive, String>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                    setStyle("");
+                } else {
+                    setText(item); // Texto completo sempre visível
+                    String color = "Electric".equalsIgnoreCase(item) ? "#A78BFA" : "#F59E0B";
+                    setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
+                            "-fx-font-size: 11px; " +
+                            "-fx-font-weight: 600; " +
+                            "-fx-text-fill: " + color + "; " +
+                            "-fx-padding: 6 8; " +
+                            "-fx-alignment: CENTER-LEFT;");
+                }
+            }
+        });
+        
+        // Power Column
+        TableColumn<Locomotive, Double> powerCol = new TableColumn<>("Power (kW)");
+        powerCol.setCellValueFactory(loco -> new javafx.beans.property.SimpleDoubleProperty(loco.getValue().getPowerKw()).asObject());
+        powerCol.setMinWidth(90);
+        powerCol.setPrefWidth(100);
+        powerCol.setSortable(true);
+        powerCol.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
+                         "-fx-font-size: 11px; " +
+                         "-fx-font-weight: 700; " +
+                         "-fx-text-fill: #FFFFFF; " +
+                         "-fx-background-color: #2D3748; " +
+                         "-fx-padding: 6 8;");
+        powerCol.setCellFactory(col -> new TableCell<Locomotive, Double>() {
+            @Override
+            protected void updateItem(Double item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                    setStyle("");
+                } else {
+                    setText(String.format("%.0f kW", item)); // Texto completo com unidade
+                    setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
+                            "-fx-font-size: 11px; " +
+                            "-fx-text-fill: #E2E8F0; " +
+                            "-fx-padding: 6 8; " +
+                            "-fx-alignment: CENTER-RIGHT;");
+                }
+            }
+        });
+        
+        // Max Speed Column
+        TableColumn<Locomotive, Double> speedCol = new TableColumn<>("Max Speed (km/h)");
+        speedCol.setCellValueFactory(loco -> new javafx.beans.property.SimpleDoubleProperty(loco.getValue().getMaxSpeedKmH()).asObject());
+        speedCol.setMinWidth(110);
+        speedCol.setPrefWidth(120);
+        speedCol.setSortable(true);
+        speedCol.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
+                         "-fx-font-size: 11px; " +
+                         "-fx-font-weight: 700; " +
+                         "-fx-text-fill: #FFFFFF; " +
+                         "-fx-background-color: #2D3748; " +
+                         "-fx-padding: 6 8;");
+        speedCol.setCellFactory(col -> new TableCell<Locomotive, Double>() {
+            @Override
+            protected void updateItem(Double item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                    setStyle("");
+                } else {
+                    setText(String.format("%.0f km/h", item)); // Texto completo com unidade
+                    setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
+                            "-fx-font-size: 11px; " +
+                            "-fx-text-fill: #E2E8F0; " +
+                            "-fx-padding: 6 8; " +
+                            "-fx-alignment: CENTER-RIGHT;");
+                }
+            }
+        });
+        
+        table.getColumns().add(idCol);
+        table.getColumns().add(typeCol);
+        table.getColumns().add(powerCol);
+        table.getColumns().add(speedCol);
+        
+        // Ajustar larguras das colunas automaticamente após carregar dados
+        Platform.runLater(() -> {
+            table.getItems().addListener((javafx.collections.ListChangeListener.Change<? extends Locomotive> c) -> {
+                Platform.runLater(() -> {
+                    idCol.setPrefWidth(Math.max(70, idCol.getPrefWidth()));
+                    typeCol.setPrefWidth(Math.max(90, typeCol.getPrefWidth()));
+                    powerCol.setPrefWidth(Math.max(100, powerCol.getPrefWidth()));
+                    speedCol.setPrefWidth(Math.max(120, speedCol.getPrefWidth()));
+                });
+            });
+        });
+        
+        // Row styling with hover effects
+        table.setRowFactory(tv -> {
+            TableRow<Locomotive> row = new TableRow<Locomotive>() {
+                @Override
+                protected void updateItem(Locomotive item, boolean empty) {
+                    super.updateItem(item, empty);
+                    if (empty || item == null) {
+                        setStyle("");
+                    } else {
+                        int index = getIndex();
+                        String bgColor = (index % 2 == 0) ? "#1E293B" : "#243447";
+                        setStyle("-fx-background-color: " + bgColor + "; " +
+                                "-fx-border-color: transparent transparent rgba(99, 102, 241, 0.1) transparent; " +
+                                "-fx-border-width: 0 0 1 0;");
+                    }
+                }
+            };
+            
+            row.setOnMouseEntered(e -> {
+                if (!row.isEmpty()) {
+                    row.setStyle("-fx-background-color: #334155; " +
+                                "-fx-border-color: transparent transparent rgba(99, 102, 241, 0.3) transparent; " +
+                                "-fx-border-width: 0 0 1 0; " +
+                                "-fx-cursor: hand;");
+                }
+            });
+            
+            row.setOnMouseExited(e -> {
+                if (!row.isEmpty()) {
+                    int index = row.getIndex();
+                    String bgColor = (index % 2 == 0) ? "#1E293B" : "#243447";
+                    row.setStyle("-fx-background-color: " + bgColor + "; " +
+                                "-fx-border-color: transparent transparent rgba(99, 102, 241, 0.1) transparent; " +
+                                "-fx-border-width: 0 0 1 0;");
+                }
+            });
+            
+            return row;
+        });
+        
+        return table;
     }
     
     /**
      * Creates the wagons section with professional formatting.
      */
     private VBox createWagonsSection() {
-        VBox box = new VBox(10);
+        VBox box = new VBox(15);
         box.setPadding(new Insets(20));
         box.setStyle("-fx-background-color: #161B22; -fx-background-radius: 12; " +
                     "-fx-border-color: rgba(99, 102, 241, 0.15); -fx-border-radius: 12; -fx-border-width: 1;");
         
         Label sectionLabel = new Label("Wagons");
-        sectionLabel.setStyle("-fx-font-size: 16px; -fx-font-weight: 600; -fx-text-fill: white;");
+        sectionLabel.setStyle("-fx-font-size: 18px; -fx-font-weight: 700; -fx-text-fill: #FFFFFF; " +
+                            "-fx-font-family: 'Segoe UI', 'Roboto', sans-serif;");
         
-        HBox listsBox = new HBox(10);
+        Separator separator = new Separator();
+        separator.setStyle("-fx-background-color: rgba(99, 102, 241, 0.3); -fx-pref-height: 1;");
         
-        // Available wagons
-        VBox availableBox = new VBox(5);
-        Label availableLabel = new Label("Available:");
-        availableLabel.setStyle("-fx-text-fill: white; -fx-font-size: 12px;");
-        availableWagonsList = new ListView<>();
-        availableWagonsList.setItems(wagons);
-        availableWagonsList.setCellFactory(list -> new WagonListCell());
-        availableWagonsList.setPrefHeight(200);
-        availableWagonsList.setStyle("-fx-background-color: #0D1117;");
-        availableBox.getChildren().addAll(availableLabel, availableWagonsList);
+        HBox tablesBox = new HBox(15);
+        
+        // Available wagons table
+        VBox availableBox = new VBox(8);
+        Label availableLabel = new Label("Available");
+        availableLabel.setStyle("-fx-text-fill: #E2E8F0; -fx-font-size: 13px; -fx-font-weight: 600; " +
+                              "-fx-font-family: 'Segoe UI', 'Roboto', sans-serif;");
+        availableWagonsTable = createWagonTable();
+        availableWagonsTable.setItems(wagons);
+        availableWagonsTable.setPrefHeight(200);
+        availableWagonsTable.setPrefWidth(900);
+        availableBox.getChildren().addAll(availableLabel, availableWagonsTable);
+        VBox.setVgrow(availableWagonsTable, Priority.ALWAYS);
         
         // Buttons
-        VBox buttonsBox = new VBox(10);
+        VBox buttonsBox = new VBox(12);
         buttonsBox.setAlignment(Pos.CENTER);
+        buttonsBox.setPadding(new Insets(0, 5, 0, 5));
         addWagonButton = new Button("→");
-        addWagonButton.setStyle("-fx-background-color: #10B981; -fx-text-fill: white; -fx-min-width: 40; -fx-pref-height: 30;");
+        addWagonButton.setStyle("-fx-background-color: #10B981; -fx-text-fill: white; " +
+                              "-fx-font-size: 16px; -fx-font-weight: bold; " +
+                              "-fx-min-width: 45; -fx-pref-height: 45; " +
+                              "-fx-background-radius: 8; -fx-cursor: hand; " +
+                              "-fx-effect: dropshadow(gaussian, rgba(16, 185, 129, 0.4), 6, 0, 0, 2);");
         addWagonButton.setOnAction(e -> addWagon());
+        addWagonButton.setOnMouseEntered(e -> addWagonButton.setStyle(
+            "-fx-background-color: #059669; -fx-text-fill: white; " +
+            "-fx-font-size: 16px; -fx-font-weight: bold; " +
+            "-fx-min-width: 45; -fx-pref-height: 45; " +
+            "-fx-background-radius: 8; -fx-cursor: hand; " +
+            "-fx-effect: dropshadow(gaussian, rgba(16, 185, 129, 0.6), 8, 0, 0, 3);"));
+        addWagonButton.setOnMouseExited(e -> addWagonButton.setStyle(
+            "-fx-background-color: #10B981; -fx-text-fill: white; " +
+            "-fx-font-size: 16px; -fx-font-weight: bold; " +
+            "-fx-min-width: 45; -fx-pref-height: 45; " +
+            "-fx-background-radius: 8; -fx-cursor: hand; " +
+            "-fx-effect: dropshadow(gaussian, rgba(16, 185, 129, 0.4), 6, 0, 0, 2);"));
         removeWagonButton = new Button("←");
-        removeWagonButton.setStyle("-fx-background-color: #EF4444; -fx-text-fill: white; -fx-min-width: 40; -fx-pref-height: 30;");
+        removeWagonButton.setStyle("-fx-background-color: #EF4444; -fx-text-fill: white; " +
+                                 "-fx-font-size: 16px; -fx-font-weight: bold; " +
+                                 "-fx-min-width: 45; -fx-pref-height: 45; " +
+                                 "-fx-background-radius: 8; -fx-cursor: hand; " +
+                                 "-fx-effect: dropshadow(gaussian, rgba(239, 68, 68, 0.4), 6, 0, 0, 2);");
         removeWagonButton.setOnAction(e -> removeWagon());
+        removeWagonButton.setOnMouseEntered(e -> removeWagonButton.setStyle(
+            "-fx-background-color: #DC2626; -fx-text-fill: white; " +
+            "-fx-font-size: 16px; -fx-font-weight: bold; " +
+            "-fx-min-width: 45; -fx-pref-height: 45; " +
+            "-fx-background-radius: 8; -fx-cursor: hand; " +
+            "-fx-effect: dropshadow(gaussian, rgba(239, 68, 68, 0.6), 8, 0, 0, 3);"));
+        removeWagonButton.setOnMouseExited(e -> removeWagonButton.setStyle(
+            "-fx-background-color: #EF4444; -fx-text-fill: white; " +
+            "-fx-font-size: 16px; -fx-font-weight: bold; " +
+            "-fx-min-width: 45; -fx-pref-height: 45; " +
+            "-fx-background-radius: 8; -fx-cursor: hand; " +
+            "-fx-effect: dropshadow(gaussian, rgba(239, 68, 68, 0.4), 6, 0, 0, 2);"));
         buttonsBox.getChildren().addAll(addWagonButton, removeWagonButton);
         
-        // Selected wagons
-        VBox selectedBox = new VBox(5);
-        Label selectedLabel = new Label("Selected:");
-        selectedLabel.setStyle("-fx-text-fill: white; -fx-font-size: 12px;");
-        selectedWagonsList = new ListView<>();
-        selectedWagonsList.setCellFactory(list -> new WagonListCell());
-        selectedWagonsList.setPrefHeight(200);
-        selectedWagonsList.setStyle("-fx-background-color: #0D1117;");
-        selectedWagonsList.getItems().addListener((javafx.collections.ListChangeListener.Change<? extends Wagon> c) -> updateSummary());
-        selectedBox.getChildren().addAll(selectedLabel, selectedWagonsList);
+        // Selected wagons table
+        VBox selectedBox = new VBox(8);
+        Label selectedLabel = new Label("Selected");
+        selectedLabel.setStyle("-fx-text-fill: #E2E8F0; -fx-font-size: 13px; -fx-font-weight: 600; " +
+                             "-fx-font-family: 'Segoe UI', 'Roboto', sans-serif;");
+        selectedWagonsTable = createWagonTable();
+        selectedWagonsTable.getItems().addListener((javafx.collections.ListChangeListener.Change<? extends Wagon> c) -> updateSummary());
+        selectedWagonsTable.setPrefHeight(150);
+        selectedWagonsTable.setPrefWidth(900);
+        selectedBox.getChildren().addAll(selectedLabel, selectedWagonsTable);
+        VBox.setVgrow(selectedWagonsTable, Priority.ALWAYS);
         
-        listsBox.getChildren().addAll(availableBox, buttonsBox, selectedBox);
+        tablesBox.getChildren().addAll(availableBox, buttonsBox, selectedBox);
         HBox.setHgrow(availableBox, Priority.ALWAYS);
         HBox.setHgrow(selectedBox, Priority.ALWAYS);
         
-        box.getChildren().addAll(sectionLabel, listsBox);
+        box.getChildren().addAll(sectionLabel, separator, tablesBox);
         
         return box;
+    }
+    
+    /**
+     * Creates a modern TableView for wagons with dark theme styling.
+     */
+    private TableView<Wagon> createWagonTable() {
+        TableView<Wagon> table = new TableView<>();
+        table.setStyle("-fx-background-color: #1E293B; " +
+                      "-fx-background-radius: 8; " +
+                      "-fx-border-color: rgba(99, 102, 241, 0.2); " +
+                      "-fx-border-radius: 8; " +
+                      "-fx-border-width: 1;");
+        // Ajuste automático de colunas - usar CONSTRAINED para evitar coluna vazia
+        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        table.setFixedCellSize(35); // Altura menor para ver mais linhas
+        
+        // ID Column
+        TableColumn<Wagon, String> idCol = new TableColumn<>("ID");
+        idCol.setCellValueFactory(wagon -> new javafx.beans.property.SimpleStringProperty(wagon.getValue().getWagonId()));
+        idCol.setMinWidth(60);
+        idCol.setPrefWidth(70);
+        idCol.setSortable(true);
+        idCol.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
+                      "-fx-font-size: 11px; " +
+                      "-fx-font-weight: 700; " +
+                      "-fx-text-fill: #FFFFFF; " +
+                      "-fx-background-color: #2D3748; " +
+                      "-fx-padding: 6 8;");
+        idCol.setCellFactory(col -> new TableCell<Wagon, String>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                    setStyle("");
+                } else {
+                    setText(item);
+                    setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
+                            "-fx-font-size: 11px; " +
+                            "-fx-font-weight: 700; " +
+                            "-fx-text-fill: #60A5FA; " +
+                            "-fx-padding: 6 8; " +
+                            "-fx-alignment: CENTER-LEFT;");
+                }
+            }
+        });
+        
+        // Type Column - texto completo sempre visível
+        TableColumn<Wagon, String> typeCol = new TableColumn<>("Cargo Type");
+        typeCol.setCellValueFactory(wagon -> new javafx.beans.property.SimpleStringProperty(wagon.getValue().getType()));
+        typeCol.setMinWidth(120);
+        typeCol.setPrefWidth(150);
+        typeCol.setSortable(true);
+        typeCol.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
+                        "-fx-font-size: 11px; " +
+                        "-fx-font-weight: 700; " +
+                        "-fx-text-fill: #FFFFFF; " +
+                        "-fx-background-color: #2D3748; " +
+                        "-fx-padding: 6 8;");
+        typeCol.setCellFactory(col -> new TableCell<Wagon, String>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                    setStyle("");
+                } else {
+                    setText(item); // Texto completo sempre visível
+                    setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
+                            "-fx-font-size: 11px; " +
+                            "-fx-font-weight: 500; " +
+                            "-fx-text-fill: #E2E8F0; " +
+                            "-fx-padding: 6 8; " +
+                            "-fx-alignment: CENTER-LEFT;");
+                }
+            }
+        });
+        
+        // Empty Weight Column
+        TableColumn<Wagon, Double> emptyWeightCol = new TableColumn<>("Empty (kg)");
+        emptyWeightCol.setCellValueFactory(wagon -> new javafx.beans.property.SimpleDoubleProperty(wagon.getValue().getEmptyWeightKg()).asObject());
+        emptyWeightCol.setMinWidth(90);
+        emptyWeightCol.setPrefWidth(100);
+        emptyWeightCol.setSortable(true);
+        emptyWeightCol.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
+                               "-fx-font-size: 11px; " +
+                               "-fx-font-weight: 700; " +
+                               "-fx-text-fill: #FFFFFF; " +
+                               "-fx-background-color: #2D3748; " +
+                               "-fx-padding: 6 8;");
+        emptyWeightCol.setCellFactory(col -> new TableCell<Wagon, Double>() {
+            @Override
+            protected void updateItem(Double item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                    setStyle("");
+                } else {
+                    setText(String.format("%.0f kg", item)); // Texto completo com unidade
+                    setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
+                            "-fx-font-size: 11px; " +
+                            "-fx-text-fill: #E2E8F0; " +
+                            "-fx-padding: 6 8; " +
+                            "-fx-alignment: CENTER-RIGHT;");
+                }
+            }
+        });
+        
+        // Loaded Weight Column
+        TableColumn<Wagon, Double> loadedWeightCol = new TableColumn<>("Loaded (kg)");
+        loadedWeightCol.setCellValueFactory(wagon -> new javafx.beans.property.SimpleDoubleProperty(wagon.getValue().getFullyLoadedWeightKg()).asObject());
+        loadedWeightCol.setMinWidth(90);
+        loadedWeightCol.setPrefWidth(100);
+        loadedWeightCol.setSortable(true);
+        loadedWeightCol.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
+                                 "-fx-font-size: 11px; " +
+                                 "-fx-font-weight: 700; " +
+                                 "-fx-text-fill: #FFFFFF; " +
+                                 "-fx-background-color: #2D3748; " +
+                                 "-fx-padding: 6 8;");
+        loadedWeightCol.setCellFactory(col -> new TableCell<Wagon, Double>() {
+            @Override
+            protected void updateItem(Double item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                    setStyle("");
+                } else {
+                    setText(String.format("%.0f kg", item)); // Texto completo com unidade
+                    setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
+                            "-fx-font-size: 11px; " +
+                            "-fx-text-fill: #E2E8F0; " +
+                            "-fx-padding: 6 8; " +
+                            "-fx-alignment: CENTER-RIGHT;");
+                }
+            }
+        });
+        
+        table.getColumns().add(idCol);
+        table.getColumns().add(typeCol);
+        table.getColumns().add(emptyWeightCol);
+        table.getColumns().add(loadedWeightCol);
+        
+        // Ajustar larguras das colunas automaticamente após carregar dados
+        Platform.runLater(() -> {
+            table.getItems().addListener((javafx.collections.ListChangeListener.Change<? extends Wagon> c) -> {
+                Platform.runLater(() -> {
+                    idCol.setPrefWidth(Math.max(70, idCol.getPrefWidth()));
+                    typeCol.setPrefWidth(Math.max(150, typeCol.getPrefWidth()));
+                    emptyWeightCol.setPrefWidth(Math.max(100, emptyWeightCol.getPrefWidth()));
+                    loadedWeightCol.setPrefWidth(Math.max(100, loadedWeightCol.getPrefWidth()));
+                });
+            });
+        });
+        
+        // Row styling with hover effects
+        table.setRowFactory(tv -> {
+            TableRow<Wagon> row = new TableRow<Wagon>() {
+                @Override
+                protected void updateItem(Wagon item, boolean empty) {
+                    super.updateItem(item, empty);
+                    if (empty || item == null) {
+                        setStyle("");
+                    } else {
+                        int index = getIndex();
+                        String bgColor = (index % 2 == 0) ? "#1E293B" : "#243447";
+                        setStyle("-fx-background-color: " + bgColor + "; " +
+                                "-fx-border-color: transparent transparent rgba(99, 102, 241, 0.1) transparent; " +
+                                "-fx-border-width: 0 0 1 0;");
+                    }
+                }
+            };
+            
+            row.setOnMouseEntered(e -> {
+                if (!row.isEmpty()) {
+                    row.setStyle("-fx-background-color: #334155; " +
+                                "-fx-border-color: transparent transparent rgba(99, 102, 241, 0.3) transparent; " +
+                                "-fx-border-width: 0 0 1 0; " +
+                                "-fx-cursor: hand;");
+                }
+            });
+            
+            row.setOnMouseExited(e -> {
+                if (!row.isEmpty()) {
+                    int index = row.getIndex();
+                    String bgColor = (index % 2 == 0) ? "#1E293B" : "#243447";
+                    row.setStyle("-fx-background-color: " + bgColor + "; " +
+                                "-fx-border-color: transparent transparent rgba(99, 102, 241, 0.1) transparent; " +
+                                "-fx-border-width: 0 0 1 0;");
+                }
+            });
+            
+            return row;
+        });
+        
+        return table;
     }
     
     /**
@@ -545,8 +1037,8 @@ public class SchedulerFXUI {
             summaryContent.getChildren().clear();
             
             if (trainIdField.getText().trim().isEmpty() && 
-                selectedLocomotivesList.getItems().isEmpty() && 
-                selectedWagonsList.getItems().isEmpty()) {
+                selectedLocomotivesTable.getItems().isEmpty() && 
+                selectedWagonsTable.getItems().isEmpty()) {
                 Label emptyLabel = new Label("Configure a train to see summary");
                 emptyLabel.setStyle("-fx-text-fill: white; -fx-font-size: 13px; -fx-font-style: italic;");
                 summaryContent.getChildren().add(emptyLabel);
@@ -573,7 +1065,7 @@ public class SchedulerFXUI {
             }
             
             // Locomotives
-            ObservableList<Locomotive> selectedLocos = selectedLocomotivesList.getItems();
+            ObservableList<Locomotive> selectedLocos = selectedLocomotivesTable.getItems();
             if (!selectedLocos.isEmpty()) {
                 VBox locosBox = new VBox(5);
                 Label locosLabel = new Label("Locomotives:");
@@ -596,7 +1088,7 @@ public class SchedulerFXUI {
             }
             
             // Wagons
-            ObservableList<Wagon> selectedWags = selectedWagonsList.getItems();
+            ObservableList<Wagon> selectedWags = selectedWagonsTable.getItems();
             if (!selectedWags.isEmpty()) {
                 VBox wagonsBox = new VBox(5);
                 Label wagonsLabel = new Label("Wagons:");
@@ -667,9 +1159,9 @@ public class SchedulerFXUI {
      * Adds a locomotive to the selected list.
      */
     private void addLocomotive() {
-        Locomotive selected = availableLocomotivesList.getSelectionModel().getSelectedItem();
+        Locomotive selected = availableLocomotivesTable.getSelectionModel().getSelectedItem();
         if (selected != null) {
-            ObservableList<Locomotive> selectedList = selectedLocomotivesList.getItems();
+            ObservableList<Locomotive> selectedList = selectedLocomotivesTable.getItems();
             if (!selectedList.contains(selected)) {
                 selectedList.add(selected);
             }
@@ -680,9 +1172,9 @@ public class SchedulerFXUI {
      * Removes a locomotive from the selected list.
      */
     private void removeLocomotive() {
-        Locomotive selected = selectedLocomotivesList.getSelectionModel().getSelectedItem();
+        Locomotive selected = selectedLocomotivesTable.getSelectionModel().getSelectedItem();
         if (selected != null) {
-            selectedLocomotivesList.getItems().remove(selected);
+            selectedLocomotivesTable.getItems().remove(selected);
         }
     }
     
@@ -690,9 +1182,9 @@ public class SchedulerFXUI {
      * Adds a wagon to the selected list.
      */
     private void addWagon() {
-        Wagon selected = availableWagonsList.getSelectionModel().getSelectedItem();
+        Wagon selected = availableWagonsTable.getSelectionModel().getSelectedItem();
         if (selected != null) {
-            ObservableList<Wagon> selectedList = selectedWagonsList.getItems();
+            ObservableList<Wagon> selectedList = selectedWagonsTable.getItems();
             if (!selectedList.contains(selected)) {
                 selectedList.add(selected);
             }
@@ -703,9 +1195,9 @@ public class SchedulerFXUI {
      * Removes a wagon from the selected list.
      */
     private void removeWagon() {
-        Wagon selected = selectedWagonsList.getSelectionModel().getSelectedItem();
+        Wagon selected = selectedWagonsTable.getSelectionModel().getSelectedItem();
         if (selected != null) {
-            selectedWagonsList.getItems().remove(selected);
+            selectedWagonsTable.getItems().remove(selected);
         }
     }
     
@@ -725,7 +1217,7 @@ public class SchedulerFXUI {
             return;
         }
         
-        if (selectedLocomotivesList.getItems().isEmpty()) {
+        if (selectedLocomotivesTable.getItems().isEmpty()) {
             showAlert(Alert.AlertType.ERROR, "Error", "At least one locomotive is required.");
             return;
         }
@@ -750,7 +1242,7 @@ public class SchedulerFXUI {
             List<Facility> selectedStations = Arrays.asList(startStation, endStation); // User-selected stations
             
             // Calculate total weight
-            double totalWeight = selectedWagonsList.getItems().stream()
+            double totalWeight = selectedWagonsTable.getItems().stream()
                 .mapToDouble(wagon -> wagonsLoadedCheckBox.isSelected() 
                     ? wagon.getFullyLoadedWeightKg() 
                     : wagon.getEmptyWeightKg())
@@ -762,8 +1254,8 @@ public class SchedulerFXUI {
                 trainIdField.getText().trim(),
                 route,                    // Full route (will be expanded if needed)
                 selectedStations,         // User-selected stations (start and end only)
-                new ArrayList<>(selectedLocomotivesList.getItems()),
-                new ArrayList<>(selectedWagonsList.getItems()),
+                new ArrayList<>(selectedLocomotivesTable.getItems()),
+                new ArrayList<>(selectedWagonsTable.getItems()),
                 departureTime,
                 totalWeight
             );
@@ -776,8 +1268,8 @@ public class SchedulerFXUI {
             endStationCombo.getSelectionModel().clearSelection();
             departureDatePicker.setValue(null);
             departureTimeField.clear();
-            selectedLocomotivesList.getItems().clear();
-            selectedWagonsList.getItems().clear();
+            selectedLocomotivesTable.getItems().clear();
+            selectedWagonsTable.getItems().clear();
             wagonsLoadedCheckBox.setSelected(false);
             
         } catch (Exception e) {
@@ -1055,36 +1547,6 @@ public class SchedulerFXUI {
         alert.showAndWait();
     }
     
-    // Custom list cell renderers with professional formatting
-    private static class LocomotiveListCell extends ListCell<Locomotive> {
-        @Override
-        protected void updateItem(Locomotive item, boolean empty) {
-            super.updateItem(item, empty);
-            if (empty || item == null) {
-                setText(null);
-            } else {
-                setText(String.format("%s — %s\nPower: %.0f kW | Max speed: %.0f km/h", 
-                    item.getId(), item.getType(), item.getPowerKw(), item.getMaxSpeedKmH()));
-                setStyle("-fx-text-fill: #000000; -fx-font-size: 12px;");
-            }
-        }
-    }
-    
-    private static class WagonListCell extends ListCell<Wagon> {
-        @Override
-        protected void updateItem(Wagon item, boolean empty) {
-            super.updateItem(item, empty);
-            if (empty || item == null) {
-                setText(null);
-            } else {
-                setText(String.format("%s — %s\nEmpty: %.0f kg | Loaded: %.0f kg", 
-                    item.getWagonId(), item.getType(), 
-                    item.getEmptyWeightKg(), item.getFullyLoadedWeightKg()));
-                setStyle("-fx-text-fill: #000000; -fx-font-size: 12px;");
-            }
-        }
-    }
-    
     private static class TrainListCell extends ListCell<Train> {
         @Override
         protected void updateItem(Train item, boolean empty) {
@@ -1102,7 +1564,7 @@ public class SchedulerFXUI {
                     item.getLocomotives().size(), item.getLocomotives().size() != 1 ? "s" : "",
                     item.getWagons().size(), item.getWagons().size() != 1 ? "s" : "",
                     item.getDeparturePlannedDateTime().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))));
-                setStyle("-fx-text-fill: white; -fx-font-size: 12px;");
+                setStyle("-fx-text-fill: #000000; -fx-font-size: 12px;");
             }
         }
     }
