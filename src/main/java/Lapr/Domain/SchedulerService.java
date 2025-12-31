@@ -77,9 +77,19 @@ public class SchedulerService {
             throw new IllegalArgumentException("Trains list cannot be null or empty");
         }
 
+        // Step 0: Sort trains deterministically (by train ID, then departure time)
+        // This ensures the system is deterministic and reproducible
+        List<Train> sortedTrains = new ArrayList<>(trains);
+        sortedTrains.sort((t1, t2) -> {
+            int idCompare = t1.getTrainId().compareTo(t2.getTrainId());
+            if (idCompare != 0) return idCompare;
+            return t1.getDeparturePlannedDateTime().compareTo(t2.getDeparturePlannedDateTime());
+        });
+
         // Step 1: Resolve conflicts by adjusting departure times and detect departure conflicts
-        List<Train> adjustedTrains = resolveDepartureTimeConflicts(trains);
-        List<DispatchReport.Conflict> departureConflicts = detectDepartureTimeConflicts(trains, adjustedTrains);
+        // Use iterative approach to handle cascading conflicts
+        List<Train> adjustedTrains = resolveDepartureTimeConflictsWithReevaluation(sortedTrains);
+        List<DispatchReport.Conflict> departureConflicts = detectDepartureTimeConflicts(sortedTrains, adjustedTrains);
 
         List<DispatchReport.TrainSchedule> schedules = new ArrayList<>();
         List<DispatchReport.Conflict> conflicts = new ArrayList<>();
@@ -160,25 +170,65 @@ public class SchedulerService {
             Facility startStation = route.get(0);
             Facility endStation = route.get(1);
             
+            System.out.println("Route has 2 stations: " + startStation.getId() + " -> " + endStation.getId());
+            
             // Check if directly connected
-            if (findConnectingSegment(startStation, endStation) == null) {
+            LineSegment directSegment = findConnectingSegment(startStation, endStation);
+            if (directSegment == null) {
+                System.out.println("  No direct connection found, searching for path...");
                 // Find path using shortest path algorithm (based on travel time)
                 List<Facility> foundPath = findFastestPath(startStation, endStation, train);
                 if (foundPath != null && foundPath.size() >= 2) {
                     System.out.println("Found path from " + startStation.getId() + " to " + endStation.getId() + 
                                      " via " + (foundPath.size() - 2) + " intermediate stations");
+                    
+                    // Validate that each consecutive pair in the path has a direct segment
+                    for (int i = 0; i < foundPath.size() - 1; i++) {
+                        Facility pathStart = foundPath.get(i);
+                        Facility pathEnd = foundPath.get(i + 1);
+                        LineSegment pathSegment = findConnectingSegment(pathStart, pathEnd);
+                        if (pathSegment == null) {
+                            System.err.println("ERROR: Path validation failed! No segment between " + 
+                                             pathStart.getId() + " and " + pathEnd.getId() + 
+                                             " in found path");
+                            System.err.println("  This indicates a bug in findFastestPath algorithm");
+                            throw new IllegalStateException(
+                                String.format("Invalid path found: no segment between stations %s and %s in path from %s to %s",
+                                            pathStart.getId(), pathEnd.getId(), 
+                                            startStation.getId(), endStation.getId()));
+                        }
+                    }
+                    
                     route = foundPath;
                 } else {
                     throw new IllegalStateException(
                         String.format("No path found between stations %s and %s for train %s",
                                     startStation.getId(), endStation.getId(), train.getTrainId()));
                 }
+            } else {
+                System.out.println("  Direct connection found: segment " + directSegment.getId());
             }
         }
 
+        // Validate route is not empty
+        if (route == null || route.isEmpty()) {
+            throw new IllegalStateException("Route cannot be null or empty for train " + train.getTrainId());
+        }
+        
+        // Validate first station
+        Facility departureStation = route.get(0);
+        if (departureStation == null) {
+            throw new IllegalStateException("Departure station cannot be null for train " + train.getTrainId());
+        }
+        
+        // Validate departure time
+        if (currentTime == null) {
+            throw new IllegalStateException("Departure time cannot be null for train " + train.getTrainId());
+        }
+        
         // Add departure station (first station)
         routeWithETAs.add(new DispatchReport.TrainSchedule.StationETA(
-            route.get(0),
+            departureStation,
             currentTime,
             0.0,
             null // No segment for departure station
@@ -193,15 +243,48 @@ public class SchedulerService {
         
         // Load segment data from database (inclination, etc.)
         for (int i = 0; i < route.size() - 1; i++) {
-            Facility startStation = route.get(i);
-            Facility endStation = route.get(i + 1);
+            Facility routeStartStation = route.get(i);
+            Facility routeEndStation = route.get(i + 1);
+            
+            // Validate stations
+            if (routeStartStation == null) {
+                throw new IllegalStateException(
+                    String.format("Start station at index %d is null in route for train %s", i, train.getTrainId()));
+            }
+            if (routeEndStation == null) {
+                throw new IllegalStateException(
+                    String.format("End station at index %d is null in route for train %s", i + 1, train.getTrainId()));
+            }
 
             // Find the connecting segment
-            LineSegment segment = findConnectingSegment(startStation, endStation);
+            LineSegment segment = findConnectingSegment(routeStartStation, routeEndStation);
             if (segment == null) {
                 throw new IllegalStateException(
                     String.format("No direct connection found between stations %s and %s for train %s",
-                                startStation.getId(), endStation.getId(), train.getTrainId()));
+                                routeStartStation.getId(), routeEndStation.getId(), train.getTrainId()));
+            }
+            
+            // Use the stations from the segment to ensure consistency
+            // This ensures we use the same Facility instances that are in the LineSegment
+            Facility startStation;
+            Facility endStation;
+            
+            // Determine direction: check if route matches segment direction
+            if (segment.getStartStation().getId().equals(routeStartStation.getId()) &&
+                segment.getEndStation().getId().equals(routeEndStation.getId())) {
+                // Same direction as segment
+                startStation = segment.getStartStation();
+                endStation = segment.getEndStation();
+            } else if (segment.getStartStation().getId().equals(routeEndStation.getId()) &&
+                       segment.getEndStation().getId().equals(routeStartStation.getId())) {
+                // Opposite direction - reverse the stations
+                startStation = segment.getEndStation();
+                endStation = segment.getStartStation();
+            } else {
+                // This shouldn't happen if findConnectingSegment works correctly
+                // But use route stations as fallback
+                startStation = routeStartStation;
+                endStation = routeEndStation;
             }
 
             // USLP10: Load segment data from database (inclination, etc.)
@@ -243,6 +326,23 @@ public class SchedulerService {
             // Update initial velocity for next segment (convert km/h to m/s)
             initialVelocityMs = result.getFinalVelocityKmH() / 3.6;
 
+            // Validate end station and segment data before creating StationETA
+            if (endStation == null) {
+                throw new IllegalStateException(
+                    String.format("End station is null for segment %s in train %s",
+                                segmentWithData.getId(), train.getTrainId()));
+            }
+            if (segmentEndTime == null) {
+                throw new IllegalStateException(
+                    String.format("Segment end time is null for segment %s in train %s",
+                                segmentWithData.getId(), train.getTrainId()));
+            }
+            if (segmentWithData.getId() == null) {
+                throw new IllegalStateException(
+                    String.format("Segment ID is null for segment in train %s",
+                                train.getTrainId()));
+            }
+            
             // Add ETA for the end station
             routeWithETAs.add(new DispatchReport.TrainSchedule.StationETA(
                 endStation,
@@ -294,12 +394,27 @@ public class SchedulerService {
             (a, b) -> Double.compare(a.time, b.time)
         );
         
-        // Initialize distances
-        for (LineSegment segment : lineSegments) {
-            distances.put(segment.getStartStation().getId(), Double.MAX_VALUE);
-            distances.put(segment.getEndStation().getId(), Double.MAX_VALUE);
-        }
+        // Initialize distances for all stations found in segments
+        // Also ensure start and end stations are in the map
         distances.put(startStation.getId(), 0.0);
+        distances.put(endStation.getId(), Double.MAX_VALUE);
+        
+        for (LineSegment segment : lineSegments) {
+            String startId = segment.getStartStation().getId();
+            String endId = segment.getEndStation().getId();
+            
+            // Only initialize if not already set (don't overwrite startStation which is 0.0)
+            if (!distances.containsKey(startId)) {
+                distances.put(startId, Double.MAX_VALUE);
+            }
+            if (!distances.containsKey(endId)) {
+                distances.put(endId, Double.MAX_VALUE);
+            }
+        }
+        
+        System.out.println("Finding path from station " + startStation.getId() + " to " + endStation.getId());
+        System.out.println("  Total segments available: " + lineSegments.size());
+        System.out.println("  Stations initialized in distances map: " + distances.size());
         
         queue.add(new PathNode(startStation, 0.0));
         
@@ -315,25 +430,53 @@ public class SchedulerService {
             
             // If we reached the destination, reconstruct path
             if (currentId.equals(endStation.getId())) {
+                System.out.println("  Path found! Reconstructing path...");
                 java.util.List<Facility> path = new java.util.ArrayList<>();
                 Facility node = endStation;
-                while (node != null) {
+                int pathLength = 0;
+                while (node != null && pathLength < 100) { // Safety limit to prevent infinite loops
                     path.add(0, node);
-                    node = previous.get(node.getId());
+                    String nodeId = node.getId();
+                    node = previous.get(nodeId);
+                    pathLength++;
+                    if (node != null) {
+                        System.out.println("    Path step: " + nodeId + " <- " + node.getId());
+                    }
                 }
+                
+                if (path.size() < 2) {
+                    System.err.println("  ERROR: Reconstructed path has less than 2 stations!");
+                    return null;
+                }
+                
+                System.out.println("  Path reconstructed: " + path.size() + " stations");
+                for (int i = 0; i < path.size(); i++) {
+                    System.out.println("    [" + i + "] " + path.get(i).getId() + " - " + path.get(i).getName());
+                }
+                
                 return path;
             }
             
             // Find all neighbors (stations directly connected to current)
             for (LineSegment segment : lineSegments) {
                 Facility neighbor = null;
-                if (segment.getStartStation().getId().equals(currentId)) {
+                String segmentStartId = segment.getStartStation().getId();
+                String segmentEndId = segment.getEndStation().getId();
+                
+                if (segmentStartId.equals(currentId)) {
                     neighbor = segment.getEndStation();
-                } else if (segment.getEndStation().getId().equals(currentId)) {
+                } else if (segmentEndId.equals(currentId)) {
                     neighbor = segment.getStartStation();
                 }
                 
                 if (neighbor != null && !visited.contains(neighbor.getId())) {
+                    String neighborId = neighbor.getId();
+                    
+                    // Initialize neighbor distance if not already in map
+                    if (!distances.containsKey(neighborId)) {
+                        distances.put(neighborId, Double.MAX_VALUE);
+                    }
+                    
                     // Estimate travel time for this segment
                     LineSegment segmentWithData = loadSegmentDataFromDatabase(segment);
                     if (segmentWithData == null) {
@@ -351,16 +494,34 @@ public class SchedulerService {
                     }
                     
                     double segmentTimeHours = segmentWithData.getLengthKm() / estimatedSpeedKmH;
-                    double newDistance = distances.get(currentId) + segmentTimeHours;
+                    double currentDistance = distances.getOrDefault(currentId, Double.MAX_VALUE);
+                    double neighborDistance = distances.getOrDefault(neighborId, Double.MAX_VALUE);
+                    double newDistance = currentDistance + segmentTimeHours;
                     
-                    if (newDistance < distances.get(neighbor.getId())) {
-                        distances.put(neighbor.getId(), newDistance);
-                        previous.put(neighbor.getId(), current.station);
+                    if (newDistance < neighborDistance) {
+                        distances.put(neighborId, newDistance);
+                        previous.put(neighborId, current.station);
                         queue.add(new PathNode(neighbor, newDistance));
+                        System.out.println("  Path update: " + currentId + " -> " + neighborId + 
+                                         " (distance: " + newDistance + " hours)");
                     }
                 }
             }
         }
+        
+        // No path found - log debug information
+        System.err.println("ERROR: No path found from station " + startStation.getId() + " to " + endStation.getId());
+        System.err.println("  Visited stations: " + visited.size());
+        System.err.println("  Available segments: " + lineSegments.size());
+        if (!visited.isEmpty()) {
+            System.err.println("  Visited station IDs: " + visited);
+        }
+        // Log some segment information for debugging
+        System.err.println("  Sample segments (first 10):");
+        lineSegments.stream().limit(10).forEach(seg -> 
+            System.err.println("    - " + seg.getId() + ": " + seg.getStartStation().getId() + 
+                             " -> " + seg.getEndStation().getId())
+        );
         
         return null; // No path found
     }
@@ -386,15 +547,29 @@ public class SchedulerService {
      * @return the connecting segment, or null if not found
      */
     private LineSegment findConnectingSegment(Facility startStation, Facility endStation) {
-        System.out.println("Searching for segment between stations: " + startStation.getId() + " -> " + endStation.getId());
+        if (startStation == null || endStation == null) {
+            System.err.println("ERROR: findConnectingSegment called with null station");
+            return null;
+        }
+        
+        String startId = startStation.getId();
+        String endId = endStation.getId();
+        
+        System.out.println("Searching for segment between stations: " + startId + " -> " + endId);
         System.out.println("  Total segments available: " + lineSegments.size());
         
         LineSegment found = lineSegments.stream()
                 .filter(segment -> {
-                    boolean connects = segment.connectsStations(startStation, endStation);
+                    // Use ID comparison to ensure it works even if Facility objects are different instances
+                    String segStartId = segment.getStartStation().getId();
+                    String segEndId = segment.getEndStation().getId();
+                    
+                    boolean connects = (segStartId.equals(startId) && segEndId.equals(endId)) ||
+                                      (segStartId.equals(endId) && segEndId.equals(startId));
+                    
                     if (connects) {
                         System.out.println("  Found segment: " + segment.getId() + " (" + 
-                            segment.getStartStation().getId() + " -> " + segment.getEndStation().getId() + ")");
+                            segStartId + " -> " + segEndId + ")");
                     }
                     return connects;
                 })
@@ -402,11 +577,25 @@ public class SchedulerService {
                 .orElse(null);
         
         if (found == null) {
-            System.err.println("  ERROR: No segment found between " + startStation.getId() + " and " + endStation.getId());
-            System.err.println("  Available segments (first 10):");
-            lineSegments.stream().limit(10).forEach(seg -> 
-                System.err.println("    - " + seg.getId() + ": " + seg.getStartStation().getId() + " -> " + seg.getEndStation().getId())
-            );
+            System.err.println("  ERROR: No segment found between " + startId + " and " + endId);
+            System.err.println("  Available segments (first 20):");
+            lineSegments.stream().limit(20).forEach(seg -> {
+                String segStartId = seg.getStartStation().getId();
+                String segEndId = seg.getEndStation().getId();
+                System.err.println("    - " + seg.getId() + ": " + segStartId + " -> " + segEndId);
+            });
+            
+            // Also check if there are any segments that connect to start or end station
+            long segmentsFromStart = lineSegments.stream()
+                .filter(seg -> seg.getStartStation().getId().equals(startId) || 
+                              seg.getEndStation().getId().equals(startId))
+                .count();
+            long segmentsToEnd = lineSegments.stream()
+                .filter(seg -> seg.getStartStation().getId().equals(endId) || 
+                              seg.getEndStation().getId().equals(endId))
+                .count();
+            System.err.println("  Segments connected to start station " + startId + ": " + segmentsFromStart);
+            System.err.println("  Segments connected to end station " + endId + ": " + segmentsToEnd);
         }
         
         return found;
@@ -423,7 +612,7 @@ public class SchedulerService {
         LineSegmentAOD.SegmentData data = lineSegmentAOD.getSegmentData(segment.getId());
         
         if (data != null) {
-            // Create new segment with data from database
+            // Create new segment with data from database including TrackType and Siding
             return new LineSegment(
                 segment.getId(),
                 segment.getName(),
@@ -433,11 +622,14 @@ public class SchedulerService {
                 data.getGaugeMm(),
                 data.isElectrified(),
                 data.getSpeedLimitKmH(),
-                data.getInclinationPercent()
+                data.getInclinationPercent(),
+                data.getTrackType(),
+                data.getSidingId(),
+                data.getSidingSize()
             );
         }
         
-        // If data not found in database, return original segment (with default inclination 0.0)
+        // If data not found in database, return original segment (with default values)
         return segment;
     }
     
@@ -468,8 +660,9 @@ public class SchedulerService {
     }
 
     /**
-     * Detects conflicts between trains on single-track segments.
-     * Two trains conflict if they occupy the same segment during overlapping time intervals.
+     * Detects conflicts between trains on segments.
+     * Two trains conflict if they occupy the same SINGLE-TRACK segment during overlapping time intervals.
+     * DOUBLE and QUAD tracks allow simultaneous travel in opposite directions.
      *
      * @param schedules the list of train schedules
      * @return the list of detected conflicts
@@ -491,12 +684,43 @@ public class SchedulerService {
                     for (DispatchReport.TrainSchedule.SegmentTime segmentTime2 : schedule2.getSegmentTimes()) {
                         // Check if segments overlap (same segment ID and overlapping times)
                         if (segmentTime1.overlapsWith(segmentTime2)) {
-                            // Only create one conflict per train pair per segment
-                            if (!conflictFound) {
-                                DispatchReport.Conflict conflict = createConflict(schedule1, schedule2, segmentTime1, segmentTime2);
-                                conflicts.add(conflict);
-                                conflictFound = true;
-                                break; // Move to next train pair
+                            // Get the actual segment to check track type
+                            LineSegment segment = findSegmentById(segmentTime1.getSegmentId());
+                            
+                            // Only create conflict if:
+                            // 1. Segment is SINGLE track, OR
+                            // 2. Segment is DOUBLE/QUAD but trains are traveling in the SAME direction
+                            if (segment != null) {
+                                if (segment.isSingleTrack()) {
+                                    // Single track: always a conflict if overlapping
+                                    if (!conflictFound) {
+                                        DispatchReport.Conflict conflict = createConflict(schedule1, schedule2, segmentTime1, segmentTime2, segment);
+                                        conflicts.add(conflict);
+                                        conflictFound = true;
+                                        break; // Move to next train pair
+                                    }
+                                } else {
+                                    // Double/Quad track: check if trains are in same direction
+                                    boolean sameDirection = areTrainsInSameDirection(schedule1, schedule2, segmentTime1, segmentTime2);
+                                    if (sameDirection) {
+                                        // Same direction on double track: conflict
+                                        if (!conflictFound) {
+                                            DispatchReport.Conflict conflict = createConflict(schedule1, schedule2, segmentTime1, segmentTime2, segment);
+                                            conflicts.add(conflict);
+                                            conflictFound = true;
+                                            break; // Move to next train pair
+                                        }
+                                    }
+                                    // Opposite directions on double/quad track: no conflict
+                                }
+                            } else {
+                                // Segment not found: default to SINGLE track behavior (conservative)
+                                if (!conflictFound) {
+                                    DispatchReport.Conflict conflict = createConflict(schedule1, schedule2, segmentTime1, segmentTime2, null);
+                                    conflicts.add(conflict);
+                                    conflictFound = true;
+                                    break; // Move to next train pair
+                                }
                             }
                         }
                     }
@@ -509,6 +733,52 @@ public class SchedulerService {
 
         return conflicts;
     }
+    
+    /**
+     * Finds a segment by its ID.
+     * 
+     * @param segmentId the segment ID
+     * @return the LineSegment, or null if not found
+     */
+    private LineSegment findSegmentById(String segmentId) {
+        return lineSegments.stream()
+                .filter(seg -> seg.getId().equals(segmentId))
+                .findFirst()
+                .orElse(null);
+    }
+    
+    /**
+     * Checks if two trains are traveling in the same direction on a segment.
+     * 
+     * @param schedule1 the first train schedule
+     * @param schedule2 the second train schedule
+     * @param segmentTime1 the segment time for train 1
+     * @param segmentTime2 the segment time for train 2
+     * @return true if same direction, false if opposite directions
+     */
+    private boolean areTrainsInSameDirection(DispatchReport.TrainSchedule schedule1, 
+                                            DispatchReport.TrainSchedule schedule2,
+                                            DispatchReport.TrainSchedule.SegmentTime segmentTime1,
+                                            DispatchReport.TrainSchedule.SegmentTime segmentTime2) {
+        // Check if both trains are going from startStation to endStation (or both reverse)
+        Facility start1 = segmentTime1.getStartStation();
+        Facility end1 = segmentTime1.getEndStation();
+        Facility start2 = segmentTime2.getStartStation();
+        Facility end2 = segmentTime2.getEndStation();
+        
+        // Same direction if:
+        // - Both go from start1 to end1, OR
+        // - Both go from end1 to start1
+        if (start1.equals(start2) && end1.equals(end2)) {
+            return true; // Both going A->B
+        }
+        if (start1.equals(end2) && end1.equals(start2)) {
+            return false; // Opposite directions: A->B vs B->A
+        }
+        
+        // Default: assume same direction if we can't determine (conservative)
+        return true;
+    }
 
     /**
      * Creates a conflict object with suggested resolution.
@@ -518,10 +788,12 @@ public class SchedulerService {
      * @param schedule2     the second train schedule
      * @param segmentTime1  the segment time for train 1
      * @param segmentTime2  the segment time for train 2
+     * @param segment       the LineSegment (can be null if not found)
      * @return the conflict object
      */
     private DispatchReport.Conflict createConflict(DispatchReport.TrainSchedule schedule1, DispatchReport.TrainSchedule schedule2,
-                                    DispatchReport.TrainSchedule.SegmentTime segmentTime1, DispatchReport.TrainSchedule.SegmentTime segmentTime2) {
+                                    DispatchReport.TrainSchedule.SegmentTime segmentTime1, DispatchReport.TrainSchedule.SegmentTime segmentTime2,
+                                    LineSegment segment) {
         String train1Id = schedule1.getTrainId();
         String train2Id = schedule2.getTrainId();
         String segmentId = segmentTime1.getSegmentId();
@@ -571,23 +843,38 @@ public class SchedulerService {
         ).toMinutes());
         
         // Determine resolution based on siding availability
+        // Check both: station siding AND segment siding
         Facility crossingStation = null;
         DispatchReport.Conflict.ResolutionType resolution;
         String description;
         
-        if (waitingTrainPreviousStation.hasSiding()) {
-            // Can cross at previous station of waiting train (which has siding)
-            crossingStation = waitingTrainPreviousStation;
+        boolean hasStationSiding = waitingTrainPreviousStation.hasSiding();
+        boolean hasSegmentSiding = (segment != null && segment.hasSiding());
+        
+        if (hasStationSiding || hasSegmentSiding) {
+            // Can cross at previous station (which has siding) or segment has siding
+            if (hasStationSiding) {
+                crossingStation = waitingTrainPreviousStation;
+            }
+            // If segment has siding, we can also mention it in description
+            String sidingLocation = hasStationSiding ? 
+                "station " + crossingStation.getId() + " (has siding)" :
+                "segment " + segmentId + " (has siding)";
+            
             resolution = DispatchReport.Conflict.ResolutionType.CROSS_AT_STATION_WITH_SIDING;
             description = String.format(
-                "Train %s arrives first at segment %s. Train %s should wait at station %s (has siding) for %d minutes to allow crossing.",
-                firstTrainId, segmentId, waitingTrainId, crossingStation.getId(), waitTimeMinutes);
+                "Train %s arrives first at segment %s (%s track). Train %s should wait at %s for %d minutes to allow crossing.",
+                firstTrainId, segmentId, 
+                segment != null ? segment.getTrackType() : "SINGLE",
+                waitingTrainId, sidingLocation, waitTimeMinutes);
         } else {
             // No siding available, waiting train must wait at previous station
             resolution = DispatchReport.Conflict.ResolutionType.WAIT_AT_PREVIOUS_STATION;
             description = String.format(
-                "Train %s arrives first at segment %s. Train %s should wait at previous station %s (no siding available).",
-                firstTrainId, segmentId, waitingTrainId, waitingTrainPreviousStation.getId());
+                "Train %s arrives first at segment %s (%s track). Train %s should wait at previous station %s (no siding available).",
+                firstTrainId, segmentId,
+                segment != null ? segment.getTrackType() : "SINGLE",
+                waitingTrainId, waitingTrainPreviousStation.getId());
         }
 
         // C5: Create conflict with detailed crossing operation information
@@ -622,35 +909,40 @@ public class SchedulerService {
 
     /**
      * Resolves conflicts by adjusting departure times when trains depart from the same station at the same time.
-     * When multiple trains depart from the same station at the same time, each subsequent train's departure time
-     * is adjusted to after the previous train arrives at the next station.
-     *
-     * @param trains the original list of trains
+     * Uses iterative approach to handle cascading conflicts (reavaliação dinâmica).
+     * 
+     * @param trains the original list of trains (should be sorted deterministically)
      * @return a list of trains with adjusted departure times
      */
-    private List<Train> resolveDepartureTimeConflicts(List<Train> trains) {
+    private List<Train> resolveDepartureTimeConflictsWithReevaluation(List<Train> trains) {
         List<Train> adjustedTrains = new ArrayList<>(trains);
+        int maxIterations = 10; // Prevent infinite loops
+        int iteration = 0;
         
-        // Group trains by departure station and time
-        // Then process each group to adjust departure times sequentially
-        boolean changed = true;
-        while (changed) {
-            changed = false;
+        while (iteration < maxIterations) {
+            boolean changed = false;
             
             // Compare each pair of trains
             for (int i = 0; i < adjustedTrains.size(); i++) {
                 Train train1 = adjustedTrains.get(i);
                 Facility train1StartStation = train1.getRoute().get(0);
                 LocalDateTime train1Departure = train1.getDeparturePlannedDateTime();
+                String train1PlatformId = getTrainPlatformId(train1); // Get platform ID (can be null)
                 
                 for (int j = i + 1; j < adjustedTrains.size(); j++) {
                     Train train2 = adjustedTrains.get(j);
                     Facility train2StartStation = train2.getRoute().get(0);
                     LocalDateTime train2Departure = train2.getDeparturePlannedDateTime();
+                    String train2PlatformId = getTrainPlatformId(train2); // Get platform ID (can be null)
                     
-                    // Check if trains depart from the same station at the same time
-                    if (train1StartStation.equals(train2StartStation) && 
-                        train1Departure.equals(train2Departure)) {
+                    // Check if trains depart from the same station at the same time AND same platform
+                    // Only conflict if using same platform (or both null, meaning platform not specified)
+                    boolean sameStation = train1StartStation.equals(train2StartStation);
+                    boolean sameTime = train1Departure.equals(train2Departure);
+                    boolean samePlatform = (train1PlatformId == null && train2PlatformId == null) || 
+                                         (train1PlatformId != null && train1PlatformId.equals(train2PlatformId));
+                    
+                    if (sameStation && sameTime && samePlatform) {
                         
                         // Calculate when train1 arrives at the next station
                         if (train1.getRoute().size() >= 2) {
@@ -684,16 +976,51 @@ public class SchedulerService {
                             
                             System.out.println(String.format(
                                 "CONFLICT RESOLUTION: Train %s departure time adjusted from %s to %s " +
-                                "(waiting for Train %s to arrive at %s at %s)",
+                                "(waiting for Train %s to arrive at %s at %s)%s",
                                 train2.getTrainId(), train2Departure, adjustedDepartureTime,
-                                train1.getTrainId(), train1NextStation.getId(), train1ArrivalAtNextStation));
+                                train1.getTrainId(), train1NextStation.getId(), train1ArrivalAtNextStation,
+                                train1PlatformId != null ? " [Platform: " + train1PlatformId + "]" : ""));
+                            
+                            // Break inner loop to restart iteration (reavaliação dinâmica)
+                            break;
                         }
                     }
                 }
+                if (changed) {
+                    break; // Break outer loop to restart iteration
+                }
             }
+            
+            if (!changed) {
+                break; // No more conflicts to resolve
+            }
+            
+            iteration++;
+        }
+        
+        if (iteration >= maxIterations) {
+            System.err.println("WARNING: Maximum iterations reached in resolveDepartureTimeConflictsWithReevaluation");
         }
         
         return adjustedTrains;
+    }
+    
+    /**
+     * Gets the platform ID for a train (if available).
+     * For now, returns null as Train doesn't have platform field yet.
+     * This is a placeholder for future implementation.
+     * When platform is null, the system uses conservative approach:
+     * - If both trains have null platform, they are considered to conflict
+     * - This ensures safety (no false negatives)
+     * 
+     * @param train the train
+     * @return the platform ID, or null if not specified
+     */
+    private String getTrainPlatformId(Train train) {
+        // TODO: Add platformId field to Train class
+        // For now, return null (meaning platform not checked - conservative approach)
+        // When both are null, they conflict (safe assumption)
+        return null;
     }
 
     /**
@@ -852,4 +1179,6 @@ public class SchedulerService {
         return new DispatchReport.Summary(totalTrains, numberOfConflicts, resolvableConflicts, unsolvableConflicts);
     }
 }
+
+
 

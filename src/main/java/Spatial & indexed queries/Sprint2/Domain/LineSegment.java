@@ -20,6 +20,9 @@ public class LineSegment {
     private final boolean electrified;
     private final Double speedLimitKmH; // Speed limit of the track segment (null if unlimited)
     private final double inclinationPercent; // Inclination in percentage (e.g., 2.5 for 2.5%) - for USLP10
+    private final String trackType; // Type of track (SINGLE, DOUBLE, QUAD) - loaded from database
+    private final Integer sidingId; // ID of siding associated with this segment (null if no siding)
+    private final Integer sidingSize; // Size of siding in meters (null if no siding)
 
     /**
      * Constructs a new LineSegment with the specified parameters.
@@ -34,7 +37,7 @@ public class LineSegment {
      */
     public LineSegment(String id, Facility startFacility, Facility endFacility,
                        double lengthKm, double gauge, boolean electrified) {
-        this(id, "", startFacility, endFacility, lengthKm, gauge, electrified, null, 0.0);
+        this(id, "", startFacility, endFacility, lengthKm, gauge, electrified, null, 0.0, "SINGLE", null, null);
     }
 
     /**
@@ -51,7 +54,7 @@ public class LineSegment {
      */
     public LineSegment(String id, String name, Facility startFacility, Facility endFacility,
                        double lengthKm, double gauge, boolean electrified) {
-        this(id, name, startFacility, endFacility, lengthKm, gauge, electrified, null, 0.0);
+        this(id, name, startFacility, endFacility, lengthKm, gauge, electrified, null, 0.0, "SINGLE", null, null);
     }
 
     /**
@@ -69,7 +72,7 @@ public class LineSegment {
      */
     public LineSegment(String id, String name, Facility startFacility, Facility endFacility,
                        double lengthKm, double gauge, boolean electrified, Double speedLimitKmH) {
-        this(id, name, startFacility, endFacility, lengthKm, gauge, electrified, speedLimitKmH, 0.0);
+        this(id, name, startFacility, endFacility, lengthKm, gauge, electrified, speedLimitKmH, 0.0, "SINGLE", null, null);
     }
     
     /**
@@ -89,6 +92,30 @@ public class LineSegment {
     public LineSegment(String id, String name, Facility startFacility, Facility endFacility,
                        double lengthKm, double gauge, boolean electrified, Double speedLimitKmH,
                        double inclinationPercent) {
+        this(id, name, startFacility, endFacility, lengthKm, gauge, electrified, speedLimitKmH, 
+             inclinationPercent, "SINGLE", null, null);
+    }
+    
+    /**
+     * Constructs a new LineSegment with all parameters including track type and siding.
+     *
+     * @param id           the unique identifier for the line segment
+     * @param name         the name of the line segment
+     * @param startFacility the starting station
+     * @param endFacility   the ending station
+     * @param lengthKm     the length of the segment in kilometers
+     * @param gauge        the track gauge in millimeters
+     * @param electrified  whether the segment is electrified
+     * @param speedLimitKmH the speed limit in km/h (null if unlimited)
+     * @param inclinationPercent the inclination in percentage (e.g., 2.5 for 2.5%)
+     * @param trackType    the type of track as String (SINGLE, DOUBLE, QUAD) - loaded from database
+     * @param sidingId     the ID of siding associated with this segment (null if no siding)
+     * @param sidingSize   the size of siding in meters (null if no siding)
+     * @throws IllegalArgumentException if parameters are invalid
+     */
+    public LineSegment(String id, String name, Facility startFacility, Facility endFacility,
+                       double lengthKm, double gauge, boolean electrified, Double speedLimitKmH,
+                       double inclinationPercent, String trackType, Integer sidingId, Integer sidingSize) {
         if (id == null || id.trim().isEmpty()) {
             throw new IllegalArgumentException("Line segment ID cannot be null or empty");
         }
@@ -110,6 +137,9 @@ public class LineSegment {
         if (speedLimitKmH != null && speedLimitKmH <= 0) {
             throw new IllegalArgumentException("Speed limit must be positive if specified");
         }
+        if (trackType == null || trackType.trim().isEmpty()) {
+            throw new IllegalArgumentException("Track type cannot be null or empty");
+        }
         
         this.id = id.trim();
         this.name = name != null ? name.trim() : "";
@@ -120,6 +150,9 @@ public class LineSegment {
         this.electrified = electrified;
         this.speedLimitKmH = speedLimitKmH;
         this.inclinationPercent = inclinationPercent;
+        this.trackType = trackType != null ? trackType.trim().toUpperCase() : "SINGLE";
+        this.sidingId = sidingId;
+        this.sidingSize = sidingSize;
     }
 
     /**
@@ -211,6 +244,78 @@ public class LineSegment {
      */
     public double getInclinationPercent() {
         return inclinationPercent;
+    }
+    
+    /**
+     * Gets the track type (SINGLE, DOUBLE, QUAD) as String from database.
+     *
+     * @return the track type as String
+     */
+    public String getTrackType() {
+        return trackType;
+    }
+    
+    /**
+     * Checks if this segment is single track (only one track).
+     *
+     * @return true if SINGLE track, false otherwise
+     */
+    public boolean isSingleTrack() {
+        return "SINGLE".equalsIgnoreCase(trackType);
+    }
+    
+    /**
+     * Checks if this segment is double track.
+     *
+     * @return true if DOUBLE track, false otherwise
+     */
+    public boolean isDoubleTrack() {
+        return "DOUBLE".equalsIgnoreCase(trackType);
+    }
+    
+    /**
+     * Checks if this segment is quad track.
+     *
+     * @return true if QUAD track, false otherwise
+     */
+    public boolean isQuadTrack() {
+        return "QUAD".equalsIgnoreCase(trackType);
+    }
+    
+    /**
+     * Checks if this segment allows trains to travel in opposite directions simultaneously.
+     *
+     * @return true if DOUBLE or QUAD track, false if SINGLE
+     */
+    public boolean allowsOppositeDirections() {
+        return !isSingleTrack();
+    }
+    
+    /**
+     * Gets the siding ID associated with this segment.
+     *
+     * @return the siding ID, or null if no siding
+     */
+    public Integer getSidingId() {
+        return sidingId;
+    }
+    
+    /**
+     * Gets the siding size in meters.
+     *
+     * @return the siding size in meters, or null if no siding
+     */
+    public Integer getSidingSize() {
+        return sidingSize;
+    }
+    
+    /**
+     * Checks if this segment has a siding.
+     *
+     * @return true if has siding, false otherwise
+     */
+    public boolean hasSiding() {
+        return sidingId != null;
     }
 
     /**
