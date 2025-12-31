@@ -42,12 +42,42 @@ public class LineSegmentAOD {
             ResultSet rs = (ResultSet) stmt.getObject(1);
             
             if (rs.next()) {
+                // Get track type (default to SINGLE if not found)
+                String trackType = "SINGLE";
+                try {
+                    String trackTypeStr = rs.getString("TRACK_TYPE");
+                    if (trackTypeStr != null && !trackTypeStr.trim().isEmpty()) {
+                        trackType = trackTypeStr.trim().toUpperCase();
+                    }
+                } catch (SQLException e) {
+                    // Column might not exist in PL/SQL function result
+                }
+                
+                // Get siding info
+                Integer sidingId = null;
+                Integer sidingSize = null;
+                try {
+                    Object sidingIdObj = rs.getObject("SIDING_ID");
+                    if (sidingIdObj != null) {
+                        sidingId = rs.getInt("SIDING_ID");
+                        Object sidingSizeObj = rs.getObject("SIDING_SIZE");
+                        if (sidingSizeObj != null) {
+                            sidingSize = rs.getInt("SIDING_SIZE");
+                        }
+                    }
+                } catch (SQLException e) {
+                    // Column might not exist in PL/SQL function result
+                }
+                
                 return new SegmentData(
                     rs.getDouble("LENGTH_KM"),
                     rs.getDouble("INCLINATION_PERCENT"),
                     rs.getObject("SPEED_LIMIT_KMH") != null ? rs.getDouble("SPEED_LIMIT_KMH") : null,
                     rs.getDouble("GAUGE_MM"),
-                    rs.getBoolean("ELECTRIFIED")
+                    rs.getBoolean("ELECTRIFIED"),
+                    trackType,
+                    sidingId,
+                    sidingSize
                 );
             }
             
@@ -56,18 +86,27 @@ public class LineSegmentAOD {
             System.out.println("PL/SQL function failed, trying direct SQL query for line " + lineId);
         }
         
-        // Fallback: Direct SQL query to aggregate segment data
+        // Fallback: Direct SQL query to get segment data (for a specific segment, not aggregated)
+        // Note: This should ideally get data for a specific segment_id, but we're using line_id
+        // For now, we'll get the first segment's data or aggregate
         String sql = "SELECT " +
+                     "  s.segment_id, " +
                      "  SUM(s.length_m) / 1000.0 AS total_length_km, " +
-                     "  0.0 AS avg_inclination_percent, " + // Default inclination (will be loaded from PL/SQL if available)
-                     "  NULL AS min_speed_limit_kmh, " + // Speed limit not in Segment table
+                     "  0.0 AS avg_inclination_percent, " + // Default inclination
+                     "  NULL AS min_speed_limit_kmh, " +
                      "  MAX(g.width) AS gauge_mm, " +
-                     "  MAX(CASE WHEN s.electrified_flag = 'Y' THEN 1 ELSE 0 END) AS is_electrified " +
+                     "  MAX(CASE WHEN s.electrified_flag = 'Y' THEN 1 ELSE 0 END) AS is_electrified, " +
+                     "  MAX(s.SegmentTypetrackType) AS track_type, " +
+                     "  MAX(s.SidingSIding_id) AS siding_id, " +
+                     "  MAX(sid.\"Size\") AS siding_size " +
                      "FROM Line l " +
                      "JOIN Segment s ON l.line_id = s.line_id " +
                      "JOIN Gauge g ON l.Gaugecode = g.code " +
+                     "LEFT JOIN Siding sid ON s.SidingSIding_id = sid.SIding_id " +
                      "WHERE l.line_id = ? " +
-                     "GROUP BY l.line_id";
+                     "GROUP BY s.segment_id " +
+                     "ORDER BY s.segment_order " +
+                     "FETCH FIRST 1 ROW ONLY";
         
         try (Connection conn = DriverManager.getConnection(DATABASE, USERNAME, PASSWORD);
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -83,13 +122,33 @@ public class LineSegmentAOD {
                 double gaugeMm = rs.getDouble("gauge_mm");
                 boolean electrified = rs.getInt("is_electrified") == 1;
                 
+                // Get track type
+                String trackType = "SINGLE";
+                String trackTypeStr = rs.getString("track_type");
+                if (trackTypeStr != null && !trackTypeStr.trim().isEmpty()) {
+                    trackType = trackTypeStr.trim().toUpperCase();
+                }
+                
+                // Get siding info
+                Integer sidingId = null;
+                Integer sidingSize = null;
+                Object sidingIdObj = rs.getObject("siding_id");
+                if (sidingIdObj != null) {
+                    sidingId = rs.getInt("siding_id");
+                    Object sidingSizeObj = rs.getObject("siding_size");
+                    if (sidingSizeObj != null) {
+                        sidingSize = rs.getInt("siding_size");
+                    }
+                }
+                
                 // If no segments found, length will be 0
                 if (lengthKm <= 0) {
                     System.err.println("WARNING: Line " + lineId + " has no segments or zero length");
                     return null;
                 }
                 
-                return new SegmentData(lengthKm, avgInclination, speedLimitKmH, gaugeMm, electrified);
+                return new SegmentData(lengthKm, avgInclination, speedLimitKmH, gaugeMm, electrified, 
+                                     trackType, sidingId, sidingSize);
             }
             
         } catch (SQLException e) {
@@ -120,12 +179,42 @@ public class LineSegmentAOD {
             ResultSet rs = (ResultSet) stmt.getObject(1);
             
             while (rs.next()) {
+                // Get track type
+                String trackType = "SINGLE";
+                try {
+                    String trackTypeStr = rs.getString("TRACK_TYPE");
+                    if (trackTypeStr != null && !trackTypeStr.trim().isEmpty()) {
+                        trackType = trackTypeStr.trim().toUpperCase();
+                    }
+                } catch (SQLException e) {
+                    // Column might not exist
+                }
+                
+                // Get siding info
+                Integer sidingId = null;
+                Integer sidingSize = null;
+                try {
+                    Object sidingIdObj = rs.getObject("SIDING_ID");
+                    if (sidingIdObj != null) {
+                        sidingId = rs.getInt("SIDING_ID");
+                        Object sidingSizeObj = rs.getObject("SIDING_SIZE");
+                        if (sidingSizeObj != null) {
+                            sidingSize = rs.getInt("SIDING_SIZE");
+                        }
+                    }
+                } catch (SQLException e) {
+                    // Column might not exist
+                }
+                
                 segments.add(new SegmentData(
                     rs.getDouble("LENGTH_KM"),
                     rs.getDouble("INCLINATION_PERCENT"),
                     rs.getObject("SPEED_LIMIT_KMH") != null ? rs.getDouble("SPEED_LIMIT_KMH") : null,
                     rs.getDouble("GAUGE_MM"),
-                    rs.getBoolean("ELECTRIFIED")
+                    rs.getBoolean("ELECTRIFIED"),
+                    trackType,
+                    sidingId,
+                    sidingSize
                 ));
             }
             
@@ -181,7 +270,8 @@ public class LineSegmentAOD {
         List<LineSegment> lineSegments = new ArrayList<>();
         
         // Query to get all lines with their start and end facilities, gauge, 
-        // total length (sum of segments), and electrification status
+        // total length (sum of segments), electrification status, track type, and siding
+        // USLP10: Load TrackType and Siding from database
         String sql = "SELECT " +
                      "  l.line_id, " +
                      "  l.name AS line_name, " +
@@ -189,10 +279,14 @@ public class LineSegmentAOD {
                      "  l.end_facility_id, " +
                      "  g.width AS gauge_mm, " +
                      "  NVL(SUM(s.length_m), 0) / 1000.0 AS total_length_km, " + // Sum segment lengths, convert m to km
-                     "  MAX(CASE WHEN s.electrified_flag = 'Y' THEN 1 ELSE 0 END) AS is_electrified " +
+                     "  MAX(CASE WHEN s.electrified_flag = 'Y' THEN 1 ELSE 0 END) AS is_electrified, " +
+                     "  MAX(s.SegmentTypetrackType) AS track_type, " + // Get track type (SINGLE, DOUBLE, QUAD)
+                     "  MAX(s.SidingSIding_id) AS siding_id, " + // Get siding ID
+                     "  MAX(sid.\"Size\") AS siding_size " + // Get siding size
                      "FROM Line l " +
                      "JOIN Gauge g ON l.Gaugecode = g.code " +
                      "LEFT JOIN Segment s ON l.line_id = s.line_id " +
+                     "LEFT JOIN Siding sid ON s.SidingSIding_id = sid.SIding_id " +
                      "GROUP BY l.line_id, l.name, l.start_facility_id, l.end_facility_id, g.width " +
                      "ORDER BY l.line_id";
         
@@ -211,6 +305,25 @@ public class LineSegmentAOD {
                     double totalLengthKm = rs.getDouble("total_length_km");
                     boolean isElectrified = rs.getInt("is_electrified") == 1;
                     
+                    // Get track type from database (USLP10 requirement)
+                    String trackType = "SINGLE"; // Default to SINGLE
+                    String trackTypeStr = rs.getString("track_type");
+                    if (trackTypeStr != null && !trackTypeStr.trim().isEmpty()) {
+                        trackType = trackTypeStr.trim().toUpperCase();
+                    }
+                    
+                    // Get siding info from database (USLP10 requirement)
+                    Integer sidingId = null;
+                    Integer sidingSize = null;
+                    Object sidingIdObj = rs.getObject("siding_id");
+                    if (sidingIdObj != null) {
+                        sidingId = rs.getInt("siding_id");
+                        Object sidingSizeObj = rs.getObject("siding_size");
+                        if (sidingSizeObj != null) {
+                            sidingSize = rs.getInt("siding_size");
+                        }
+                    }
+                    
                     Facility startFacility = facilitiesMap.get(startFacilityId);
                     Facility endFacility = facilitiesMap.get(endFacilityId);
                     
@@ -226,8 +339,9 @@ public class LineSegmentAOD {
                         System.err.println("WARNING: Line " + lineId + " has no segments, using default length 10km");
                     }
                     
-                    // Create LineSegment with data from database
+                    // Create LineSegment with data from database including TrackType and Siding
                     // Note: Speed limit and inclination will be loaded per-segment when calculating travel time
+                    // USLP10: TrackType and Siding are loaded from database here
                     LineSegment segment = new LineSegment(
                         lineId,
                         lineName,
@@ -237,7 +351,10 @@ public class LineSegmentAOD {
                         gaugeMm,
                         isElectrified,
                         null, // Speed limit - will be loaded from Segment table per segment
-                        0.0    // Inclination - will be loaded from Segment table per segment
+                        0.0,  // Inclination - will be loaded from Segment table per segment
+                        trackType, // TrackType loaded from database
+                        sidingId,  // Siding ID loaded from database
+                        sidingSize // Siding size loaded from database
                     );
                     
                     lineSegments.add(segment);
@@ -267,14 +384,27 @@ public class LineSegmentAOD {
         private final Double speedLimitKmH;
         private final double gaugeMm;
         private final boolean electrified;
+        private final String trackType;
+        private final Integer sidingId;
+        private final Integer sidingSize;
         
         public SegmentData(double lengthKm, double inclinationPercent, Double speedLimitKmH, 
                           double gaugeMm, boolean electrified) {
+            this(lengthKm, inclinationPercent, speedLimitKmH, gaugeMm, electrified, 
+                 "SINGLE", null, null);
+        }
+        
+        public SegmentData(double lengthKm, double inclinationPercent, Double speedLimitKmH, 
+                          double gaugeMm, boolean electrified, String trackType, 
+                          Integer sidingId, Integer sidingSize) {
             this.lengthKm = lengthKm;
             this.inclinationPercent = inclinationPercent;
             this.speedLimitKmH = speedLimitKmH;
             this.gaugeMm = gaugeMm;
             this.electrified = electrified;
+            this.trackType = (trackType != null && !trackType.trim().isEmpty()) ? trackType.trim().toUpperCase() : "SINGLE";
+            this.sidingId = sidingId;
+            this.sidingSize = sidingSize;
         }
         
         public double getLengthKm() {
@@ -295,6 +425,18 @@ public class LineSegmentAOD {
         
         public boolean isElectrified() {
             return electrified;
+        }
+        
+        public String getTrackType() {
+            return trackType;
+        }
+        
+        public Integer getSidingId() {
+            return sidingId;
+        }
+        
+        public Integer getSidingSize() {
+            return sidingSize;
         }
     }
 }
