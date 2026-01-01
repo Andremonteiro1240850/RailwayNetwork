@@ -18,6 +18,7 @@ import Sprint2.Repository.StationRepository;
 import JavaFX.UpgradePlanFXUI;
 import JavaFX.MaximumFlowFXUI;
 import JavaFX.BackboneFXUI;
+import JavaFX.ShortestPathFXUI;
 import Lapr.JavaFX.SchedulerFXUI;
 import javafx.fxml.FXML;
 import javafx.application.Platform;
@@ -415,6 +416,24 @@ public class Controller {
                 });
             } catch (Exception e) {
                 Platform.runLater(() -> showError("Error", "Failed to start Minimal Backbone Network: " + e.getMessage()));
+            }
+        });
+    }
+
+    /**
+     * Handles the Risk-Aware Shortest Paths button click.
+     * Opens the Risk-Aware Shortest Paths window (USEI15).
+     */
+    @FXML
+    private void handleShortestPathButton() {
+        executorService.execute(() -> {
+            try {
+                Platform.runLater(() -> {
+                    ShortestPathFXUI ui = new ShortestPathFXUI();
+                    ui.show();
+                });
+            } catch (Exception e) {
+                Platform.runLater(() -> showError("Error", "Failed to start Risk-Aware Shortest Paths: " + e.getMessage()));
             }
         });
     }
