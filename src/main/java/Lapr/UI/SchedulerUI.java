@@ -1,12 +1,12 @@
-package Sprint2.UI;
+package Lapr.UI;
 
 import Sprint1.Domain.*;
 import Sprint1.UI.StringUtils;
-import Sprint2.Controller.DispatchController;
-import Sprint2.Domain.DispatchReport;
+import Lapr.Controller.DispatchController;
+import Lapr.Domain.DispatchReport;
 import Sprint2.Domain.KDTree;
 import Sprint2.Domain.LineSegment;
-import Sprint2.Domain.Train;
+import Lapr.Domain.Train;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -275,7 +275,7 @@ public class SchedulerUI {
         List<Facility> selectedStations = new ArrayList<>(); // Only stations selected by user
         
         // Show line scheme before collecting route
-        displayLineScheme();
+        showLineScheme(false);
         
         System.out.println("\nEnter route stations (at least 2 stations).");
         System.out.println("The system will automatically find intermediate stations if needed.");
@@ -350,77 +350,6 @@ public class SchedulerUI {
         }
 
         return new RouteData(route, selectedStations);
-    }
-
-    /**
-     * Collects locomotives from the user (from CSV).
-     *
-     * @return the list of locomotives
-     */
-    private List<Locomotive> collectLocomotives() {
-        List<Locomotive> selectedLocomotives = new ArrayList<>();
-        
-        // Ask how many locomotives
-        int numLocomotives = 0;
-        while (true) {
-            System.out.println("\nHow many locomotives do you want? (at least 1)");
-            System.out.print("Number of locomotives: ");
-            String numStr = scanner.nextLine().trim();
-            
-            try {
-                numLocomotives = Integer.parseInt(numStr);
-                if (numLocomotives < 1) {
-                    System.out.println("ERROR: Must have at least 1 locomotive.");
-                    System.out.println();
-                    continue;
-                }
-                break;
-            } catch (NumberFormatException e) {
-                System.out.println("ERROR: Invalid number. Please enter a positive integer.");
-                System.out.println();
-            }
-        }
-        
-        System.out.println();
-        if (!locomotives.isEmpty()) {
-            System.out.println("Available Locomotives:");
-            for (Locomotive loco : locomotives) {
-                System.out.printf("  - %s (%s, %.0f km/h, %.0fmm gauge)%n",
-                    loco.getId(), loco.getType(), loco.getMaxSpeedKmH(), loco.getGauge());
-            }
-            System.out.println();
-        }
-        
-        for (int i = 0; i < numLocomotives; i++) {
-            System.out.print("Locomotive " + (i + 1) + " ID: ");
-            String locomotiveId = scanner.nextLine().trim();
-            
-            if (locomotiveId.isEmpty()) {
-                System.out.println("ERROR: Locomotive ID cannot be empty.");
-                i--; // Retry this iteration
-                System.out.println();
-                continue;
-            }
-
-            Locomotive locomotive = findLocomotiveById(locomotiveId);
-            if (locomotive == null) {
-                System.out.println("ERROR: Locomotive with ID '" + locomotiveId + "' not found!");
-                System.out.print("Do you want to try again? (y/n): ");
-                String retry = scanner.nextLine().trim().toLowerCase();
-                if (!retry.equals("y") && !retry.equals("yes")) {
-                    return null;
-                }
-                i--; // Retry this iteration
-                System.out.println();
-                continue;
-            }
-
-            selectedLocomotives.add(locomotive);
-            System.out.println("Locomotive " + locomotive.getId() + " added.");
-            System.out.println();
-        }
-
-        return selectedLocomotives;
     }
 
     /**
@@ -825,79 +754,6 @@ public class SchedulerUI {
     }
 
     /**
-     * Collects wagons from the user (from CSV).
-     *
-     * @return the list of selected wagons (can be empty)
-     */
-    private List<Wagon> collectWagons() {
-        List<Wagon> selectedWagons = new ArrayList<>();
-        
-        // Ask how many wagons
-        int numWagons = 0;
-        while (true) {
-            System.out.println("\nHow many wagons do you want? (can be 0)");
-            System.out.print("Number of wagons: ");
-            String numStr = scanner.nextLine().trim();
-            
-            try {
-                numWagons = Integer.parseInt(numStr);
-                if (numWagons < 0) {
-                    System.out.println("ERROR: Number cannot be negative.");
-                    System.out.println();
-                    continue;
-                }
-                break;
-            } catch (NumberFormatException e) {
-                System.out.println("ERROR: Invalid number. Please enter a non-negative integer.");
-                System.out.println();
-            }
-        }
-        
-        if (numWagons == 0) {
-            System.out.println("No wagons selected.");
-            System.out.println();
-            return selectedWagons;
-        }
-        
-        System.out.println();
-        if (!wagons.isEmpty()) {
-            System.out.println("Available Wagons:");
-            for (Wagon wagon : wagons) {
-                System.out.printf("  - %s (empty: %.0f kg, max load: %.0f kg)%n",
-                    wagon.getWagonId(), wagon.getEmptyWeightKg(), wagon.getMaxLoadWeightKg());
-            }
-            System.out.println();
-        }
-        
-        for (int i = 0; i < numWagons; i++) {
-            System.out.print("Wagon " + (i + 1) + " ID: ");
-            String wagonId = scanner.nextLine().trim();
-            
-            if (wagonId.isEmpty()) {
-                System.out.println("ERROR: Wagon ID cannot be empty.");
-                i--; // Retry this iteration
-                System.out.println();
-                continue;
-            }
-
-            Wagon wagon = findWagonById(wagonId);
-            if (wagon == null) {
-                System.out.println("ERROR: Wagon with ID '" + wagonId + "' not found in CSV!");
-                System.out.println("Please enter another wagon ID.");
-                i--; // Retry this iteration
-                System.out.println();
-                continue;
-            }
-
-            selectedWagons.add(wagon);
-            System.out.println("Wagon " + wagon.getWagonId() + " added.");
-            System.out.println();
-        }
-
-        return selectedWagons;
-    }
-
-    /**
      * Calculates the total weight from selected wagons.
      * Asks user if wagons are loaded or empty.
      *
@@ -1105,6 +961,52 @@ public class SchedulerUI {
     }
 
     /**
+     * Calculates the distance between two stations in a route by summing segment distances.
+     *
+     * @param startIndex the starting index in the route
+     * @param endIndex the ending index in the route
+     * @param routeWithETAs the full route with all stations
+     * @return total distance in kilometers
+     */
+    private double calculateDistanceBetweenIndices(int startIndex, int endIndex,
+            List<DispatchReport.TrainSchedule.StationETA> routeWithETAs) {
+        if (routeWithETAs == null || routeWithETAs.size() < 2 || startIndex < 0 || 
+            endIndex >= routeWithETAs.size() || startIndex >= endIndex) {
+            return 0.0;
+        }
+        
+        double totalDistanceKm = 0.0;
+        TravelCalculationService service = controller.getTravelTimeController().getService();
+        
+        for (int i = startIndex; i < endIndex; i++) {
+            Facility currentStation = routeWithETAs.get(i).getStation();
+            Facility nextStation = routeWithETAs.get(i + 1).getStation();
+            
+            try {
+                LineSegment segment = service.findConnectingSegment(currentStation, nextStation);
+                if (segment != null) {
+                    totalDistanceKm += segment.getLengthKm();
+                    continue;
+                }
+            } catch (Exception e) {
+                // Fall through to haversine
+            }
+            
+            // If segment not found, try haversine distance (straight-line)
+            if (currentStation.getLatitude() != null && currentStation.getLongitude() != null &&
+                nextStation.getLatitude() != null && nextStation.getLongitude() != null) {
+                double haversineDist = KDTree.haversineDistance(
+                    currentStation.getLatitude(), currentStation.getLongitude(),
+                    nextStation.getLatitude(), nextStation.getLongitude()
+                );
+                totalDistanceKm += haversineDist;
+            }
+        }
+        
+        return totalDistanceKm;
+    }
+    
+    /**
      * Calculates the total distance between two stations by summing all segment distances
      * in the route, including intermediate stations.
      *
@@ -1136,36 +1038,7 @@ public class SchedulerUI {
             return 0.0;
         }
         
-        // Sum distances of all segments between start and end stations
-        double totalDistanceKm = 0.0;
-        TravelCalculationService service = controller.getTravelTimeController().getService();
-        
-        for (int i = startIndex; i < endIndex; i++) {
-            Facility currentStation = routeWithETAs.get(i).getStation();
-            Facility nextStation = routeWithETAs.get(i + 1).getStation();
-            
-            try {
-                LineSegment segment = service.findConnectingSegment(currentStation, nextStation);
-                if (segment != null) {
-                    totalDistanceKm += segment.getLengthKm();
-                    continue;
-                }
-            } catch (Exception e) {
-                // Fall through to haversine
-            }
-            
-            // If segment not found, try haversine distance (straight-line)
-            if (currentStation.getLatitude() != null && currentStation.getLongitude() != null &&
-                nextStation.getLatitude() != null && nextStation.getLongitude() != null) {
-                double haversineDist = KDTree.haversineDistance(
-                    currentStation.getLatitude(), currentStation.getLongitude(),
-                    nextStation.getLatitude(), nextStation.getLongitude()
-                );
-                totalDistanceKm += haversineDist;
-            }
-        }
-        
-        return totalDistanceKm;
+        return calculateDistanceBetweenIndices(startIndex, endIndex, routeWithETAs);
     }
 
     /**
@@ -1179,34 +1052,7 @@ public class SchedulerUI {
             return 0.0;
         }
         
-        double totalDistanceKm = 0.0;
-        TravelCalculationService service = controller.getTravelTimeController().getService();
-        
-        for (int i = 0; i < routeWithETAs.size() - 1; i++) {
-            Facility currentStation = routeWithETAs.get(i).getStation();
-            Facility nextStation = routeWithETAs.get(i + 1).getStation();
-            
-            try {
-                LineSegment segment = service.findConnectingSegment(currentStation, nextStation);
-                if (segment != null) {
-                    totalDistanceKm += segment.getLengthKm();
-                    continue;
-                }
-            } catch (Exception e) {
-                // Fall through to haversine
-            }
-            
-            if (currentStation.getLatitude() != null && currentStation.getLongitude() != null &&
-                nextStation.getLatitude() != null && nextStation.getLongitude() != null) {
-                double haversineDist = KDTree.haversineDistance(
-                    currentStation.getLatitude(), currentStation.getLongitude(),
-                    nextStation.getLatitude(), nextStation.getLongitude()
-                );
-                totalDistanceKm += haversineDist;
-            }
-        }
-        
-        return totalDistanceKm;
+        return calculateDistanceBetweenIndices(0, routeWithETAs.size() - 1, routeWithETAs);
     }
 
     /**
@@ -1435,65 +1281,19 @@ public class SchedulerUI {
     }
 
     /**
-     * Displays the line scheme table (used internally, without header).
-     * The data is reloaded from the file each time to ensure it's always up to date.
-     */
-    private void displayLineScheme() {
-        try {
-            // Reload line segments from CSV to ensure data is up to date
-            RailwayDataLoader loader = new RailwayDataLoader();
-            loader.loadStations("train_station_dataset/facility.csv");
-            loader.loadLineSegments("train_station_dataset/line.csv");
-            
-            List<LineSegment> lineSegments = loader.getLineSegments();
-            List<Facility> stations = loader.getStations();
-            
-            if (lineSegments.isEmpty()) {
-                return;
-            }
-            
-            // Display line segments in order
-            // Calculate total table width: 5 + 1 + 40 + 1 + 12 + 1 + 12 + 1 + 12 + 1 + 10 = 96
-            int tableWidth = 5 + 1 + 40 + 1 + 12 + 1 + 12 + 1 + 12 + 1 + 10;
-            System.out.println(StringUtils.repeat("-", tableWidth));
-            System.out.println("LINE SEGMENTS:");
-            System.out.println(StringUtils.repeat("-", tableWidth));
-            System.out.printf("%-5s %-40s %-12s %-12s %-12s %-10s%n", 
-                            "ID", "Name", "Start ID", "End ID", "Length (km)", "Gauge (mm)");
-            System.out.println(StringUtils.repeat("-", tableWidth));
-            
-            for (LineSegment segment : lineSegments) {
-                String name = segment.getName();
-                if (name.length() > 40) {
-                    name = name.substring(0, 37) + "...";
-                }
-                System.out.printf("%-5s %-40s %-12s %-12s %-12.2f %-10.0f%n",
-                                segment.getId(),
-                                name,
-                                segment.getStartStation().getId(),
-                                segment.getEndStation().getId(),
-                                segment.getLengthKm(),
-                                segment.getGauge());
-            }
-            
-            System.out.println(StringUtils.repeat("-", tableWidth));
-            System.out.println();
-            
-        } catch (Exception e) {
-            // Silently fail - don't show error when displaying scheme before route selection
-        }
-    }
-
-    /**
      * Shows the line scheme (network diagram) loaded from line.csv.
      * The data is reloaded from the file each time to ensure it's always up to date.
+     * 
+     * @param showHeader if true, displays header with title; if false, displays silently
      */
-    private void showLineScheme() {
-        System.out.println("\n" + StringUtils.repeat("=", 80));
-        System.out.println("RAILWAY LINE SCHEME");
-        System.out.println(StringUtils.repeat("=", 80));
-        System.out.println("(Data loaded from line.csv)");
-        System.out.println();
+    private void showLineScheme(boolean showHeader) {
+        if (showHeader) {
+            System.out.println("\n" + StringUtils.repeat("=", 80));
+            System.out.println("RAILWAY LINE SCHEME");
+            System.out.println(StringUtils.repeat("=", 80));
+            System.out.println("(Data loaded from line.csv)");
+            System.out.println();
+        }
         
         try {
             // Reload line segments from CSV to ensure data is up to date
@@ -1505,14 +1305,18 @@ public class SchedulerUI {
             List<Facility> stations = loader.getStations();
             
             if (lineSegments.isEmpty()) {
-                System.out.println("No line segments found in line.csv.");
-                System.out.println();
+                if (showHeader) {
+                    System.out.println("No line segments found in line.csv.");
+                    System.out.println();
+                }
                 return;
             }
             
-            System.out.println("Total line segments: " + lineSegments.size());
-            System.out.println("Total stations: " + stations.size());
-            System.out.println();
+            if (showHeader) {
+                System.out.println("Total line segments: " + lineSegments.size());
+                System.out.println("Total stations: " + stations.size());
+                System.out.println();
+            }
             
             // Display line segments in order
             // Calculate total table width: 5 + 1 + 40 + 1 + 12 + 1 + 12 + 1 + 12 + 1 + 10 = 96
@@ -1539,12 +1343,36 @@ public class SchedulerUI {
             }
             
             System.out.println(StringUtils.repeat("-", tableWidth));
+            if (showHeader) {
+                System.out.println();
+            } else {
+                System.out.println();
+            }
             
         } catch (Exception e) {
-            System.out.println("ERROR: Failed to load line scheme from line.csv: " + e.getMessage());
-            System.out.println("Please ensure the file exists and is properly formatted.");
-            System.out.println();
+            if (showHeader) {
+                System.out.println("ERROR: Failed to load line scheme from line.csv: " + e.getMessage());
+                System.out.println("Please ensure the file exists and is properly formatted.");
+                System.out.println();
+            }
+            // Silently fail when displaying scheme before route selection
         }
+    }
+    
+    /**
+     * Shows the line scheme (network diagram) loaded from line.csv.
+     * The data is reloaded from the file each time to ensure it's always up to date.
+     */
+    private void showLineScheme() {
+        showLineScheme(true);
+    }
+    
+    /**
+     * Displays the line scheme table (used internally, without header).
+     * The data is reloaded from the file each time to ensure it's always up to date.
+     */
+    private void displayLineScheme() {
+        showLineScheme(false);
     }
 
     /**

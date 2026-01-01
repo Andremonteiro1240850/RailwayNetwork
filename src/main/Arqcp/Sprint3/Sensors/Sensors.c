@@ -4,17 +4,153 @@
 #include <stdlib.h>
 #include <math.h>
 
-// For Arduino/Raspberry Pi Pico compatibility
-// In real Arduino: #include <Arduino.h> and use Serial object
-// For simulation/testing: use standard C I/O
-
-// Simulation mode flag (set to 1 for simulation, 0 for real hardware)
-// In C version, we use simulation mode since real hardware requires Arduino environment
-#define USE_SIMULATION 1
+// Arduino compatibility for dual deployment
+#ifdef ARDUINO
+    // Real Arduino environment
+    #include <Arduino.h>
+#else
+    // Linux testing environment
+    #include <stdio.h>
+    #include <stdlib.h>
+    #include <string.h>
+    #include <time.h>
+    #include <unistd.h>
+    #include <math.h>
+    
+    // Arduino function stubs for Linux testing
+    void Serial_begin(long baud) {
+        printf("[STUB] Serial.begin(%ld)\n", baud);
+    }
+    
+    int Serial_available(void) {
+        return 0; // No input in simulation mode
+    }
+    
+    void Serial_print(const char* str) {
+        printf("%s", str);
+    }
+    
+    void Serial_println(const char* str) {
+        printf("%s\n", str);
+    }
+    
+    String Serial_readStringUntil(char delimiter) {
+        return String(""); // Return empty string in simulation
+    }
+    
+    // DHT simulation
+    void DHT_begin(void) {
+        printf("[STUB] DHT sensor initialized\n");
+    }
+    
+    float DHT_readTemperature(void) {
+        return 20.0 + (rand() % 10);
+    }
+    
+    float DHT_readHumidity(void) {
+        return 40.0 + (rand() % 20);
+    }
+    
+    bool DHT_isnan(float value) {
+        return 0;
+    }
+    
+    // String class simulation (simplified)
+    typedef struct {
+        char* data;
+        int length;
+    } String_impl;
+    
+    String String(const char* str) {
+        String_impl* s = (String_impl*)malloc(sizeof(String_impl));
+        if (str) {
+            s->length = strlen(str);
+            s->data = (char*)malloc(s->length + 1);
+            strcpy(s->data, str);
+        } else {
+            s->length = 0;
+            s->data = (char*)malloc(1);
+            s->data[0] = '\0';
+        }
+        return (String)s;
+    }
+    
+    int String_equals(String this, const char* str) {
+        String_impl* s = (String_impl*)this;
+        return strcmp(s->data, str) == 0;
+    }
+    
+    void String_trim(String this) {
+        String_impl* s = (String_impl*)this;
+        char* start = s->data;
+        while (*start == ' ' || *start == '\t' || *start == '\n' || *start == '\r') start++;
+        
+        char* end = s->data + s->length - 1;
+        while (end > start && (*end == ' ' || *end == '\t' || *end == '\n' || *end == '\r')) end--;
+        
+        int new_len = end - start + 1;
+        if (new_len != s->length) {
+            memmove(s->data, start, new_len);
+            s->data[new_len] = '\0';
+            s->length = new_len;
+        }
+    }
+    
+    // DHT class simulation
+    typedef struct {
+        int pin;
+        int type;
+    } DHT_impl;
+    
+    DHT DHT_constructor(int pin, int type) {
+        DHT_impl* dht = (DHT_impl*)malloc(sizeof(DHT_impl));
+        dht->pin = pin;
+        dht->type = type;
+        return (DHT)dht;
+    }
+    
+    void DHT_begin_impl(DHT dht) {
+        printf("[STUB] DHT initialized\n");
+    }
+    
+    float DHT_readTemperature_impl(DHT dht) {
+        return 20.0 + (rand() % 10);
+    }
+    
+    float DHT_readHumidity_impl(DHT dht) {
+        return 40.0 + (rand() % 20);
+    }
+    
+    // Macros for Arduino compatibility
+    #define Serial_begin(x) Serial_begin_impl(x)
+    #define Serial_available() Serial_available_impl()
+    #define Serial_readStringUntil(x) Serial_readStringUntil_impl(x)
+    #define Serial_print(x) Serial_print_impl(x)
+    #define Serial_println(x) Serial_println_impl(x)
+    #define DHT(x, y) DHT_constructor(x, y)
+    #define dht.begin() DHT_begin_impl(dht)
+    #define dht.readTemperature() DHT_readTemperature_impl(dht)
+    #define dht.readHumidity() DHT_readHumidity_impl(dht)
+    #define isnan(x) DHT_isnan(x)
+    
+    // String macros
+    #define String_equals(x, y) String_equals(x, y)
+    #define String_trim(x) String_trim(x)
+    
+#endif
 
 // Sensor state for simulation
 static int g_sensor_initialized = 0;
 static int g_read_counter = 0; // Simple counter instead of time_t
+
+// DHT sensor configuration
+#define DHTPIN 28
+#define DHTTYPE DHT11
+
+// DHT sensor instance (for Arduino)
+#ifdef ARDUINO
+    DHT dht(DHTPIN, DHTTYPE);
+#endif
 
 /**
  * Read raw temperature from sensor
@@ -23,28 +159,28 @@ static int g_read_counter = 0; // Simple counter instead of time_t
  * @return Temperature value in Celsius, or -999 on error
  */
 int sensors_read_temperature(void) {
-#if USE_SIMULATION
-    // Simulated temperature reading with some variation
-    // In real implementation, this would call: dht.readTemperature()
     if (!g_sensor_initialized) {
         return -999; // Sensor not initialized
     }
     
-    // Simulate temperature variation (20-30°C)
-    static int base_temp = 25;
-    g_read_counter++;
-    if (g_read_counter % 10 == 0) {
-        // Add small variation based on counter
-        int variation = (g_read_counter % 10) - 5; // -5 to +5
-        base_temp = 25 + variation;
-    }
-    return base_temp;
+#ifdef ARDUINO
+    // Real Arduino implementation
+    float temp = dht.readTemperature();
+    if (isnan(temp)) return -999;
+    return (int)round(temp);
 #else
-    // Real sensor reading (for Arduino/Raspberry Pi Pico)
-    // float temp = dht.readTemperature();
-    // if (isnan(temp)) return -999;
-    // return (int)round(temp);
-    return -999; // Not implemented for real hardware in C version
+    // Linux simulation
+    static int base_temp = 22;
+    g_read_counter++;
+    
+    // Add realistic variations
+    if (g_read_counter % 5 == 0) {
+        base_temp += (rand() % 3) - 1;  // -1, 0, or +1
+        if (base_temp < 15) base_temp = 15;
+        if (base_temp > 35) base_temp = 35;
+    }
+    
+    return base_temp + (rand() % 3) - 1;  // Small noise
 #endif
 }
 
@@ -55,30 +191,27 @@ int sensors_read_temperature(void) {
  * @return Humidity value as percentage (0-100), or -1 on error
  */
 int sensors_read_humidity(void) {
-#if USE_SIMULATION
-    // Simulated humidity reading with some variation
-    // In real implementation, this would call: dht.readHumidity()
     if (!g_sensor_initialized) {
         return -1; // Sensor not initialized
     }
     
-    // Simulate humidity variation (60-70%)
-    static int base_hum = 65;
-    g_read_counter++;
-    if (g_read_counter % 10 == 0) {
-        // Add small variation based on counter
-        int variation = (g_read_counter % 10) - 5; // -5 to +5
-        base_hum = 65 + variation;
-        if (base_hum < 0) base_hum = 0;
-        if (base_hum > 100) base_hum = 100;
-    }
-    return base_hum;
+#ifdef ARDUINO
+    // Real Arduino implementation
+    float hum = dht.readHumidity();
+    if (isnan(hum)) return -1;
+    return (int)round(hum);
 #else
-    // Real sensor reading (for Arduino/Raspberry Pi Pico)
-    // float hum = dht.readHumidity();
-    // if (isnan(hum)) return -1;
-    // return (int)round(hum);
-    return -1; // Not implemented for real hardware in C version
+    // Linux simulation
+    static int base_humidity = 45;
+    
+    // Add realistic variations
+    if (g_read_counter % 5 == 0) {
+        base_humidity += (rand() % 5) - 2;  // -2 to +2
+        if (base_humidity < 20) base_humidity = 20;
+        if (base_humidity > 80) base_humidity = 80;
+    }
+    
+    return base_humidity + (rand() % 5) - 2;  // Small noise
 #endif
 }
 
@@ -129,9 +262,9 @@ int sensors_format_response(const SensorReading *reading, char *response, int ma
     
     // Format according to specification:
     // TEMP&unit::celsius&value::XX#HUM&unit::percentage&value::YY
-    // Units must be: "celsius" (not "Celsius" or "C") and "percentage" (not "Percent" or "%")
+    // Units must be exactly: "celsius" and "percentage" with double colons
     int written = snprintf(response, max_len, 
-                            "TEMP&unit::celsius&value::%d#HUM&unit::percentage&value::%d",
+                            "TEMP&unit::celsius::value::%d#HUM&unit::percentage::value::%d",
                             reading->temperature, reading->humidity);
     
     if (written < 0 || written >= max_len) {
@@ -146,23 +279,24 @@ int sensors_format_response(const SensorReading *reading, char *response, int ma
  * Sets up Serial communication and sensor hardware
  */
 void sensors_init(void) {
-    // In real Arduino implementation:
-    // Serial.begin(SERIAL_BAUD_RATE);
-    // dht.begin();
+#ifdef ARDUINO
+    // Real Arduino implementation
+    Serial.begin(SERIAL_BAUD_RATE);
+    dht.begin();
+    printf("[Sensors] Arduino: Serial and DHT initialized\n");
+#else
+    // Linux testing environment
+    printf("[Sensors] Linux: Simulation mode initialized\n");
+#endif
     
     // Initialize sensor state
     g_sensor_initialized = 1;
     g_read_counter = 0;
     
-    // For simulation/testing:
-    printf("[Sensors] Initializing...\n");
-    printf("[Sensors] Serial communication ready (baud rate: %d)\n", SERIAL_BAUD_RATE);
-#if USE_SIMULATION
-    printf("[Sensors] Running in SIMULATION MODE\n");
-#else
-    printf("[Sensors] Running with REAL HARDWARE\n");
-#endif
-    printf("[Sensors] Sensor hardware initialized\n");
+    // Initialize random seed for realistic simulation
+    srand((unsigned int)time(NULL));
+    
+    printf("[Sensors] Sensor hardware ready\n");
     printf("[Sensors] Waiting for commands...\n");
 }
 
@@ -171,15 +305,31 @@ void sensors_init(void) {
  * Continuously checks for incoming commands via Serial
  */
 void sensors_loop(void) {
-    // In real Arduino implementation:
-    // if (Serial.available() > 0) {
-    //     String cmd = Serial.readStringUntil('\n');
-    //     cmd.trim();
-    //     sensors_process_command(cmd.c_str());
-    // }
+#ifdef ARDUINO
+    // Real Arduino implementation
+    if (Serial.available() > 0) {
+        String cmd = Serial.readStringUntil('\n');
+        String_trim(cmd);
+        sensors_process_command(cmd.c_str());
+    }
+#else
+    // Linux testing environment - periodic sensor readings
+    static unsigned long last_read_time = 0;
+    unsigned long current_time = (unsigned long)time(NULL) * 1000;
     
-    // For simulation/testing - this would be called from main loop
-    // In real implementation, this runs continuously in Arduino loop()
+    // Simulate periodic sensor readings every 2 seconds
+    if (current_time - last_read_time >= 2000) {
+        SensorReading reading = sensors_read_raw();
+        g_read_counter++;
+        last_read_time = current_time;
+        
+        printf("[Sensors] Auto reading #%d: Temp=%d°C, Hum=%d%% %s\n", 
+               g_read_counter,
+               reading.temperature, 
+               reading.humidity,
+               reading.valid ? "[VALID]" : "[ERROR]");
+    }
+#endif
 }
 
 /**
@@ -252,10 +402,12 @@ void sensors_send_response(const char *response) {
         return;
     }
     
-    // In real Arduino implementation:
-    // Serial.println(response);
-    
-    // For simulation/testing:
+#ifdef ARDUINO
+    // Real Arduino implementation
+    Serial.println(response);
+#else
+    // Linux testing environment
     printf("[Sensors->Manager] Sending: %s\n", response);
+#endif
 }
 

@@ -1,4 +1,4 @@
-package Sprint2.Domain;
+package Lapr.Domain;
 
 import Sprint1.Domain.Facility;
 

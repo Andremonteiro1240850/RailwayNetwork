@@ -1,17 +1,20 @@
-package Sprint2.Controller;
+package Lapr.Controller;
 
 import Sprint1.Controller.TravelTimeController;
 import Sprint1.Domain.Facility;
 import Sprint1.Domain.Locomotive;
-import Sprint2.Domain.DispatchReport;
+import Lapr.Domain.DispatchReport;
 import Sprint2.Domain.LineSegment;
-import Sprint2.Domain.SchedulerService;
+import Lapr.Domain.SchedulerService;
 import Sprint1.Domain.TravelCalculationService;
 import Sprint1.Domain.Wagon;
-import Sprint2.Domain.Train;
+import Lapr.Domain.Train;
+import Lapr.DataBaseAssociation.LineSegmentAOD;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 
 /**
  * Controller for managing train dispatch operations.
@@ -22,8 +25,8 @@ import java.util.List;
  */
 public class DispatchController {
     
-    private final SchedulerService schedulerService;
-    private final TravelTimeController travelTimeController;
+    private SchedulerService schedulerService;
+    private TravelTimeController travelTimeController;
 
     /**
      * Represents a train configuration loaded from CSV.
@@ -97,16 +100,40 @@ public class DispatchController {
     /**
      * Constructs a new DispatchController.
      * This controller reuses the TravelTimeController to access the TravelCalculationService.
+     * NOTE: This constructor loads data from CSV files. For USLP10, use createFromDatabase() instead.
      */
     public DispatchController() {
-        this.travelTimeController = new TravelTimeController();
+        this(new TravelTimeController());
+    }
+    
+    /**
+     * Creates a new DispatchController with data loaded from database.
+     * USLP10: All data must come from database, not CSV files.
+     * 
+     * @return DispatchController initialized with database data
+     */
+    public static DispatchController createFromDatabase() {
+        LineSegmentAOD lineSegmentAOD = new LineSegmentAOD();
         
-        // Reuse the TravelCalculationService
-        TravelCalculationService travelCalculationService = travelTimeController.getService();
-        List<LineSegment> lineSegments = travelTimeController.getLineSegments();
+        // Load facilities from database
+        List<Facility> facilities = lineSegmentAOD.getAllFacilities();
+        System.out.println("Loaded " + facilities.size() + " facilities from database");
         
-        // Create the scheduler service that reuses travel calculation
-        this.schedulerService = new SchedulerService(travelCalculationService, lineSegments);
+        // Create map for quick lookup
+        Map<String, Facility> facilitiesMap = new HashMap<>();
+        for (Facility facility : facilities) {
+            facilitiesMap.put(facility.getId(), facility);
+        }
+        
+        // Load line segments from database
+        List<LineSegment> lineSegments = lineSegmentAOD.getAllLineSegments(facilitiesMap);
+        System.out.println("Loaded " + lineSegments.size() + " line segments from database");
+        
+        // Create TravelTimeController with database-loaded data (uses new constructor)
+        TravelTimeController travelTimeController = new TravelTimeController(facilities, lineSegments);
+        
+        // Create DispatchController with database-loaded TravelTimeController
+        return new DispatchController(travelTimeController);
     }
 
     /**

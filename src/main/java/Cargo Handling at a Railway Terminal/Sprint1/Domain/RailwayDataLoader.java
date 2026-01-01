@@ -434,7 +434,32 @@ public class RailwayDataLoader {
                 
                 String[] parts = line.split(",");
                 
-                if (parts.length >= 4) {
+                if (parts.length >= 5) {
+                    try {
+                        String id = parts[0].trim();
+                        String type = parts[1].trim();
+                        String maxSpeedStr = parts[2].trim();
+                        String gaugeStr = parts[3].trim();
+                        String powerKwStr = parts[4].trim();
+                        
+                        if (!id.isEmpty() && !type.isEmpty() && !maxSpeedStr.isEmpty() && !gaugeStr.isEmpty() && !powerKwStr.isEmpty()) {
+                            double maxSpeed = Double.parseDouble(maxSpeedStr);
+                            double gauge = Double.parseDouble(gaugeStr);
+                            double powerKw = Double.parseDouble(powerKwStr);
+                            
+                            Locomotive locomotive = new Locomotive(id, type, maxSpeed, gauge, powerKw);
+                            locomotives.add(locomotive);
+                            loadedCount++;
+                        }
+                    } catch (NumberFormatException e) {
+                        System.err.println("Line " + lineNumber + " rejected: Invalid number format - " + e.getMessage());
+                    } catch (IllegalArgumentException e) {
+                        System.err.println("Line " + lineNumber + " rejected: " + e.getMessage());
+                    } catch (Exception e) {
+                        System.err.println("Line " + lineNumber + " rejected: " + e.getMessage());
+                    }
+                } else if (parts.length >= 4) {
+                    // Fallback for CSV files without power column (backward compatibility)
                     try {
                         String id = parts[0].trim();
                         String type = parts[1].trim();

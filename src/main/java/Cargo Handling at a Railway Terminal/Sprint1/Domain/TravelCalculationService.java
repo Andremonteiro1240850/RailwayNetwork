@@ -1,7 +1,7 @@
 package Sprint1.Domain;
 
 import Sprint2.Domain.LineSegment;
-import Sprint2.Domain.Train;
+import Lapr.Domain.Train;
 
 import java.util.List;
 
@@ -223,32 +223,60 @@ public class TravelCalculationService {
 
     /**
      * Formats travel time in a human-readable format.
+     * Shows seconds if time is less than 1 minute.
      *
      * @param travelTimeHours the travel time in hours
-     * @return formatted string (e.g., "1h 30m" or "45m")
+     * @return formatted string (e.g., "1h 30m", "45m", or "30s")
      */
     public static String formatTravelTime(double travelTimeHours) {
         if (travelTimeHours < 0) {
-            return "0m";
+            return "0s";
         }
         
-        int hours = (int) travelTimeHours;
-        int minutes = (int) Math.round((travelTimeHours - hours) * 60);
+        // Convert to total seconds for more accurate calculation
+        double totalSeconds = travelTimeHours * 3600.0;
         
-        // Handle minute overflow
+        int hours = (int) (totalSeconds / 3600);
+        int minutes = (int) ((totalSeconds - hours * 3600) / 60);
+        int seconds = (int) Math.round(totalSeconds - hours * 3600 - minutes * 60);
+        
+        // Handle overflow
+        if (seconds >= 60) {
+            minutes++;
+            seconds = 0;
+        }
         if (minutes >= 60) {
             hours++;
             minutes = 0;
         }
         
+        // If less than 1 minute, show seconds
+        if (hours == 0 && minutes == 0) {
+            return String.format("%ds", seconds);
+        }
+        
+        // Format with hours, minutes, and optionally seconds
         if (hours > 0) {
             if (minutes > 0) {
-                return String.format("%dh %dm", hours, minutes);
+                if (seconds > 0) {
+                    return String.format("%dh %dm %ds", hours, minutes, seconds);
+                } else {
+                    return String.format("%dh %dm", hours, minutes);
+                }
             } else {
-                return String.format("%dh", hours);
+                if (seconds > 0) {
+                    return String.format("%dh %ds", hours, seconds);
+                } else {
+                    return String.format("%dh", hours);
+                }
             }
         } else {
-            return String.format("%dm", minutes);
+            // Only minutes (and optionally seconds)
+            if (seconds > 0) {
+                return String.format("%dm %ds", minutes, seconds);
+            } else {
+                return String.format("%dm", minutes);
+            }
         }
     }
 }

@@ -1,8 +1,9 @@
-#include "DHT.h"
+#include "LightSins.h"
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
 
 // --- Configuração de Hardware ---
-#define DHTPIN 28
-#define DHTTYPE DHT11
 
 // Configuração das Linhas (Tracks)
 #define NUM_TRACKS 2
@@ -21,13 +22,6 @@ const int TRACK_PINS[NUM_TRACKS][3] = {
 #define GREEN 2
 
 // --- Estado do Sistema ---
-// Configuração da Mediana Móvel
-#define WINDOW_SIZE 5
-float tempHistory[WINDOW_SIZE] = {0};
-float humHistory[WINDOW_SIZE] = {0};
-int historyIndex = 0;
-bool bufferFull = false;
-
 // Gestão do Estado de Piscar (Blink)
 bool isBlinking[NUM_TRACKS] = {false, false};
 unsigned long lastBlinkTime = 0;
@@ -37,9 +31,8 @@ DHT dht(DHTPIN, DHTTYPE);
 
 void setup() {
   Serial.begin(9600);
-  dht.begin();
 
-  // Inicializar todos os pinos das linhas como SAÍDA e desligados (LOW)
+  // Inicializar todos os pinos das linhas como SAIDA e desligados (LOW)
   for (int i = 0; i < NUM_TRACKS; i++) {
     for (int color = 0; color < 3; color++) {
       pinMode(TRACK_PINS[i][color], OUTPUT);
@@ -49,21 +42,14 @@ void setup() {
 }
 
 void loop() {
-  // 1. Ler Sensores periodicamente (a cada 2 segundos)
-  static unsigned long lastSensorRead = 0;
-  if (millis() - lastSensorRead > 2000) {
-    updateSensors();
-    lastSensorRead = millis();
-  }
-
-  // 2. Processar Comandos via Série
+  // 1. Processar Comandos via Série
   if (Serial.available() > 0) {
     String cmd = Serial.readStringUntil('\n');
     cmd.trim();
     processCommand(cmd);
   }
 
-  // 3. Gerir Lógica de Piscar
+  // 2. Gerir Lógica de Piscar
   if (millis() - lastBlinkTime > 500) { // Alternar a cada 500ms
     blinkState = !blinkState;
     lastBlinkTime = millis();
@@ -77,6 +63,70 @@ void loop() {
 }
 
 // --- Funções Auxiliares ---
+
+typedef struct {
+    char* data;
+    int length;
+} String_impl;
+
+String String(const char* str) {
+    String_impl* s = (String_impl*)malloc(sizeof(String_impl));
+    if (str) {
+        s->length = strlen(str);
+        s->data = (char*)malloc(s->length + 1);
+        strcpy(s->data, str);
+    } else {
+        s->length = 0;
+        s->data = (char*)malloc(1);
+        s->data[0] = '\0';
+    }
+    return (String)s;
+}
+
+int String_equals(String this, const char* str) {
+    String_impl* s = (String_impl*)this;
+    return strcmp(s->data, str) == 0;
+}
+
+int String_indexOf(String this, char ch) {
+    String_impl* s = (String_impl*)this;
+    char* ptr = strchr(s->data, ch);
+    return ptr ? (ptr - s->data) : -1;
+}
+
+String String_substring(String this, int start) {
+    String_impl* s = (String_impl*)this;
+    if (start >= s->length) return String("");
+    
+    char* new_data = (char*)malloc(s->length - start + 1);
+    strncpy(new_data, s->data + start, s->length - start);
+    new_data[s->length - start] = '\0';
+    
+    String result = String(new_data);
+    free(new_data);
+    return result;
+}
+
+int String_toInt(String this) {
+    String_impl* s = (String_impl*)this;
+    return atoi(s->data);
+}
+
+void String_trim(String this) {
+    String_impl* s = (String_impl*)this;
+    char* start = s->data;
+    while (*start == ' ' || *start == '\t' || *start == '\n' || *start == '\r') start++;
+    
+    char* end = s->data + s->length - 1;
+    while (end > start && (*end == ' ' || *end == '\t' || *end == '\n' || *end == '\r')) end--;
+    
+    int new_len = end - start + 1;
+    if (new_len != s->length) {
+        memmove(s->data, start, new_len);
+        s->data[new_len] = '\0';
+        s->length = new_len;
+    }
+}
 
 void updateSensors() {
   float t = dht.readTemperature();
@@ -137,43 +187,31 @@ void setTrackLight(int trackIndex, int colorCode) {
 
 void processCommand(String command) {
   // --- Comando GTH (Obter Temp & Humidade) ---
-  if (command.equals("GTH")) {
-    int count = bufferFull ? WINDOW_SIZE : historyIndex;
-
-    // Tratar caso de buffer vazio
-    if (count == 0) {
-      Serial.println("TEMP&unit:celsius&value:0#HUM&unit:percentage&value:0");
-      return;
-    }
-
-    // Calcular valores da Mediana
-    float mTemp = calculateMedian(tempHistory, count);
-    float mHum = calculateMedian(humHistory, count);
-
-    // Enviar resposta formatada
-    Serial.print("TEMP&unit:celsius&value:"); Serial.print((int)mTemp);
-    Serial.print("#HUM&unit:percentage&value:"); Serial.println((int)mHum);
+  if (String_equals(command, "GTH")) {
+    // LightSigns nao le sensores, apenas controla LEDs
+    // Responder com erro para indicar que comando nao e suportado
+    Serial.println("ERROR: GTH command not supported by LightSigns");
     return;
   }
 
   // --- Comandos de Linha (RE,x | YE,x | GE,x | RB,x) ---
-  // Formato esperado: "CMD, x" onde x é o número da linha
+  // Formato esperado: "CMD, x" onde x e o numero da linha
 
-  int commaIndex = command.indexOf(',');
-  if (commaIndex == -1) return; // Formato inválido
+  int commaIndex = String_indexOf(command, ',');
+  if (commaIndex == -1) return; // Formato invalido
 
-  String type = command.substring(0, commaIndex);
-  String trackStr = command.substring(commaIndex + 1);
-  int trackNum = trackStr.toInt();
+  String type = String_substring(command, 0, commaIndex);
+  String trackStr = String_substring(command, commaIndex + 1);
+  int trackNum = String_toInt(trackStr);
 
-  // Converter número da linha (base 1) para índice (base 0)
+  // Converter numero da linha (base 1) para indice (base 0)
   int trackIndex = trackNum - 1;
 
-  // Executar comando se o índice da linha for válido
+  // Executar comando se o indice da linha for valido
   if (trackIndex >= 0 && trackIndex < NUM_TRACKS) {
-    if (type.equals("RE"))      setTrackLight(trackIndex, RED);
-    else if (type.equals("YE")) setTrackLight(trackIndex, YELLOW);
-    else if (type.equals("GE")) setTrackLight(trackIndex, GREEN);
-    else if (type.equals("RB")) setTrackLight(trackIndex, 3); // 3 = Código de Piscar
+    if (String_equals(type, "RE"))      setTrackLight(trackIndex, RED);
+    else if (String_equals(type, "YE")) setTrackLight(trackIndex, YELLOW);
+    else if (String_equals(type, "GE")) setTrackLight(trackIndex, GREEN);
+    else if (String_equals(type, "RB")) setTrackLight(trackIndex, 3); // 3 = Codigo de Piscar
   }
 }

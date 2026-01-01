@@ -82,3 +82,54 @@
 | **Wagon** | **Vagão** | Rail vehicle for freight transport with type-specific characteristics. |
 | **Warehouse** | **Armazém** | Facility organized in aisles and bays for product storage. |
 | **Warehousing** | **Armazenagem** | Storage of cargo at freight yards, terminals, and sidings. |
+| **Acceleration** | **Aceleração** | Locomotive capacity to increase speed, important for calculating travel times and train performance. |
+| **Arrival Time** | **Hora de Chegada** | Recorded instant when train crosses or arrives at an endpoint during route execution. |
+| **Building** | **Edifício** | Physical structure within facility serving specific purpose (warehouse, grain silo, refrigerated area). |
+| **Coupling** | **Acoplamento** | Operation of connecting locomotives and wagons together to form trains. |
+| **Decoupling** | **Desacoplamento** | Operation of separating wagons from train when freight arrives at destination for unloading. |
+| **Departure Time** | **Hora de Partida** | Recorded instant when train leaves an endpoint after stopping during route execution. |
+| **Destination** | **Destino** | Final endpoint facility where freight wagons arrive and are unloaded. |
+| **Diesel Locomotive** | **Locomotiva Diesel** | Locomotive powered by internal combustion diesel engine with specified fuel capacity. |
+| **Dimensions** | **Dimensões** | Physical measurements of rolling stock including length, width, and height in millimeters. |
+| **Distribution Center** | **Centro de Distribuição** | Facility connecting railway network with regional delivery and distribution networks. |
+| **Electric Locomotive** | **Locomotiva Elétrica** | Locomotive powered by electricity from overhead lines with voltage and frequency specifications. |
+| **Electrified Segment** | **Segmento Eletrificado** | Line segment equipped with overhead electrical systems allowing electric locomotive circulation. |
+| **Entry Year** | **Ano de Entrada em Serviço** | Calendar year when specific locomotive or wagon was commissioned for operational service. |
+| **Frequency** | **Frequência** | Electric current frequency specification for electric locomotives measured in Hertz. |
+| **Fuel Capacity** | **Capacidade de Combustível** | Maximum diesel fuel storage capacity in locomotive tanks measured in liters. |
+| **Grain Silo** | **Silo de Cereais** | Specialized vertical storage structure for bulk grain commodities at terminal facilities. |
+| **High Cube Container** | **Contentor High Cube** | Taller container variant with 9.5ft internal height versus standard 8.5ft containers. |
+| **Industrial Hub** | **Centro Industrial** | Facility or depot connecting railway network with manufacturing and production zones. |
+| **Industrial Zone** | **Zona Industrial** | Geographic area with concentrated manufacturing facilities served by railway connections. |
+| **Line** | **Linha** | Continuous railway connection between two endpoint facilities composed of multiple segments. |
+| **Locomotive Model** | **Modelo de Locomotiva** | Technical specification defining locomotive family: make, power, acceleration, dimensions, weight. |
+| **Make** | **Fabricante** | Manufacturer or brand name of locomotive or wagon model. |
+| **Maximum Speed** | **Velocidade Máxima** | Highest permitted operational speed for rolling stock measured in kilometers per hour. |
+| **Maximum Train Length** | **Comprimento Máximo do Comboio** | Predefined limit in meters restricting total length of coupled locomotives and wagons. |
+| **Maximum Weight** | **Peso Máximo** | Total weight limit for locomotive or maximum load capacity per meter for line segments. |
+| **Model** | **Modelo** | Technical designation identifying specific type of locomotive or wagon with shared characteristics. |
+| **Multi-Gauge Support** | **Suporte Multi-Bitola** | Capability of locomotive or wagon to operate on multiple different gauge widths. |
+| **Origin** | **Origem** | Initial endpoint facility where freight wagons are loaded before transport. |
+| **Payload** | **Carga Útil** | Maximum weight of goods that wagon can transport, excluding the tare weight. |
+| **Port** | **Porto** | Maritime facility with railway connections enabling container transfer between ships and trains. |
+| **Power** | **Potência** | Locomotive engine power output measured in kilowatts, determining pulling capacity. |
+| **Quad Track** | **Via Quádrupla** | Railway segment with four parallel tracks enabling very high capacity operations. |
+| **Received At** | **Recebido em** | ISO timestamp recording exact moment when product box arrived at warehouse. |
+| **Refrigerated Area** | **Área Refrigerada** | Temperature-controlled storage building at facilities for perishable goods. |
+| **Regular Container** | **Contentor Regular** | Standard height container with 8.5ft internal height in 20ft, 40ft, or 45ft lengths. |
+| **Speed Limit** | **Limite de Velocidade** | Maximum permitted train speed on specific line segment measured in km/h. |
+| **Stacked Container** | **Contentor Empilhável** | Container type not supported in European railways due to overhead electric lines and tunnels. |
+| **Supply Chain** | **Cadeia de Abastecimento** | Complete logistics process from origin to destination including transport, storage, and handling. |
+| **Timetable** | **Horário** | Schedule specifying planned times for train departures, arrivals, and passage at facilities. |
+| **Train Composition** | **Composição do Comboio** | Specific arrangement of locomotives and wagons forming complete operational train unit. |
+| **Type** | **Tipo** | Classification category for wagons based on transported goods or locomotive power source. |
+| **Voltage** | **Voltagem** | Electric supply voltage specification for electric locomotives measured in volts. |
+| **Volume Capacity** | **Capacidade Volumétrica** | Maximum internal volume of goods that wagon can contain measured in cubic meters. |
+| **Wagon Model** | **Modelo de Vagão** | Technical specification defining wagon family: type, dimensions, payload, volume capacity. |
+| **Wagon Type** | **Tipo de Vagão** | Classification based on goods transported: boxcar, flatcar, tank car, hopper car, refrigerated car. |
+| **Weight on Track** | **Peso na Via** | Calculated load distribution on rails: total weight divided by number of wheels on track. |
+| **Allocation** | **Alocação** | Process of assigning specific quantities from warehouse boxes to fulfill customer order lines, creating a picking plan. |
+| **Backbone Network** | **Rede de Espinha Dorsal** | Minimal set of railway tracks required to connect all stations in a network, used for cost estimation and planning. |
+| **Crossing** | **Cruzamento** | Operational maneuver where trains pass each other on single-track segments using sidings or stations. |
+| **Picking Plan** | **Plano de Picking** | Plan that organizes items to be collected from the warehouse into trolley runs, respecting weight capacity. |
+| **Throughput** | **Capacidade de Processamento / Débito** | Maximum flow of trains (or cargo volume) that can pass through a corridor or between two hubs per unit of time. |
