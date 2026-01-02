@@ -132,10 +132,12 @@ int parse_user_line(const char *line, User *user) {
         return 0;
     }
     
-    // Allocate memory for strings
+    // Allocate memory for strings with exact size needed
     user->name = (char*)malloc(strlen(tokens[0]) + 1);
     user->username = (char*)malloc(strlen(tokens[1]) + 1);
-    user->password = (char*)malloc(MAX_STRING_LENGTH);
+    // Password size: encrypted password has same length as plain text for Caesar Cipher
+    int password_len = strlen(tokens[2]);
+    user->password = (char*)malloc(password_len + 1);
     
     if (!user->name || !user->username || !user->password) {
         free(user->name);
@@ -618,4 +620,7 @@ int load_initial_setup(const char *filename, SystemData *system) {
     fclose(file);
     return 1;
 }
+
+// Note: transfer_setup_to_manager is implemented in setup_integration.c
+// to avoid circular includes between setup.h and manager.h
 

@@ -9,5 +9,7 @@ int move_n_to_array(int* buffer, int length, int* nelem, int* tail, int* head, i
 int median(int* vec, int length, int* me);
 int format_command(char* op, int n, char* cmd);
 int sort_array(int* vec, int length, char order);
+// Sprint 3: Assembly function using struct parameter
+int update_track_state(void* track, int new_state);
 
 #endif
