@@ -42,9 +42,13 @@ public class DotExporter {
         StringBuilder dot = new StringBuilder();
         
         // DOT header for undirected graph
+        // Use neato layout engine with overlap prevention
         dot.append("graph G {\n");
         dot.append("    layout=neato;\n");
-        dot.append("    node [shape=circle];\n\n");
+        dot.append("    overlap=false;\n");
+        dot.append("    splines=true;\n");
+        dot.append("    node [shape=point, width=0.03, height=0.03, color=blue];\n");
+        dot.append("    edge [color=gray, penwidth=0.5];\n\n");
         
         // Export nodes (stations) - sorted deterministically
         List<Station> stations = new ArrayList<>(graph.getStations());
@@ -52,12 +56,13 @@ public class DotExporter {
         
         for (Station station : stations) {
             String nodeId = escapeNodeId(station.getId());
-            String label = escapeLabel(station.getName());
+            // Use coordinates as hints for neato
             double x = station.getCoordX();
             double y = station.getCoordY();
             
-            dot.append(String.format("    %s [label=\"%s\", pos=\"%.2f,%.2f!\"];\n", 
-                    nodeId, label, x, y));
+            // pos attribute without ! allows neato to adjust positions
+            dot.append(String.format("    %s [pos=\"%.2f,%.2f\"];\n", 
+                    nodeId, x, y));
         }
         
         dot.append("\n");
