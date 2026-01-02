@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <stddef.h>
 #include "../../Sprint2/asm.h"
 
 // User Data Structure
@@ -14,6 +15,13 @@ typedef struct {
     char *password;  // Encrypted password (capital letters only)
     int caesar_key;  // Caesar Cipher key
 } User;
+
+// Struct offset definitions for Assembly access (RV32IM - 4-byte pointers and ints)
+// These offsets must match the actual C memory layout
+#define USER_NAME_OFFSET offsetof(User, name)
+#define USER_USERNAME_OFFSET offsetof(User, username)
+#define USER_PASSWORD_OFFSET offsetof(User, password)
+#define USER_CAESAR_KEY_OFFSET offsetof(User, caesar_key)
 
 // Sensor Data Structure
 typedef struct {
@@ -40,6 +48,12 @@ typedef struct {
     int trainId;                  // Train using the track (0 if none)
     unsigned long lastOperationTimestamp;  // Timestamp of last operation (initialized to 0)
 } Track;
+
+// Track struct offset definitions for Assembly access
+#define TRACK_ID_OFFSET offsetof(Track, id)
+#define TRACK_STATE_OFFSET offsetof(Track, state)
+#define TRACK_TRAINID_OFFSET offsetof(Track, trainId)
+#define TRACK_TIMESTAMP_OFFSET offsetof(Track, lastOperationTimestamp)
 
 // Train Data Structure
 // Note: manager.h has Train with state and position fields
@@ -91,6 +105,12 @@ int parse_track_line(const char *line, Track *track);
 int parse_train_line(const char *line, Train *train);
 int parse_log_line(const char *line, Log *log);
 unsigned long parse_timestamp(const char *timestamp_str);
+
+// Integration function: Transfer setup data to Manager system
+// Note: Implemented in setup_integration.c to avoid circular includes
+// Forward declaration - ManagerSystem is defined in manager.h
+struct ManagerSystem;
+int transfer_setup_to_manager(const SystemData *setup_data, struct ManagerSystem *manager);
 
 #endif // SETUP_H
 
