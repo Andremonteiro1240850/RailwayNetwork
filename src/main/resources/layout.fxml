@@ -572,6 +572,9 @@
                                    -fx-letter-spacing: 0.3px;
                                    -fx-effect: dropshadow(gaussian, rgba(139, 92, 246, 0.4), 8, 0, 0, 2);"/>
                                         <Label text="Calculate shortest path with negative costs and detect negative cycles"
+                                               wrapText="true"
+                                               maxWidth="400"
+                                               textAlignment="CENTER"
                                                style="-fx-font-family: 'Segoe UI Variable', 'Inter', 'Segoe UI', sans-serif;
                                   -fx-text-fill: rgba(255, 255, 255, 0.7);
                                   -fx-font-size: 12px;

@@ -51,11 +51,17 @@ public class ShortestPathFXUI {
     private Button calculateButton;
     private Label resultLabel;
     private Label resultExplanationLabel;
-    private Label detailsTitleLabel;
-    private TextArea detailsArea;
     private Label validationErrorLabel;
     private ProgressIndicator progressIndicator;
     private Label statusLabel;
+    
+    // Organized result sections
+    private Label pathTitleLabel;
+    private TextArea pathArea;
+    private Label edgeCostsTitleLabel;
+    private TextArea edgeCostsArea;
+    private Label totalCostTitleLabel;
+    private Label totalCostLabel;
     
     private List<Station> allStations;
     private ObservableList<String> sourceStationOptions;
@@ -170,7 +176,7 @@ public class ShortestPathFXUI {
         resultBox.setPadding(new Insets(15));
         resultBox.setStyle("-fx-background-color: #2D3748; " +
                           "-fx-background-radius: 12px;");
-        resultBox.setMinHeight(350);
+        resultBox.setMinHeight(450);
         
         // Main result label
         resultLabel = new Label("Select stations and click 'Calculate Shortest Path'");
@@ -192,35 +198,6 @@ public class ShortestPathFXUI {
         resultExplanationLabel.setMaxWidth(650);
         resultExplanationLabel.setVisible(false);
         
-        // Details title label
-        detailsTitleLabel = new Label("Path Details");
-        detailsTitleLabel.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
-                                  "-fx-font-size: 16px; " +
-                                  "-fx-font-weight: 600; " +
-                                  "-fx-text-fill: #E2E8F0; " +
-                                  "-fx-text-alignment: left;");
-        detailsTitleLabel.setPadding(new Insets(2, 0, 2, 0));
-        detailsTitleLabel.setVisible(false);
-        
-        // Details text area
-        detailsArea = new TextArea();
-        detailsArea.setEditable(false);
-        detailsArea.setPrefRowCount(10);
-        detailsArea.setMinHeight(200);
-        detailsArea.setPrefHeight(250);
-        detailsArea.setMaxHeight(280);
-        detailsArea.setPrefWidth(600);
-        detailsArea.setWrapText(true);
-        detailsArea.setStyle("-fx-font-family: 'Consolas', 'Monaco', monospace; " +
-                            "-fx-font-size: 12px; " +
-                            "-fx-background-color: #FFFFFF; " +
-                            "-fx-text-fill: #000000; " +
-                            "-fx-border-color: #475569; " +
-                            "-fx-border-width: 1; " +
-                            "-fx-border-radius: 8px; " +
-                            "-fx-padding: 10px;");
-        detailsArea.setVisible(false);
-        
         // Validation error label
         validationErrorLabel = new Label();
         validationErrorLabel.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
@@ -231,7 +208,98 @@ public class ShortestPathFXUI {
         validationErrorLabel.setWrapText(true);
         validationErrorLabel.setVisible(false);
         
-        resultBox.getChildren().addAll(resultLabel, resultExplanationLabel, validationErrorLabel, detailsTitleLabel, detailsArea);
+        // Path section
+        pathTitleLabel = new Label("Path:");
+        pathTitleLabel.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
+                               "-fx-font-size: 15px; " +
+                               "-fx-font-weight: 600; " +
+                               "-fx-text-fill: #E2E8F0; " +
+                               "-fx-text-alignment: left;");
+        pathTitleLabel.setPadding(new Insets(10, 0, 5, 0));
+        pathTitleLabel.setVisible(false);
+        
+        pathArea = new TextArea();
+        pathArea.setEditable(false);
+        pathArea.setPrefRowCount(3);
+        pathArea.setMinHeight(60);
+        pathArea.setPrefHeight(80);
+        pathArea.setMaxHeight(100);
+        pathArea.setPrefWidth(600);
+        pathArea.setWrapText(true);
+        pathArea.setStyle("-fx-font-family: 'Consolas', 'Monaco', monospace; " +
+                         "-fx-font-size: 13px; " +
+                         "-fx-background-color: #FFFFFF; " +
+                         "-fx-text-fill: #1E293B; " +
+                         "-fx-border-color: #6366F1; " +
+                         "-fx-border-width: 1; " +
+                         "-fx-border-radius: 8px; " +
+                         "-fx-padding: 10px;");
+        pathArea.setVisible(false);
+        
+        // Edge costs section
+        edgeCostsTitleLabel = new Label("Costs Between Stations:");
+        edgeCostsTitleLabel.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
+                                    "-fx-font-size: 15px; " +
+                                    "-fx-font-weight: 600; " +
+                                    "-fx-text-fill: #E2E8F0; " +
+                                    "-fx-text-alignment: left;");
+        edgeCostsTitleLabel.setPadding(new Insets(10, 0, 5, 0));
+        edgeCostsTitleLabel.setVisible(false);
+        
+        edgeCostsArea = new TextArea();
+        edgeCostsArea.setEditable(false);
+        edgeCostsArea.setPrefRowCount(5);
+        edgeCostsArea.setMinHeight(100);
+        edgeCostsArea.setPrefHeight(120);
+        edgeCostsArea.setMaxHeight(150);
+        edgeCostsArea.setPrefWidth(600);
+        edgeCostsArea.setWrapText(true);
+        edgeCostsArea.setStyle("-fx-font-family: 'Consolas', 'Monaco', monospace; " +
+                              "-fx-font-size: 12px; " +
+                              "-fx-background-color: #FFFFFF; " +
+                              "-fx-text-fill: #1E293B; " +
+                              "-fx-border-color: #6366F1; " +
+                              "-fx-border-width: 1; " +
+                              "-fx-border-radius: 8px; " +
+                              "-fx-padding: 10px;");
+        edgeCostsArea.setVisible(false);
+        
+        // Total cost section
+        totalCostTitleLabel = new Label("Total Cost:");
+        totalCostTitleLabel.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
+                                    "-fx-font-size: 15px; " +
+                                    "-fx-font-weight: 600; " +
+                                    "-fx-text-fill: #E2E8F0; " +
+                                    "-fx-text-alignment: left;");
+        totalCostTitleLabel.setPadding(new Insets(10, 0, 5, 0));
+        totalCostTitleLabel.setVisible(false);
+        
+        totalCostLabel = new Label();
+        totalCostLabel.setStyle("-fx-font-family: 'Consolas', 'Monaco', monospace; " +
+                               "-fx-font-size: 20px; " +
+                               "-fx-font-weight: 700; " +
+                               "-fx-text-fill: #10B981; " +
+                               "-fx-text-alignment: left; " +
+                               "-fx-background-color: #FFFFFF; " +
+                               "-fx-background-radius: 8px; " +
+                               "-fx-padding: 10px 15px; " +
+                               "-fx-border-color: #6366F1; " +
+                               "-fx-border-width: 1; " +
+                               "-fx-border-radius: 8px;");
+        totalCostLabel.setPadding(new Insets(5, 0, 10, 10));
+        totalCostLabel.setVisible(false);
+        
+        resultBox.getChildren().addAll(
+            resultLabel, 
+            resultExplanationLabel, 
+            validationErrorLabel,
+            pathTitleLabel,
+            pathArea,
+            edgeCostsTitleLabel,
+            edgeCostsArea,
+            totalCostTitleLabel,
+            totalCostLabel
+        );
         
         centerBox.getChildren().addAll(selectionBox, resultBox);
         root.setCenter(centerBox);
@@ -272,11 +340,11 @@ public class ShortestPathFXUI {
         
         root.setBottom(bottomContainer);
         
-        Scene scene = new Scene(root, 700, 800);
+        Scene scene = new Scene(root, 700, 900);
         stage.setScene(scene);
         stage.setResizable(true);
         stage.setMinWidth(700);
-        stage.setMinHeight(800);
+        stage.setMinHeight(900);
         
         // Load data and populate stations
         loadDataAndPopulateStations();
@@ -301,13 +369,18 @@ public class ShortestPathFXUI {
                         Platform.runLater(() -> statusLabel.setText("Loading stations..."));
                         
                         // Load data and build graph using RailwayGraphRepository
-                        // This reuses the same directed graph structure from USEI11
+                        // USEI15: Reuses graph from USEI11 if available
                         RailwayGraphRepository graphRepo = new RailwayGraphRepository();
                         graphRepo.loadData(DEFAULT_STATIONS_PATH, DEFAULT_LINES_PATH);
                         
                         // Create controller with RailwayGraphRepository
                         controller = new ShortestPathController(graphRepo);
                         controller.buildGraph();
+                        
+                        // Debug: Print graph statistics to console
+                        System.out.println("\n=== USEI15 GRAPH STATISTICS ===");
+                        System.out.println(controller.getGraphStatistics());
+                        System.out.println("Total stations loaded: " + controller.getAllStations().size());
                         
                         // Get all stations
                         List<Station> stations = new ArrayList<>(controller.getAllStations());
@@ -368,7 +441,7 @@ public class ShortestPathFXUI {
         container.setSpacing(0);
         container.setFillWidth(true);
         container.setStyle("-fx-background-color: transparent;");
-        container.setClip(null);
+        container.setClip(null); // Don't clip children
         
         TextField textField = new TextField();
         textField.setPromptText(promptText);
@@ -388,10 +461,10 @@ public class ShortestPathFXUI {
         suggestionsList.setMaxHeight(200);
         suggestionsList.setMinHeight(0);
         suggestionsList.setVisible(false);
-        suggestionsList.setManaged(false);
-        suggestionsList.setMouseTransparent(false);
+        suggestionsList.setManaged(false); // Don't take up space when hidden
+        suggestionsList.setMouseTransparent(false); // Allow mouse interaction
         suggestionsList.setFocusTraversable(true);
-        suggestionsList.setOpacity(1.0);
+        suggestionsList.setOpacity(1.0); // Ensure fully opaque when visible
         suggestionsList.setStyle("-fx-background-color: #2D3748; " +
                                  "-fx-border-color: #6366F1; " +
                                  "-fx-border-width: 2; " +
@@ -400,7 +473,7 @@ public class ShortestPathFXUI {
                                  "-fx-background-insets: 0; " +
                                  "-fx-padding: 0;");
         
-        // Style list cells
+        // Style list cells with better visibility
         suggestionsList.setCellFactory(lv -> new ListCell<String>() {
             @Override
             protected void updateItem(String item, boolean empty) {
@@ -410,6 +483,7 @@ public class ShortestPathFXUI {
                     setStyle("-fx-background-color: transparent;");
                 } else {
                     setText(item);
+                    // Default style
                     setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
                             "-fx-font-size: 13px; " +
                             "-fx-text-fill: #E2E8F0; " +
@@ -418,6 +492,7 @@ public class ShortestPathFXUI {
                             "-fx-border-color: transparent transparent #475569 transparent; " +
                             "-fx-border-width: 0 0 1 0;");
                     
+                    // Hover effect
                     setOnMouseEntered(e -> {
                         if (!isEmpty()) {
                             setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
@@ -445,7 +520,18 @@ public class ShortestPathFXUI {
             }
         });
         
+        // Style selected cells
+        suggestionsList.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
+            if (newVal != null) {
+                suggestionsList.refresh();
+            }
+        });
+        
+        // Add text field and suggestions list to container
+        // Suggestions list will appear directly below text field
         container.getChildren().addAll(textField, suggestionsList);
+        
+        // Ensure suggestions list appears on top when visible
         suggestionsList.setViewOrder(-1);
         
         return container;
@@ -479,13 +565,27 @@ public class ShortestPathFXUI {
                 
                 Platform.runLater(() -> {
                     if (filteredList.size() > 0) {
+                        // Calculate dynamic height based on number of items (max 200px, min 150px)
                         int itemCount = filteredList.size();
                         double calculatedHeight = Math.min(200, Math.max(150, itemCount * 35));
                         
+                        // Make sure list is visible and managed FIRST
                         suggestionsList.setManaged(true);
                         suggestionsList.setPrefHeight(calculatedHeight);
+                        suggestionsList.setMinHeight(150);
+                        suggestionsList.setMaxHeight(200);
                         suggestionsList.setVisible(true);
-                        suggestionsList.toFront();
+                        suggestionsList.setOpacity(1.0);
+                        
+                        // Force layout update
+                        suggestionsList.requestLayout();
+                        
+                        // Auto-select first item
+                        if (!suggestionsList.getItems().isEmpty()) {
+                            suggestionsList.getSelectionModel().select(0);
+                        }
+                        // Scroll to top
+                        suggestionsList.scrollTo(0);
                     } else {
                         suggestionsList.setVisible(false);
                         suggestionsList.setManaged(false);
@@ -658,12 +758,18 @@ public class ShortestPathFXUI {
             return;
         }
         
+       
         // Clear previous results
         validationErrorLabel.setVisible(false);
         resultExplanationLabel.setVisible(false);
-        detailsTitleLabel.setVisible(false);
-        detailsArea.setVisible(false);
-        detailsArea.clear();
+        pathTitleLabel.setVisible(false);
+        pathArea.setVisible(false);
+        pathArea.clear();
+        edgeCostsTitleLabel.setVisible(false);
+        edgeCostsArea.setVisible(false);
+        edgeCostsArea.clear();
+        totalCostTitleLabel.setVisible(false);
+        totalCostLabel.setVisible(false);
         
         // Show loading state
         resultLabel.setText("Calculating shortest path...");
@@ -738,40 +844,52 @@ public class ShortestPathFXUI {
             );
             resultExplanationLabel.setVisible(true);
             
-            // Display cycle details
-            detailsTitleLabel.setText("Negative Cycle Details");
-            detailsTitleLabel.setVisible(true);
+            // Display cycle details in path area
+            pathTitleLabel.setText("Negative Cycle Details");
+            pathTitleLabel.setVisible(true);
             
             StringBuilder cycleDetails = new StringBuilder();
-            cycleDetails.append("Negative Cycle Detected!\n\n");
             
             List<String> cycleStations = result.getCycleStations();
             List<BellmanFord.CycleEdge> cycleEdges = result.getCycleEdges();
             
             if (cycleStations != null && !cycleStations.isEmpty()) {
-                cycleDetails.append("Stations involved: [");
+                cycleDetails.append("Stations involved: ");
                 for (int i = 0; i < cycleStations.size(); i++) {
-                    if (i > 0) cycleDetails.append(", ");
+                    if (i > 0) cycleDetails.append(" → ");
                     cycleDetails.append(cycleStations.get(i));
                 }
-                cycleDetails.append("]\n\n");
+                cycleDetails.append("\n\n");
             }
             
             if (cycleEdges != null && !cycleEdges.isEmpty()) {
-                cycleDetails.append("Edges:\n");
+                cycleDetails.append("Edges with costs:\n");
                 for (BellmanFord.CycleEdge edge : cycleEdges) {
                     cycleDetails.append("  ").append(edge.toString()).append("\n");
                 }
-                cycleDetails.append("\n");
             }
             
+            pathArea.setText(cycleDetails.toString());
+            pathArea.setVisible(true);
+            
+            // Show total cycle cost
             double cycleCost = result.getCycleCost();
             if (!Double.isNaN(cycleCost)) {
-                cycleDetails.append("Total cycle cost: ").append(String.format("%.2f", cycleCost));
+                totalCostTitleLabel.setVisible(true);
+                totalCostLabel.setText(String.format("%.2f", cycleCost));
+                totalCostLabel.setStyle("-fx-font-family: 'Consolas', 'Monaco', monospace; " +
+                                       "-fx-font-size: 20px; " +
+                                       "-fx-font-weight: 700; " +
+                                       "-fx-text-fill: #F59E0B; " +
+                                       "-fx-text-alignment: left; " +
+                                       "-fx-background-color: #FFFFFF; " +
+                                       "-fx-background-radius: 8px; " +
+                                       "-fx-padding: 10px 15px; " +
+                                       "-fx-border-color: #6366F1; " +
+                                       "-fx-border-width: 1; " +
+                                       "-fx-border-radius: 8px;");
+                totalCostLabel.setVisible(true);
             }
-            
-            detailsArea.setText(cycleDetails.toString());
-            detailsArea.setVisible(true);
             
         } else if (result.hasPath()) {
             // Display path
@@ -782,38 +900,56 @@ public class ShortestPathFXUI {
                                 "-fx-text-fill: #10B981; " +
                                 "-fx-text-alignment: center;");
             
-            double totalCost = result.getTotalCost();
-            if (!Double.isNaN(totalCost)) {
-                resultExplanationLabel.setText(
-                    String.format("Total cost to target: %.2f", totalCost)
-                );
-                resultExplanationLabel.setVisible(true);
-            }
+            resultExplanationLabel.setText("Shortest path calculated successfully.");
+            resultExplanationLabel.setVisible(true);
             
-            // Display path details
-            detailsTitleLabel.setText("Path Details");
-            detailsTitleLabel.setVisible(true);
-            
-            String pathString = result.getPathString();
-            if (pathString != null) {
-                detailsArea.setText(pathString);
-            } else {
-                // Build path from PathStep list
-                List<BellmanFord.PathStep> path = result.getPath();
-                if (path != null && !path.isEmpty()) {
-                    StringBuilder pathBuilder = new StringBuilder();
-                    for (int i = 0; i < path.size(); i++) {
-                        if (i > 0) pathBuilder.append(", ");
-                        pathBuilder.append(path.get(i).getStationId());
-                        pathBuilder.append(", ");
-                        pathBuilder.append(String.format("%.2f", path.get(i).getAccumulatedCost()));
-                    }
-                    detailsArea.setText(pathBuilder.toString());
-                } else {
-                    detailsArea.setText("No path details available.");
+            // Get path from result
+            List<BellmanFord.PathStep> path = result.getPath();
+            if (path != null && !path.isEmpty()) {
+                // Display path (sequence of stations)
+                pathTitleLabel.setVisible(true);
+                StringBuilder pathBuilder = new StringBuilder();
+                for (int i = 0; i < path.size(); i++) {
+                    if (i > 0) pathBuilder.append(" → ");
+                    pathBuilder.append(path.get(i).getStationId());
+                }
+                pathArea.setText(pathBuilder.toString());
+                pathArea.setVisible(true);
+                
+                // Display costs between stations
+                edgeCostsTitleLabel.setVisible(true);
+                StringBuilder costsBuilder = new StringBuilder();
+                for (int i = 0; i < path.size() - 1; i++) {
+                    String from = path.get(i).getStationId();
+                    String to = path.get(i + 1).getStationId();
+                    double costFrom = path.get(i).getAccumulatedCost();
+                    double costTo = path.get(i + 1).getAccumulatedCost();
+                    double edgeCost = costTo - costFrom;
+                    
+                    costsBuilder.append(String.format("%s → %s: %.2f\n", from, to, edgeCost));
+                }
+                edgeCostsArea.setText(costsBuilder.toString());
+                edgeCostsArea.setVisible(true);
+                
+                // Display total cost
+                double totalCost = result.getTotalCost();
+                if (!Double.isNaN(totalCost)) {
+                    totalCostTitleLabel.setVisible(true);
+                    totalCostLabel.setText(String.format("%.2f", totalCost));
+                    totalCostLabel.setStyle("-fx-font-family: 'Consolas', 'Monaco', monospace; " +
+                                           "-fx-font-size: 20px; " +
+                                           "-fx-font-weight: 700; " +
+                                           "-fx-text-fill: #10B981; " +
+                                           "-fx-text-alignment: left; " +
+                                           "-fx-background-color: #FFFFFF; " +
+                                           "-fx-background-radius: 8px; " +
+                                           "-fx-padding: 10px 15px; " +
+                                           "-fx-border-color: #6366F1; " +
+                                           "-fx-border-width: 1; " +
+                                           "-fx-border-radius: 8px;");
+                    totalCostLabel.setVisible(true);
                 }
             }
-            detailsArea.setVisible(true);
             
         } else {
             // No path exists

@@ -21,6 +21,11 @@ import Domain.Station;
  */
 public class RailwayGraphRepository {
     
+    // Shared repositories cache - USEI11 and USEI15 share the same data base
+    // but each builds its own graph (USEI11 ignores weights, USEI15 uses cost)
+    private static StationRepository sharedStationRepository = null;
+    private static LineRepository sharedLineRepository = null;
+    
     private RailwayGraph cachedGraph;
     private StationRepository stationRepository;
     private LineRepository lineRepository;
@@ -64,20 +69,38 @@ public class RailwayGraphRepository {
     
     /**
      * Loads data from CSV files and populates the repositories.
+     * USEI11: loads from CSV and creates shared cache of repositories.
+     * USEI15: reuses shared repositories if available, otherwise loads from CSV.
      * 
      * @param stationsPath path to the stations CSV file
      * @param linesPath path to the lines CSV file
      * @throws IllegalStateException if data loading fails
      */
     public void loadData(String stationsPath, String linesPath) {
+        // Check if shared repositories exist (from USEI11)
+        if (sharedStationRepository != null && sharedLineRepository != null) {
+            // Reuse shared repositories - no need to reload from CSV
+            this.stationRepository = sharedStationRepository;
+            this.lineRepository = sharedLineRepository;
+            this.cachedGraph = null; // Will build own graph from shared data
+            return;
+        }
+        
+        // First time loading - load from CSV (USEI11 behavior)
         try {
             if (dataLoader == null) {
                 dataLoader = new DataLoader(false); // Non-verbose mode
             }
             
             dataLoader.loadAllData(stationsPath, linesPath);
-            this.stationRepository = dataLoader.getStationRepository();
-            this.lineRepository = dataLoader.getLineRepository();
+            
+            // Store in shared cache for USEI15 to reuse
+            sharedStationRepository = dataLoader.getStationRepository();
+            sharedLineRepository = dataLoader.getLineRepository();
+            
+            // Use the loaded repositories
+            this.stationRepository = sharedStationRepository;
+            this.lineRepository = sharedLineRepository;
             
             // Invalidate cached graph since data has changed
             this.cachedGraph = null;
@@ -144,7 +167,8 @@ public class RailwayGraphRepository {
             return cachedGraph;
         }
         
-        // Build new graph
+        // Build new graph from repositories
+        // Each US builds its own graph: USEI11 ignores weights, USEI15 uses cost
         RailwayGraph graph = new RailwayGraph();
         
         // Add all stations (nodes) to the graph
@@ -168,7 +192,8 @@ public class RailwayGraphRepository {
             System.out.println("Warning: " + skippedEdges + " edges were skipped due to invalid references.");
         }
         
-        // Cache the graph for future use
+        // Cache the graph for future use (instance-specific)
+        // Each US has its own graph view: USEI11 (no weights), USEI15 (with cost)
         this.cachedGraph = graph;
         
         return graph;
