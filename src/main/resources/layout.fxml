@@ -648,6 +648,37 @@
                                   -fx-opacity: 0.85;"/>
                                     </VBox>
 
+                                    <!-- Row 2: Train Assembly -->
+                                    <VBox spacing="12" alignment="CENTER"
+                                          style="-fx-background-color: #161B22;
+                             -fx-background-radius: 20px;
+                             -fx-border-color: rgba(99, 102, 241, 0.2);
+                             -fx-border-radius: 20px;
+                             -fx-border-width: 1;
+                             -fx-padding: 18px;
+                             -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.2), 10, 0, 0, 3);"
+                                          GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="1" GridPane.halignment="CENTER">
+                                        <Button text="Assemble and Assign Train to Route"
+                                                onAction="#handleTrainAssemblyButton"
+                                                prefWidth="400" prefHeight="50"
+                                                style="-fx-font-family: 'Segoe UI Variable', 'Inter', 'Segoe UI', sans-serif;
+                                   -fx-font-size: 15px;
+                                   -fx-font-weight: 600;
+                                   -fx-background-color: #6366F1;
+                                   -fx-text-fill: #FFFFFF;
+                                   -fx-background-radius: 16px;
+                                   -fx-cursor: hand;
+                                   -fx-letter-spacing: 0.3px;
+                                   -fx-effect: dropshadow(gaussian, rgba(99, 102, 241, 0.4), 8, 0, 0, 2);"/>
+                                        <Label text="Select locomotives and wagons to assemble a train and assign it to a route (USLP09)"
+                                               style="-fx-font-family: 'Segoe UI Variable', 'Inter', 'Segoe UI', sans-serif;
+                                  -fx-text-fill: rgba(255, 255, 255, 0.7);
+                                  -fx-font-size: 12px;
+                                  -fx-font-weight: 400;
+                                  -fx-opacity: 0.85;"
+                                               wrapText="true" maxWidth="400" textAlignment="CENTER"/>
+                                    </VBox>
+
                                 </GridPane>
                             </VBox>
                         </content>
