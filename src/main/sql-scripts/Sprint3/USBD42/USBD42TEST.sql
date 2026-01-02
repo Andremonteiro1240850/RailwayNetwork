@@ -1,33 +1,48 @@
+SET SERVEROUTPUT ON;
 
 /* =========================================================
    TEST 1: OK - arrival + departure (train stopped)
    ========================================================= */
 DECLARE
 v_res NUMBER;
+    v_cnt_log NUMBER;
+    v_cnt_dep NUMBER;
 BEGIN
     DBMS_OUTPUT.PUT_LINE('TEST 1: Register arrival + departure (5421)');
 
-    -- cleanup for rerun
+SAVEPOINT sp_t1;
+
+-- cleanup for rerun (will be rolled back)
 DELETE FROM TrainLogDeparture WHERE TrainLogTraintrain_id = 5421;
 DELETE FROM TrainLog          WHERE Traintrain_id = 5421;
-COMMIT;
 
 v_res := usbd42_register_train_movement(
-            5421,
-            'Medway',
-            TO_TIMESTAMP('2025-10-03 15:05:00','YYYY-MM-DD HH24:MI:SS'),
-            TO_TIMESTAMP('2025-10-03 15:10:00','YYYY-MM-DD HH24:MI:SS')
-             );
+        5421,
+        '   mEdWaY   ', -- test case/space-insensitive
+        TO_TIMESTAMP('2025-10-03 15:05:00','YYYY-MM-DD HH24:MI:SS'),
+        TO_TIMESTAMP('2025-10-03 15:10:00','YYYY-MM-DD HH24:MI:SS')
+    );
+
+SELECT COUNT(*) INTO v_cnt_log FROM TrainLog WHERE Traintrain_id = 5421;
+SELECT COUNT(*) INTO v_cnt_dep FROM TrainLogDeparture WHERE TrainLogTraintrain_id = 5421;
+
+IF v_res <> 1 OR v_cnt_log <> 1 OR v_cnt_dep <> 1 THEN
+        RAISE_APPLICATION_ERROR(-20042, 'TEST 1 failed: unexpected counts/return.');
+END IF;
 
     DBMS_OUTPUT.PUT_LINE('✓ SUCCESS: Movement registered (return=' || v_res || ')');
+    DBMS_OUTPUT.PUT_LINE('✓ TrainLog=' || v_cnt_log || ' | TrainLogDeparture=' || v_cnt_dep);
     DBMS_OUTPUT.PUT_LINE(' ');
 
+ROLLBACK TO sp_t1; -- keep DB clean
 EXCEPTION
     WHEN OTHERS THEN
         DBMS_OUTPUT.PUT_LINE('✗ ERROR: ' || SQLERRM);
         DBMS_OUTPUT.PUT_LINE(' ');
+ROLLBACK TO sp_t1;
 END;
 /
+
 
 
 /* =========================================================
@@ -35,30 +50,44 @@ END;
    ========================================================= */
 DECLARE
 v_res NUMBER;
+    v_cnt_log NUMBER;
+    v_cnt_dep NUMBER;
 BEGIN
     DBMS_OUTPUT.PUT_LINE('TEST 2: Register arrival only (5437)');
 
-    -- cleanup for rerun
+SAVEPOINT sp_t2;
+
+-- cleanup for rerun (will be rolled back)
 DELETE FROM TrainLogDeparture WHERE TrainLogTraintrain_id = 5437;
 DELETE FROM TrainLog          WHERE Traintrain_id = 5437;
-COMMIT;
 
 v_res := usbd42_register_train_movement(
-            5437,
-            'Medway',
-            TO_TIMESTAMP('2025-10-06 18:00:00','YYYY-MM-DD HH24:MI:SS'),
-            NULL
-             );
+        5437,
+        'Medway',
+        TO_TIMESTAMP('2025-10-06 18:00:00','YYYY-MM-DD HH24:MI:SS'),
+        NULL
+    );
 
-    DBMS_OUTPUT.PUT_LINE('✓ SUCCESS: Arrival registered without departure (return=' || v_res || ')');
+SELECT COUNT(*) INTO v_cnt_log FROM TrainLog WHERE Traintrain_id = 5437;
+SELECT COUNT(*) INTO v_cnt_dep FROM TrainLogDeparture WHERE TrainLogTraintrain_id = 5437;
+
+IF v_res <> 1 OR v_cnt_log <> 1 OR v_cnt_dep <> 0 THEN
+        RAISE_APPLICATION_ERROR(-20042, 'TEST 2 failed: unexpected counts/return.');
+END IF;
+
+    DBMS_OUTPUT.PUT_LINE('✓ SUCCESS: Arrival registered (return=' || v_res || ')');
+    DBMS_OUTPUT.PUT_LINE('✓ TrainLog=' || v_cnt_log || ' | TrainLogDeparture=' || v_cnt_dep);
     DBMS_OUTPUT.PUT_LINE(' ');
 
+ROLLBACK TO sp_t2; -- keep DB clean
 EXCEPTION
     WHEN OTHERS THEN
         DBMS_OUTPUT.PUT_LINE('✗ ERROR: ' || SQLERRM);
         DBMS_OUTPUT.PUT_LINE(' ');
+ROLLBACK TO sp_t2;
 END;
 /
+
 
 
 /* =========================================================
@@ -70,21 +99,21 @@ BEGIN
     DBMS_OUTPUT.PUT_LINE('TEST 3: Train not found (expected error)');
 
     v_res := usbd42_register_train_movement(
-            999999,
-            'Medway',
-            TO_TIMESTAMP('2025-10-06 18:00:00','YYYY-MM-DD HH24:MI:SS'),
-            NULL
-             );
+        999999,
+        'Medway',
+        TO_TIMESTAMP('2025-10-06 18:00:00','YYYY-MM-DD HH24:MI:SS'),
+        NULL
+    );
 
     DBMS_OUTPUT.PUT_LINE('✗ ERROR: Should have failed but returned=' || v_res);
     DBMS_OUTPUT.PUT_LINE(' ');
-
 EXCEPTION
     WHEN OTHERS THEN
         DBMS_OUTPUT.PUT_LINE('✓ Expected error caught: ' || SQLERRM);
         DBMS_OUTPUT.PUT_LINE(' ');
 END;
 /
+
 
 
 /* =========================================================
@@ -96,21 +125,21 @@ BEGIN
     DBMS_OUTPUT.PUT_LINE('TEST 4: Missing operator_id (expected error)');
 
     v_res := usbd42_register_train_movement(
-            5421,
-            NULL,
-            TO_TIMESTAMP('2025-10-03 15:05:00','YYYY-MM-DD HH24:MI:SS'),
-            NULL
-             );
+        5421,
+        NULL,
+        TO_TIMESTAMP('2025-10-03 15:05:00','YYYY-MM-DD HH24:MI:SS'),
+        NULL
+    );
 
     DBMS_OUTPUT.PUT_LINE('✗ ERROR: Should have failed but returned=' || v_res);
     DBMS_OUTPUT.PUT_LINE(' ');
-
 EXCEPTION
     WHEN OTHERS THEN
         DBMS_OUTPUT.PUT_LINE('✓ Expected error caught: ' || SQLERRM);
         DBMS_OUTPUT.PUT_LINE(' ');
 END;
 /
+
 
 
 /* =========================================================
@@ -122,21 +151,21 @@ BEGIN
     DBMS_OUTPUT.PUT_LINE('TEST 5: Missing arrival timestamp (expected error)');
 
     v_res := usbd42_register_train_movement(
-            5421,
-            'Medway',
-            NULL,
-            NULL
-             );
+        5421,
+        'Medway',
+        NULL,
+        NULL
+    );
 
     DBMS_OUTPUT.PUT_LINE('✗ ERROR: Should have failed but returned=' || v_res);
     DBMS_OUTPUT.PUT_LINE(' ');
-
 EXCEPTION
     WHEN OTHERS THEN
         DBMS_OUTPUT.PUT_LINE('✓ Expected error caught: ' || SQLERRM);
         DBMS_OUTPUT.PUT_LINE(' ');
 END;
 /
+
 
 
 /* =========================================================
@@ -147,27 +176,31 @@ v_res NUMBER;
 BEGIN
     DBMS_OUTPUT.PUT_LINE('TEST 6: Invalid chronology departure < arrival (expected error)');
 
-    -- cleanup for rerun (so we don't fail earlier on duplicate)
+SAVEPOINT sp_t6;
+
+-- cleanup for rerun (will be rolled back)
 DELETE FROM TrainLogDeparture WHERE TrainLogTraintrain_id = 5435;
 DELETE FROM TrainLog          WHERE Traintrain_id = 5435;
-COMMIT;
 
 v_res := usbd42_register_train_movement(
-            5435,
-            'Medway',
-            TO_TIMESTAMP('2025-10-03 22:00:00','YYYY-MM-DD HH24:MI:SS'),
-            TO_TIMESTAMP('2025-10-03 21:59:00','YYYY-MM-DD HH24:MI:SS')
-             );
+        5435,
+        'Medway',
+        TO_TIMESTAMP('2025-10-03 22:00:00','YYYY-MM-DD HH24:MI:SS'),
+        TO_TIMESTAMP('2025-10-03 21:59:00','YYYY-MM-DD HH24:MI:SS')
+    );
 
     DBMS_OUTPUT.PUT_LINE('✗ ERROR: Should have failed but returned=' || v_res);
     DBMS_OUTPUT.PUT_LINE(' ');
 
+ROLLBACK TO sp_t6;
 EXCEPTION
     WHEN OTHERS THEN
         DBMS_OUTPUT.PUT_LINE('✓ Expected error caught: ' || SQLERRM);
         DBMS_OUTPUT.PUT_LINE(' ');
+ROLLBACK TO sp_t6;
 END;
 /
+
 
 
 /* =========================================================
@@ -178,71 +211,37 @@ v_res NUMBER;
 BEGIN
     DBMS_OUTPUT.PUT_LINE('TEST 7: Duplicate movement (expected error)');
 
-    -- cleanup and insert once
+SAVEPOINT sp_t7;
+
+-- cleanup for rerun (will be rolled back)
 DELETE FROM TrainLogDeparture WHERE TrainLogTraintrain_id = 5421;
 DELETE FROM TrainLog          WHERE Traintrain_id = 5421;
-COMMIT;
 
+-- first call OK
 v_res := usbd42_register_train_movement(
-            5421,
-            'Medway',
-            TO_TIMESTAMP('2025-10-03 15:05:00','YYYY-MM-DD HH24:MI:SS'),
-            NULL
-             );
+        5421,
+        'Medway',
+        TO_TIMESTAMP('2025-10-03 15:05:00','YYYY-MM-DD HH24:MI:SS'),
+        NULL
+    );
     DBMS_OUTPUT.PUT_LINE('First insert OK (return=' || v_res || ')');
 
     -- second call should fail (movement already exists)
     v_res := usbd42_register_train_movement(
-            5421,
-            'Medway',
-            TO_TIMESTAMP('2025-10-03 16:00:00','YYYY-MM-DD HH24:MI:SS'),
-            NULL
-             );
+        5421,
+        'Medway',
+        TO_TIMESTAMP('2025-10-03 16:00:00','YYYY-MM-DD HH24:MI:SS'),
+        NULL
+    );
 
     DBMS_OUTPUT.PUT_LINE('✗ ERROR: Should have failed but returned=' || v_res);
     DBMS_OUTPUT.PUT_LINE(' ');
 
+ROLLBACK TO sp_t7;
 EXCEPTION
     WHEN OTHERS THEN
         DBMS_OUTPUT.PUT_LINE('✓ Expected error caught: ' || SQLERRM);
         DBMS_OUTPUT.PUT_LINE(' ');
+ROLLBACK TO sp_t7;
 END;
 /
-DECLARE
-v_res NUMBER;
-BEGIN
-DELETE FROM TrainLogDeparture WHERE TrainLogTraintrain_id = 5421;
-DELETE FROM TrainLog          WHERE Traintrain_id = 5421;
-COMMIT;
-
-v_res := usbd42_register_train_movement(
-            5421,
-            'Medway',
-            TO_TIMESTAMP('2025-10-03 15:05:00','YYYY-MM-DD HH24:MI:SS'),
-            TO_TIMESTAMP('2025-10-03 15:10:00','YYYY-MM-DD HH24:MI:SS')
-             );
-
-    DBMS_OUTPUT.PUT_LINE('FINAL 5421 -> ' || v_res);
-END;
-/
-
-
-/* =========================================================
-   VERIFICATION QUERIES
-   ========================================================= */
-BEGIN
-    DBMS_OUTPUT.PUT_LINE('VERIFICATION: Movements registered for (5421, 5435, 5437)');
-    DBMS_OUTPUT.PUT_LINE(' ');
-END;
-/
-
-SELECT
-    tl.Traintrain_id   AS "TRAIN_ID",
-    tl.Trainoperator_id AS "OPERATOR_ID",
-    TO_CHAR(tl.Arrival,'YYYY-MM-DD HH24:MI:SS') AS "ARRIVAL",
-    (SELECT TO_CHAR(tld.Departure,'YYYY-MM-DD HH24:MI:SS')
-     FROM TrainLogDeparture tld
-     WHERE tld.TrainLogTraintrain_id = tl.Traintrain_id) AS "DEPARTURE"
-FROM TrainLog tl
-WHERE tl.Traintrain_id IN (5421, 5435, 5437)
-ORDER BY tl.Traintrain_id;

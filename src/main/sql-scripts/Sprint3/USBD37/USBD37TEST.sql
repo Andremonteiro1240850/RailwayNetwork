@@ -1,17 +1,20 @@
+/* =========================================================
+   TEST 1: SUCCESS (auto id + operator case/space-insensitive)
+   ========================================================= */
 DECLARE
 v_new_id     NUMBER;
     v_cnt_wagon  NUMBER;
     v_cnt_links  NUMBER;
 BEGIN
-    DBMS_OUTPUT.PUT_LINE('TEST 1: SUCCESS (auto id)');
+    DBMS_OUTPUT.PUT_LINE('TEST 1: SUCCESS (auto id + operator case/space-insensitive)');
 
     v_new_id := fn_register_wagon(
-            NULL,
-            'Medway',
-            2024,
-            1104,
-            SYS.ODCINUMBERLIST(1668, 1435)
-                );
+        NULL,
+        '   mEdWaY   ',
+        2024,
+        1104,
+        SYS.ODCINUMBERLIST(1668, 1435)
+    );
 
 SELECT COUNT(*) INTO v_cnt_wagon
 FROM Wagon
@@ -30,18 +33,18 @@ FOR g IN (
         FROM Gauge_Wagon
         WHERE Wagonwagon_id = v_new_id
         ORDER BY Gaugecode
-        ) LOOP
-            DBMS_OUTPUT.PUT_LINE('GAUGE=' || g.Gaugecode);
+    ) LOOP
+        DBMS_OUTPUT.PUT_LINE('GAUGE=' || g.Gaugecode);
 END LOOP;
 
     IF v_cnt_wagon <> 1 OR v_cnt_links <> 2 THEN
         RAISE_APPLICATION_ERROR(-20037, 'Teste falhou: counts inesperados.');
 END IF;
 
-    DBMS_OUTPUT.PUT_LINE('TEST 1 PASSOU');
+    DBMS_OUTPUT.PUT_LINE('✓ TEST 1 PASSOU');
     DBMS_OUTPUT.PUT_LINE(' ');
 
-ROLLBACK; -- não sujar BD
+ROLLBACK;
 EXCEPTION
     WHEN OTHERS THEN
         DBMS_OUTPUT.PUT_LINE('✗ ERROR: ' || SQLERRM);
@@ -62,12 +65,12 @@ BEGIN
     DBMS_OUTPUT.PUT_LINE('TEST 2: SUCCESS (explicit wagon_id=999999)');
 
     v_new_id := fn_register_wagon(
-            999999,
-            'Medway',
-            2024,
-            1104,
-            SYS.ODCINUMBERLIST(1668)
-                );
+        999999,
+        'Medway',
+        2024,
+        1104,
+        SYS.ODCINUMBERLIST(1668)
+    );
 
 SELECT COUNT(*) INTO v_cnt_wagon
 FROM Wagon
@@ -85,10 +88,10 @@ DBMS_OUTPUT.PUT_LINE('✓ NEW_WAGON_ID=' || v_new_id);
         RAISE_APPLICATION_ERROR(-20037, 'Teste falhou: counts inesperados.');
 END IF;
 
-    DBMS_OUTPUT.PUT_LINE('TEST 2 PASSOU');
+    DBMS_OUTPUT.PUT_LINE('✓ TEST 2 PASSOU');
     DBMS_OUTPUT.PUT_LINE(' ');
 
-ROLLBACK;
+ROLLBACK; -- não sujar BD
 EXCEPTION
     WHEN OTHERS THEN
         DBMS_OUTPUT.PUT_LINE('✗ ERROR: ' || SQLERRM);
@@ -107,12 +110,12 @@ BEGIN
     DBMS_OUTPUT.PUT_LINE('TEST 3: Missing gauges (expected error)');
 
     v_new_id := fn_register_wagon(
-            NULL,
-            'Medway',
-            2024,
-            1104,
-            NULL
-                );
+        NULL,
+        'Medway',
+        2024,
+        1104,
+        NULL
+    );
 
     DBMS_OUTPUT.PUT_LINE('✗ ERROR: Should have failed but returned=' || v_new_id);
     DBMS_OUTPUT.PUT_LINE(' ');
@@ -134,12 +137,12 @@ BEGIN
     DBMS_OUTPUT.PUT_LINE('TEST 4: Invalid operator (expected error)');
 
     v_new_id := fn_register_wagon(
-            NULL,
-            'NO_SUCH_OPERATOR',
-            2024,
-            1104,
-            SYS.ODCINUMBERLIST(1668)
-                );
+        NULL,
+        'NO_SUCH_OPERATOR',
+        2024,
+        1104,
+        SYS.ODCINUMBERLIST(1668)
+    );
 
     DBMS_OUTPUT.PUT_LINE('✗ ERROR: Should have failed but returned=' || v_new_id);
     DBMS_OUTPUT.PUT_LINE(' ');
@@ -161,12 +164,12 @@ BEGIN
     DBMS_OUTPUT.PUT_LINE('TEST 5: Invalid wagon model (expected error)');
 
     v_new_id := fn_register_wagon(
-            NULL,
-            'Medway',
-            2024,
-            999999,
-            SYS.ODCINUMBERLIST(1668)
-                );
+        NULL,
+        'Medway',
+        2024,
+        999999,
+        SYS.ODCINUMBERLIST(1668)
+    );
 
     DBMS_OUTPUT.PUT_LINE('✗ ERROR: Should have failed but returned=' || v_new_id);
     DBMS_OUTPUT.PUT_LINE(' ');
@@ -188,12 +191,12 @@ BEGIN
     DBMS_OUTPUT.PUT_LINE('TEST 6: Invalid gauge code (expected error)');
 
     v_new_id := fn_register_wagon(
-            NULL,
-            'Medway',
-            2024,
-            1104,
-            SYS.ODCINUMBERLIST(9999)
-                );
+        NULL,
+        'Medway',
+        2024,
+        1104,
+        SYS.ODCINUMBERLIST(9999)
+    );
 
     DBMS_OUTPUT.PUT_LINE('✗ ERROR: Should have failed but returned=' || v_new_id);
     DBMS_OUTPUT.PUT_LINE(' ');
@@ -215,12 +218,12 @@ BEGIN
     DBMS_OUTPUT.PUT_LINE('TEST 7: Duplicate gauge in input list (expected error)');
 
     v_new_id := fn_register_wagon(
-            NULL,
-            'Medway',
-            2024,
-            1104,
-            SYS.ODCINUMBERLIST(1668, 1668)
-                );
+        NULL,
+        'Medway',
+        2024,
+        1104,
+        SYS.ODCINUMBERLIST(1668, 1668)
+    );
 
     DBMS_OUTPUT.PUT_LINE('✗ ERROR: Should have failed but returned=' || v_new_id);
     DBMS_OUTPUT.PUT_LINE(' ');
@@ -234,8 +237,8 @@ END;
 
 
 /* =========================================================
-   TEST 8: Expected error - wagon_id already exists (use one from your seed)
-   Example: 77077 exists in your inserts
+   TEST 8: Expected error - wagon_id already exists
+   (77077 exists in your seed)
    ========================================================= */
 DECLARE
 v_new_id NUMBER;
@@ -243,12 +246,66 @@ BEGIN
     DBMS_OUTPUT.PUT_LINE('TEST 8: Wagon ID already exists (expected error)');
 
     v_new_id := fn_register_wagon(
-            77077,
-            'Medway',
-            2024,
-            1104,
-            SYS.ODCINUMBERLIST(1668)
-                );
+        77077,
+        'Medway',
+        2024,
+        1104,
+        SYS.ODCINUMBERLIST(1668)
+    );
+
+    DBMS_OUTPUT.PUT_LINE('✗ ERROR: Should have failed but returned=' || v_new_id);
+    DBMS_OUTPUT.PUT_LINE(' ');
+EXCEPTION
+    WHEN OTHERS THEN
+        DBMS_OUTPUT.PUT_LINE('✓ Expected error caught: ' || SQLERRM);
+        DBMS_OUTPUT.PUT_LINE(' ');
+ROLLBACK;
+END;
+/
+
+
+/* =========================================================
+   TEST 9: Expected error - NULL gauge element inside list
+   ========================================================= */
+DECLARE
+v_new_id NUMBER;
+BEGIN
+    DBMS_OUTPUT.PUT_LINE('TEST 9: NULL gauge element (expected error)');
+
+    v_new_id := fn_register_wagon(
+        NULL,
+        'Medway',
+        2024,
+        1104,
+        SYS.ODCINUMBERLIST(1668, NULL)
+    );
+
+    DBMS_OUTPUT.PUT_LINE('✗ ERROR: Should have failed but returned=' || v_new_id);
+    DBMS_OUTPUT.PUT_LINE(' ');
+EXCEPTION
+    WHEN OTHERS THEN
+        DBMS_OUTPUT.PUT_LINE('✓ Expected error caught: ' || SQLERRM);
+        DBMS_OUTPUT.PUT_LINE(' ');
+ROLLBACK;
+END;
+/
+
+
+/* =========================================================
+   TEST 10: Expected error - invalid year
+   ========================================================= */
+DECLARE
+v_new_id NUMBER;
+BEGIN
+    DBMS_OUTPUT.PUT_LINE('TEST 10: Invalid year (expected error)');
+
+    v_new_id := fn_register_wagon(
+        NULL,
+        'Medway',
+        1700,
+        1104,
+        SYS.ODCINUMBERLIST(1668)
+    );
 
     DBMS_OUTPUT.PUT_LINE('✗ ERROR: Should have failed but returned=' || v_new_id);
     DBMS_OUTPUT.PUT_LINE(' ');
