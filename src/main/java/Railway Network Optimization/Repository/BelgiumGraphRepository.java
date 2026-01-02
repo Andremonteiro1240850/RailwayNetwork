@@ -97,16 +97,21 @@ public class BelgiumGraphRepository implements GraphRepository {
             throw new IOException("Stations file not found: " + stationsFilePath);
         }
         
+        System.out.println("Loading stations from: " + stationsFilePath);
+        
         try (BufferedReader br = Files.newBufferedReader(path, StandardCharsets.UTF_8)) {
             String line;
             boolean firstLine = true;
             int lineNumber = 0;
+            int totalLinesRead = 0;
             
             while ((line = br.readLine()) != null) {
                 lineNumber++;
+                totalLinesRead++;
                 
                 if (firstLine) {
                     firstLine = false;
+                    System.out.println("Header: " + line);
                     continue; // Skip header
                 }
                 
@@ -115,7 +120,8 @@ public class BelgiumGraphRepository implements GraphRepository {
                 }
                 
                 // CSV format uses comma as separator
-                String[] parts = line.split(",");
+                // Use -1 to preserve empty fields
+                String[] parts = line.split(",", -1);
                 
                 // Expected format: Station id,Station,Lat,Lon,CoordX,CoordY
                 if (parts.length >= 6) {
@@ -129,6 +135,7 @@ public class BelgiumGraphRepository implements GraphRepository {
                         
                         // Validate required fields
                         if (id.isEmpty() || name.isEmpty()) {
+                            System.err.println("Line " + lineNumber + " rejected: Empty ID or name");
                             rejectedStationCount++;
                             continue; // Ignore invalid entry deterministically
                         }
@@ -141,6 +148,7 @@ public class BelgiumGraphRepository implements GraphRepository {
                         
                         // Validate coordinates
                         if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
+                            System.err.println("Line " + lineNumber + " rejected: Invalid coordinates (lat=" + latitude + ", lon=" + longitude + ")");
                             rejectedStationCount++;
                             continue; // Ignore invalid coordinates deterministically
                         }
@@ -152,17 +160,24 @@ public class BelgiumGraphRepository implements GraphRepository {
                         loadedStationCount++;
                         
                     } catch (NumberFormatException e) {
+                        System.err.println("Line " + lineNumber + " rejected: Number format error - " + e.getMessage());
                         rejectedStationCount++;
                         // Ignore invalid number format deterministically
                     } catch (IllegalArgumentException e) {
+                        System.err.println("Line " + lineNumber + " rejected: " + e.getMessage());
                         rejectedStationCount++;
                         // Ignore validation errors deterministically
                     }
                 } else {
+                    System.err.println("Line " + lineNumber + " rejected: Insufficient columns (expected 6, got " + parts.length + "): " + line);
                     rejectedStationCount++;
                     // Ignore lines with insufficient columns deterministically
                 }
             }
+            
+            System.out.println("Total lines read: " + totalLinesRead);
+            System.out.println("Stations loaded: " + loadedStationCount);
+            System.out.println("Stations rejected: " + rejectedStationCount);
         }
     }
     
@@ -184,6 +199,8 @@ public class BelgiumGraphRepository implements GraphRepository {
             throw new IOException("Lines file not found: " + linesFilePath);
         }
         
+        System.out.println("Loading connections from: " + linesFilePath);
+        
         // Track which connections we've already added to avoid duplicates
         // Use a deterministic ordering: originId < destinationId
         Map<String, Boolean> processedConnections = new HashMap<>();
@@ -192,12 +209,15 @@ public class BelgiumGraphRepository implements GraphRepository {
             String line;
             boolean firstLine = true;
             int lineNumber = 0;
+            int totalLinesRead = 0;
             
             while ((line = br.readLine()) != null) {
                 lineNumber++;
+                totalLinesRead++;
                 
                 if (firstLine) {
                     firstLine = false;
+                    System.out.println("Header: " + line);
                     continue; // Skip header
                 }
                 
@@ -206,7 +226,8 @@ public class BelgiumGraphRepository implements GraphRepository {
                 }
                 
                 // CSV format uses comma as separator
-                String[] parts = line.split(",");
+                // Use -1 to preserve empty fields
+                String[] parts = line.split(",", -1);
                 
                 // Expected format: departure_stid,arrival_stid,dist,capacity,cost
                 if (parts.length >= 3) {
@@ -217,12 +238,14 @@ public class BelgiumGraphRepository implements GraphRepository {
                         
                         // Validate required fields
                         if (departureId.isEmpty() || arrivalId.isEmpty()) {
+                            System.err.println("Line " + lineNumber + " rejected: Empty station IDs");
                             rejectedConnectionCount++;
                             continue; // Ignore invalid entry deterministically
                         }
                         
                         // Skip self-loops
                         if (departureId.equals(arrivalId)) {
+                            System.err.println("Line " + lineNumber + " rejected: Self-loop");
                             rejectedConnectionCount++;
                             continue; // Ignore self-loops deterministically
                         }
@@ -232,16 +255,19 @@ public class BelgiumGraphRepository implements GraphRepository {
                         
                         // Validate distance
                         if (distance < 0) {
+                            System.err.println("Line " + lineNumber + " rejected: Negative distance");
                             rejectedConnectionCount++;
                             continue; // Ignore negative distances deterministically
                         }
                         
                         // Check if stations exist in graph
                         if (!graph.containsStation(departureId)) {
+                            System.err.println("Line " + lineNumber + " rejected: Departure station not found: " + departureId);
                             rejectedConnectionCount++;
                             continue; // Ignore connections to non-existent stations deterministically
                         }
                         if (!graph.containsStation(arrivalId)) {
+                            System.err.println("Line " + lineNumber + " rejected: Arrival station not found: " + arrivalId);
                             rejectedConnectionCount++;
                             continue; // Ignore connections to non-existent stations deterministically
                         }
@@ -275,17 +301,24 @@ public class BelgiumGraphRepository implements GraphRepository {
                         loadedConnectionCount++;
                         
                     } catch (NumberFormatException e) {
+                        System.err.println("Line " + lineNumber + " rejected: Number format error - " + e.getMessage());
                         rejectedConnectionCount++;
                         // Ignore invalid number format deterministically
                     } catch (IllegalArgumentException e) {
+                        System.err.println("Line " + lineNumber + " rejected: " + e.getMessage());
                         rejectedConnectionCount++;
                         // Ignore validation errors deterministically
                     }
                 } else {
+                    System.err.println("Line " + lineNumber + " rejected: Insufficient columns (expected at least 3, got " + parts.length + "): " + line);
                     rejectedConnectionCount++;
                     // Ignore lines with insufficient columns deterministically
                 }
             }
+            
+            System.out.println("Total lines read: " + totalLinesRead);
+            System.out.println("Connections loaded: " + loadedConnectionCount);
+            System.out.println("Connections rejected: " + rejectedConnectionCount);
         }
     }
     

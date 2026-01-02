@@ -1,6 +1,7 @@
 package Domain;
 
 import java.util.*;
+import java.util.Locale;
 
 /**
  * Utility class for exporting Graph objects to DOT format for Graphviz visualization.
@@ -41,26 +42,34 @@ public class DotExporter {
         
         StringBuilder dot = new StringBuilder();
         
-        // DOT header for undirected graph
-        // Note: layout=neato is NOT specified here - it's handled by the neato command with -n flag
-        dot.append("graph G {\n");
-        dot.append("    node [shape=point, width=0.1, height=0.1, color=blue];\n");
-        dot.append("    edge [color=gray];\n\n");
-        
         // Export nodes (stations) - sorted deterministically
         List<Station> stations = new ArrayList<>(graph.getStations());
         stations.sort(Comparator.comparing(Station::getId));
         
-        // Find Y bounds to invert Y axis (SVG Y-axis is top-to-bottom, geographic is bottom-to-top)
-        double maxY = stations.stream().mapToDouble(Station::getCoordY).max().orElse(0);
+        if (stations.isEmpty()) {
+            dot.append("graph G {\n}\n");
+            return dot.toString();
+        }
         
+        // DOT header for undirected graph
+        // Simple, clean format - neato will be specified in command line
+        dot.append("graph G {\n");
+        dot.append("    node [shape=circle, style=filled, fillcolor=\"#2563EB\", fontcolor=white, fontsize=8];\n");
+        dot.append("    edge [color=\"#DC2626\", penwidth=2];\n\n");
+        
+        // Export nodes with their original XY coordinates
+        // The coordinates from CSV should match the Belgium railway map positions
+        // Graphviz pos attribute uses points (72 points = 1 inch)
+        // Format: "x,y!" where ! means fixed position
         for (Station station : stations) {
             String nodeId = escapeNodeId(station.getId());
+            String stationName = station.getName() != null ? escapeLabel(station.getName()) : station.getId();
+            // Use original coordinates directly - they should match the Belgium railway map
             double x = station.getCoordX();
-            // Invert Y axis: SVG has origin at top-left, geographic coordinates have origin at bottom-left
-            double y = maxY - station.getCoordY();
-            // Use ! to indicate fixed position (neato -n will respect this strictly)
-            dot.append(String.format("    %s [pos=\"%.2f,%.2f!\"];\n", nodeId, x, y));
+            double y = station.getCoordY();
+            // Use pos attribute with ! to indicate fixed position
+            // IMPORTANT: Use Locale.US to ensure decimal point (.) not comma (,)
+            dot.append(String.format(Locale.US, "    %s [label=\"%s\", pos=\"%.2f,%.2f!\"];\n", nodeId, stationName, x, y));
         }
         
         dot.append("\n");
