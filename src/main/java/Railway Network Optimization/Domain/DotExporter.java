@@ -42,27 +42,25 @@ public class DotExporter {
         StringBuilder dot = new StringBuilder();
         
         // DOT header for undirected graph
-        // Use neato layout engine with overlap prevention
+        // Note: layout=neato is NOT specified here - it's handled by the neato command with -n flag
         dot.append("graph G {\n");
-        dot.append("    layout=neato;\n");
-        dot.append("    overlap=false;\n");
-        dot.append("    splines=true;\n");
-        dot.append("    node [shape=point, width=0.03, height=0.03, color=blue];\n");
-        dot.append("    edge [color=gray, penwidth=0.5];\n\n");
+        dot.append("    node [shape=point, width=0.1, height=0.1, color=blue];\n");
+        dot.append("    edge [color=gray];\n\n");
         
         // Export nodes (stations) - sorted deterministically
         List<Station> stations = new ArrayList<>(graph.getStations());
         stations.sort(Comparator.comparing(Station::getId));
         
+        // Find Y bounds to invert Y axis (SVG Y-axis is top-to-bottom, geographic is bottom-to-top)
+        double maxY = stations.stream().mapToDouble(Station::getCoordY).max().orElse(0);
+        
         for (Station station : stations) {
             String nodeId = escapeNodeId(station.getId());
-            // Use coordinates as hints for neato
             double x = station.getCoordX();
-            double y = station.getCoordY();
-            
-            // pos attribute without ! allows neato to adjust positions
-            dot.append(String.format("    %s [pos=\"%.2f,%.2f\"];\n", 
-                    nodeId, x, y));
+            // Invert Y axis: SVG has origin at top-left, geographic coordinates have origin at bottom-left
+            double y = maxY - station.getCoordY();
+            // Use ! to indicate fixed position (neato -n will respect this strictly)
+            dot.append(String.format("    %s [pos=\"%.2f,%.2f!\"];\n", nodeId, x, y));
         }
         
         dot.append("\n");

@@ -129,11 +129,12 @@ public class GraphvizRenderer {
         // Find neato executable path
         String neatoPath = findNeatoPath();
         
-        // Execute neato command WITHOUT -n flag for better compatibility
-        // Let neato calculate optimal layout based on edge structure
-        System.out.println("[GraphvizRenderer] Executing: " + neatoPath + " -Tsvg " + dotPath + " -o " + svgPath);
+        // Execute neato command with -n flag to use fixed positions from pos attribute
+        // The -n flag tells neato to use the pos attributes from the DOT file
+        System.out.println("[GraphvizRenderer] Executing: " + neatoPath + " -n -Tsvg " + dotPath + " -o " + svgPath);
         ProcessBuilder processBuilder = new ProcessBuilder(
                 neatoPath,
+                "-n",
                 "-Tsvg",
                 dotPath.toString(),
                 "-o",
