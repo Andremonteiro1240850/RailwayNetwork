@@ -20,6 +20,7 @@ import JavaFX.MaximumFlowFXUI;
 import JavaFX.BackboneFXUI;
 import JavaFX.ShortestPathFXUI;
 import Lapr.JavaFX.SchedulerFXUI;
+import Lapr.JavaFX.TrainAssemblyFXUI;
 import javafx.fxml.FXML;
 import javafx.application.Platform;
 import javafx.scene.control.Alert;
@@ -452,6 +453,25 @@ public class Controller {
                 });
             } catch (Exception e) {
                 Platform.runLater(() -> showError("Error", "Failed to start Train Dispatch Scheduler: " + e.getMessage()));
+                e.printStackTrace();
+            }
+        });
+    }
+
+    /**
+     * Handles the Train Assembly button click.
+     * Opens the Train Assembly window (USLP09).
+     */
+    @FXML
+    private void handleTrainAssemblyButton() {
+        executorService.execute(() -> {
+            try {
+                Platform.runLater(() -> {
+                    TrainAssemblyFXUI ui = new TrainAssemblyFXUI();
+                    ui.show();
+                });
+            } catch (Exception e) {
+                Platform.runLater(() -> showError("Error", "Failed to start Train Assembly: " + e.getMessage()));
                 e.printStackTrace();
             }
         });
