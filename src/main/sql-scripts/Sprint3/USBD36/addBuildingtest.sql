@@ -1,92 +1,151 @@
---sucesso
+-- Test cases for USBD36 - Add Building to Facility
+-- All test cases use anonymous blocks and the record type
 
+-- Test 1: Success case
 DECLARE
-v_id NUMBER;
+    building_record building_facility_association_record;
+    result_building_id NUMBER;
 BEGIN
-SAVEPOINT sp_test;
-
-v_id := usbd36_add_building(10000, 'USBD36 Test Building OK', 1, 1, 50);
-    DBMS_OUTPUT.PUT_LINE('SUCCESS: building_id=' || v_id || ' facility_id=50');
-
-ROLLBACK TO sp_test;
+    SAVEPOINT sp_test;
+    
+    DBMS_OUTPUT.PUT_LINE('TEST 1: Success case');
+    
+    building_record := building_facility_association_record(
+        building_identifier => 10000,
+        building_name_value => 'USBD36 Test Building OK',
+        number_of_buildings_value => 1,
+        building_type_identifier => 1,
+        facility_identifier => 50
+    );
+    
+    result_building_id := usbd36_add_building(building_record);
+    DBMS_OUTPUT.PUT_LINE('SUCCESS: building_id=' || result_building_id || ' facility_id=50');
+    
+    ROLLBACK TO sp_test;
+EXCEPTION
+    WHEN OTHERS THEN
+        DBMS_OUTPUT.PUT_LINE('ERROR: ' || SQLERRM);
+        ROLLBACK TO sp_test;
 END;
 /
 
-
---facility nao existe
+-- Test 2: Facility does not exist
 DECLARE
-v_id NUMBER;
+    building_record building_facility_association_record;
+    result_building_id NUMBER;
 BEGIN
-SAVEPOINT sp_test;
-
-v_id := usbd36_add_building(10001, 'USBD36 Bad Facility', 1, 1, 999999);
-    DBMS_OUTPUT.PUT_LINE('UNEXPECTED SUCCESS: building_id=' || v_id);
-
-ROLLBACK TO sp_test;
+    SAVEPOINT sp_test;
+    
+    DBMS_OUTPUT.PUT_LINE('TEST 2: Facility does not exist');
+    
+    building_record := building_facility_association_record(
+        building_identifier => 10001,
+        building_name_value => 'USBD36 Bad Facility',
+        number_of_buildings_value => 1,
+        building_type_identifier => 1,
+        facility_identifier => 999999
+    );
+    
+    result_building_id := usbd36_add_building(building_record);
+    DBMS_OUTPUT.PUT_LINE('UNEXPECTED SUCCESS: building_id=' || result_building_id);
+    ROLLBACK TO sp_test;
 EXCEPTION
     WHEN OTHERS THEN
         DBMS_OUTPUT.PUT_LINE('EXPECTED ERROR: ' || SQLERRM);
-ROLLBACK TO sp_test;
+        ROLLBACK TO sp_test;
 END;
 /
 
-
---buildingtype nao existe
-
+-- Test 3: Building type does not exist
 DECLARE
-v_id NUMBER;
+    building_record building_facility_association_record;
+    result_building_id NUMBER;
 BEGIN
-SAVEPOINT sp_test;
-
-v_id := usbd36_add_building(10002, 'USBD36 Bad Type', 1, 999999, 50);
-    DBMS_OUTPUT.PUT_LINE('UNEXPECTED SUCCESS: building_id=' || v_id);
-
-ROLLBACK TO sp_test;
+    SAVEPOINT sp_test;
+    
+    DBMS_OUTPUT.PUT_LINE('TEST 3: Building type does not exist');
+    
+    building_record := building_facility_association_record(
+        building_identifier => 10002,
+        building_name_value => 'USBD36 Bad Type',
+        number_of_buildings_value => 1,
+        building_type_identifier => 999999,
+        facility_identifier => 50
+    );
+    
+    result_building_id := usbd36_add_building(building_record);
+    DBMS_OUTPUT.PUT_LINE('UNEXPECTED SUCCESS: building_id=' || result_building_id);
+    ROLLBACK TO sp_test;
 EXCEPTION
     WHEN OTHERS THEN
         DBMS_OUTPUT.PUT_LINE('EXPECTED ERROR: ' || SQLERRM);
-ROLLBACK TO sp_test;
+        ROLLBACK TO sp_test;
 END;
 /
 
-
---numberOfBuildings inválido
+-- Test 4: Invalid number of buildings
 DECLARE
-v_id NUMBER;
+    building_record building_facility_association_record;
+    result_building_id NUMBER;
 BEGIN
-SAVEPOINT sp_test;
-
-v_id := usbd36_add_building(10003, 'USBD36 Bad Number', 0, 1, 50);
-    DBMS_OUTPUT.PUT_LINE('UNEXPECTED SUCCESS: building_id=' || v_id);
-
-ROLLBACK TO sp_test;
+    SAVEPOINT sp_test;
+    
+    DBMS_OUTPUT.PUT_LINE('TEST 4: Invalid number of buildings');
+    
+    building_record := building_facility_association_record(
+        building_identifier => 10003,
+        building_name_value => 'USBD36 Bad Number',
+        number_of_buildings_value => 0,
+        building_type_identifier => 1,
+        facility_identifier => 50
+    );
+    
+    result_building_id := usbd36_add_building(building_record);
+    DBMS_OUTPUT.PUT_LINE('UNEXPECTED SUCCESS: building_id=' || result_building_id);
+    ROLLBACK TO sp_test;
 EXCEPTION
     WHEN OTHERS THEN
         DBMS_OUTPUT.PUT_LINE('EXPECTED ERROR: ' || SQLERRM);
-ROLLBACK TO sp_test;
+        ROLLBACK TO sp_test;
 END;
 /
 
-
---duplicado(mesmo nome ou id)
+-- Test 5: Duplicate building (same name or id)
 DECLARE
-v_id NUMBER;
+    building_record building_facility_association_record;
+    result_building_id NUMBER;
 BEGIN
-SAVEPOINT sp_test;
-
--- Primeiro insert (ok)
-v_id := usbd36_add_building(10004, 'USBD36 Duplicate Name', 1, 1, 50);
-    DBMS_OUTPUT.PUT_LINE('First insert OK: building_id=' || v_id);
-
-    -- Segundo insert com o mesmo NAME (deve falhar por UNIQUE(name))
-    v_id := usbd36_add_building(10005, 'USBD36 Duplicate Name', 1, 1, 50);
-    DBMS_OUTPUT.PUT_LINE('UNEXPECTED SUCCESS: building_id=' || v_id);
-
-ROLLBACK TO sp_test;
+    SAVEPOINT sp_test;
+    
+    DBMS_OUTPUT.PUT_LINE('TEST 5: Duplicate building');
+    
+    -- First insert (should succeed)
+    building_record := building_facility_association_record(
+        building_identifier => 10004,
+        building_name_value => 'USBD36 Duplicate Name',
+        number_of_buildings_value => 1,
+        building_type_identifier => 1,
+        facility_identifier => 50
+    );
+    
+    result_building_id := usbd36_add_building(building_record);
+    DBMS_OUTPUT.PUT_LINE('First insert OK: building_id=' || result_building_id);
+    
+    -- Second insert with same name (should fail)
+    building_record := building_facility_association_record(
+        building_identifier => 10005,
+        building_name_value => 'USBD36 Duplicate Name',
+        number_of_buildings_value => 1,
+        building_type_identifier => 1,
+        facility_identifier => 50
+    );
+    
+    result_building_id := usbd36_add_building(building_record);
+    DBMS_OUTPUT.PUT_LINE('UNEXPECTED SUCCESS: building_id=' || result_building_id);
+    ROLLBACK TO sp_test;
 EXCEPTION
     WHEN OTHERS THEN
         DBMS_OUTPUT.PUT_LINE('EXPECTED ERROR: ' || SQLERRM);
-ROLLBACK TO sp_test;
+        ROLLBACK TO sp_test;
 END;
 /
-
