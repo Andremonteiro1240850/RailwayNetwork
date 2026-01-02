@@ -24,40 +24,45 @@ import java.io.File;
 public class GraphvizRenderer {
     
     private static final String NEATO_COMMAND = "neato";
-    private static final int TIMEOUT_SECONDS = 30;
+    private static final int TIMEOUT_SECONDS = 60;  // Increased timeout for large graphs
     
     // Common Graphviz installation paths on Windows
     private static final String[] WINDOWS_GRAPHVIZ_PATHS = {
         "C:\\Program Files\\Graphviz\\bin\\neato.exe",
         "C:\\Program Files (x86)\\Graphviz\\bin\\neato.exe",
-        "C:\\Graphviz\\bin\\neato.exe"
+        "C:\\Graphviz\\bin\\neato.exe",
+        "C:\\Program Files\\Graphviz12\\bin\\neato.exe"
     };
     
     /**
      * Finds the neato executable path.
-     * First tries to use 'neato' from PATH, then checks common Windows installation paths.
+     * On Windows, checks common installation paths first for reliability.
+     * Then tries to use 'neato' from PATH.
      * 
      * @return the path to neato executable, or "neato" if found in PATH
      */
     private static String findNeatoPath() {
         String os = System.getProperty("os.name").toLowerCase();
         
-        // First, try to verify if 'neato' is available in PATH
-        if (isCommandAvailable(NEATO_COMMAND)) {
-            return NEATO_COMMAND;
-        }
-        
-        // If not in PATH, check common Windows installation paths
+        // On Windows, check common installation paths FIRST (more reliable)
         if (os.contains("win")) {
             for (String path : WINDOWS_GRAPHVIZ_PATHS) {
                 File neatoFile = new File(path);
                 if (neatoFile.exists() && neatoFile.isFile()) {
+                    System.out.println("[GraphvizRenderer] Found neato at: " + path);
                     return path;
                 }
             }
         }
         
+        // Try to verify if 'neato' is available in PATH
+        if (isCommandAvailable(NEATO_COMMAND)) {
+            System.out.println("[GraphvizRenderer] Using neato from PATH");
+            return NEATO_COMMAND;
+        }
+        
         // Fallback to PATH (will fail with better error message if not found)
+        System.out.println("[GraphvizRenderer] WARNING: neato not found, trying PATH anyway");
         return NEATO_COMMAND;
     }
     
@@ -124,7 +129,9 @@ public class GraphvizRenderer {
         // Find neato executable path
         String neatoPath = findNeatoPath();
         
-        // Execute neato command
+        // Execute neato command WITHOUT -n flag for better compatibility
+        // Let neato calculate optimal layout based on edge structure
+        System.out.println("[GraphvizRenderer] Executing: " + neatoPath + " -Tsvg " + dotPath + " -o " + svgPath);
         ProcessBuilder processBuilder = new ProcessBuilder(
                 neatoPath,
                 "-Tsvg",
@@ -138,8 +145,27 @@ public class GraphvizRenderer {
         try {
             Process process = processBuilder.start();
             
+            // Read output in a separate thread to prevent blocking
+            StringBuilder outputBuilder = new StringBuilder();
+            Thread outputReader = new Thread(() -> {
+                try (BufferedReader reader = new BufferedReader(
+                        new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8))) {
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        outputBuilder.append(line).append("\n");
+                        System.out.println("[neato] " + line);
+                    }
+                } catch (IOException e) {
+                    // Ignore
+                }
+            });
+            outputReader.start();
+            
             // Wait for process to complete with timeout
             boolean finished = process.waitFor(TIMEOUT_SECONDS, TimeUnit.SECONDS);
+            
+            // Wait for output reader to finish
+            outputReader.join(1000);
             
             if (!finished) {
                 process.destroyForcibly();
