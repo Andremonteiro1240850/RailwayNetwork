@@ -191,5 +191,43 @@ public class MinimalBackboneService {
         
         return mstGraph;
     }
+    
+    /**
+     * Gets the temporal complexity analysis information for the MST algorithm.
+     * 
+     * @return a string containing the complexity analysis
+     */
+    public String getComplexityAnalysis() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("TEMPORAL COMPLEXITY ANALYSIS - Minimal Backbone Network (USEI12)\n");
+        sb.append("=".repeat(80)).append("\n\n");
+        
+        sb.append("Algorithm: Kruskal's Minimum Spanning Tree with Union-Find\n");
+        sb.append("Implementation: Union-Find with path compression and union by rank\n\n");
+        
+        sb.append("Time Complexity: O(|E| log |E|)\n");
+        sb.append("  Where |E| = number of edges (connections)\n");
+        sb.append("  Dominated by: Edge sorting (Timsort) - O(|E| log |E|)\n");
+        sb.append("  Kruskal's algorithm: O(|E| × α(|V|)) ≈ O(|E|)\n");
+        sb.append("    Where |V| = number of vertices (stations)\n");
+        sb.append("    α(|V|) = inverse Ackermann function (practically constant ≤ 4)\n\n");
+        
+        sb.append("Space Complexity: O(|V| + |E|)\n");
+        sb.append("  - Union-Find structures: O(|V|)\n");
+        sb.append("  - Sorted edges list: O(|E|)\n");
+        sb.append("  - MST graph: O(|V| + |V| - 1) = O(|V|)\n\n");
+        
+        sb.append("Phase Breakdown:\n");
+        sb.append("  1. Validation: O(1)\n");
+        sb.append("  2. Add stations to MST: O(|V|)\n");
+        sb.append("  3. Sort edges: O(|E| log |E|) [DOMINANT]\n");
+        sb.append("  4. Initialize Union-Find: O(|V|)\n");
+        sb.append("  5. Kruskal's algorithm: O(|E| × α(|V|)) ≈ O(|E|)\n\n");
+        
+        sb.append("Note: For practical purposes, α(|V|) is treated as constant.\n");
+        sb.append("The overall complexity is dominated by edge sorting: O(|E| log |E|).\n");
+        
+        return sb.toString();
+    }
 }
 

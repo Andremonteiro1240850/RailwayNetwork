@@ -61,6 +61,7 @@ public class BackboneUI {
             System.out.println("4. Generate and Export DOT");
             System.out.println("5. Generate and Export SVG");
             System.out.println("6. View Graph Statistics");
+            System.out.println("7. View Complexity Analysis");
             System.out.println("0. Exit");
             
             System.out.print("\nSelect option: ");
@@ -84,6 +85,9 @@ public class BackboneUI {
                     break;
                 case "6":
                     showGraphStatistics();
+                    break;
+                case "7":
+                    showComplexityAnalysis();
                     break;
                 case "0":
                     System.out.println("\nExiting... Goodbye!");
@@ -284,6 +288,28 @@ public class BackboneUI {
             
         } catch (Exception e) {
             System.out.println("\n✗ ERROR: Failed to load graph statistics");
+            System.out.println("  " + e.getMessage());
+            if (e.getCause() != null) {
+                System.out.println("  Cause: " + e.getCause().getMessage());
+            }
+        }
+        
+        System.out.println("\nPress Enter to continue...");
+        scanner.nextLine();
+    }
+    
+    /**
+     * Shows the temporal complexity analysis.
+     */
+    private void showComplexityAnalysis() {
+        System.out.println("\n--- Temporal Complexity Analysis ---");
+        
+        try {
+            String analysis = controller.getComplexityAnalysis();
+            System.out.println(analysis);
+            
+        } catch (Exception e) {
+            System.out.println("\n✗ ERROR: Failed to load complexity analysis");
             System.out.println("  " + e.getMessage());
             if (e.getCause() != null) {
                 System.out.println("  Cause: " + e.getCause().getMessage());

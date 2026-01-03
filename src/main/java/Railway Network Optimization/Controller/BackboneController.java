@@ -229,5 +229,14 @@ public class BackboneController {
                 graphRepository.getRejectedConnectionCount()
         );
     }
+    
+    /**
+     * Gets the temporal complexity analysis for the MST algorithm.
+     * 
+     * @return a string containing the complexity analysis
+     */
+    public String getComplexityAnalysis() {
+        return backboneService.getComplexityAnalysis();
+    }
 }
 
