@@ -1,151 +1,95 @@
--- Test cases for USBD36 - Add Building to Facility
--- All test cases use anonymous blocks and the record type
+-- DELETE FROM Building WHERE UPPER(name) = UPPER('Test Warehouse US36');
+-- COMMIT;
 
--- Test 1: Success case
-DECLARE
-    building_record building_facility_association_record;
-    result_building_id NUMBER;
-BEGIN
-    SAVEPOINT sp_test;
-    
-    DBMS_OUTPUT.PUT_LINE('TEST 1: Success case');
-    
-    building_record := building_facility_association_record(
-        building_identifier => 10000,
-        building_name_value => 'USBD36 Test Building OK',
-        number_of_buildings_value => 1,
-        building_type_identifier => 1,
-        facility_identifier => 50
-    );
-    
-    result_building_id := usbd36_add_building(building_record);
-    DBMS_OUTPUT.PUT_LINE('SUCCESS: building_id=' || result_building_id || ' facility_id=50');
-    
-    ROLLBACK TO sp_test;
-EXCEPTION
-    WHEN OTHERS THEN
-        DBMS_OUTPUT.PUT_LINE('ERROR: ' || SQLERRM);
-        ROLLBACK TO sp_test;
-END;
-/
 
--- Test 2: Facility does not exist
 DECLARE
-    building_record building_facility_association_record;
-    result_building_id NUMBER;
+    v_id NUMBER;
 BEGIN
-    SAVEPOINT sp_test;
-    
-    DBMS_OUTPUT.PUT_LINE('TEST 2: Facility does not exist');
-    
-    building_record := building_facility_association_record(
-        building_identifier => 10001,
-        building_name_value => 'USBD36 Bad Facility',
-        number_of_buildings_value => 1,
-        building_type_identifier => 1,
-        facility_identifier => 999999
-    );
-    
-    result_building_id := usbd36_add_building(building_record);
-    DBMS_OUTPUT.PUT_LINE('UNEXPECTED SUCCESS: building_id=' || result_building_id);
-    ROLLBACK TO sp_test;
-EXCEPTION
-    WHEN OTHERS THEN
-        DBMS_OUTPUT.PUT_LINE('EXPECTED ERROR: ' || SQLERRM);
-        ROLLBACK TO sp_test;
-END;
-/
+    DBMS_OUTPUT.PUT_LINE('--- TESTE US36: addBuildingToFacility ---');
 
--- Test 3: Building type does not exist
-DECLARE
-    building_record building_facility_association_record;
-    result_building_id NUMBER;
-BEGIN
-    SAVEPOINT sp_test;
-    
-    DBMS_OUTPUT.PUT_LINE('TEST 3: Building type does not exist');
-    
-    building_record := building_facility_association_record(
-        building_identifier => 10002,
-        building_name_value => 'USBD36 Bad Type',
-        number_of_buildings_value => 1,
-        building_type_identifier => 999999,
-        facility_identifier => 50
-    );
-    
-    result_building_id := usbd36_add_building(building_record);
-    DBMS_OUTPUT.PUT_LINE('UNEXPECTED SUCCESS: building_id=' || result_building_id);
-    ROLLBACK TO sp_test;
-EXCEPTION
-    WHEN OTHERS THEN
-        DBMS_OUTPUT.PUT_LINE('EXPECTED ERROR: ' || SQLERRM);
-        ROLLBACK TO sp_test;
-END;
-/
+    -- 1) CASO DE SUCESSO
+    BEGIN
+        v_id := addBuildingToFacility(
+                facilityIdentifier     => 50,
+                buildingName           => 'Test Warehouse US36',
+                buildingNumber         => 99,
+                buildingTypeIdentifier => 1
+                );
 
--- Test 4: Invalid number of buildings
-DECLARE
-    building_record building_facility_association_record;
-    result_building_id NUMBER;
-BEGIN
-    SAVEPOINT sp_test;
-    
-    DBMS_OUTPUT.PUT_LINE('TEST 4: Invalid number of buildings');
-    
-    building_record := building_facility_association_record(
-        building_identifier => 10003,
-        building_name_value => 'USBD36 Bad Number',
-        number_of_buildings_value => 0,
-        building_type_identifier => 1,
-        facility_identifier => 50
-    );
-    
-    result_building_id := usbd36_add_building(building_record);
-    DBMS_OUTPUT.PUT_LINE('UNEXPECTED SUCCESS: building_id=' || result_building_id);
-    ROLLBACK TO sp_test;
-EXCEPTION
-    WHEN OTHERS THEN
-        DBMS_OUTPUT.PUT_LINE('EXPECTED ERROR: ' || SQLERRM);
-        ROLLBACK TO sp_test;
-END;
-/
+        DBMS_OUTPUT.PUT_LINE('SUCESSO: Building criado com ID = ' || v_id);
+    EXCEPTION
+        WHEN OTHERS THEN
+            DBMS_OUTPUT.PUT_LINE('ERRO INESPERADO NO CASO DE SUCESSO: ' || SQLERRM);
+    END;
 
--- Test 5: Duplicate building (same name or id)
-DECLARE
-    building_record building_facility_association_record;
-    result_building_id NUMBER;
-BEGIN
-    SAVEPOINT sp_test;
-    
-    DBMS_OUTPUT.PUT_LINE('TEST 5: Duplicate building');
-    
-    -- First insert (should succeed)
-    building_record := building_facility_association_record(
-        building_identifier => 10004,
-        building_name_value => 'USBD36 Duplicate Name',
-        number_of_buildings_value => 1,
-        building_type_identifier => 1,
-        facility_identifier => 50
-    );
-    
-    result_building_id := usbd36_add_building(building_record);
-    DBMS_OUTPUT.PUT_LINE('First insert OK: building_id=' || result_building_id);
-    
-    -- Second insert with same name (should fail)
-    building_record := building_facility_association_record(
-        building_identifier => 10005,
-        building_name_value => 'USBD36 Duplicate Name',
-        number_of_buildings_value => 1,
-        building_type_identifier => 1,
-        facility_identifier => 50
-    );
-    
-    result_building_id := usbd36_add_building(building_record);
-    DBMS_OUTPUT.PUT_LINE('UNEXPECTED SUCCESS: building_id=' || result_building_id);
-    ROLLBACK TO sp_test;
-EXCEPTION
-    WHEN OTHERS THEN
-        DBMS_OUTPUT.PUT_LINE('EXPECTED ERROR: ' || SQLERRM);
-        ROLLBACK TO sp_test;
+
+
+
+    ------------------------------------------------------------------
+    -- 2) FACILITY INEXISTENTE
+    ------------------------------------------------------------------
+    BEGIN
+        v_id := addBuildingToFacility(
+                facilityIdentifier     => 9999,
+                buildingName           => 'Invalid Facility Test',
+                buildingNumber         => 1,
+                buildingTypeIdentifier => 1
+                );
+
+        DBMS_OUTPUT.PUT_LINE('ERRO: deveria falhar (facility inexistente)');
+    EXCEPTION
+        WHEN OTHERS THEN
+            DBMS_OUTPUT.PUT_LINE('(facility inexistente): ' || SQLERRM);
+    END;
+
+
+    ------------------------------------------------------------------
+    -- 3) BUILDING TYPE INEXISTENTE
+    ------------------------------------------------------------------
+    BEGIN
+        v_id := addBuildingToFacility(
+                facilityIdentifier     => 50,
+                buildingName           => 'Invalid Type Test',
+                buildingNumber         => 1,
+                buildingTypeIdentifier => 999
+                );
+
+        DBMS_OUTPUT.PUT_LINE('ERRO: deveria falhar (building type inexistente)');
+    EXCEPTION
+        WHEN OTHERS THEN
+            DBMS_OUTPUT.PUT_LINE('(building type inexistente): ' || SQLERRM);
+    END;
+
+    ------------------------------------------------------------------
+    -- 4) NOME DUPLICADO
+    ------------------------------------------------------------------
+    BEGIN
+        -- Primeiro insert (válido)
+        v_id := addBuildingToFacility(
+                facilityIdentifier     => 50,
+                buildingName           => 'Duplicate Name Test',
+                buildingNumber         => 1,
+                buildingTypeIdentifier => 1
+                );
+
+        -- Segundo insert com o mesmo nome (deve falhar)
+        v_id := addBuildingToFacility(
+                facilityIdentifier     => 50,
+                buildingName           => 'Duplicate Name Test',
+                buildingNumber         => 2,
+                buildingTypeIdentifier => 1
+                );
+
+        DBMS_OUTPUT.PUT_LINE('ERRO: deveria falhar (nome duplicado)');
+    EXCEPTION
+        WHEN OTHERS THEN
+            DBMS_OUTPUT.PUT_LINE('(nome duplicado): ' || SQLERRM);
+    END;
+
+    -- LIMPEZA FINAL
+
+    ROLLBACK;
+    DBMS_OUTPUT.PUT_LINE('ROLLBACK executado. Base de dados limpa.');
+
 END;
 /
