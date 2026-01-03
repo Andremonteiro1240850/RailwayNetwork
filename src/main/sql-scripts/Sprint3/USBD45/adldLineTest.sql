@@ -1,199 +1,239 @@
--- Test cases for USBD45 - Add Line with Segment
--- All test cases use anonymous blocks and the record type
 
--- Test 1: Success case
-DECLARE
-    line_record line_with_segment_record;
-    result_line_id NUMBER;
+--
 BEGIN
-    SAVEPOINT sp_test;
-    
-    DBMS_OUTPUT.PUT_LINE('TEST 1: Success case');
-    
-    line_record := line_with_segment_record(
-        line_identifier => 9000,
-        start_facility_identifier => 50,
-        end_facility_identifier => 12,
-        line_name_value => 'Test Line OK',
-        owner_identifier => 'IP',
-        gauge_code_value => 1668,
-        segment_identifier => 90000,
-        segment_length_in_meters => 3000,
-        segment_order_value => 90000,
-        electrified_flag_value => 'Y',
-        segment_type_track_number_value => 2,
-        segment_type_track_type_value => 'DOUBLE',
-        siding_identifier => NULL
-    );
-    
-    result_line_id := usbd45_add_line(line_record);
-    DBMS_OUTPUT.PUT_LINE('SUCCESS: line_id=' || result_line_id);
-    
-    ROLLBACK TO sp_test;
-EXCEPTION
-    WHEN OTHERS THEN
-        DBMS_OUTPUT.PUT_LINE('ERROR: ' || SQLERRM);
-        ROLLBACK TO sp_test;
+    DBMS_OUTPUT.PUT_LINE('--- US45: LIMPEZA PARA REPETIR TESTES ---');
+
+DELETE FROM Segment WHERE segment_id BETWEEN 90000 AND 90099;
+DELETE FROM Line    WHERE line_id    BETWEEN 9000  AND 9099;
+
+COMMIT;
+
+DBMS_OUTPUT.PUT_LINE('LIMPEZA OK (COMMIT).');
 END;
 /
 
--- Test 2: Invalid terminals (start = end)
-DECLARE
-    line_record line_with_segment_record;
-    result_line_id NUMBER;
-BEGIN
-    SAVEPOINT sp_test;
-    
-    DBMS_OUTPUT.PUT_LINE('TEST 2: Invalid terminals');
-    
-    line_record := line_with_segment_record(
-        line_identifier => 9001,
-        start_facility_identifier => 50,
-        end_facility_identifier => 50,
-        line_name_value => 'Bad Terminals',
-        owner_identifier => 'IP',
-        gauge_code_value => 1668,
-        segment_identifier => 90001,
-        segment_length_in_meters => 3000,
-        segment_order_value => 90001,
-        electrified_flag_value => 'Y',
-        segment_type_track_number_value => 2,
-        segment_type_track_type_value => 'DOUBLE',
-        siding_identifier => NULL
-    );
-    
-    result_line_id := usbd45_add_line(line_record);
-    DBMS_OUTPUT.PUT_LINE('UNEXPECTED SUCCESS: line_id=' || result_line_id);
-    ROLLBACK TO sp_test;
-EXCEPTION
-    WHEN OTHERS THEN
-        DBMS_OUTPUT.PUT_LINE('EXPECTED ERROR: ' || SQLERRM);
-        ROLLBACK TO sp_test;
-END;
-/
 
--- Test 3: Owner does not exist
-DECLARE
-    line_record line_with_segment_record;
-    result_line_id NUMBER;
-BEGIN
-    SAVEPOINT sp_test;
-    
-    DBMS_OUTPUT.PUT_LINE('TEST 3: Owner does not exist');
-    
-    line_record := line_with_segment_record(
-        line_identifier => 9002,
-        start_facility_identifier => 50,
-        end_facility_identifier => 12,
-        line_name_value => 'Bad Owner',
-        owner_identifier => 'NOPE',
-        gauge_code_value => 1668,
-        segment_identifier => 90002,
-        segment_length_in_meters => 3000,
-        segment_order_value => 90002,
-        electrified_flag_value => 'Y',
-        segment_type_track_number_value => 2,
-        segment_type_track_type_value => 'DOUBLE',
-        siding_identifier => NULL
-    );
-    
-    result_line_id := usbd45_add_line(line_record);
-    DBMS_OUTPUT.PUT_LINE('UNEXPECTED SUCCESS: line_id=' || result_line_id);
-    ROLLBACK TO sp_test;
-EXCEPTION
-    WHEN OTHERS THEN
-        DBMS_OUTPUT.PUT_LINE('EXPECTED ERROR: ' || SQLERRM);
-        ROLLBACK TO sp_test;
-END;
-/
 
--- Test 4: Invalid segment length
-DECLARE
-    line_record line_with_segment_record;
-    result_line_id NUMBER;
-BEGIN
-    SAVEPOINT sp_test;
-    
-    DBMS_OUTPUT.PUT_LINE('TEST 4: Invalid segment length');
-    
-    line_record := line_with_segment_record(
-        line_identifier => 9003,
-        start_facility_identifier => 50,
-        end_facility_identifier => 12,
-        line_name_value => 'Bad Segment',
-        owner_identifier => 'IP',
-        gauge_code_value => 1668,
-        segment_identifier => 90003,
-        segment_length_in_meters => 0,
-        segment_order_value => 90003,
-        electrified_flag_value => 'Y',
-        segment_type_track_number_value => 2,
-        segment_type_track_type_value => 'DOUBLE',
-        siding_identifier => NULL
-    );
-    
-    result_line_id := usbd45_add_line(line_record);
-    DBMS_OUTPUT.PUT_LINE('UNEXPECTED SUCCESS: line_id=' || result_line_id);
-    ROLLBACK TO sp_test;
-EXCEPTION
-    WHEN OTHERS THEN
-        DBMS_OUTPUT.PUT_LINE('EXPECTED ERROR: ' || SQLERRM);
-        ROLLBACK TO sp_test;
-END;
-/
 
--- Test 5: Duplicate line name
+-- ============================================================
+
 DECLARE
-    line_record line_with_segment_record;
-    result_line_id NUMBER;
+v_result_line_id NUMBER;
 BEGIN
-    SAVEPOINT sp_test;
-    
-    DBMS_OUTPUT.PUT_LINE('TEST 5: Duplicate line name');
-    
-    -- First insert (should succeed)
-    line_record := line_with_segment_record(
-        line_identifier => 9004,
-        start_facility_identifier => 50,
-        end_facility_identifier => 12,
-        line_name_value => 'Duplicate Line',
-        owner_identifier => 'IP',
-        gauge_code_value => 1668,
-        segment_identifier => 90004,
-        segment_length_in_meters => 3000,
-        segment_order_value => 90004,
-        electrified_flag_value => 'Y',
-        segment_type_track_number_value => 2,
-        segment_type_track_type_value => 'DOUBLE',
-        siding_identifier => NULL
-    );
-    
-    result_line_id := usbd45_add_line(line_record);
-    DBMS_OUTPUT.PUT_LINE('First insert OK: line_id=' || result_line_id);
-    
-    -- Second insert with same name (should fail)
-    line_record := line_with_segment_record(
-        line_identifier => 9005,
-        start_facility_identifier => 50,
-        end_facility_identifier => 12,
-        line_name_value => 'Duplicate Line',
-        owner_identifier => 'IP',
-        gauge_code_value => 1668,
-        segment_identifier => 90005,
-        segment_length_in_meters => 3000,
-        segment_order_value => 90005,
-        electrified_flag_value => 'Y',
-        segment_type_track_number_value => 2,
-        segment_type_track_type_value => 'DOUBLE',
-        siding_identifier => NULL
-    );
-    
-    result_line_id := usbd45_add_line(line_record);
-    DBMS_OUTPUT.PUT_LINE('UNEXPECTED SUCCESS: line_id=' || result_line_id);
-    ROLLBACK TO sp_test;
+    DBMS_OUTPUT.PUT_LINE('=== TESTES US45 (PPT-SAFE) ===');
+
+    ------------------------------------------------------------------
+    -- TESTE 1: SUCESSO (COMMIT)
+    ------------------------------------------------------------------
+BEGIN
+        DBMS_OUTPUT.PUT_LINE('TESTE 1: Sucesso');
+
+        v_result_line_id := usbd45_add_line(
+            9000, 50, 12, 'Test Line OK', 'IP', 1668,
+            90000, 3000, 1, 'Y', 2, 'DOUBLE', NULL
+        );
+
+        DBMS_OUTPUT.PUT_LINE('SUCESSO: line_id=' || v_result_line_id);
+
+COMMIT;
+DBMS_OUTPUT.PUT_LINE('COMMIT executado (sucesso ficou gravado).');
 EXCEPTION
-    WHEN OTHERS THEN
-        DBMS_OUTPUT.PUT_LINE('EXPECTED ERROR: ' || SQLERRM);
-        ROLLBACK TO sp_test;
+        WHEN OTHERS THEN
+            DBMS_OUTPUT.PUT_LINE('FALHA NO SUCESSO: ' || SQLERRM);
+ROLLBACK;
+END;
+
+    ------------------------------------------------------------------
+    -- TESTE 2: TERMINAIS IGUAIS (-20045)
+    ------------------------------------------------------------------
+BEGIN
+        DBMS_OUTPUT.PUT_LINE('TESTE 2: Terminais iguais');
+
+        v_result_line_id := usbd45_add_line(
+            9001, 50, 50, 'Bad Terminals', 'IP', 1668,
+            90001, 3000, 1, 'Y', 2, 'DOUBLE', NULL
+        );
+
+        DBMS_OUTPUT.PUT_LINE('ERRO: devia falhar, mas deu sucesso: line_id=' || v_result_line_id);
+ROLLBACK;
+EXCEPTION
+        WHEN OTHERS THEN
+            DBMS_OUTPUT.PUT_LINE('OK (erro esperado): ' || SQLERRM);
+ROLLBACK;
+END;
+
+    ------------------------------------------------------------------
+    -- TESTE 3: OWNER INEXISTENTE (-20048)
+    ------------------------------------------------------------------
+BEGIN
+        DBMS_OUTPUT.PUT_LINE('TESTE 3: Owner inexistente');
+
+        v_result_line_id := usbd45_add_line(
+            9002, 50, 12, 'Bad Owner', 'NOPE', 1668,
+            90002, 3000, 1, 'Y', 2, 'DOUBLE', NULL
+        );
+
+        DBMS_OUTPUT.PUT_LINE('ERRO: devia falhar, mas deu sucesso: line_id=' || v_result_line_id);
+ROLLBACK;
+EXCEPTION
+        WHEN OTHERS THEN
+            DBMS_OUTPUT.PUT_LINE('OK (erro esperado): ' || SQLERRM);
+ROLLBACK;
+END;
+
+    ------------------------------------------------------------------
+    -- TESTE 4: SEGMENT LENGTH INVÁLIDO (-20050)
+    ------------------------------------------------------------------
+BEGIN
+        DBMS_OUTPUT.PUT_LINE('TESTE 4: Segment length inválido');
+
+        v_result_line_id := usbd45_add_line(
+            9003, 50, 12, 'Bad Segment', 'IP', 1668,
+            90003, 0, 1, 'Y', 2, 'DOUBLE', NULL
+        );
+
+        DBMS_OUTPUT.PUT_LINE('ERRO: devia falhar, mas deu sucesso: line_id=' || v_result_line_id);
+ROLLBACK;
+EXCEPTION
+        WHEN OTHERS THEN
+            DBMS_OUTPUT.PUT_LINE('OK (erro esperado): ' || SQLERRM);
+ROLLBACK;
+END;
+
+    ------------------------------------------------------------------
+    -- TESTE 5: DUPLICATE KEY (line_id repetido) (-20054)
+    -- Nota: este teste assume que o TESTE 1 foi COMMITADO e não foi limpo.
+    ------------------------------------------------------------------
+BEGIN
+        DBMS_OUTPUT.PUT_LINE('TESTE 5: Duplicate key (line_id repetido)');
+
+        v_result_line_id := usbd45_add_line(
+            9000, 50, 12, 'DupKey Line', 'IP', 1668,
+            90005, 3000, 1, 'Y', 2, 'DOUBLE', NULL
+        );
+
+        DBMS_OUTPUT.PUT_LINE('ERRO: devia falhar, mas deu sucesso: line_id=' || v_result_line_id);
+ROLLBACK;
+EXCEPTION
+        WHEN OTHERS THEN
+            DBMS_OUTPUT.PUT_LINE('OK (erro esperado): ' || SQLERRM);
+ROLLBACK;
+END;
+
+    ------------------------------------------------------------------
+    -- TESTE 6: START FACILITY INEXISTENTE (-20046)
+    ------------------------------------------------------------------
+BEGIN
+        DBMS_OUTPUT.PUT_LINE('TESTE 6: Start facility inexistente');
+
+        v_result_line_id := usbd45_add_line(
+            9006, 9999, 12, 'Bad Start Facility', 'IP', 1668,
+            90006, 3000, 1, 'Y', 2, 'DOUBLE', NULL
+        );
+
+        DBMS_OUTPUT.PUT_LINE('ERRO: devia falhar, mas deu sucesso: line_id=' || v_result_line_id);
+ROLLBACK;
+EXCEPTION
+        WHEN OTHERS THEN
+            DBMS_OUTPUT.PUT_LINE('OK (erro esperado): ' || SQLERRM);
+ROLLBACK;
+END;
+
+    ------------------------------------------------------------------
+    -- TESTE 7: END FACILITY INEXISTENTE (-20047)
+    ------------------------------------------------------------------
+BEGIN
+        DBMS_OUTPUT.PUT_LINE('TESTE 7: End facility inexistente');
+
+        v_result_line_id := usbd45_add_line(
+            9007, 50, 9999, 'Bad End Facility', 'IP', 1668,
+            90007, 3000, 1, 'Y', 2, 'DOUBLE', NULL
+        );
+
+        DBMS_OUTPUT.PUT_LINE('ERRO: devia falhar, mas deu sucesso: line_id=' || v_result_line_id);
+ROLLBACK;
+EXCEPTION
+        WHEN OTHERS THEN
+            DBMS_OUTPUT.PUT_LINE('OK (erro esperado): ' || SQLERRM);
+ROLLBACK;
+END;
+
+    ------------------------------------------------------------------
+    -- TESTE 8: GAUGE INEXISTENTE (-20049)
+    ------------------------------------------------------------------
+BEGIN
+        DBMS_OUTPUT.PUT_LINE('TESTE 8: Gauge inexistente');
+
+        v_result_line_id := usbd45_add_line(
+            9008, 50, 12, 'Bad Gauge', 'IP', 999999,
+            90008, 3000, 1, 'Y', 2, 'DOUBLE', NULL
+        );
+
+        DBMS_OUTPUT.PUT_LINE('ERRO: devia falhar, mas deu sucesso: line_id=' || v_result_line_id);
+ROLLBACK;
+EXCEPTION
+        WHEN OTHERS THEN
+            DBMS_OUTPUT.PUT_LINE('OK (erro esperado): ' || SQLERRM);
+ROLLBACK;
+END;
+
+    ------------------------------------------------------------------
+    -- TESTE 9: ELECTRIFIED FLAG INVÁLIDA (-20051)
+    ------------------------------------------------------------------
+BEGIN
+        DBMS_OUTPUT.PUT_LINE('TESTE 9: Electrified flag inválida');
+
+        v_result_line_id := usbd45_add_line(
+            9009, 50, 12, 'Bad Flag', 'IP', 1668,
+            90009, 3000, 1, 'X', 2, 'DOUBLE', NULL
+        );
+
+        DBMS_OUTPUT.PUT_LINE('ERRO: devia falhar, mas deu sucesso: line_id=' || v_result_line_id);
+ROLLBACK;
+EXCEPTION
+        WHEN OTHERS THEN
+            DBMS_OUTPUT.PUT_LINE('OK (erro esperado): ' || SQLERRM);
+ROLLBACK;
+END;
+
+    ------------------------------------------------------------------
+    -- TESTE 10: SEGMENTTYPE INEXISTENTE (combinação) (-20052)
+    ------------------------------------------------------------------
+BEGIN
+        DBMS_OUTPUT.PUT_LINE('TESTE 10: SegmentType inexistente');
+
+        v_result_line_id := usbd45_add_line(
+            9010, 50, 12, 'Bad SegmentType', 'IP', 1668,
+            90010, 3000, 1, 'Y', 99, 'DOUBLE', NULL
+        );
+
+        DBMS_OUTPUT.PUT_LINE('ERRO: devia falhar, mas deu sucesso: line_id=' || v_result_line_id);
+ROLLBACK;
+EXCEPTION
+        WHEN OTHERS THEN
+            DBMS_OUTPUT.PUT_LINE('OK (erro esperado): ' || SQLERRM);
+ROLLBACK;
+END;
+
+    ------------------------------------------------------------------
+    -- TESTE 11: SIDING INEXISTENTE (-20053)
+    ------------------------------------------------------------------
+BEGIN
+        DBMS_OUTPUT.PUT_LINE('TESTE 11: Siding inexistente');
+
+        v_result_line_id := usbd45_add_line(
+            9011, 50, 12, 'Bad Siding', 'IP', 1668,
+            90011, 3000, 1, 'Y', 2, 'DOUBLE', 9999
+        );
+
+        DBMS_OUTPUT.PUT_LINE('ERRO: devia falhar, mas deu sucesso: line_id=' || v_result_line_id);
+ROLLBACK;
+EXCEPTION
+        WHEN OTHERS THEN
+            DBMS_OUTPUT.PUT_LINE('OK (erro esperado): ' || SQLERRM);
+ROLLBACK;
+END;
+
+    DBMS_OUTPUT.PUT_LINE('=== FIM DOS TESTES US45 ===');
 END;
 /
