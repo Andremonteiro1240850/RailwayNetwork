@@ -1,188 +1,227 @@
 @startuml
 'https://plantuml.com/class-diagram
 
-' --- USEI11: Directed Line Upgrade Plan ---
-' Computes ordering of Belgian stations based on directed track dependencies
-' for scheduling station upgrades respecting all directional dependencies
-
-' --- Classes ---
-class UpgradePlanFXUI {
-    - controller: UpgradePlanController
-    - currentResult: UpgradePlanResult
-    + void: show()
-    + void: displayResult(result: UpgradePlanResult)
-    + void: handleCalculateButton()
-    + void: displayTopologicalOrder(order: List<Station>)
-    + void: displayCycleInfo(cycleInfo: CycleInfo)
-}
-
 class UpgradePlanController {
-    - graphRepository: RailwayGraphRepository
-    - graph: RailwayGraph
-    + UpgradePlanController(graphRepository: RailwayGraphRepository)
-    + void: buildGraph()
-    + UpgradePlanResult: calculateUpgradePlan()
-    + String: getGraphStatistics()
-    + Station: getStationById(stationId: String)
-    + DegreeInfo: getStationDegreeInfo(stationId: String)
-    + Collection<Station>: getAllStations()
-    + List<Line>: getAllEdges()
-}
+    - graphRepository : RailwayGraphRepository
+    - graph : RailwayGraph
 
-class DegreeInfo {
-    - inDegree: int
-    - outDegree: int
-    + int: getInDegree()
-    + int: getOutDegree()
-    + int: getTotalDegree()
-}
+    + UpgradePlanController(
+        graphRepository : RailwayGraphRepository
+      )
 
-class UpgradePlanResult {
-    - topologicalOrder: List<Station>
-    - cycleInfo: CycleInfo
-    + boolean: hasTopologicalOrder()
-    + List<Station>: getTopologicalOrder()
-    + CycleInfo: getCycleInfo()
-    + boolean: hasCycles()
+    + buildGraph() : void
+
+    + calculateUpgradePlan() : UpgradePlanResult
+
+    + getGraphStatistics() : String
+
+    + getStationById(
+        stationId : String
+      ) : Station
+
+    + getStationDegreeInfo(
+        stationId : String
+      ) : DegreeInfo
+
+    + getAllStations() : Collection<Station>
+
+    + getAllEdges() : List<Line>
 }
 
 class TopologicalSort {
-    + {static} List<Station>: order(graph: RailwayGraph)
-    + {static} List<Station>: orderDFS(graph: RailwayGraph)
-    - {static} void: dfsVisit(graph: RailwayGraph, current: Station, color: Map<String, Color>, result: List<Station>)
-    - {static} enum Color { WHITE, GRAY, BLACK }
-}
+    + {static} order(
+        graph : RailwayGraph
+      ) : List<Station>
 
-class CycleDetectedException {
-    + CycleDetectedException(message: String)
+    + {static} orderDFS(
+        graph : RailwayGraph
+      ) : List<Station>
+
+    - {static} dfsVisit(
+        graph : RailwayGraph,
+        current : Station,
+        color : Map<String, Color>,
+        result : List<Station>
+      ) : void
 }
 
 class CycleDetection {
-    + {static} boolean: hasCycles(graph: RailwayGraph)
-    + {static} CycleInfo: findCycles(graph: RailwayGraph)
-    - {static} boolean: dfsHasCycle(graph: RailwayGraph, node: Station, color: Map<String, Color>)
-    - {static} void: dfsFindCycles(...)
-    - {static} List<Station>: reconstructCycle(...)
-    - {static} enum Color { WHITE, GRAY, BLACK }
+    + {static} hasCycles(
+        graph : RailwayGraph
+      ) : boolean
+
+    + {static} findCycles(
+        graph : RailwayGraph
+      ) : CycleInfo
+
+    - {static} dfsHasCycle(
+        graph : RailwayGraph,
+        node : Station,
+        color : Map<String, Color>
+      ) : boolean
+
+    - {static} dfsFindCycles(
+        graph : RailwayGraph,
+        node : Station,
+        color : Map<String, Color>,
+        parent : Map<String, Station>,
+        cycleNodes : Set<String>,
+        cycleEdges : Set<Line>,
+        cycles : List<List<Station>>
+      ) : void
+
+    - {static} reconstructCycle(
+        graph : RailwayGraph,
+        start : Station,
+        end : Station,
+        parent : Map<String, Station>
+      ) : List<Station>
+}
+
+class UpgradePlanResult {
+    - topologicalOrder : List<Station>
+    - cycleInfo : CycleInfo
+
+    + hasTopologicalOrder() : boolean
+
+    + getTopologicalOrder() : List<Station>
+
+    + getCycleInfo() : CycleInfo
+
+    + hasCycles() : boolean
 }
 
 class CycleInfo {
-    - cycleNodeIds: Set<String>
-    - cycleEdges: Set<Line>
-    - cycles: List<List<Station>>
-    + Set<String>: getCycleNodeIds()
-    + Set<Line>: getCycleEdges()
-    + List<List<Station>>: getCycles()
-    + boolean: hasCycles()
-}
+    - cycleNodeIds : Set<String>
+    - cycleEdges : Set<Line>
+    - cycles : List<List<Station>>
 
-class RailwayGraph {
-    - nodes: Map<String, Station>
-    - outgoingEdges: Map<String, List<Line>>
-    - incomingEdges: Map<String, List<Line>>
-    - allEdges: List<Line>
-    + void: addNode(node: Station)
-    + void: addEdge(edge: Line)
-    + Station: getNode(stationId: String)
-    + Collection<Station>: getAllNodes()
-    + List<Line>: getOutgoingEdges(stationId: String)
-    + List<Line>: getIncomingEdges(stationId: String)
-    + List<Line>: getAllEdges()
-    + int: getNodeCount()
-    + int: getEdgeCount()
-    + boolean: containsNode(stationId: String)
+    + getCycleNodeIds() : Set<String>
+
+    + getCycleEdges() : Set<Line>
+
+    + getCycles() : List<List<Station>>
+
+    + hasCycles() : boolean
 }
 
 class Station {
-    - id: String
-    - name: String
-    - latitude: double
-    - longitude: double
-    - coordX: double
-    - coordY: double
-    + String: getId()
-    + String: getName()
-    + double: getLatitude()
-    + double: getLongitude()
-    + double: getCoordX()
-    + double: getCoordY()
+    - id : String
+    - name : String
+    - latitude : double
+    - longitude : double
+    - coordX : double
+    - coordY : double
+
+    + Station(
+        id : String,
+        name : String,
+        latitude : double,
+        longitude : double,
+        coordX : double,
+        coordY : double
+      )
+
+    + getId() : String
+
+    + getName() : String
+
+    + getLatitude() : double
+
+    + getLongitude() : double
+
+    + getCoordX() : double
+
+    + getCoordY() : double
+
+    + equals(obj : Object) : boolean
+
+    + hashCode() : int
+
+    + toString() : String
 }
 
-class Line {
-    - departureStationId: String
-    - arrivalStationId: String
-    - distance: double
-    - capacity: int
-    - cost: double
-    + String: getDepartureStationId()
-    + String: getArrivalStationId()
-    + double: getDistance()
-    + int: getCapacity()
-    + double: getCost()
+class RailwayGraph {
+    - nodes : Map<String, Station>
+    - outgoingEdges : Map<String, List<Line>>
+    - incomingEdges : Map<String, List<Line>>
+    - allEdges : List<Line>
+
+    + addNode(
+        node : Station
+      ) : void
+
+    + addEdge(
+        edge : Line
+      ) : void
+
+    + getNode(
+        stationId : String
+      ) : Station
+
+    + getAllNodes() : Collection<Station>
+
+    + getOutgoingEdges(
+        stationId : String
+      ) : List<Line>
+
+    + getIncomingEdges(
+        stationId : String
+      ) : List<Line>
+
+    + getAllEdges() : List<Line>
+
+    + getNodeCount() : int
+
+    + getEdgeCount() : int
+
+    + containsNode(
+        stationId : String
+      ) : boolean
 }
 
 class RailwayGraphRepository {
-    - cachedGraph: RailwayGraph
-    - stationRepository: StationRepository
-    - lineRepository: LineRepository
-    - dataLoader: DataLoader
+    - cachedGraph : RailwayGraph
+    - stationRepository : StationRepository
+    - lineRepository : LineRepository
+    - dataLoader : DataLoader
+
     + RailwayGraphRepository()
-    + RailwayGraphRepository(stationRepository: StationRepository, lineRepository: LineRepository)
-    + void: loadData(stationsPath: String, linesPath: String)
-    + RailwayGraph: buildGraph()
-    + StationRepository: getStationRepository()
-    + LineRepository: getLineRepository()
+
+    + RailwayGraphRepository(
+        stationRepository : StationRepository,
+        lineRepository : LineRepository
+      )
+
+    + loadData(
+        stationsPath : String,
+        linesPath : String
+      ) : void
+
+    + buildGraph() : RailwayGraph
+
+    + getStationRepository() : StationRepository
+
+    + getLineRepository() : LineRepository
 }
 
-class StationRepository {
-    + Collection<Station>: getAllStations()
-    + Station: getStationById(id: String)
-}
+UpgradePlanController --> RailwayGraphRepository
+UpgradePlanController --> TopologicalSort
+UpgradePlanController --> CycleDetection
+UpgradePlanController ..> UpgradePlanResult
+UpgradePlanController ..> Station
 
-class LineRepository {
-    + Collection<Line>: getAllLines()
-    + List<Line>: getLinesByDepartureStation(stationId: String)
-    + List<Line>: getLinesByArrivalStation(stationId: String)
-}
+TopologicalSort --> RailwayGraph
+TopologicalSort ..> Station
 
-class DataLoader {
-    + void: loadAllData(stationsPath: String, linesPath: String)
-    + StationRepository: getStationRepository()
-    + LineRepository: getLineRepository()
-}
-
-' --- Relações ---
-UpgradePlanFXUI --> UpgradePlanController : uses
-UpgradePlanController --> RailwayGraphRepository : uses
-UpgradePlanController --> TopologicalSort : uses
-UpgradePlanController --> CycleDetection : uses
-UpgradePlanController --> RailwayGraph : manages
-UpgradePlanController ..> UpgradePlanResult : creates
-UpgradePlanController ..> DegreeInfo : creates
-
-TopologicalSort --> RailwayGraph : processes
-TopologicalSort --> Station : orders
-TopologicalSort ..> CycleDetectedException : throws
-
-CycleDetection --> RailwayGraph : analyzes
-CycleDetection --> Station : processes
-CycleDetection --> Line : identifies
-CycleDetection ..> CycleInfo : creates
+CycleDetection --> RailwayGraph
+CycleDetection ..> CycleInfo
+CycleDetection ..> Station
 
 RailwayGraph "1" --> "0..*" Station : contains
 RailwayGraph "1" --> "0..*" Line : contains
-Line --> Station : connects
 
-RailwayGraphRepository --> StationRepository : uses
-RailwayGraphRepository --> LineRepository : uses
-RailwayGraphRepository --> DataLoader : uses
-RailwayGraphRepository --> RailwayGraph : builds
-
-StationRepository "1" --> "0..*" Station : contains
-LineRepository "1" --> "0..*" Line : contains
-
-DataLoader --> StationRepository : creates
-DataLoader --> LineRepository : creates
+RailwayGraphRepository --> RailwayGraph
 
 @enduml
 
