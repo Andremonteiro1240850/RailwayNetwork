@@ -319,7 +319,20 @@ public class SchedulerFXUI {
         endStationCombo = new ComboBox<>(facilities);
         endStationCombo.setConverter(new FacilityStringConverter());
         endStationCombo.setPrefWidth(250);
-        endStationCombo.setStyle("-fx-background-color: #0D1117; -fx-text-fill: white;");
+        endStationCombo.setStyle("-fx-background-color: #0D1117; -fx-text-fill: white; " +
+                                 "-fx-control-inner-background: #0D1117;");
+        endStationCombo.setCellFactory(list -> new ListCell<Facility>() {
+            @Override
+            protected void updateItem(Facility item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                } else {
+                    setText(item.getId() + " - " + item.getName());
+                    setStyle("-fx-text-fill: white; -fx-background-color: #0D1117;");
+                }
+            }
+        });
         grid.add(endStationLabel, 0, 1);
         grid.add(endStationCombo, 1, 1);
         
@@ -340,7 +353,20 @@ public class SchedulerFXUI {
         startStationCombo = new ComboBox<>(facilities);
         startStationCombo.setConverter(new FacilityStringConverter());
         startStationCombo.setPrefWidth(250);
-        startStationCombo.setStyle("-fx-background-color: #0D1117; -fx-text-fill: white;");
+        startStationCombo.setStyle("-fx-background-color: #0D1117; -fx-text-fill: white; " +
+                                   "-fx-control-inner-background: #0D1117;");
+        startStationCombo.setCellFactory(list -> new ListCell<Facility>() {
+            @Override
+            protected void updateItem(Facility item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                } else {
+                    setText(item.getId() + " - " + item.getName());
+                    setStyle("-fx-text-fill: white; -fx-background-color: #0D1117;");
+                }
+            }
+        });
         grid.add(startStationLabel, 2, 0);
         grid.add(startStationCombo, 3, 0);
         
@@ -359,7 +385,7 @@ public class SchedulerFXUI {
         grid.add(wagonsLoadedCheckBox, 2, 2);
         
         // Option to specify intermediate stations
-        specifyIntermediateStationsCheckBox = new CheckBox("Specify intermediate stations");
+        specifyIntermediateStationsCheckBox = new CheckBox("Choose path manually (intermediate stations)");
         specifyIntermediateStationsCheckBox.setStyle("-fx-text-fill: white; -fx-font-size: 13px;");
         grid.add(specifyIntermediateStationsCheckBox, 0, 3, 2, 1);
         
@@ -415,16 +441,21 @@ public class SchedulerFXUI {
         // List of intermediate stations
         intermediateStationsList = new ListView<>(FXCollections.observableArrayList());
         intermediateStationsList.setPrefHeight(120);
-        intermediateStationsList.setStyle("-fx-background-color: #161B22; -fx-text-fill: white;");
+        intermediateStationsList.setStyle("-fx-background-color: #161B22; -fx-control-inner-background: #161B22;");
         intermediateStationsList.setCellFactory(list -> new ListCell<Facility>() {
             @Override
             protected void updateItem(Facility item, boolean empty) {
                 super.updateItem(item, empty);
                 if (empty || item == null) {
                     setText(null);
+                    setStyle("");
+                    setGraphic(null);
                 } else {
                     setText(item.getName() + " (ID: " + item.getId() + ")");
-                    setStyle("-fx-text-fill: white; -fx-font-size: 12px;");
+                    setStyle("-fx-text-fill: white; -fx-font-size: 12px; " +
+                            "-fx-background-color: #161B22; " +
+                            "-fx-padding: 8 10; " +
+                            "-fx-alignment: CENTER-LEFT;");
                 }
             }
         });
@@ -618,23 +649,44 @@ public class SchedulerFXUI {
                       "-fx-background-radius: 8; " +
                       "-fx-border-color: rgba(99, 102, 241, 0.2); " +
                       "-fx-border-radius: 8; " +
-                      "-fx-border-width: 1;");
-        // Ajuste automático de colunas - usar CONSTRAINED para evitar coluna vazia
-        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+                      "-fx-border-width: 1; " +
+                      "-fx-table-header-border-color: transparent; " +
+                      "-fx-table-cell-border-color: transparent;");
+        // Ajuste automático de colunas - usar FLEX_LAST_COLUMN para melhor distribuição
+        table.setColumnResizePolicy(TableView.UNCONSTRAINED_RESIZE_POLICY);
         table.setFixedCellSize(35); // Altura menor para ver mais linhas
+        
+        // Aplicar estilos aos headers após a tabela ser renderizada
+        table.sceneProperty().addListener((obs, oldScene, newScene) -> {
+            if (newScene != null) {
+                Platform.runLater(() -> {
+                    applyTableHeaderStyles(table);
+                });
+            }
+        });
+        
+        // Também aplicar imediatamente se já estiver na cena
+        if (table.getScene() != null) {
+            Platform.runLater(() -> {
+                applyTableHeaderStyles(table);
+            });
+        }
         
         // ID Column
         TableColumn<Locomotive, String> idCol = new TableColumn<>("ID");
         idCol.setCellValueFactory(loco -> new javafx.beans.property.SimpleStringProperty(loco.getValue().getId()));
-        idCol.setMinWidth(60);
-        idCol.setPrefWidth(70);
+        idCol.setMinWidth(70);
+        idCol.setPrefWidth(80);
+        idCol.setMaxWidth(100);
         idCol.setSortable(true);
+        idCol.setResizable(true);
         idCol.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
                       "-fx-font-size: 11px; " +
                       "-fx-font-weight: 700; " +
                       "-fx-text-fill: #FFFFFF; " +
                       "-fx-background-color: #2D3748; " +
-                      "-fx-padding: 6 8;");
+                      "-fx-padding: 8 10; " +
+                      "-fx-alignment: CENTER;");
         idCol.setCellFactory(col -> new TableCell<Locomotive, String>() {
             @Override
             protected void updateItem(String item, boolean empty) {
@@ -648,8 +700,8 @@ public class SchedulerFXUI {
                             "-fx-font-size: 11px; " +
                             "-fx-font-weight: 700; " +
                             "-fx-text-fill: #60A5FA; " +
-                            "-fx-padding: 6 8; " +
-                            "-fx-alignment: CENTER-LEFT;");
+                            "-fx-padding: 8 10; " +
+                            "-fx-alignment: CENTER;");
                 }
             }
         });
@@ -664,15 +716,18 @@ public class SchedulerFXUI {
             }
             return new javafx.beans.property.SimpleStringProperty(type);
         });
-        typeCol.setMinWidth(80);
-        typeCol.setPrefWidth(90);
+        typeCol.setMinWidth(100);
+        typeCol.setPrefWidth(120);
+        typeCol.setMaxWidth(150);
         typeCol.setSortable(true);
+        typeCol.setResizable(true);
         typeCol.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
                         "-fx-font-size: 11px; " +
                         "-fx-font-weight: 700; " +
                         "-fx-text-fill: #FFFFFF; " +
                         "-fx-background-color: #2D3748; " +
-                        "-fx-padding: 6 8;");
+                        "-fx-padding: 8 10; " +
+                        "-fx-alignment: CENTER;");
         typeCol.setCellFactory(col -> new TableCell<Locomotive, String>() {
             @Override
             protected void updateItem(String item, boolean empty) {
@@ -687,8 +742,8 @@ public class SchedulerFXUI {
                             "-fx-font-size: 11px; " +
                             "-fx-font-weight: 600; " +
                             "-fx-text-fill: " + color + "; " +
-                            "-fx-padding: 6 8; " +
-                            "-fx-alignment: CENTER-LEFT;");
+                            "-fx-padding: 8 10; " +
+                            "-fx-alignment: CENTER;");
                 }
             }
         });
@@ -696,15 +751,18 @@ public class SchedulerFXUI {
         // Power Column
         TableColumn<Locomotive, Double> powerCol = new TableColumn<>("Power (kW)");
         powerCol.setCellValueFactory(loco -> new javafx.beans.property.SimpleDoubleProperty(loco.getValue().getPowerKw()).asObject());
-        powerCol.setMinWidth(90);
-        powerCol.setPrefWidth(100);
+        powerCol.setMinWidth(110);
+        powerCol.setPrefWidth(130);
+        powerCol.setMaxWidth(150);
         powerCol.setSortable(true);
+        powerCol.setResizable(true);
         powerCol.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
                          "-fx-font-size: 11px; " +
                          "-fx-font-weight: 700; " +
                          "-fx-text-fill: #FFFFFF; " +
                          "-fx-background-color: #2D3748; " +
-                         "-fx-padding: 6 8;");
+                         "-fx-padding: 8 10; " +
+                         "-fx-alignment: CENTER;");
         powerCol.setCellFactory(col -> new TableCell<Locomotive, Double>() {
             @Override
             protected void updateItem(Double item, boolean empty) {
@@ -717,8 +775,8 @@ public class SchedulerFXUI {
                     setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
                             "-fx-font-size: 11px; " +
                             "-fx-text-fill: #E2E8F0; " +
-                            "-fx-padding: 6 8; " +
-                            "-fx-alignment: CENTER-RIGHT;");
+                            "-fx-padding: 8 10; " +
+                            "-fx-alignment: CENTER;");
                 }
             }
         });
@@ -726,15 +784,18 @@ public class SchedulerFXUI {
         // Max Speed Column
         TableColumn<Locomotive, Double> speedCol = new TableColumn<>("Max Speed (km/h)");
         speedCol.setCellValueFactory(loco -> new javafx.beans.property.SimpleDoubleProperty(loco.getValue().getMaxSpeedKmH()).asObject());
-        speedCol.setMinWidth(110);
-        speedCol.setPrefWidth(120);
+        speedCol.setMinWidth(140);
+        speedCol.setPrefWidth(160);
+        speedCol.setMaxWidth(180);
         speedCol.setSortable(true);
+        speedCol.setResizable(true);
         speedCol.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
                          "-fx-font-size: 11px; " +
                          "-fx-font-weight: 700; " +
                          "-fx-text-fill: #FFFFFF; " +
                          "-fx-background-color: #2D3748; " +
-                         "-fx-padding: 6 8;");
+                         "-fx-padding: 8 10; " +
+                         "-fx-alignment: CENTER;");
         speedCol.setCellFactory(col -> new TableCell<Locomotive, Double>() {
             @Override
             protected void updateItem(Double item, boolean empty) {
@@ -747,8 +808,8 @@ public class SchedulerFXUI {
                     setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
                             "-fx-font-size: 11px; " +
                             "-fx-text-fill: #E2E8F0; " +
-                            "-fx-padding: 6 8; " +
-                            "-fx-alignment: CENTER-RIGHT;");
+                            "-fx-padding: 8 10; " +
+                            "-fx-alignment: CENTER;");
                 }
             }
         });
@@ -917,23 +978,44 @@ public class SchedulerFXUI {
                       "-fx-background-radius: 8; " +
                       "-fx-border-color: rgba(99, 102, 241, 0.2); " +
                       "-fx-border-radius: 8; " +
-                      "-fx-border-width: 1;");
-        // Ajuste automático de colunas - usar CONSTRAINED para evitar coluna vazia
-        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+                      "-fx-border-width: 1; " +
+                      "-fx-table-header-border-color: transparent; " +
+                      "-fx-table-cell-border-color: transparent;");
+        // Ajuste automático de colunas - usar FLEX_LAST_COLUMN para melhor distribuição
+        table.setColumnResizePolicy(TableView.UNCONSTRAINED_RESIZE_POLICY);
         table.setFixedCellSize(35); // Altura menor para ver mais linhas
+        
+        // Aplicar estilos aos headers após a tabela ser renderizada
+        table.sceneProperty().addListener((obs, oldScene, newScene) -> {
+            if (newScene != null) {
+                Platform.runLater(() -> {
+                    applyTableHeaderStyles(table);
+                });
+            }
+        });
+        
+        // Também aplicar imediatamente se já estiver na cena
+        if (table.getScene() != null) {
+            Platform.runLater(() -> {
+                applyTableHeaderStyles(table);
+            });
+        }
         
         // ID Column
         TableColumn<Wagon, String> idCol = new TableColumn<>("ID");
         idCol.setCellValueFactory(wagon -> new javafx.beans.property.SimpleStringProperty(wagon.getValue().getWagonId()));
-        idCol.setMinWidth(60);
-        idCol.setPrefWidth(70);
+        idCol.setMinWidth(70);
+        idCol.setPrefWidth(80);
+        idCol.setMaxWidth(100);
         idCol.setSortable(true);
+        idCol.setResizable(true);
         idCol.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
                       "-fx-font-size: 11px; " +
                       "-fx-font-weight: 700; " +
                       "-fx-text-fill: #FFFFFF; " +
                       "-fx-background-color: #2D3748; " +
-                      "-fx-padding: 6 8;");
+                      "-fx-padding: 8 10; " +
+                      "-fx-alignment: CENTER;");
         idCol.setCellFactory(col -> new TableCell<Wagon, String>() {
             @Override
             protected void updateItem(String item, boolean empty) {
@@ -947,8 +1029,8 @@ public class SchedulerFXUI {
                             "-fx-font-size: 11px; " +
                             "-fx-font-weight: 700; " +
                             "-fx-text-fill: #60A5FA; " +
-                            "-fx-padding: 6 8; " +
-                            "-fx-alignment: CENTER-LEFT;");
+                            "-fx-padding: 8 10; " +
+                            "-fx-alignment: CENTER;");
                 }
             }
         });
@@ -956,15 +1038,18 @@ public class SchedulerFXUI {
         // Type Column - texto completo sempre visível
         TableColumn<Wagon, String> typeCol = new TableColumn<>("Cargo Type");
         typeCol.setCellValueFactory(wagon -> new javafx.beans.property.SimpleStringProperty(wagon.getValue().getType()));
-        typeCol.setMinWidth(120);
-        typeCol.setPrefWidth(150);
+        typeCol.setMinWidth(140);
+        typeCol.setPrefWidth(180);
+        typeCol.setMaxWidth(220);
         typeCol.setSortable(true);
+        typeCol.setResizable(true);
         typeCol.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
                         "-fx-font-size: 11px; " +
                         "-fx-font-weight: 700; " +
                         "-fx-text-fill: #FFFFFF; " +
                         "-fx-background-color: #2D3748; " +
-                        "-fx-padding: 6 8;");
+                        "-fx-padding: 8 10; " +
+                        "-fx-alignment: CENTER;");
         typeCol.setCellFactory(col -> new TableCell<Wagon, String>() {
             @Override
             protected void updateItem(String item, boolean empty) {
@@ -978,8 +1063,8 @@ public class SchedulerFXUI {
                             "-fx-font-size: 11px; " +
                             "-fx-font-weight: 500; " +
                             "-fx-text-fill: #E2E8F0; " +
-                            "-fx-padding: 6 8; " +
-                            "-fx-alignment: CENTER-LEFT;");
+                            "-fx-padding: 8 10; " +
+                            "-fx-alignment: CENTER;");
                 }
             }
         });
@@ -987,15 +1072,18 @@ public class SchedulerFXUI {
         // Empty Weight Column
         TableColumn<Wagon, Double> emptyWeightCol = new TableColumn<>("Empty (kg)");
         emptyWeightCol.setCellValueFactory(wagon -> new javafx.beans.property.SimpleDoubleProperty(wagon.getValue().getEmptyWeightKg()).asObject());
-        emptyWeightCol.setMinWidth(90);
-        emptyWeightCol.setPrefWidth(100);
+        emptyWeightCol.setMinWidth(110);
+        emptyWeightCol.setPrefWidth(130);
+        emptyWeightCol.setMaxWidth(150);
         emptyWeightCol.setSortable(true);
+        emptyWeightCol.setResizable(true);
         emptyWeightCol.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
                                "-fx-font-size: 11px; " +
                                "-fx-font-weight: 700; " +
                                "-fx-text-fill: #FFFFFF; " +
                                "-fx-background-color: #2D3748; " +
-                               "-fx-padding: 6 8;");
+                               "-fx-padding: 8 10; " +
+                               "-fx-alignment: CENTER;");
         emptyWeightCol.setCellFactory(col -> new TableCell<Wagon, Double>() {
             @Override
             protected void updateItem(Double item, boolean empty) {
@@ -1008,8 +1096,8 @@ public class SchedulerFXUI {
                     setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
                             "-fx-font-size: 11px; " +
                             "-fx-text-fill: #E2E8F0; " +
-                            "-fx-padding: 6 8; " +
-                            "-fx-alignment: CENTER-RIGHT;");
+                            "-fx-padding: 8 10; " +
+                            "-fx-alignment: CENTER;");
                 }
             }
         });
@@ -1017,15 +1105,18 @@ public class SchedulerFXUI {
         // Loaded Weight Column
         TableColumn<Wagon, Double> loadedWeightCol = new TableColumn<>("Loaded (kg)");
         loadedWeightCol.setCellValueFactory(wagon -> new javafx.beans.property.SimpleDoubleProperty(wagon.getValue().getFullyLoadedWeightKg()).asObject());
-        loadedWeightCol.setMinWidth(90);
-        loadedWeightCol.setPrefWidth(100);
+        loadedWeightCol.setMinWidth(110);
+        loadedWeightCol.setPrefWidth(130);
+        loadedWeightCol.setMaxWidth(150);
         loadedWeightCol.setSortable(true);
+        loadedWeightCol.setResizable(true);
         loadedWeightCol.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
                                  "-fx-font-size: 11px; " +
                                  "-fx-font-weight: 700; " +
                                  "-fx-text-fill: #FFFFFF; " +
                                  "-fx-background-color: #2D3748; " +
-                                 "-fx-padding: 6 8;");
+                                 "-fx-padding: 8 10; " +
+                                 "-fx-alignment: CENTER;");
         loadedWeightCol.setCellFactory(col -> new TableCell<Wagon, Double>() {
             @Override
             protected void updateItem(Double item, boolean empty) {
@@ -1038,8 +1129,8 @@ public class SchedulerFXUI {
                     setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
                             "-fx-font-size: 11px; " +
                             "-fx-text-fill: #E2E8F0; " +
-                            "-fx-padding: 6 8; " +
-                            "-fx-alignment: CENTER-RIGHT;");
+                            "-fx-padding: 8 10; " +
+                            "-fx-alignment: CENTER;");
                 }
             }
         });
@@ -1286,10 +1377,11 @@ public class SchedulerFXUI {
         
         resultsScrollPane = new ScrollPane();
         resultsScrollPane.setFitToWidth(true);
-        resultsScrollPane.setStyle("-fx-background-color: transparent; -fx-border-color: transparent;");
+        resultsScrollPane.setStyle("-fx-background-color: #0D1117; -fx-border-color: transparent;");
         
         resultsContent = new VBox(20);
         resultsContent.setPadding(new Insets(10));
+        resultsContent.setStyle("-fx-background-color: #0D1117;");
         
         Label emptyLabel = new Label("No dispatch report available. Dispatch trains to see results.");
         emptyLabel.setStyle("-fx-text-fill: white; -fx-font-size: 14px; -fx-font-style: italic;");
@@ -1561,13 +1653,6 @@ public class SchedulerFXUI {
                     summary.getNumberOfResolvableConflicts(),
                     summary.getNumberOfResolvableConflicts() != 1 ? "s" : ""));
                 
-                // Add double track message if applicable
-                if (summary.getNumberOfDoubleTrackPassages() > 0) {
-                    successMsg.append(String.format("\n%d double track passage%s detected",
-                        summary.getNumberOfDoubleTrackPassages(),
-                        summary.getNumberOfDoubleTrackPassages() != 1 ? "s" : ""));
-                }
-                
                 statusLabel.setText(successMsg.toString());
                 statusLabel.setStyle("-fx-text-fill: white; -fx-font-size: 13px; -fx-font-weight: 500;");
                 mainTabPane.getSelectionModel().select(1); // Switch to results tab
@@ -1612,7 +1697,25 @@ public class SchedulerFXUI {
             addStatItem(summaryStats, "Resolved", String.valueOf(summary.getNumberOfResolvableConflicts()));
             addStatItem(summaryStats, "Unsolvable", String.valueOf(summary.getNumberOfUnsolvableConflicts()));
             
-            summaryBox.getChildren().addAll(summaryTitle, summaryStats);
+            VBox summaryContent = new VBox(10);
+            summaryContent.getChildren().add(summaryStats);
+            
+            // Add double track passages information
+            if (summary.getNumberOfDoubleTrackPassages() > 0) {
+                java.util.List<String> doubleTrackSegmentIds = summary.getDoubleTrackSegmentIds();
+                VBox doubleTrackBox = new VBox(5);
+                doubleTrackBox.setPadding(new Insets(10, 0, 0, 0));
+                
+                for (String segmentId : doubleTrackSegmentIds) {
+                    Label doubleTrackLabel = new Label("Since segment " + segmentId + " is a double-track segment, both trains can pass it simultaneously without conflict.");
+                    doubleTrackLabel.setStyle("-fx-text-fill: #10B981; -fx-font-size: 12px; -fx-wrap-text: true;");
+                    doubleTrackBox.getChildren().add(doubleTrackLabel);
+                }
+                
+                summaryContent.getChildren().add(doubleTrackBox);
+            }
+            
+            summaryBox.getChildren().addAll(summaryTitle, summaryContent);
             resultsContent.getChildren().add(summaryBox);
             
             // Train schedules - professional report format
@@ -1789,18 +1892,56 @@ public class SchedulerFXUI {
             super.updateItem(item, empty);
             if (empty || item == null) {
                 setText(null);
+                setGraphic(null);
             } else {
+                // Build route string using selected stations
                 StringBuilder routeStr = new StringBuilder();
-                for (Facility station : item.getRoute()) {
+                List<Facility> selectedStations = item.getSelectedStations();
+                for (Facility station : selectedStations) {
                     if (routeStr.length() > 0) routeStr.append(" → ");
                     routeStr.append(station.getName() + " (ID: " + station.getId() + ")");
                 }
-                setText(String.format("%s: %s\n%d locomotive%s, %d wagon%s | Departure: %s", 
-                    item.getTrainId(), routeStr.toString(), 
-                    item.getLocomotives().size(), item.getLocomotives().size() != 1 ? "s" : "",
-                    item.getWagons().size(), item.getWagons().size() != 1 ? "s" : "",
-                    item.getDeparturePlannedDateTime().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))));
-                setStyle("-fx-text-fill: #000000; -fx-font-size: 12px;");
+                
+                // Build locomotive IDs string
+                StringBuilder locoIds = new StringBuilder();
+                for (Locomotive loco : item.getLocomotives()) {
+                    if (locoIds.length() > 0) locoIds.append(", ");
+                    locoIds.append(loco.getId());
+                }
+                
+                // Build wagon IDs string
+                StringBuilder wagonIds = new StringBuilder();
+                for (Wagon wagon : item.getWagons()) {
+                    if (wagonIds.length() > 0) wagonIds.append(", ");
+                    wagonIds.append(wagon.getWagonId());
+                }
+                
+                // Build professional display text
+                StringBuilder displayText = new StringBuilder();
+                displayText.append("Train ").append(item.getTrainId()).append("\n");
+                displayText.append("Route: ").append(routeStr.toString()).append("\n");
+                
+                if (item.getLocomotives().size() == 1) {
+                    displayText.append("Locomotive: ").append(locoIds.toString());
+                } else {
+                    displayText.append("Locomotives: ").append(locoIds.toString());
+                }
+                
+                if (!item.getWagons().isEmpty()) {
+                    displayText.append("\n");
+                    if (item.getWagons().size() == 1) {
+                        displayText.append("Wagon: ").append(wagonIds.toString());
+                    } else {
+                        displayText.append("Wagons: ").append(wagonIds.toString());
+                    }
+                }
+                
+                displayText.append("\nDeparture: ").append(
+                    item.getDeparturePlannedDateTime().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")));
+                
+                setText(displayText.toString());
+                setStyle("-fx-text-fill: #E2E8F0; -fx-font-size: 12px; -fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
+                        "-fx-padding: 10 15; -fx-background-color: #1E293B; -fx-background-radius: 6;");
             }
         }
     }
@@ -1815,6 +1956,25 @@ public class SchedulerFXUI {
         @Override
         public Facility fromString(String string) {
             return null; // Not needed for ComboBox
+        }
+    }
+    
+    /**
+     * Helper method to apply styles to table headers.
+     */
+    private void applyTableHeaderStyles(TableView<?> table) {
+        javafx.scene.Node header = table.lookup(".column-header-background");
+        if (header != null) {
+            header.setStyle("-fx-background-color: #2D3748;");
+        }
+        // Remover quadrado branco (filler)
+        javafx.scene.Node filler = table.lookup(".filler");
+        if (filler != null) {
+            filler.setStyle("-fx-background-color: transparent;");
+        }
+        // Aplicar texto branco aos labels dos headers
+        for (javafx.scene.Node node : table.lookupAll(".column-header .label")) {
+            node.setStyle("-fx-text-fill: white;");
         }
     }
 }

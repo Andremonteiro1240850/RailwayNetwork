@@ -129,7 +129,8 @@ public class SchedulerService {
             trainMap.put(train.getTrainId(), train);
         }
         int[] doubleTrackPassagesCount = new int[1]; // Array to pass by reference
-        List<DispatchReport.Conflict> segmentConflicts = detectConflicts(schedules, trainMap, doubleTrackPassagesCount);
+        java.util.List<String> doubleTrackSegmentIds = new java.util.ArrayList<>();
+        List<DispatchReport.Conflict> segmentConflicts = detectConflicts(schedules, trainMap, doubleTrackPassagesCount, doubleTrackSegmentIds);
         
         // Step 3.1: Apply conflict resolutions by adjusting train departure times
         // Map to track which trains need their schedules recalculated
@@ -246,7 +247,7 @@ public class SchedulerService {
         }
 
         // Step 4: Generate summary
-        DispatchReport.Summary summary = generateSummary(schedules, conflicts, doubleTrackPassagesCount[0]);
+        DispatchReport.Summary summary = generateSummary(schedules, conflicts, doubleTrackPassagesCount[0], doubleTrackSegmentIds);
 
         return new DispatchReport(schedules, conflicts, summary);
     }
@@ -971,9 +972,10 @@ public class SchedulerService {
      * @param schedules the list of train schedules
      * @param trainMap  map of trainId -> Train for accessing train properties
      * @param doubleTrackPassagesCount array to store the count of double track passages (passed by reference)
+     * @param doubleTrackSegmentIds list to store the IDs of double track segments (passed by reference)
      * @return the list of detected conflicts
      */
-    private List<DispatchReport.Conflict> detectConflicts(List<DispatchReport.TrainSchedule> schedules, java.util.Map<String, Train> trainMap, int[] doubleTrackPassagesCount) {
+    private List<DispatchReport.Conflict> detectConflicts(List<DispatchReport.TrainSchedule> schedules, java.util.Map<String, Train> trainMap, int[] doubleTrackPassagesCount, java.util.List<String> doubleTrackSegmentIds) {
         List<DispatchReport.Conflict> conflicts = new ArrayList<>();
 
         // Compare each pair of schedules
@@ -1016,12 +1018,16 @@ public class SchedulerService {
                                 } else {
                                     // Double/Quad track: no conflict (both trains pass simultaneously)
                                     // Count this as a double track passage (only once per train pair)
+                                    String segmentId = segmentTime1.getSegmentId();
                                     if (!doubleTrackPassageFound && !conflictFound) {
                                         doubleTrackPassagesCount[0]++;
                                         doubleTrackPassageFound = true;
+                                        // Add segment ID to list if not already present
+                                        if (!doubleTrackSegmentIds.contains(segmentId)) {
+                                            doubleTrackSegmentIds.add(segmentId);
+                                        }
                                     }
                                     String trackType = segment.getTrackType();
-                                    String segmentId = segmentTime1.getSegmentId();
                                     System.out.println(String.format(
                                         "Trains %s and %s pass through segment %s at the same time, but no conflict occurs because the segment is %s track (allows simultaneous passage in opposite directions).",
                                         schedule1.getTrainId(), schedule2.getTrainId(), segmentId, trackType));
@@ -1754,7 +1760,7 @@ public class SchedulerService {
      * @param numberOfDoubleTrackPassages the number of times trains passed through double track segments simultaneously
      * @return the summary
      */
-    private DispatchReport.Summary generateSummary(List<DispatchReport.TrainSchedule> schedules, List<DispatchReport.Conflict> conflicts, int numberOfDoubleTrackPassages) {
+    private DispatchReport.Summary generateSummary(List<DispatchReport.TrainSchedule> schedules, List<DispatchReport.Conflict> conflicts, int numberOfDoubleTrackPassages, java.util.List<String> doubleTrackSegmentIds) {
         int totalTrains = schedules.size();
         int numberOfConflicts = conflicts.size();
         int resolvableConflicts = 0;
@@ -1768,7 +1774,7 @@ public class SchedulerService {
             }
         }
 
-        return new DispatchReport.Summary(totalTrains, numberOfConflicts, resolvableConflicts, unsolvableConflicts, numberOfDoubleTrackPassages);
+        return new DispatchReport.Summary(totalTrains, numberOfConflicts, resolvableConflicts, unsolvableConflicts, numberOfDoubleTrackPassages, doubleTrackSegmentIds);
     }
 }
 

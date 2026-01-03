@@ -501,14 +501,17 @@ public class DispatchReport {
         private final int numberOfResolvableConflicts;
         private final int numberOfUnsolvableConflicts;
         private final int numberOfDoubleTrackPassages;
+        private final java.util.List<String> doubleTrackSegmentIds;
 
         public Summary(int totalTrainsDispatched, int numberOfConflicts,
-                      int numberOfResolvableConflicts, int numberOfUnsolvableConflicts, int numberOfDoubleTrackPassages) {
+                      int numberOfResolvableConflicts, int numberOfUnsolvableConflicts, 
+                      int numberOfDoubleTrackPassages, java.util.List<String> doubleTrackSegmentIds) {
             this.totalTrainsDispatched = totalTrainsDispatched;
             this.numberOfConflicts = numberOfConflicts;
             this.numberOfResolvableConflicts = numberOfResolvableConflicts;
             this.numberOfUnsolvableConflicts = numberOfUnsolvableConflicts;
             this.numberOfDoubleTrackPassages = numberOfDoubleTrackPassages;
+            this.doubleTrackSegmentIds = doubleTrackSegmentIds != null ? new java.util.ArrayList<>(doubleTrackSegmentIds) : new java.util.ArrayList<>();
         }
 
         public int getTotalTrainsDispatched() {
@@ -529,6 +532,10 @@ public class DispatchReport {
 
         public int getNumberOfDoubleTrackPassages() {
             return numberOfDoubleTrackPassages;
+        }
+
+        public java.util.List<String> getDoubleTrackSegmentIds() {
+            return new java.util.ArrayList<>(doubleTrackSegmentIds);
         }
 
         @Override
