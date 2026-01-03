@@ -57,6 +57,12 @@ public class SchedulerFXUI {
     private DatePicker departureDatePicker;
     private TextField departureTimeField;
     private CheckBox wagonsLoadedCheckBox;
+    private CheckBox specifyIntermediateStationsCheckBox;
+    private VBox intermediateStationsBox;
+    private ListView<Facility> intermediateStationsList;
+    private ComboBox<Facility> intermediateStationCombo;
+    private Button addIntermediateStationButton;
+    private Button removeIntermediateStationButton;
     private TableView<Locomotive> availableLocomotivesTable;
     private TableView<Locomotive> selectedLocomotivesTable;
     private TableView<Wagon> availableWagonsTable;
@@ -352,9 +358,141 @@ public class SchedulerFXUI {
         wagonsLoadedCheckBox.setStyle("-fx-text-fill: white; -fx-font-size: 13px;");
         grid.add(wagonsLoadedCheckBox, 2, 2);
         
-        box.getChildren().addAll(sectionLabel, grid);
+        // Option to specify intermediate stations
+        specifyIntermediateStationsCheckBox = new CheckBox("Specify intermediate stations");
+        specifyIntermediateStationsCheckBox.setStyle("-fx-text-fill: white; -fx-font-size: 13px;");
+        grid.add(specifyIntermediateStationsCheckBox, 0, 3, 2, 1);
+        
+        // Intermediate stations section (initially hidden)
+        intermediateStationsBox = createIntermediateStationsSection();
+        intermediateStationsBox.setVisible(false);
+        intermediateStationsBox.setManaged(false);
+        
+        // Show/hide intermediate stations section based on checkbox
+        specifyIntermediateStationsCheckBox.setOnAction(e -> {
+            boolean show = specifyIntermediateStationsCheckBox.isSelected();
+            intermediateStationsBox.setVisible(show);
+            intermediateStationsBox.setManaged(show);
+        });
+        
+        box.getChildren().addAll(sectionLabel, grid, intermediateStationsBox);
         
         return box;
+    }
+    
+    /**
+     * Creates the intermediate stations section for manual route specification.
+     */
+    private VBox createIntermediateStationsSection() {
+        VBox box = new VBox(10);
+        box.setPadding(new Insets(15, 0, 0, 0));
+        box.setStyle("-fx-background-color: #0D1117; -fx-background-radius: 8; " +
+                    "-fx-border-color: rgba(99, 102, 241, 0.2); -fx-border-radius: 8; -fx-border-width: 1; " +
+                    "-fx-padding: 15;");
+        
+        Label sectionLabel = new Label("Intermediate Stations");
+        sectionLabel.setStyle("-fx-text-fill: white; -fx-font-size: 14px; -fx-font-weight: 500;");
+        
+        // Instructions
+        Label instructionsLabel = new Label("Add stations in order between start and end stations:");
+        instructionsLabel.setStyle("-fx-text-fill: #94A3B8; -fx-font-size: 12px;");
+        
+        // Combo box for selecting intermediate station
+        HBox addStationBox = new HBox(10);
+        intermediateStationCombo = new ComboBox<>(facilities);
+        intermediateStationCombo.setConverter(new FacilityStringConverter());
+        intermediateStationCombo.setPrefWidth(300);
+        intermediateStationCombo.setStyle("-fx-background-color: #161B22; -fx-text-fill: white;");
+        intermediateStationCombo.setPromptText("Select station");
+        
+        addIntermediateStationButton = new Button("Add");
+        addIntermediateStationButton.setStyle("-fx-background-color: #6366F1; -fx-text-fill: white; -fx-font-size: 12px; " +
+                                           "-fx-padding: 6 12; -fx-background-radius: 6; -fx-cursor: hand;");
+        addIntermediateStationButton.setOnAction(e -> addIntermediateStation());
+        
+        addStationBox.getChildren().addAll(intermediateStationCombo, addIntermediateStationButton);
+        
+        // List of intermediate stations
+        intermediateStationsList = new ListView<>(FXCollections.observableArrayList());
+        intermediateStationsList.setPrefHeight(120);
+        intermediateStationsList.setStyle("-fx-background-color: #161B22; -fx-text-fill: white;");
+        intermediateStationsList.setCellFactory(list -> new ListCell<Facility>() {
+            @Override
+            protected void updateItem(Facility item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                } else {
+                    setText(item.getName() + " (ID: " + item.getId() + ")");
+                    setStyle("-fx-text-fill: white; -fx-font-size: 12px;");
+                }
+            }
+        });
+        
+        // Remove button
+        removeIntermediateStationButton = new Button("Remove Selected");
+        removeIntermediateStationButton.setStyle("-fx-background-color: #EF4444; -fx-text-fill: white; -fx-font-size: 12px; " +
+                                               "-fx-padding: 6 12; -fx-background-radius: 6; -fx-cursor: hand;");
+        removeIntermediateStationButton.setOnAction(e -> removeIntermediateStation());
+        
+        box.getChildren().addAll(sectionLabel, instructionsLabel, addStationBox, intermediateStationsList, removeIntermediateStationButton);
+        
+        return box;
+    }
+    
+    /**
+     * Adds an intermediate station to the route.
+     */
+    private void addIntermediateStation() {
+        Facility selected = intermediateStationCombo.getSelectionModel().getSelectedItem();
+        if (selected == null) {
+            showAlert(Alert.AlertType.WARNING, "Warning", "Please select a station to add.");
+            return;
+        }
+        
+        // Validate that the station is not the start or end station
+        Facility startStation = startStationCombo.getSelectionModel().getSelectedItem();
+        Facility endStation = endStationCombo.getSelectionModel().getSelectedItem();
+        
+        if (startStation != null && selected.equals(startStation)) {
+            showAlert(Alert.AlertType.WARNING, "Warning", "This station is already selected as the start station.");
+            return;
+        }
+        
+        if (endStation != null && selected.equals(endStation)) {
+            showAlert(Alert.AlertType.WARNING, "Warning", "This station is already selected as the end station.");
+            return;
+        }
+        
+        ObservableList<Facility> intermediateList = intermediateStationsList.getItems();
+        
+        // Check if station is already in list (by ID comparison, not object reference)
+        boolean alreadyExists = intermediateList.stream()
+            .anyMatch(station -> station.getId().equals(selected.getId()));
+        
+        if (!alreadyExists) {
+            intermediateList.add(selected);
+            intermediateStationCombo.getSelectionModel().clearSelection();
+            System.out.println("Added intermediate station: " + selected.getName() + " (ID: " + selected.getId() + ")");
+            System.out.println("Total intermediate stations: " + intermediateList.size());
+            // Force refresh of the list view
+            intermediateStationsList.refresh();
+        } else {
+            showAlert(Alert.AlertType.WARNING, "Warning", "This station is already in the intermediate stations list.");
+        }
+    }
+    
+    /**
+     * Removes the selected intermediate station from the route.
+     */
+    private void removeIntermediateStation() {
+        Facility selected = intermediateStationsList.getSelectionModel().getSelectedItem();
+        if (selected != null) {
+            intermediateStationsList.getItems().remove(selected);
+            System.out.println("Removed intermediate station: " + selected.getName() + " (ID: " + selected.getId() + ")");
+        } else {
+            showAlert(Alert.AlertType.WARNING, "Warning", "Please select a station to remove.");
+        }
     }
     
     /**
@@ -1259,12 +1397,31 @@ public class SchedulerFXUI {
             );
             System.out.println("Departure time parsed: " + departureTime);
             
-            // Create route (simple route with start and end)
-            // The SchedulerService will automatically find the fastest path if stations are not directly connected
+            // Create route based on user selection
             Facility startStation = startStationCombo.getSelectionModel().getSelectedItem();
             Facility endStation = endStationCombo.getSelectionModel().getSelectedItem();
-            List<Facility> route = Arrays.asList(startStation, endStation);
-            List<Facility> selectedStations = Arrays.asList(startStation, endStation); // User-selected stations
+            
+            List<Facility> route;
+            List<Facility> selectedStations;
+            
+            if (specifyIntermediateStationsCheckBox.isSelected() && 
+                intermediateStationsList != null && 
+                !intermediateStationsList.getItems().isEmpty()) {
+                // User specified intermediate stations - use them in order
+                List<Facility> intermediateStations = new ArrayList<>(intermediateStationsList.getItems());
+                route = new ArrayList<>();
+                route.add(startStation);
+                route.addAll(intermediateStations);
+                route.add(endStation);
+                
+                // Selected stations include start, intermediates, and end
+                selectedStations = new ArrayList<>(route);
+            } else {
+                // Automatic calculation - only start and end
+                // The SchedulerService will automatically find the fastest path if stations are not directly connected
+                route = Arrays.asList(startStation, endStation);
+                selectedStations = Arrays.asList(startStation, endStation); // User-selected stations
+            }
             
             // Calculate total weight
             double totalWeight = selectedWagonsTable.getItems().stream()
@@ -1301,6 +1458,13 @@ public class SchedulerFXUI {
             selectedLocomotivesTable.getItems().clear();
             selectedWagonsTable.getItems().clear();
             wagonsLoadedCheckBox.setSelected(false);
+            specifyIntermediateStationsCheckBox.setSelected(false);
+            if (intermediateStationsList != null) {
+                intermediateStationsList.getItems().clear();
+            }
+            if (intermediateStationCombo != null) {
+                intermediateStationCombo.getSelectionModel().clearSelection();
+            }
             
             // Show success message
             showAlert(Alert.AlertType.INFORMATION, "Success", 
@@ -1384,6 +1548,10 @@ public class SchedulerFXUI {
                     "- Missing segment data in database\n" +
                     "Total trains attempted: " + trains.size());
             } else {
+                // Clear the dispatch queue after successful dispatch
+                trains.clear();
+                updateSummary(); // Update summary to reflect empty queue
+                
                 StringBuilder successMsg = new StringBuilder();
                 successMsg.append("✓ Dispatch completed successfully\n");
                 successMsg.append(String.format("%d train%s scheduled\n", 
@@ -1490,23 +1658,23 @@ public class SchedulerFXUI {
         Separator separator = new Separator();
         separator.setStyle("-fx-background-color: rgba(99, 102, 241, 0.3);");
         
-        // Route - show full route with all intermediate stations
+        // Route - show only selected stations by user (not all intermediate stations)
         StringBuilder routeStr = new StringBuilder();
-        List<Facility> stationsToShow = schedule.getRouteWithETAs().stream()
-            .map(eta -> eta.getStation())
-            .collect(java.util.stream.Collectors.toList());
+        List<Facility> selectedStations = schedule.getSelectedStations();
         
-        for (Facility station : stationsToShow) {
+        for (Facility station : selectedStations) {
             if (routeStr.length() > 0) routeStr.append(" → ");
-            routeStr.append(station.getId());
+            routeStr.append(station.getName() + " (ID: " + station.getId() + ")");
         }
         
         // If route is long, show simplified version: start -> ... -> end
         String routeDisplay = routeStr.toString();
-        if (stationsToShow.size() > 4) {
-            routeDisplay = stationsToShow.get(0).getId() + " → ... (" + 
-                          (stationsToShow.size() - 2) + " stations) → " + 
-                          stationsToShow.get(stationsToShow.size() - 1).getId();
+        if (selectedStations.size() > 4) {
+            Facility firstStation = selectedStations.get(0);
+            Facility lastStation = selectedStations.get(selectedStations.size() - 1);
+            routeDisplay = firstStation.getName() + " (ID: " + firstStation.getId() + ") → ... (" + 
+                          (selectedStations.size() - 2) + " stations) → " + 
+                          lastStation.getName() + " (ID: " + lastStation.getId() + ")";
         }
         
         Label routeLabel = new Label("Route: " + routeDisplay);
@@ -1535,17 +1703,29 @@ public class SchedulerFXUI {
         Label timeLabel = new Label("Total time: " + totalTime);
         timeLabel.setStyle("-fx-text-fill: white; -fx-font-size: 13px; -fx-font-weight: 500;");
         
-        // Stations list
+        // Stations list - show only selected stations by user, not all intermediate stations
         VBox stationsBox = new VBox(5);
         Label stationsLabel = new Label("Stations:");
         stationsLabel.setStyle("-fx-text-fill: white; -fx-font-size: 13px; -fx-font-weight: 500;");
         stationsBox.getChildren().add(stationsLabel);
         
+        // Create a map of station ID to ETA for quick lookup
+        java.util.Map<String, DispatchReport.TrainSchedule.StationETA> etaMap = new java.util.HashMap<>();
         for (DispatchReport.TrainSchedule.StationETA routeETA : schedule.getRouteWithETAs()) {
-            String stationTime = routeETA.getEta().format(DateTimeFormatter.ofPattern("HH:mm"));
-            Label stationLabel = new Label("• " + routeETA.getStation().getId() + " " + stationTime);
-            stationLabel.setStyle("-fx-text-fill: white; -fx-font-size: 12px;");
-            stationsBox.getChildren().add(stationLabel);
+            etaMap.put(routeETA.getStation().getId(), routeETA);
+        }
+        
+        // Display only selected stations (user-specified stations, not all intermediates)
+        // selectedStations is already defined above, so we reuse it
+        for (Facility station : selectedStations) {
+            DispatchReport.TrainSchedule.StationETA routeETA = etaMap.get(station.getId());
+            if (routeETA != null) {
+                String stationTime = routeETA.getEta().format(DateTimeFormatter.ofPattern("HH:mm"));
+                String stationDisplay = station.getName() + " (ID: " + station.getId() + ")";
+                Label stationLabel = new Label("• " + stationDisplay + " " + stationTime);
+                stationLabel.setStyle("-fx-text-fill: white; -fx-font-size: 12px;");
+                stationsBox.getChildren().add(stationLabel);
+            }
         }
         
         box.getChildren().addAll(trainHeader, separator, routeLabel, departureLabel, arrivalLabel, timeLabel, stationsBox);
@@ -1613,7 +1793,7 @@ public class SchedulerFXUI {
                 StringBuilder routeStr = new StringBuilder();
                 for (Facility station : item.getRoute()) {
                     if (routeStr.length() > 0) routeStr.append(" → ");
-                    routeStr.append(station.getId());
+                    routeStr.append(station.getName() + " (ID: " + station.getId() + ")");
                 }
                 setText(String.format("%s: %s\n%d locomotive%s, %d wagon%s | Departure: %s", 
                     item.getTrainId(), routeStr.toString(), 

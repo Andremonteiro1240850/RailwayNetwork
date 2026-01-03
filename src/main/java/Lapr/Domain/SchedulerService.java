@@ -368,6 +368,59 @@ public class SchedulerService {
                          " with " + route.size() + " station(s): " +
                          route.stream().map(Facility::getId).reduce((a, b) -> a + " -> " + b).orElse("empty"));
         
+        // Expand route: if user specified intermediate stations that are not directly connected,
+        // find the path between them
+        List<Facility> expandedRoute = new ArrayList<>();
+        for (int i = 0; i < route.size() - 1; i++) {
+            Facility routeStartStation = route.get(i);
+            Facility routeEndStation = route.get(i + 1);
+            
+            // Validate stations
+            if (routeStartStation == null) {
+                throw new IllegalStateException(
+                    String.format("Start station at index %d is null in route for train %s", i, train.getTrainId()));
+            }
+            if (routeEndStation == null) {
+                throw new IllegalStateException(
+                    String.format("End station at index %d is null in route for train %s", i + 1, train.getTrainId()));
+            }
+
+            // Check if directly connected
+            LineSegment segment = findConnectingSegment(routeStartStation, routeEndStation);
+            if (segment == null) {
+                // Not directly connected - find path between them
+                System.out.println("  No direct connection found between " + routeStartStation.getId() + 
+                                 " and " + routeEndStation.getId() + ", searching for path...");
+                List<Facility> path = findFastestPath(routeStartStation, routeEndStation, train);
+                if (path == null || path.size() < 2) {
+                    throw new IllegalStateException(
+                        String.format("No path found between stations %s and %s for train %s",
+                                    routeStartStation.getId(), routeEndStation.getId(), train.getTrainId()));
+                }
+                
+                // Add path to expanded route (skip first station if it's already in expandedRoute)
+                if (expandedRoute.isEmpty() || !expandedRoute.get(expandedRoute.size() - 1).getId().equals(path.get(0).getId())) {
+                    expandedRoute.addAll(path);
+                } else {
+                    // Skip first station as it's already in the route
+                    for (int j = 1; j < path.size(); j++) {
+                        expandedRoute.add(path.get(j));
+                    }
+                }
+                System.out.println("Found path from " + routeStartStation.getId() + " to " + routeEndStation.getId() + 
+                                 " via " + (path.size() - 2) + " intermediate stations");
+            } else {
+                // Directly connected - add stations to route
+                if (expandedRoute.isEmpty() || !expandedRoute.get(expandedRoute.size() - 1).getId().equals(routeStartStation.getId())) {
+                    expandedRoute.add(routeStartStation);
+                }
+                expandedRoute.add(routeEndStation);
+            }
+        }
+        
+        // Use expanded route for segment processing
+        route = expandedRoute;
+        
         // Load segment data from database (inclination, etc.)
         for (int i = 0; i < route.size() - 1; i++) {
             Facility routeStartStation = route.get(i);
@@ -383,11 +436,11 @@ public class SchedulerService {
                     String.format("End station at index %d is null in route for train %s", i + 1, train.getTrainId()));
             }
 
-            // Find the connecting segment
+            // Find the connecting segment (should always exist now after expansion)
             LineSegment segment = findConnectingSegment(routeStartStation, routeEndStation);
             if (segment == null) {
                 throw new IllegalStateException(
-                    String.format("No direct connection found between stations %s and %s for train %s",
+                    String.format("No direct connection found between stations %s and %s for train %s (after path expansion)",
                                 routeStartStation.getId(), routeEndStation.getId(), train.getTrainId()));
             }
             
