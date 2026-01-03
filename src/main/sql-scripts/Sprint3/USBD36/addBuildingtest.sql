@@ -1,18 +1,17 @@
 
---
--- BEGIN
---     DBMS_OUTPUT.PUT_LINE('--- US36: LIMPEZA PARA REPETIR SUCESSO ---');
---
---     DELETE
---     FROM Building
---     WHERE UPPER(name) = UPPER('Test Warehouse US36');
---
---     COMMIT;
---
---     DBMS_OUTPUT.PUT_LINE('LIMPEZA OK: Building removido e COMMIT feito.');
--- END;
--- /
---
+
+BEGIN
+    DBMS_OUTPUT.PUT_LINE('--- US36: LIMPEZA PARA REPETIR SUCESSO ---');
+
+    DELETE FROM Building
+    WHERE UPPER(name) = UPPER('Test Warehouse US36');
+
+    COMMIT;
+
+    DBMS_OUTPUT.PUT_LINE('LIMPEZA OK: Building removido e COMMIT feito.');
+END;
+/
+
 
 
 
