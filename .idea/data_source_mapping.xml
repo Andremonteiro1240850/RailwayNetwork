@@ -7,8 +7,12 @@
     <file url="file://$PROJECT_DIR$/src/main/sql-scripts/Sprint3/USBD34/USBD34Test.sql" value="106178c9-c9da-423a-8523-9350334f759e" />
     <file url="file://$PROJECT_DIR$/src/main/sql-scripts/Sprint3/USBD35/registFacilityTest.sql" value="106178c9-c9da-423a-8523-9350334f759e" />
     <file url="file://$PROJECT_DIR$/src/main/sql-scripts/Sprint3/USBD35/registeFacility.sql" value="106178c9-c9da-423a-8523-9350334f759e" />
+    <file url="file://$PROJECT_DIR$/src/main/sql-scripts/Sprint3/USBD39/ associate_locomotive_with_train.sql" value="106178c9-c9da-423a-8523-9350334f759e" />
+    <file url="file://$PROJECT_DIR$/src/main/sql-scripts/Sprint3/USBD39/associate_locomotive_with_trainTEST.sql" value="106178c9-c9da-423a-8523-9350334f759e" />
     <file url="file://$PROJECT_DIR$/src/main/sql-scripts/Sprint3/USBD41/removeFreight.sql" value="106178c9-c9da-423a-8523-9350334f759e" />
     <file url="file://$PROJECT_DIR$/src/main/sql-scripts/Sprint3/USBD41/removeFreightTest.sql" value="106178c9-c9da-423a-8523-9350334f759e" />
+    <file url="file://$PROJECT_DIR$/src/main/sql-scripts/Sprint3/USBD43/add_electric_locomotive_model.sql" value="106178c9-c9da-423a-8523-9350334f759e" />
+    <file url="file://$PROJECT_DIR$/src/main/sql-scripts/Sprint3/USBD43/add_electric_locomotive_modelTEST.sql" value="106178c9-c9da-423a-8523-9350334f759e" />
     <file url="file://$PROJECT_DIR$/src/main/sql-scripts/Sprint3/USBD44/USBD44.sql" value="106178c9-c9da-423a-8523-9350334f759e" />
     <file url="file://$PROJECT_DIR$/src/main/sql-scripts/Sprint3/USBD44/USBD44Test.sql" value="106178c9-c9da-423a-8523-9350334f759e" />
   </component>

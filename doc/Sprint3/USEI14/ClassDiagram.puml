@@ -1,168 +1,191 @@
 @startuml
 'https://plantuml.com/class-diagram
 
-' --- USEI14: Maximum Throughput Between Two Hubs ---
-' Computes maximum flow between two selected stations (source and sink)
-' given per-edge capacities to estimate corridor's theoretical throughput
-
-' --- Classes ---
-class MaximumFlowFXUI {
-    - controller: MaximumFlowController
-    - currentResult: MaximumFlowResult
-    + void: show()
-    + void: displayResult(result: MaximumFlowResult)
-    + void: handleCalculateButton()
-    + void: updateStationSelection()
-}
-
 class MaximumFlowController {
-    - graphRepository: RailwayGraphRepository
-    - graph: RailwayGraph
-    + MaximumFlowController(graphRepository: RailwayGraphRepository)
-    + void: buildGraph()
-    + MaximumFlowResult: computeMaximumFlow(sourceStationId: String, sinkStationId: String)
-    + Collection<Station>: getAllStations()
-    + Station: getStationById(stationId: String)
-    + String: getGraphStatistics()
-}
+    - graphRepository : RailwayGraphRepository
+    - graph : RailwayGraph
 
-class MaximumFlowResult {
-    - sourceStation: Station
-    - sinkStation: Station
-    - maxFlowValue: int
-    + Station: getSourceStation()
-    + Station: getSinkStation()
-    + int: getMaxFlowValue()
-    + String: getSourceStationId()
-    + String: getSinkStationId()
+    + MaximumFlowController(
+        graphRepository : RailwayGraphRepository
+      )
+
+    + buildGraph() : void
+
+    + computeMaximumFlow(
+        sourceStationId : String,
+        sinkStationId : String
+      ) : MaximumFlowResult
+
+    + getAllStations() : Collection<Station>
+
+    + getStationById(
+        stationId : String
+      ) : Station
+
+    + getGraphStatistics() : String
 }
 
 class FordFulkersonAlgorithm {
-    + {static} int: computeMaxFlow(graph: RailwayGraph, sourceStationId: String, sinkStationId: String)
-    - {static} Map<String, List<ResidualEdge>>: buildResidualGraph(graph: RailwayGraph)
-    - {static} List<ResidualEdge>: findAugmentingPath(residualGraph: Map<String, List<ResidualEdge>>, source: String, sink: String)
-    - {static} List<ResidualEdge>: reconstructPath(pathInfo: Map<String, PathEntry>, source: String, sink: String)
-    - {static} int: findMinResidualCapacity(path: List<ResidualEdge>)
-    - {static} void: updateResidualGraph(path: List<ResidualEdge>, flow: int)
+    + {static} computeMaxFlow(
+        graph : RailwayGraph,
+        sourceStationId : String,
+        sinkStationId : String
+      ) : int
+
+    - {static} buildResidualGraph(
+        graph : RailwayGraph
+      ) : Map<String, List<ResidualEdge>>
+
+    - {static} findAugmentingPath(
+        residualGraph : Map<String, List<ResidualEdge>>,
+        source : String,
+        sink : String
+      ) : List<ResidualEdge>
+
+    - {static} reconstructPath(
+        pathInfo : Map<String, PathEntry>,
+        source : String,
+        sink : String
+      ) : List<ResidualEdge>
+
+    - {static} findMinResidualCapacity(
+        path : List<ResidualEdge>
+      ) : int
+
+    - {static} updateResidualGraph(
+        path : List<ResidualEdge>,
+        flow : int
+      ) : void
 }
 
-class ResidualEdge {
-    - to: String
-    - residualCapacity: int
-    - reverseEdge: ResidualEdge
-    - originalLine: Line
-    + void: setReverseEdge(reverse: ResidualEdge)
-}
+class MaximumFlowResult {
+    - sourceStation : Station
+    - sinkStation : Station
+    - maxFlowValue : int
 
-class PathEntry {
-    - from: String
-    - edge: ResidualEdge
-}
+    + getSourceStation() : Station
 
-class RailwayGraph {
-    - nodes: Map<String, Station>
-    - outgoingEdges: Map<String, List<Line>>
-    - incomingEdges: Map<String, List<Line>>
-    - allEdges: List<Line>
-    + void: addNode(node: Station)
-    + void: addEdge(edge: Line)
-    + Station: getNode(stationId: String)
-    + Collection<Station>: getAllNodes()
-    + List<Line>: getOutgoingEdges(stationId: String)
-    + List<Line>: getIncomingEdges(stationId: String)
-    + List<Line>: getAllEdges()
-    + int: getNodeCount()
-    + int: getEdgeCount()
-    + boolean: containsNode(stationId: String)
+    + getSinkStation() : Station
+
+    + getMaxFlowValue() : int
+
+    + getSourceStationId() : String
+
+    + getSinkStationId() : String
 }
 
 class Station {
-    - id: String
-    - name: String
-    - latitude: double
-    - longitude: double
-    - coordX: double
-    - coordY: double
-    + String: getId()
-    + String: getName()
-    + double: getLatitude()
-    + double: getLongitude()
-    + double: getCoordX()
-    + double: getCoordY()
+    - id : String
+    - name : String
+    - latitude : double
+    - longitude : double
+    - coordX : double
+    - coordY : double
+
+    + Station(
+        id : String,
+        name : String,
+        latitude : double,
+        longitude : double,
+        coordX : double,
+        coordY : double
+      )
+
+    + getId() : String
+
+    + getName() : String
+
+    + getLatitude() : double
+
+    + getLongitude() : double
+
+    + getCoordX() : double
+
+    + getCoordY() : double
+
+    + equals(obj : Object) : boolean
+
+    + hashCode() : int
+
+    + toString() : String
 }
 
-class Line {
-    - departureStationId: String
-    - arrivalStationId: String
-    - distance: double
-    - capacity: int
-    - cost: double
-    + String: getDepartureStationId()
-    + String: getArrivalStationId()
-    + double: getDistance()
-    + int: getCapacity()
-    + double: getCost()
+class RailwayGraph {
+    - nodes : Map<String, Station>
+    - outgoingEdges : Map<String, List<Line>>
+    - incomingEdges : Map<String, List<Line>>
+    - allEdges : List<Line>
+
+    + addNode(
+        node : Station
+      ) : void
+
+    + addEdge(
+        edge : Line
+      ) : void
+
+    + getNode(
+        stationId : String
+      ) : Station
+
+    + getAllNodes() : Collection<Station>
+
+    + getOutgoingEdges(
+        stationId : String
+      ) : List<Line>
+
+    + getIncomingEdges(
+        stationId : String
+      ) : List<Line>
+
+    + getAllEdges() : List<Line>
+
+    + getNodeCount() : int
+
+    + getEdgeCount() : int
+
+    + containsNode(
+        stationId : String
+      ) : boolean
 }
 
 class RailwayGraphRepository {
-    - cachedGraph: RailwayGraph
-    - stationRepository: StationRepository
-    - lineRepository: LineRepository
-    - dataLoader: DataLoader
+    - cachedGraph : RailwayGraph
+    - stationRepository : StationRepository
+    - lineRepository : LineRepository
+    - dataLoader : DataLoader
+
     + RailwayGraphRepository()
-    + RailwayGraphRepository(stationRepository: StationRepository, lineRepository: LineRepository)
-    + void: loadData(stationsPath: String, linesPath: String)
-    + RailwayGraph: buildGraph()
-    + StationRepository: getStationRepository()
-    + LineRepository: getLineRepository()
+
+    + RailwayGraphRepository(
+        stationRepository : StationRepository,
+        lineRepository : LineRepository
+      )
+
+    + loadData(
+        stationsPath : String,
+        linesPath : String
+      ) : void
+
+    + buildGraph() : RailwayGraph
+
+    + getStationRepository() : StationRepository
+
+    + getLineRepository() : LineRepository
 }
 
-class StationRepository {
-    + Collection<Station>: getAllStations()
-    + Station: getStationById(id: String)
-}
+MaximumFlowController --> RailwayGraphRepository
+MaximumFlowController --> FordFulkersonAlgorithm
+MaximumFlowController ..> MaximumFlowResult
+MaximumFlowController ..> Station
 
-class LineRepository {
-    + Collection<Line>: getAllLines()
-    + List<Line>: getLinesByDepartureStation(stationId: String)
-    + List<Line>: getLinesByArrivalStation(stationId: String)
-}
-
-class DataLoader {
-    + void: loadAllData(stationsPath: String, linesPath: String)
-    + StationRepository: getStationRepository()
-    + LineRepository: getLineRepository()
-}
-
-' --- Relações ---
-MaximumFlowFXUI --> MaximumFlowController : uses
-MaximumFlowController --> RailwayGraphRepository : uses
-MaximumFlowController --> FordFulkersonAlgorithm : uses
-MaximumFlowController --> RailwayGraph : manages
-MaximumFlowController ..> MaximumFlowResult : creates
-
-FordFulkersonAlgorithm --> RailwayGraph : processes
-FordFulkersonAlgorithm --> Station : uses
-FordFulkersonAlgorithm --> Line : uses
-FordFulkersonAlgorithm ..> ResidualEdge : creates
-FordFulkersonAlgorithm ..> PathEntry : creates
-ResidualEdge --> Line : references
-ResidualEdge --> ResidualEdge : reverseEdge
+FordFulkersonAlgorithm --> RailwayGraph
+FordFulkersonAlgorithm ..> Station
 
 RailwayGraph "1" --> "0..*" Station : contains
 RailwayGraph "1" --> "0..*" Line : contains
-Line --> Station : connects
 
-RailwayGraphRepository --> StationRepository : uses
-RailwayGraphRepository --> LineRepository : uses
-RailwayGraphRepository --> DataLoader : uses
-RailwayGraphRepository --> RailwayGraph : builds
-
-StationRepository "1" --> "0..*" Station : contains
-LineRepository "1" --> "0..*" Line : contains
-
-DataLoader --> StationRepository : creates
-DataLoader --> LineRepository : creates
+RailwayGraphRepository --> RailwayGraph
 
 @enduml
 

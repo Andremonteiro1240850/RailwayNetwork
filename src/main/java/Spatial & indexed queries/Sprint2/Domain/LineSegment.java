@@ -21,6 +21,7 @@ public class LineSegment {
     private final Double speedLimitKmH; // Speed limit of the track segment (null if unlimited)
     private final double inclinationPercent; // Inclination in percentage (e.g., 2.5 for 2.5%) - for USLP10
     private final String trackType; // Type of track (SINGLE, DOUBLE, QUAD) - loaded from database
+    private final Boolean hasSiding; // Explicit boolean from database (true if segment has siding)
     private final Integer sidingId; // ID of siding associated with this segment (null if no siding)
     private final Integer sidingSize; // Size of siding in meters (null if no siding)
 
@@ -37,7 +38,7 @@ public class LineSegment {
      */
     public LineSegment(String id, Facility startFacility, Facility endFacility,
                        double lengthKm, double gauge, boolean electrified) {
-        this(id, "", startFacility, endFacility, lengthKm, gauge, electrified, null, 0.0, "SINGLE", null, null);
+        this(id, "", startFacility, endFacility, lengthKm, gauge, electrified, null, 0.0, "SINGLE", false, null, null);
     }
 
     /**
@@ -54,7 +55,7 @@ public class LineSegment {
      */
     public LineSegment(String id, String name, Facility startFacility, Facility endFacility,
                        double lengthKm, double gauge, boolean electrified) {
-        this(id, name, startFacility, endFacility, lengthKm, gauge, electrified, null, 0.0, "SINGLE", null, null);
+        this(id, name, startFacility, endFacility, lengthKm, gauge, electrified, null, 0.0, "SINGLE", false, null, null);
     }
 
     /**
@@ -72,7 +73,7 @@ public class LineSegment {
      */
     public LineSegment(String id, String name, Facility startFacility, Facility endFacility,
                        double lengthKm, double gauge, boolean electrified, Double speedLimitKmH) {
-        this(id, name, startFacility, endFacility, lengthKm, gauge, electrified, speedLimitKmH, 0.0, "SINGLE", null, null);
+        this(id, name, startFacility, endFacility, lengthKm, gauge, electrified, speedLimitKmH, 0.0, "SINGLE", false, null, null);
     }
     
     /**
@@ -93,7 +94,7 @@ public class LineSegment {
                        double lengthKm, double gauge, boolean electrified, Double speedLimitKmH,
                        double inclinationPercent) {
         this(id, name, startFacility, endFacility, lengthKm, gauge, electrified, speedLimitKmH, 
-             inclinationPercent, "SINGLE", null, null);
+             inclinationPercent, "SINGLE", false, null, null);
     }
     
     /**
@@ -109,13 +110,14 @@ public class LineSegment {
      * @param speedLimitKmH the speed limit in km/h (null if unlimited)
      * @param inclinationPercent the inclination in percentage (e.g., 2.5 for 2.5%)
      * @param trackType    the type of track as String (SINGLE, DOUBLE, QUAD) - loaded from database
+     * @param hasSiding    explicit boolean from database (true if segment has siding)
      * @param sidingId     the ID of siding associated with this segment (null if no siding)
      * @param sidingSize   the size of siding in meters (null if no siding)
      * @throws IllegalArgumentException if parameters are invalid
      */
     public LineSegment(String id, String name, Facility startFacility, Facility endFacility,
                        double lengthKm, double gauge, boolean electrified, Double speedLimitKmH,
-                       double inclinationPercent, String trackType, Integer sidingId, Integer sidingSize) {
+                       double inclinationPercent, String trackType, Boolean hasSiding, Integer sidingId, Integer sidingSize) {
         if (id == null || id.trim().isEmpty()) {
             throw new IllegalArgumentException("Line segment ID cannot be null or empty");
         }
@@ -150,9 +152,38 @@ public class LineSegment {
         this.electrified = electrified;
         this.speedLimitKmH = speedLimitKmH;
         this.inclinationPercent = inclinationPercent;
-        this.trackType = trackType != null ? trackType.trim().toUpperCase() : "SINGLE";
+        // Normalize track type: handle variations like "DOUBLE_TRACK" -> "DOUBLE"
+        this.trackType = normalizeTrackType(trackType);
+        this.hasSiding = hasSiding != null ? hasSiding : (sidingId != null);
         this.sidingId = sidingId;
         this.sidingSize = sidingSize;
+    }
+    
+    /**
+     * Normalizes track type string to standard values (SINGLE, DOUBLE, QUAD).
+     * Handles variations like "DOUBLE_TRACK" -> "DOUBLE", "SINGLE_TRACK" -> "SINGLE", etc.
+     * 
+     * @param trackType the track type string from database
+     * @return normalized track type (SINGLE, DOUBLE, or QUAD), defaults to SINGLE if unrecognized
+     */
+    private static String normalizeTrackType(String trackType) {
+        if (trackType == null || trackType.trim().isEmpty()) {
+            return "SINGLE";
+        }
+        
+        String normalized = trackType.trim().toUpperCase();
+        
+        // Handle variations and synonyms
+        if (normalized.contains("SINGLE") || normalized.equals("1")) {
+            return "SINGLE";
+        } else if (normalized.contains("DOUBLE") || normalized.equals("2")) {
+            return "DOUBLE";
+        } else if (normalized.contains("QUAD") || normalized.contains("QUADRUPLE") || normalized.equals("4")) {
+            return "QUAD";
+        }
+        
+        // If unrecognized, default to SINGLE (conservative approach)
+        return "SINGLE";
     }
 
     /**
@@ -257,29 +288,32 @@ public class LineSegment {
     
     /**
      * Checks if this segment is single track (only one track).
+     * Uses safe comparison with normalized track type.
      *
      * @return true if SINGLE track, false otherwise
      */
     public boolean isSingleTrack() {
-        return "SINGLE".equalsIgnoreCase(trackType);
+        return "SINGLE".equals(trackType);
     }
     
     /**
      * Checks if this segment is double track.
+     * Uses safe comparison with normalized track type.
      *
      * @return true if DOUBLE track, false otherwise
      */
     public boolean isDoubleTrack() {
-        return "DOUBLE".equalsIgnoreCase(trackType);
+        return "DOUBLE".equals(trackType);
     }
     
     /**
      * Checks if this segment is quad track.
+     * Uses safe comparison with normalized track type.
      *
      * @return true if QUAD track, false otherwise
      */
     public boolean isQuadTrack() {
-        return "QUAD".equalsIgnoreCase(trackType);
+        return "QUAD".equals(trackType);
     }
     
     /**
@@ -310,12 +344,22 @@ public class LineSegment {
     }
     
     /**
+     * Gets the explicit hasSiding boolean from database.
+     *
+     * @return true if segment has siding, false otherwise, or null if not set
+     */
+    public Boolean getHasSiding() {
+        return hasSiding;
+    }
+    
+    /**
      * Checks if this segment has a siding.
+     * Uses the explicit hasSiding boolean from database.
      *
      * @return true if has siding, false otherwise
      */
     public boolean hasSiding() {
-        return sidingId != null;
+        return Boolean.TRUE.equals(hasSiding);
     }
 
     /**

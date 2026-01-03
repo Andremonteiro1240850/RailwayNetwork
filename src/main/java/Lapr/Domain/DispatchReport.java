@@ -500,13 +500,18 @@ public class DispatchReport {
         private final int numberOfConflicts;
         private final int numberOfResolvableConflicts;
         private final int numberOfUnsolvableConflicts;
+        private final int numberOfDoubleTrackPassages;
+        private final java.util.List<String> doubleTrackSegmentIds;
 
         public Summary(int totalTrainsDispatched, int numberOfConflicts,
-                      int numberOfResolvableConflicts, int numberOfUnsolvableConflicts) {
+                      int numberOfResolvableConflicts, int numberOfUnsolvableConflicts, 
+                      int numberOfDoubleTrackPassages, java.util.List<String> doubleTrackSegmentIds) {
             this.totalTrainsDispatched = totalTrainsDispatched;
             this.numberOfConflicts = numberOfConflicts;
             this.numberOfResolvableConflicts = numberOfResolvableConflicts;
             this.numberOfUnsolvableConflicts = numberOfUnsolvableConflicts;
+            this.numberOfDoubleTrackPassages = numberOfDoubleTrackPassages;
+            this.doubleTrackSegmentIds = doubleTrackSegmentIds != null ? new java.util.ArrayList<>(doubleTrackSegmentIds) : new java.util.ArrayList<>();
         }
 
         public int getTotalTrainsDispatched() {
@@ -525,11 +530,19 @@ public class DispatchReport {
             return numberOfUnsolvableConflicts;
         }
 
+        public int getNumberOfDoubleTrackPassages() {
+            return numberOfDoubleTrackPassages;
+        }
+
+        public java.util.List<String> getDoubleTrackSegmentIds() {
+            return new java.util.ArrayList<>(doubleTrackSegmentIds);
+        }
+
         @Override
         public String toString() {
-            return String.format("Summary[Trains: %d, Conflicts: %d (Resolvable: %d, Unsolvable: %d)]",
+            return String.format("Summary[Trains: %d, Conflicts: %d (Resolvable: %d, Unsolvable: %d), DoubleTrack: %d]",
                                totalTrainsDispatched, numberOfConflicts,
-                               numberOfResolvableConflicts, numberOfUnsolvableConflicts);
+                               numberOfResolvableConflicts, numberOfUnsolvableConflicts, numberOfDoubleTrackPassages);
         }
     }
 

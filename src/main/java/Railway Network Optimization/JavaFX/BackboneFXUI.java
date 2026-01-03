@@ -625,8 +625,7 @@ public class BackboneFXUI {
         sb.append("-".repeat(80)).append("\n");
         sb.append(String.format("Computation Time: %d ms\n", computationTime));
         sb.append("Algorithm: Kruskal's with Union-Find\n");
-        sb.append("Time Complexity: O(E log E) where E is the number of edges\n");
-        sb.append("Space Complexity: O(V + E) where V is the number of vertices\n\n");
+        sb.append("Time Complexity: O(E log E) where E is the number of edges\n\n");
         
         sb.append("EXPORT INFORMATION\n");
         sb.append("-".repeat(80)).append("\n");

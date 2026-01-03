@@ -130,11 +130,13 @@ public class GraphvizRenderer {
         String neatoPath = findNeatoPath();
         
         // Execute neato command with -n flag to use fixed positions from pos attribute
-        // The -n flag tells neato to use the pos attributes from the DOT file
-        System.out.println("[GraphvizRenderer] Executing: " + neatoPath + " -n -Tsvg " + dotPath + " -o " + svgPath);
+        // -n: read initial positions from pos attribute (level 1)
+        // -n2: use node positions from pos attribute, don't adjust layout (level 2)
+        // We use -n2 to strictly use the positions without any adjustments
+        System.out.println("[GraphvizRenderer] Executing: " + neatoPath + " -n2 -Tsvg " + dotPath + " -o " + svgPath);
         ProcessBuilder processBuilder = new ProcessBuilder(
                 neatoPath,
-                "-n",
+                "-n2",  // Use node positions from pos attribute, no layout adjustments
                 "-Tsvg",
                 dotPath.toString(),
                 "-o",

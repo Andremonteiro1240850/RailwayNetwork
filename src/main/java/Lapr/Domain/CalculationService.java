@@ -46,11 +46,27 @@ public class CalculationService {
         double totalMassKg = train.getTotalMassKg(); // Mass in kg (includes locomotives + wagons)
         double totalPowerKw = calculateTotalPower(train);
         
+        // Validate train properties
+        if (totalMassKg <= 0) {
+            throw new IllegalStateException(
+                String.format("Train %s has invalid mass: %.2f kg. Mass must be greater than 0 for physics calculations.",
+                            train.getTrainId(), totalMassKg));
+        }
+        if (totalPowerKw <= 0) {
+            throw new IllegalStateException(
+                String.format("Train %s has invalid power: %.2f kW. Power must be greater than 0 for physics calculations.",
+                            train.getTrainId(), totalPowerKw));
+        }
+        
         // Get segment properties
         double segmentLengthM = segment.getLengthKm() * 1000.0; // Convert km to m
         double inclinationPercent = segment.getInclinationPercent();
         Double speedLimitMs = segment.hasSpeedLimit() ? 
             segment.getSpeedLimitKmH() / 3.6 : null; // Convert km/h to m/s
+        
+        // Debug logging
+        System.out.println("    Physics calculation: mass=" + totalMassKg + " kg, power=" + totalPowerKw + " kW, " +
+                         "segmentLength=" + segmentLengthM + " m, inclination=" + inclinationPercent + "%");
         
         // Calculate forces and acceleration
         double currentVelocityMs = initialVelocityMs;
@@ -61,7 +77,11 @@ public class CalculationService {
         double timeStepS = 0.1; // 0.1 second steps
         double minVelocityMs = 0.1; // Minimum velocity to avoid division by zero
         
-        while (distanceTraveledM < segmentLengthM) {
+        int iterationCount = 0;
+        int maxIterations = (int)(3600.0 / timeStepS); // Maximum iterations for 1 hour
+        
+        while (distanceTraveledM < segmentLengthM && iterationCount < maxIterations) {
+            iterationCount++;
             // Calculate forces at current velocity
             double tractionForceN = calculateTractionForce(totalPowerKw, currentVelocityMs);
             double rollingResistanceN = calculateRollingResistance(totalMassKg);
@@ -71,8 +91,26 @@ public class CalculationService {
             // Net force
             double netForceN = tractionForceN - rollingResistanceN - gradeResistanceN - aerodynamicDragN;
             
+            // Debug first iteration
+            if (iterationCount == 1) {
+                System.out.println("    First iteration forces: traction=" + tractionForceN + " N, " +
+                                 "rolling=" + rollingResistanceN + " N, grade=" + gradeResistanceN + " N, " +
+                                 "drag=" + aerodynamicDragN + " N, net=" + netForceN + " N");
+            }
+            
             // Acceleration (F = ma, so a = F/m)
             double accelerationMs2 = netForceN / totalMassKg;
+            
+            // If net force is negative or zero and we're at rest, train cannot move
+            if (iterationCount == 1 && netForceN <= 0 && currentVelocityMs < minVelocityMs) {
+                System.err.println("ERROR: Train cannot move - net force is " + netForceN + " N (must be positive to start)");
+                System.err.println("  Traction: " + tractionForceN + " N, Resistances: " + 
+                                 (rollingResistanceN + gradeResistanceN + aerodynamicDragN) + " N");
+                throw new IllegalStateException(
+                    String.format("Train %s cannot move on segment %s: net force is %.2f N (must be positive). " +
+                                "Check train power (%.2f kW) and mass (%.2f kg).",
+                                train.getTrainId(), segment.getId(), netForceN, totalPowerKw, totalMassKg));
+            }
             
             // Calculate distance that would be traveled in this time step
             // s = v₀*t + 0.5*a*t²
@@ -137,6 +175,23 @@ public class CalculationService {
             if (totalTimeS > 3600.0) { // More than 1 hour for a segment is unrealistic
                 throw new IllegalStateException("Segment calculation exceeded maximum time limit");
             }
+            
+            // Debug: Log if stuck (not making progress)
+            if (iterationCount % 1000 == 0) {
+                System.out.println("    Iteration " + iterationCount + ": distance=" + distanceTraveledM + 
+                                 " m, velocity=" + currentVelocityMs + " m/s, time=" + totalTimeS + " s");
+            }
+        }
+        
+        if (iterationCount >= maxIterations) {
+            System.err.println("WARNING: Maximum iterations reached. distanceTraveled=" + distanceTraveledM + 
+                             " m, segmentLength=" + segmentLengthM + " m, totalTime=" + totalTimeS + " s");
+        }
+        
+        if (totalTimeS == 0.0 && distanceTraveledM < segmentLengthM) {
+            System.err.println("ERROR: Travel time is 0 but distance not covered. " +
+                             "distanceTraveled=" + distanceTraveledM + " m, segmentLength=" + segmentLengthM + " m");
+            System.err.println("  This usually means the train cannot move (zero or negative net force)");
         }
         
         // Convert final velocity to km/h
@@ -144,6 +199,9 @@ public class CalculationService {
         
         // Convert time to hours
         double travelTimeHours = totalTimeS / 3600.0;
+        
+        System.out.println("    Result: travelTime=" + travelTimeHours + " hours (" + totalTimeS + " s), " +
+                         "finalVelocity=" + finalVelocityKmH + " km/h, iterations=" + iterationCount);
         
         return new SegmentCalculationResult(finalVelocityKmH, travelTimeHours, segmentLengthM / 1000.0);
     }
