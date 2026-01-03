@@ -128,7 +128,14 @@ public class SchedulerService {
         for (Train train : adjustedTrains) {
             trainMap.put(train.getTrainId(), train);
         }
-        List<DispatchReport.Conflict> segmentConflicts = detectConflicts(schedules, trainMap);
+        int[] doubleTrackPassagesCount = new int[1]; // Array to pass by reference
+        List<DispatchReport.Conflict> segmentConflicts = detectConflicts(schedules, trainMap, doubleTrackPassagesCount);
+        
+        // Step 3.1: Apply conflict resolutions by adjusting train departure times
+        // Map to track which trains need their schedules recalculated
+        java.util.Map<String, Train> trainsToRecalculate = new java.util.HashMap<>();
+        java.util.Set<String> trainsWithAdjustedDeparture = new java.util.HashSet<>();
+        
         for (DispatchReport.Conflict segmentConflict : segmentConflicts) {
             // Check if this conflict is already covered by a departure conflict
             boolean isDuplicate = false;
@@ -143,13 +150,103 @@ public class SchedulerService {
                     break;
                 }
             }
+            
             if (!isDuplicate) {
                 conflicts.add(segmentConflict);
+                
+                // Apply conflict resolution: adjust departure time of waiting train
+                // IMPORTANT: If the conflict resolution uses siding, the train does NOT wait at the station
+                // It enters the segment and waits at the siding. Only adjust departure time if NO siding.
+                String waitingTrainId = segmentConflict.getWaitingTrainId();
+                if (waitingTrainId != null && segmentConflict.getWaitTimeMinutes() != null && segmentConflict.getWaitTimeMinutes() > 0) {
+                    // Check if this conflict uses siding - if yes, train doesn't wait at station
+                    boolean usesSiding = segmentConflict.getResolution() == DispatchReport.Conflict.ResolutionType.CROSS_AT_STATION_WITH_SIDING;
+                    
+                    if (!usesSiding) {
+                        // No siding: train waits at the station before entering segment
+                        Train waitingTrain = trainMap.get(waitingTrainId);
+                        if (waitingTrain != null && !trainsWithAdjustedDeparture.contains(waitingTrainId)) {
+                            // Get the current departure time
+                            LocalDateTime currentDeparture = waitingTrain.getDeparturePlannedDateTime();
+                            // Calculate new departure time by adding wait time
+                            LocalDateTime adjustedDeparture = currentDeparture.plusMinutes(segmentConflict.getWaitTimeMinutes());
+                            
+                            // Create new Train with adjusted departure time
+                            Train adjustedTrain = new Train(
+                                waitingTrain.getTrainId(),
+                                waitingTrain.getRoute(),
+                                waitingTrain.getSelectedStations(),
+                                waitingTrain.getLocomotives(),
+                                waitingTrain.getWagons(),
+                                adjustedDeparture,
+                                waitingTrain.getTotalWeight()
+                            );
+                            
+                            // Mark for recalculation
+                            trainsToRecalculate.put(waitingTrainId, adjustedTrain);
+                            trainsWithAdjustedDeparture.add(waitingTrainId);
+                            trainMap.put(waitingTrainId, adjustedTrain);
+                            
+                            System.out.println(String.format(
+                                "CONFLICT RESOLUTION: Train %s departure time adjusted from %s to %s (waiting %d minutes at station - no siding)",
+                                waitingTrainId, currentDeparture, adjustedDeparture, segmentConflict.getWaitTimeMinutes()));
+                        }
+                    } else {
+                        // Has siding: train enters segment normally, waits at siding
+                        // The delay is applied within the segment, not at station departure
+                        // We need to recalculate the schedule to apply the delay at the siding
+                        Train waitingTrain = trainMap.get(waitingTrainId);
+                        if (waitingTrain != null && !trainsWithAdjustedDeparture.contains(waitingTrainId)) {
+                            // Find the schedule for this train
+                            DispatchReport.TrainSchedule waitingSchedule = schedules.stream()
+                                .filter(s -> s.getTrainId().equals(waitingTrainId))
+                                .findFirst()
+                                .orElse(null);
+                            
+                            if (waitingSchedule != null) {
+                                // Apply delay to the schedule by modifying arrival times
+                                // The delay happens at the siding within the segment
+                                String conflictSegmentId = segmentConflict.getSegmentId();
+                                
+                                // Apply delay to schedule: modify the schedule to add delay at the siding
+                                DispatchReport.TrainSchedule adjustedSchedule = applySidingDelayToSchedule(
+                                    waitingSchedule, conflictSegmentId, segmentConflict.getWaitTimeMinutes());
+                                
+                                // Remove old schedule and add adjusted one
+                                schedules.removeIf(s -> s.getTrainId().equals(waitingTrainId));
+                                schedules.add(adjustedSchedule);
+                                trainsWithAdjustedDeparture.add(waitingTrainId);
+                                
+                                System.out.println(String.format(
+                                    "CONFLICT RESOLUTION: Train %s schedule adjusted - delay of %d minutes applied at siding in segment %s",
+                                    waitingTrainId, segmentConflict.getWaitTimeMinutes(), conflictSegmentId));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Step 3.2: Recalculate schedules for trains with adjusted departure times
+        if (!trainsToRecalculate.isEmpty()) {
+            // Remove old schedules for trains that need recalculation
+            schedules.removeIf(schedule -> trainsToRecalculate.containsKey(schedule.getTrainId()));
+            
+            // Recalculate schedules with adjusted departure times
+            for (Train adjustedTrain : trainsToRecalculate.values()) {
+                try {
+                    DispatchReport.TrainSchedule newSchedule = calculateTrainSchedule(adjustedTrain);
+                    schedules.add(newSchedule);
+                    System.out.println("Successfully rescheduled train " + adjustedTrain.getTrainId() + " with adjusted departure time");
+                } catch (Exception e) {
+                    System.err.println("ERROR rescheduling train " + adjustedTrain.getTrainId() + ": " + e.getMessage());
+                    e.printStackTrace();
+                }
             }
         }
 
         // Step 4: Generate summary
-        DispatchReport.Summary summary = generateSummary(schedules, conflicts);
+        DispatchReport.Summary summary = generateSummary(schedules, conflicts, doubleTrackPassagesCount[0]);
 
         return new DispatchReport(schedules, conflicts, summary);
     }
@@ -820,9 +917,10 @@ public class SchedulerService {
      *
      * @param schedules the list of train schedules
      * @param trainMap  map of trainId -> Train for accessing train properties
+     * @param doubleTrackPassagesCount array to store the count of double track passages (passed by reference)
      * @return the list of detected conflicts
      */
-    private List<DispatchReport.Conflict> detectConflicts(List<DispatchReport.TrainSchedule> schedules, java.util.Map<String, Train> trainMap) {
+    private List<DispatchReport.Conflict> detectConflicts(List<DispatchReport.TrainSchedule> schedules, java.util.Map<String, Train> trainMap, int[] doubleTrackPassagesCount) {
         List<DispatchReport.Conflict> conflicts = new ArrayList<>();
 
         // Compare each pair of schedules
@@ -833,6 +931,7 @@ public class SchedulerService {
 
                 // Track conflicts for this pair to avoid duplicates
                 boolean conflictFound = false;
+                boolean doubleTrackPassageFound = false; // Track if we found a double track passage for this pair
 
                 // Check each segment in schedule1 against each segment in schedule2
                 for (DispatchReport.TrainSchedule.SegmentTime segmentTime1 : schedule1.getSegmentTimes()) {
@@ -854,13 +953,20 @@ public class SchedulerService {
                                     // Single track: always a conflict if overlapping
                                     if (!conflictFound) {
                                         DispatchReport.Conflict conflict = createConflict(schedule1, schedule2, segmentTime1, segmentTime2, segment, trainMap);
-                                        conflicts.add(conflict);
-                                        conflictFound = true;
-                                        break; // Move to next train pair
+                                        // Only add conflict if it's not null (should not be null for single track, but check for safety)
+                                        if (conflict != null) {
+                                            conflicts.add(conflict);
+                                            conflictFound = true;
+                                            break; // Move to next train pair
+                                        }
                                     }
-                                }
-                                // Double/Quad track: no conflict (both trains pass simultaneously)
-                                if (!conflictFound) {
+                                } else {
+                                    // Double/Quad track: no conflict (both trains pass simultaneously)
+                                    // Count this as a double track passage (only once per train pair)
+                                    if (!doubleTrackPassageFound && !conflictFound) {
+                                        doubleTrackPassagesCount[0]++;
+                                        doubleTrackPassageFound = true;
+                                    }
                                     String trackType = segment.getTrackType();
                                     String segmentId = segmentTime1.getSegmentId();
                                     System.out.println(String.format(
@@ -1011,11 +1117,13 @@ public class SchedulerService {
         String train2Id = schedule2.getTrainId();
         String segmentId = segmentTime1.getSegmentId();
 
-        // Check if segment allows simultaneous passage (no conflict)
-        // Use domain rules to determine this
-        if (RailwayConflictRules.allowsSimultaneousPassage(segment)) {
+        // Note: This method is only called for single track segments or when segment is null
+        // Double/Quad track segments are already filtered out in detectConflicts()
+        // However, we add a safety check here in case segment is null or somehow double track
+        if (segment != null && RailwayConflictRules.allowsSimultaneousPassage(segment)) {
             // Double/Quad track: both trains pass simultaneously - no conflict object should be created
-            String trackType = segment != null ? segment.getTrackType() : "DOUBLE/QUAD";
+            // This should not happen if detectConflicts is working correctly, but we check for safety
+            String trackType = segment.getTrackType();
             System.out.println(String.format(
                 "Trains %s and %s pass through segment %s at the same time, but no conflict occurs because the segment is %s track (allows simultaneous passage in opposite directions).",
                 train1Id, train2Id, segmentId, trackType));
@@ -1095,6 +1203,13 @@ public class SchedulerService {
         // Use domain rules to verify
         if (RailwayConflictRules.allowsSimultaneousPassage(segment)) {
             // Should not create conflict for double track - return null
+            return null;
+        }
+        
+        // Validate that we have required data
+        if (waitingTrainPreviousStation == null) {
+            System.err.println("ERROR: waitingTrainPreviousStation is null for conflict between " + train1Id + " and " + train2Id);
+            // Use a fallback - this should not happen in normal operation
             return null;
         }
         
@@ -1449,13 +1564,144 @@ public class SchedulerService {
     }
 
     /**
+     * Applies a delay to a train schedule when the train waits at a siding within a segment.
+     * The delay is applied to the segment end time and propagated to all subsequent segments and stations.
+     *
+     * @param schedule the original schedule
+     * @param segmentId the ID of the segment where the delay occurs (at the siding)
+     * @param delayMinutes the delay in minutes (wait time at siding + crossing time)
+     * @return a new schedule with the delay applied
+     */
+    private DispatchReport.TrainSchedule applySidingDelayToSchedule(
+            DispatchReport.TrainSchedule schedule, String segmentId, long delayMinutes) {
+        
+        // Find the index of the segment where delay occurs
+        List<DispatchReport.TrainSchedule.SegmentTime> segmentTimes = schedule.getSegmentTimes();
+        int delaySegmentIndex = -1;
+        for (int i = 0; i < segmentTimes.size(); i++) {
+            if (segmentTimes.get(i).getSegmentId().equals(segmentId)) {
+                delaySegmentIndex = i;
+                break;
+            }
+        }
+        
+        if (delaySegmentIndex == -1) {
+            // Segment not found, return original schedule
+            System.err.println("WARNING: Segment " + segmentId + " not found in schedule for train " + schedule.getTrainId());
+            return schedule;
+        }
+        
+        // Create new segment times with delay applied
+        List<DispatchReport.TrainSchedule.SegmentTime> adjustedSegmentTimes = new ArrayList<>();
+        for (int i = 0; i < segmentTimes.size(); i++) {
+            DispatchReport.TrainSchedule.SegmentTime originalSegmentTime = segmentTimes.get(i);
+            
+            if (i < delaySegmentIndex) {
+                // Segments before the delay: no change
+                adjustedSegmentTimes.add(originalSegmentTime);
+            } else if (i == delaySegmentIndex) {
+                // The segment with the delay: add delay to end time
+                LocalDateTime adjustedEndTime = originalSegmentTime.getSegmentEndTime().plusMinutes(delayMinutes);
+                DispatchReport.TrainSchedule.SegmentTime adjustedSegmentTime = new DispatchReport.TrainSchedule.SegmentTime(
+                    originalSegmentTime.getSegmentId(),
+                    originalSegmentTime.getStartStation(),
+                    originalSegmentTime.getEndStation(),
+                    originalSegmentTime.getTravelTimeHours(),
+                    originalSegmentTime.getSegmentStartTime(), // Start time unchanged
+                    adjustedEndTime // End time delayed
+                );
+                adjustedSegmentTimes.add(adjustedSegmentTime);
+            } else {
+                // Segments after the delay: shift both start and end times
+                LocalDateTime adjustedStartTime = originalSegmentTime.getSegmentStartTime().plusMinutes(delayMinutes);
+                LocalDateTime adjustedEndTime = originalSegmentTime.getSegmentEndTime().plusMinutes(delayMinutes);
+                DispatchReport.TrainSchedule.SegmentTime adjustedSegmentTime = new DispatchReport.TrainSchedule.SegmentTime(
+                    originalSegmentTime.getSegmentId(),
+                    originalSegmentTime.getStartStation(),
+                    originalSegmentTime.getEndStation(),
+                    originalSegmentTime.getTravelTimeHours(),
+                    adjustedStartTime,
+                    adjustedEndTime
+                );
+                adjustedSegmentTimes.add(adjustedSegmentTime);
+            }
+        }
+        
+        // Create new route with ETAs with delay applied
+        List<DispatchReport.TrainSchedule.StationETA> adjustedRouteWithETAs = new ArrayList<>();
+        List<DispatchReport.TrainSchedule.StationETA> originalRouteWithETAs = schedule.getRouteWithETAs();
+        
+        // Find the index of the station where delay starts (end station of the delayed segment)
+        DispatchReport.TrainSchedule.SegmentTime delayedSegment = segmentTimes.get(delaySegmentIndex);
+        Facility delayEndStation = delayedSegment.getEndStation();
+        
+        int delayStationIndex = -1;
+        for (int i = 0; i < originalRouteWithETAs.size(); i++) {
+            if (originalRouteWithETAs.get(i).getStation().equals(delayEndStation)) {
+                delayStationIndex = i;
+                break;
+            }
+        }
+        
+        for (int i = 0; i < originalRouteWithETAs.size(); i++) {
+            DispatchReport.TrainSchedule.StationETA originalETA = originalRouteWithETAs.get(i);
+            
+            if (i <= delayStationIndex && delayStationIndex >= 0) {
+                // Stations up to and including the delay station: no change to arrival time
+                // (delay happens at siding within segment, so arrival at end station is delayed)
+                if (i == delayStationIndex) {
+                    // The end station of the delayed segment: apply delay
+                    LocalDateTime adjustedETA = originalETA.getEta().plusMinutes(delayMinutes);
+                    adjustedRouteWithETAs.add(new DispatchReport.TrainSchedule.StationETA(
+                        originalETA.getStation(),
+                        adjustedETA,
+                        originalETA.getTravelTimeFromPreviousHours(),
+                        originalETA.getSegmentId()
+                    ));
+                } else {
+                    // Stations before delay: no change
+                    adjustedRouteWithETAs.add(originalETA);
+                }
+            } else {
+                // Stations after the delay: shift arrival time
+                LocalDateTime adjustedETA = originalETA.getEta().plusMinutes(delayMinutes);
+                adjustedRouteWithETAs.add(new DispatchReport.TrainSchedule.StationETA(
+                    originalETA.getStation(),
+                    adjustedETA,
+                    originalETA.getTravelTimeFromPreviousHours(),
+                    originalETA.getSegmentId()
+                ));
+            }
+        }
+        
+        // Recalculate total travel time based on adjusted arrival time
+        double adjustedTotalTravelTime = 0.0;
+        if (adjustedRouteWithETAs.size() >= 2) {
+            LocalDateTime departureTime = adjustedRouteWithETAs.get(0).getEta();
+            LocalDateTime arrivalTime = adjustedRouteWithETAs.get(adjustedRouteWithETAs.size() - 1).getEta();
+            long totalSecondsActual = java.time.Duration.between(departureTime, arrivalTime).getSeconds();
+            adjustedTotalTravelTime = totalSecondsActual / 3600.0;
+        }
+        
+        // Create and return new schedule
+        return new DispatchReport.TrainSchedule(
+            schedule.getTrainId(),
+            adjustedRouteWithETAs,
+            adjustedSegmentTimes,
+            adjustedTotalTravelTime,
+            schedule.getSelectedStations()
+        );
+    }
+
+    /**
      * Generates a summary of the dispatch operation.
      *
      * @param schedules the list of train schedules
      * @param conflicts the list of conflicts
+     * @param numberOfDoubleTrackPassages the number of times trains passed through double track segments simultaneously
      * @return the summary
      */
-    private DispatchReport.Summary generateSummary(List<DispatchReport.TrainSchedule> schedules, List<DispatchReport.Conflict> conflicts) {
+    private DispatchReport.Summary generateSummary(List<DispatchReport.TrainSchedule> schedules, List<DispatchReport.Conflict> conflicts, int numberOfDoubleTrackPassages) {
         int totalTrains = schedules.size();
         int numberOfConflicts = conflicts.size();
         int resolvableConflicts = 0;
@@ -1469,7 +1715,7 @@ public class SchedulerService {
             }
         }
 
-        return new DispatchReport.Summary(totalTrains, numberOfConflicts, resolvableConflicts, unsolvableConflicts);
+        return new DispatchReport.Summary(totalTrains, numberOfConflicts, resolvableConflicts, unsolvableConflicts, numberOfDoubleTrackPassages);
     }
 }
 

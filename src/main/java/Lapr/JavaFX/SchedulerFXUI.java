@@ -1384,12 +1384,23 @@ public class SchedulerFXUI {
                     "- Missing segment data in database\n" +
                     "Total trains attempted: " + trains.size());
             } else {
-                String successMsg = String.format("✓ Dispatch completed successfully\n%d train%s scheduled\n%d conflict%s resolved automatically",
+                StringBuilder successMsg = new StringBuilder();
+                successMsg.append("✓ Dispatch completed successfully\n");
+                successMsg.append(String.format("%d train%s scheduled\n", 
                     summary.getTotalTrainsDispatched(),
-                    summary.getTotalTrainsDispatched() != 1 ? "s" : "",
+                    summary.getTotalTrainsDispatched() != 1 ? "s" : ""));
+                successMsg.append(String.format("%d conflict%s resolved automatically",
                     summary.getNumberOfResolvableConflicts(),
-                    summary.getNumberOfResolvableConflicts() != 1 ? "s" : "");
-                statusLabel.setText(successMsg);
+                    summary.getNumberOfResolvableConflicts() != 1 ? "s" : ""));
+                
+                // Add double track message if applicable
+                if (summary.getNumberOfDoubleTrackPassages() > 0) {
+                    successMsg.append(String.format("\n%d double track passage%s detected",
+                        summary.getNumberOfDoubleTrackPassages(),
+                        summary.getNumberOfDoubleTrackPassages() != 1 ? "s" : ""));
+                }
+                
+                statusLabel.setText(successMsg.toString());
                 statusLabel.setStyle("-fx-text-fill: white; -fx-font-size: 13px; -fx-font-weight: 500;");
                 mainTabPane.getSelectionModel().select(1); // Switch to results tab
             }

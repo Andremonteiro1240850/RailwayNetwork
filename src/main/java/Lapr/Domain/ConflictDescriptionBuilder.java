@@ -101,12 +101,14 @@ public class ConflictDescriptionBuilder {
         
         if (arriveSimultaneously) {
             return String.format(
-                "Segment %s is SINGLE track with siding (size: %dm). Both trains %s and %s arrive simultaneously. Train %s waits at station %s before entering the single-track segment. Siding traversal time: %d minutes.",
-                segmentId, sidingSizeM, train1Id, train2Id, waitingTrainId, stationName, resolutionResult.getCrossingTimeMinutes());
+                "Segment %s is SINGLE track with siding (size: %dm). Both trains %s and %s arrive simultaneously. Train %s enters the segment and waits at the siding while train %s passes. Total delay at siding: %d minutes (including %d minutes for siding traversal).",
+                segmentId, sidingSizeM, train1Id, train2Id, waitingTrainId, firstTrainId, 
+                resolutionResult.getWaitTimeMinutes(), resolutionResult.getCrossingTimeMinutes());
         } else {
             return String.format(
-                "Segment %s is SINGLE track with siding (size: %dm). Train %s arrives first. Train %s waits at station %s for %d minutes before entering the single-track segment. Siding traversal time during segment crossing: %d minutes.",
-                segmentId, sidingSizeM, firstTrainId, waitingTrainId, stationName, resolutionResult.getBaseWaitMinutes(), resolutionResult.getCrossingTimeMinutes());
+                "Segment %s is SINGLE track with siding (size: %dm). Train %s arrives first. Train %s enters the segment and waits at the siding for %d minutes while train %s passes. Siding traversal time: %d minutes.",
+                segmentId, sidingSizeM, firstTrainId, waitingTrainId, resolutionResult.getBaseWaitMinutes(), 
+                firstTrainId, resolutionResult.getCrossingTimeMinutes());
         }
     }
 }

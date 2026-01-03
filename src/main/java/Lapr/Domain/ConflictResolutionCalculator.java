@@ -106,7 +106,7 @@ public class ConflictResolutionCalculator {
                                                       Integer sidingSizeM,
                                                       boolean arriveSimultaneously) {
         Facility crossingStation = null;
-        if (hasSiding && waitingTrainPreviousStation.hasSiding()) {
+        if (hasSiding && waitingTrainPreviousStation != null && waitingTrainPreviousStation.hasSiding()) {
             crossingStation = waitingTrainPreviousStation;
         }
         
