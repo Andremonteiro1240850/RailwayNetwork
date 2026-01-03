@@ -984,7 +984,17 @@ public class SchedulerFXUI {
         addTrainButton = new Button("Add Train");
         addTrainButton.setStyle("-fx-background-color: #6366F1; -fx-text-fill: white; -fx-font-size: 13px; " +
                               "-fx-padding: 8 16; -fx-background-radius: 6; -fx-cursor: hand;");
-        addTrainButton.setOnAction(e -> addTrain());
+        addTrainButton.setOnAction(e -> {
+            System.out.println("Add Train button action triggered");
+            try {
+                addTrain();
+            } catch (Exception ex) {
+                System.err.println("Error in addTrain button handler: " + ex.getMessage());
+                ex.printStackTrace();
+                showAlert(Alert.AlertType.ERROR, "Error", 
+                    "An unexpected error occurred: " + ex.getMessage());
+            }
+        });
         
         removeTrainButton = new Button("Remove Selected");
         removeTrainButton.setStyle("-fx-background-color: #EF4444; -fx-text-fill: white; -fx-font-size: 13px; " +
@@ -1205,34 +1215,49 @@ public class SchedulerFXUI {
      * Adds a train to the trains list.
      */
     private void addTrain() {
+        System.out.println("Add Train button clicked");
+        
         // Validate inputs
-        if (trainIdField.getText().trim().isEmpty()) {
+        if (trainIdField == null || trainIdField.getText() == null || trainIdField.getText().trim().isEmpty()) {
             showAlert(Alert.AlertType.ERROR, "Error", "Train ID is required.");
+            System.out.println("Validation failed: Train ID is empty");
             return;
         }
         
-        if (startStationCombo.getSelectionModel().getSelectedItem() == null ||
+        if (startStationCombo == null || endStationCombo == null ||
+            startStationCombo.getSelectionModel().getSelectedItem() == null ||
             endStationCombo.getSelectionModel().getSelectedItem() == null) {
             showAlert(Alert.AlertType.ERROR, "Error", "Start and end stations are required.");
+            System.out.println("Validation failed: Stations not selected");
             return;
         }
         
-        if (selectedLocomotivesTable.getItems().isEmpty()) {
+        if (selectedLocomotivesTable == null || selectedLocomotivesTable.getItems() == null ||
+            selectedLocomotivesTable.getItems().isEmpty()) {
             showAlert(Alert.AlertType.ERROR, "Error", "At least one locomotive is required.");
+            System.out.println("Validation failed: No locomotives selected");
             return;
         }
         
-        if (departureDatePicker.getValue() == null || departureTimeField.getText().trim().isEmpty()) {
+        if (departureDatePicker == null || departureDatePicker.getValue() == null || 
+            departureTimeField == null || departureTimeField.getText() == null || 
+            departureTimeField.getText().trim().isEmpty()) {
             showAlert(Alert.AlertType.ERROR, "Error", "Departure date and time are required.");
+            System.out.println("Validation failed: Departure date/time not set");
             return;
         }
+        
+        System.out.println("All validations passed, creating train...");
         
         try {
             // Parse departure time
+            String timeText = departureTimeField.getText().trim();
+            System.out.println("Parsing departure time: " + timeText);
             LocalDateTime departureTime = LocalDateTime.of(
                 departureDatePicker.getValue(),
-                java.time.LocalTime.parse(departureTimeField.getText(), DateTimeFormatter.ofPattern("HH:mm"))
+                java.time.LocalTime.parse(timeText, DateTimeFormatter.ofPattern("HH:mm"))
             );
+            System.out.println("Departure time parsed: " + departureTime);
             
             // Create route (simple route with start and end)
             // The SchedulerService will automatically find the fastest path if stations are not directly connected
@@ -1260,7 +1285,12 @@ public class SchedulerFXUI {
                 totalWeight
             );
             
+            System.out.println("Adding train to list: " + train.getTrainId());
             trains.add(train);
+            System.out.println("Train added. Total trains: " + trains.size());
+            
+            // Update summary
+            updateSummary();
             
             // Clear form
             trainIdField.clear();
@@ -1272,8 +1302,23 @@ public class SchedulerFXUI {
             selectedWagonsTable.getItems().clear();
             wagonsLoadedCheckBox.setSelected(false);
             
+            // Show success message
+            showAlert(Alert.AlertType.INFORMATION, "Success", 
+                "Train " + train.getTrainId() + " added successfully to dispatch queue.\n\n" +
+                "Total trains in queue: " + trains.size());
+            
+        } catch (java.time.format.DateTimeParseException e) {
+            showAlert(Alert.AlertType.ERROR, "Error", 
+                "Invalid time format. Please use HH:mm format (e.g., 14:30).");
+            e.printStackTrace();
+        } catch (IllegalArgumentException e) {
+            showAlert(Alert.AlertType.ERROR, "Error", 
+                "Invalid input: " + e.getMessage());
+            e.printStackTrace();
         } catch (Exception e) {
-            showAlert(Alert.AlertType.ERROR, "Error", "Failed to create train: " + e.getMessage());
+            showAlert(Alert.AlertType.ERROR, "Error", 
+                "Failed to create train: " + e.getMessage());
+            e.printStackTrace();
         }
     }
     
