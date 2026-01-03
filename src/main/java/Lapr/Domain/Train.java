@@ -218,9 +218,21 @@ public class Train {
      * @return the total mass in kilograms
      */
     public double getTotalMassKg() {
-        // Total weight already includes wagons weight
+        // Total weight includes wagons weight
         // We need to add locomotive mass (which should come from database)
-        // For now, using totalWeight as approximation
+        // If totalWeight is 0 (no wagons), we still need locomotive mass for physics calculations
+        // Use a default locomotive mass estimate if needed (typical locomotive: 80-120 tons)
+        // This ensures trains without wagons still have valid mass for physics calculations
+        double locomotiveMassEstimate = locomotives.size() * 100000.0; // 100 tons per locomotive as default estimate
+        
+        // If totalWeight is 0, use locomotive mass estimate
+        // Otherwise, totalWeight already includes wagons, but we should ideally add locomotive mass
+        // For now, if totalWeight > 0, assume it's sufficient; if 0, use locomotive estimate
+        if (totalWeight <= 0) {
+            return locomotiveMassEstimate;
+        }
+        // TODO: Ideally, we should add locomotive mass from database to totalWeight
+        // For now, totalWeight is used as-is (may include locomotive mass if calculated elsewhere)
         return totalWeight;
     }
 
