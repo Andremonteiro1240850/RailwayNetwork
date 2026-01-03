@@ -1,23 +1,24 @@
-BEGIN
-    DBMS_OUTPUT.PUT_LINE('--- apagar dados dos testes ---');
+-- Limpar associações de teste anteriores (se existirem)
+-- Nota: SET SERVEROUTPUT ON não é necessário no IntelliJ SQL Console
+DELETE FROM Electric_Locomotive WHERE LocomotiveModellocomotive_model_id LIKE 'TEST%';
+DELETE FROM LocomotiveModel WHERE locomotive_model_id LIKE 'TEST%';
+COMMIT;
 
-    DELETE FROM Electric_Locomotive WHERE LocomotiveModellocomotive_model_id LIKE 'TEST%';
-    DELETE FROM LocomotiveModel WHERE locomotive_model_id LIKE 'TEST%';
-    COMMIT;
-    DBMS_OUTPUT.PUT_LINE('concluído com sucesso.');
-END;
-/
-
-
+-- ========================================
+-- TESTE 1: Inserção bem-sucedida
+-- ========================================
 DECLARE
-    v_id VARCHAR2(255);
+    v_result LocomotiveModel.locomotive_model_id%TYPE;
 BEGIN
-    DBMS_OUTPUT.PUT_LINE('--- TESTE 1: Inserção Válida ---');
-    v_id := add_electric_locomotive_model(
+    DBMS_OUTPUT.PUT_LINE('========================================');
+    DBMS_OUTPUT.PUT_LINE('TESTE 1: Inserção bem-sucedida');
+    DBMS_OUTPUT.PUT_LINE('========================================');
+
+    v_result := add_electric_locomotive_model(
         'TEST_E4001',
+        'Siemens',
         4000,
         350,
-        'Siemens',
         20000,
         90,
         4400,
@@ -25,23 +26,36 @@ BEGIN
         2,
         25000
     );
-    DBMS_OUTPUT.PUT_LINE('Sucesso: Modelo de locomotiva elétrica ' || v_id || ' adicionado.');
+
+    IF v_result IS NOT NULL THEN
+        COMMIT; -- Confirmar a transação após sucesso
+        DBMS_OUTPUT.PUT_LINE('✓ SUCESSO: Modelo de locomotiva elétrica ' || v_result || ' adicionado.');
+    END IF;
+
+    DBMS_OUTPUT.PUT_LINE(' ');
 EXCEPTION
     WHEN OTHERS THEN
-        DBMS_OUTPUT.PUT_LINE('Erro Inesperado: ' || SQLERRM);
+        ROLLBACK; -- Reverter em caso de erro
+        DBMS_OUTPUT.PUT_LINE('✗ ERRO: ' || SQLERRM);
+        DBMS_OUTPUT.PUT_LINE(' ');
 END;
 /
 
-
+-- ========================================
+-- TESTE 2: ID vazio
+-- ========================================
 DECLARE
-    v_id VARCHAR2(255);
+    v_result LocomotiveModel.locomotive_model_id%TYPE;
 BEGIN
-    DBMS_OUTPUT.PUT_LINE('--- TESTE 2: ID Vazio ---');
-    v_id := add_electric_locomotive_model(
+    DBMS_OUTPUT.PUT_LINE('========================================');
+    DBMS_OUTPUT.PUT_LINE('TESTE 2: ID vazio');
+    DBMS_OUTPUT.PUT_LINE('========================================');
+
+    v_result := add_electric_locomotive_model(
         '   ',
+        'Siemens',
         4000,
         350,
-        'Siemens',
         20000,
         90,
         4400,
@@ -49,27 +63,33 @@ BEGIN
         2,
         25000
     );
-    DBMS_OUTPUT.PUT_LINE('Falha: A função permitiu um ID vazio!');
+
 EXCEPTION
     WHEN OTHERS THEN
         IF SQLCODE = -20001 THEN
-            DBMS_OUTPUT.PUT_LINE('OK: Erro -20001 capturado (ID obrigatório).');
+            DBMS_OUTPUT.PUT_LINE('✓ Erro esperado capturado: ID obrigatório.');
         ELSE
-            DBMS_OUTPUT.PUT_LINE('Erro Incorreto: ' || SQLERRM);
+            DBMS_OUTPUT.PUT_LINE('✗ Erro inesperado: ' || SQLERRM);
         END IF;
+        DBMS_OUTPUT.PUT_LINE(' ');
 END;
 /
 
-
+-- ========================================
+-- TESTE 3: Make vazio
+-- ========================================
 DECLARE
-    v_id VARCHAR2(255);
+    v_result LocomotiveModel.locomotive_model_id%TYPE;
 BEGIN
-    DBMS_OUTPUT.PUT_LINE('--- TESTE 3: Make Vazio ---');
-    v_id := add_electric_locomotive_model(
+    DBMS_OUTPUT.PUT_LINE('========================================');
+    DBMS_OUTPUT.PUT_LINE('TESTE 3: Make vazio');
+    DBMS_OUTPUT.PUT_LINE('========================================');
+
+    v_result := add_electric_locomotive_model(
         'TEST_E4002',
+        '   ',
         4000,
         350,
-        '   ',
         20000,
         90,
         4400,
@@ -77,27 +97,33 @@ BEGIN
         2,
         25000
     );
-    DBMS_OUTPUT.PUT_LINE('Falha: A função permitiu um make vazio!');
+
 EXCEPTION
     WHEN OTHERS THEN
         IF SQLCODE = -20002 THEN
-            DBMS_OUTPUT.PUT_LINE('OK: Erro -20002 capturado (Make obrigatório).');
+            DBMS_OUTPUT.PUT_LINE('✓ Erro esperado capturado: Fabricante obrigatório.');
         ELSE
-            DBMS_OUTPUT.PUT_LINE('Erro Incorreto: ' || SQLERRM);
+            DBMS_OUTPUT.PUT_LINE('✗ Erro inesperado: ' || SQLERRM);
         END IF;
+        DBMS_OUTPUT.PUT_LINE(' ');
 END;
 /
 
-
+-- ========================================
+-- TESTE 4: Potência inválida (zero)
+-- ========================================
 DECLARE
-    v_id VARCHAR2(255);
+    v_result LocomotiveModel.locomotive_model_id%TYPE;
 BEGIN
-    DBMS_OUTPUT.PUT_LINE('--- TESTE 4: Potência Inválida (zero) ---');
-    v_id := add_electric_locomotive_model(
+    DBMS_OUTPUT.PUT_LINE('========================================');
+    DBMS_OUTPUT.PUT_LINE('TESTE 4: Potência inválida (zero)');
+    DBMS_OUTPUT.PUT_LINE('========================================');
+
+    v_result := add_electric_locomotive_model(
         'TEST_E4003',
+        'Siemens',
         0,
         350,
-        'Siemens',
         20000,
         90,
         4400,
@@ -105,27 +131,33 @@ BEGIN
         2,
         25000
     );
-    DBMS_OUTPUT.PUT_LINE('Falha: A função permitiu potência zero!');
+
 EXCEPTION
     WHEN OTHERS THEN
         IF SQLCODE = -20003 THEN
-            DBMS_OUTPUT.PUT_LINE('OK: Erro -20003 capturado (Potência inválida).');
+            DBMS_OUTPUT.PUT_LINE('✓ Erro esperado capturado: Potência deve ser maior que zero.');
         ELSE
-            DBMS_OUTPUT.PUT_LINE('Erro Incorreto: ' || SQLERRM);
+            DBMS_OUTPUT.PUT_LINE('✗ Erro inesperado: ' || SQLERRM);
         END IF;
+        DBMS_OUTPUT.PUT_LINE(' ');
 END;
 /
 
-
+-- ========================================
+-- TESTE 5: Tensão inválida (negativa)
+-- ========================================
 DECLARE
-    v_id VARCHAR2(255);
+    v_result LocomotiveModel.locomotive_model_id%TYPE;
 BEGIN
-    DBMS_OUTPUT.PUT_LINE('--- TESTE 5: Tensão Inválida (negativa) ---');
-    v_id := add_electric_locomotive_model(
+    DBMS_OUTPUT.PUT_LINE('========================================');
+    DBMS_OUTPUT.PUT_LINE('TESTE 5: Tensão inválida (negativa)');
+    DBMS_OUTPUT.PUT_LINE('========================================');
+
+    v_result := add_electric_locomotive_model(
         'TEST_E4004',
+        'Siemens',
         4000,
         350,
-        'Siemens',
         20000,
         90,
         4400,
@@ -133,28 +165,34 @@ BEGIN
         2,
         -1000
     );
-    DBMS_OUTPUT.PUT_LINE('Falha: A função permitiu tensão negativa!');
+
 EXCEPTION
     WHEN OTHERS THEN
         IF SQLCODE = -20010 THEN
-            DBMS_OUTPUT.PUT_LINE('OK: Erro -20010 capturado (Tensão inválida).');
+            DBMS_OUTPUT.PUT_LINE('✓ Erro esperado capturado: Tensão deve ser maior que zero.');
         ELSE
-            DBMS_OUTPUT.PUT_LINE('Erro Incorreto: ' || SQLERRM);
+            DBMS_OUTPUT.PUT_LINE('✗ Erro inesperado: ' || SQLERRM);
         END IF;
+        DBMS_OUTPUT.PUT_LINE(' ');
 END;
 /
 
-
+-- ========================================
+-- TESTE 6: ID duplicado
+-- ========================================
 DECLARE
-    v_id VARCHAR2(255);
+    v_result LocomotiveModel.locomotive_model_id%TYPE;
 BEGIN
-    DBMS_OUTPUT.PUT_LINE('--- TESTE 6: ID Duplicado ---');
+    DBMS_OUTPUT.PUT_LINE('========================================');
+    DBMS_OUTPUT.PUT_LINE('TESTE 6: Tentativa de ID duplicado');
+    DBMS_OUTPUT.PUT_LINE('========================================');
+
     -- Primeiro inserir um modelo válido
-    v_id := add_electric_locomotive_model(
+    v_result := add_electric_locomotive_model(
         'TEST_E4005',
+        'Siemens',
         4000,
         350,
-        'Siemens',
         20000,
         90,
         4400,
@@ -162,14 +200,18 @@ BEGIN
         2,
         25000
     );
-    DBMS_OUTPUT.PUT_LINE('Modelo ' || v_id || ' inserido com sucesso.');
+    
+    IF v_result IS NOT NULL THEN
+        COMMIT;
+        DBMS_OUTPUT.PUT_LINE('Modelo ' || v_result || ' inserido com sucesso.');
+    END IF;
     
     -- Tentar inserir novamente com o mesmo ID
-    v_id := add_electric_locomotive_model(
+    v_result := add_electric_locomotive_model(
         'TEST_E4005',
+        'Alstom',
         5000,
         400,
-        'Alstom',
         21000,
         95,
         4500,
@@ -177,21 +219,36 @@ BEGIN
         3,
         30000
     );
-    DBMS_OUTPUT.PUT_LINE('Falha: A função permitiu um ID duplicado!');
+
 EXCEPTION
     WHEN OTHERS THEN
         IF SQLCODE = -20011 THEN
-            DBMS_OUTPUT.PUT_LINE('OK: Erro -20011 capturado (ID duplicado).');
+            DBMS_OUTPUT.PUT_LINE('✓ Erro esperado capturado: ID do modelo já existente.');
         ELSE
-            DBMS_OUTPUT.PUT_LINE('Erro Incorreto: ' || SQLERRM);
+            DBMS_OUTPUT.PUT_LINE('✗ Erro inesperado: ' || SQLERRM);
         END IF;
+        DBMS_OUTPUT.PUT_LINE(' ');
 END;
 /
 
-
+-- ========================================
+-- VERIFICAÇÃO FINAL: Consultar modelos criados
+-- ========================================
 BEGIN
-    ROLLBACK;
-    DBMS_OUTPUT.PUT_LINE('---Rollback efetuado para manter integridade ---');
+    DBMS_OUTPUT.PUT_LINE('========================================');
+    DBMS_OUTPUT.PUT_LINE('VERIFICAÇÃO: Modelos de teste criados');
+    DBMS_OUTPUT.PUT_LINE('========================================');
 END;
 /
+
+SELECT
+    lm.locomotive_model_id AS "ID Modelo",
+    lm.make AS "Fabricante",
+    lm.power AS "Potência",
+    lm.max_speed AS "Velocidade Máxima",
+    el.Voltage AS "Tensão"
+FROM LocomotiveModel lm
+         INNER JOIN Electric_Locomotive el ON lm.locomotive_model_id = el.LocomotiveModellocomotive_model_id
+WHERE lm.locomotive_model_id LIKE 'TEST%'
+ORDER BY lm.locomotive_model_id;
 
