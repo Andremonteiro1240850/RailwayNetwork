@@ -648,7 +648,38 @@
                                   -fx-opacity: 0.85;"/>
                                     </VBox>
 
-                                    <!-- Row 2: Train Assembly -->
+                                    <!-- Row 2: Route Planner -->
+                                    <VBox spacing="12" alignment="CENTER"
+                                          style="-fx-background-color: #161B22;
+                             -fx-background-radius: 20px;
+                             -fx-border-color: rgba(245, 158, 11, 0.2);
+                             -fx-border-radius: 20px;
+                             -fx-border-width: 1;
+                             -fx-padding: 18px;
+                             -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.2), 10, 0, 0, 3);"
+                                          GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="1" GridPane.halignment="CENTER">
+                                        <Button text="Route Planner"
+                                                onAction="#handleRoutePlannerButton"
+                                                prefWidth="400" prefHeight="50"
+                                                style="-fx-font-family: 'Segoe UI Variable', 'Inter', 'Segoe UI', sans-serif;
+                                   -fx-font-size: 15px;
+                                   -fx-font-weight: 600;
+                                   -fx-background-color: #F59E0B;
+                                   -fx-text-fill: #FFFFFF;
+                                   -fx-background-radius: 16px;
+                                   -fx-cursor: hand;
+                                   -fx-letter-spacing: 0.3px;
+                                   -fx-effect: dropshadow(gaussian, rgba(245, 158, 11, 0.4), 8, 0, 0, 2);"/>
+                                        <Label text="Define and assign routes (simple or complex) to accomplish pending freights (USLP08)"
+                                               style="-fx-font-family: 'Segoe UI Variable', 'Inter', 'Segoe UI', sans-serif;
+                                  -fx-text-fill: rgba(255, 255, 255, 0.7);
+                                  -fx-font-size: 12px;
+                                  -fx-font-weight: 400;
+                                  -fx-opacity: 0.85;"
+                                               wrapText="true" maxWidth="400" textAlignment="CENTER"/>
+                                    </VBox>
+
+                                    <!-- Row 3: Train Assembly -->
                                     <VBox spacing="12" alignment="CENTER"
                                           style="-fx-background-color: #161B22;
                              -fx-background-radius: 20px;
@@ -657,7 +688,7 @@
                              -fx-border-width: 1;
                              -fx-padding: 18px;
                              -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.2), 10, 0, 0, 3);"
-                                          GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="1" GridPane.halignment="CENTER">
+                                          GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="2" GridPane.halignment="CENTER">
                                         <Button text="Assemble and Assign Train to Route"
                                                 onAction="#handleTrainAssemblyButton"
                                                 prefWidth="400" prefHeight="50"

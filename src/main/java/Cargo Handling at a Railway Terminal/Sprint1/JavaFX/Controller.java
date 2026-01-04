@@ -20,6 +20,7 @@ import JavaFX.MaximumFlowFXUI;
 import JavaFX.BackboneFXUI;
 import JavaFX.ShortestPathFXUI;
 import Lapr.JavaFX.SchedulerFXUI;
+import Lapr.JavaFX.RoutePlannerFXUI;
 import Lapr.JavaFX.TrainAssemblyFXUI;
 import javafx.fxml.FXML;
 import javafx.application.Platform;
@@ -453,6 +454,25 @@ public class Controller {
                 });
             } catch (Exception e) {
                 Platform.runLater(() -> showError("Error", "Failed to start Train Dispatch Scheduler: " + e.getMessage()));
+                e.printStackTrace();
+            }
+        });
+    }
+
+    /**
+     * Handles the Route Planner button click.
+     * Opens the Route Planner window (USLP08).
+     */
+    @FXML
+    private void handleRoutePlannerButton() {
+        executorService.execute(() -> {
+            try {
+                Platform.runLater(() -> {
+                    RoutePlannerFXUI ui = new RoutePlannerFXUI();
+                    ui.show();
+                });
+            } catch (Exception e) {
+                Platform.runLater(() -> showError("Error", "Failed to start Route Planner: " + e.getMessage()));
                 e.printStackTrace();
             }
         });

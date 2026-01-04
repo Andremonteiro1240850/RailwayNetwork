@@ -83,4 +83,187 @@ public class RouteAOD {
 
         return routes;
     }
+    
+    /**
+     * Creates a simple route (single freight) using PL/SQL function.
+     * Falls back to direct SQL if PL/SQL function is not available.
+     * 
+     * @param trainId the train ID
+     * @param stationIds list of station IDs in order
+     * @param freightId the freight ID to assign
+     * @return true if successful, false otherwise
+     */
+    public boolean createSimpleRoute(int trainId, List<Integer> stationIds, int freightId) {
+        // Try PL/SQL function first (as per requirements)
+        String plsqlCall = "{ ? = call CREATE_SIMPLE_ROUTE(?, ?, ?) }";
+        
+        try (Connection conn = DriverManager.getConnection(DATABASE, USERNAME, PASSWORD);
+             CallableStatement stmt = conn.prepareCall(plsqlCall)) {
+            
+            // Convert station IDs list to array or comma-separated string
+            // For PL/SQL, we'll use a comma-separated string or pass as array
+            String stationIdsStr = stationIds.stream()
+                .map(String::valueOf)
+                .reduce((a, b) -> a + "," + b)
+                .orElse("");
+            
+            stmt.registerOutParameter(1, Types.INTEGER);
+            stmt.setInt(2, trainId);
+            stmt.setString(3, stationIdsStr);
+            stmt.setInt(4, freightId);
+            stmt.execute();
+            
+            int result = stmt.getInt(1);
+            
+            if (result == 1) {
+                System.out.println("Simple route created successfully via PL/SQL function");
+                return true;
+            } else {
+                System.err.println("PL/SQL function returned failure code: " + result);
+                return false;
+            }
+            
+        } catch (SQLException e) {
+            // If PL/SQL function doesn't exist, fallback to direct SQL
+            System.err.println("PL/SQL function CREATE_SIMPLE_ROUTE not available, using direct SQL: " + e.getMessage());
+            return createSimpleRouteFallback(trainId, stationIds, freightId);
+        }
+    }
+    
+    /**
+     * Fallback method using direct SQL if PL/SQL function is not available.
+     */
+    private boolean createSimpleRouteFallback(int trainId, List<Integer> stationIds, int freightId) {
+        try (Connection conn = DriverManager.getConnection(DATABASE, USERNAME, PASSWORD)) {
+            conn.setAutoCommit(false);
+            
+            try {
+                // Insert route stations
+                String insertRouteSql = "INSERT INTO TRAIN_ROUTE (TRAIN_ID, FACILITY_ID, \"ORDER\") VALUES (?, ?, ?)";
+                try (PreparedStatement stmt = conn.prepareStatement(insertRouteSql)) {
+                    for (int i = 0; i < stationIds.size(); i++) {
+                        stmt.setInt(1, trainId);
+                        stmt.setInt(2, stationIds.get(i));
+                        stmt.setInt(3, i + 1);
+                        stmt.executeUpdate();
+                    }
+                }
+                
+                // Update freight to assign it to the train
+                String updateFreightSql = "UPDATE FREIGHT SET TRAINTRAIN_ID = ? WHERE FREIGHT_ID = ?";
+                try (PreparedStatement stmt = conn.prepareStatement(updateFreightSql)) {
+                    stmt.setInt(1, trainId);
+                    stmt.setInt(2, freightId);
+                    stmt.executeUpdate();
+                }
+                
+                conn.commit();
+                System.out.println("Simple route created successfully via direct SQL");
+                return true;
+                
+            } catch (SQLException e) {
+                conn.rollback();
+                throw e;
+            }
+            
+        } catch (SQLException e) {
+            System.err.println("Error creating simple route: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
+    }
+    
+    /**
+     * Creates a complex route (multiple freights) using PL/SQL function.
+     * Falls back to direct SQL if PL/SQL function is not available.
+     * 
+     * @param trainId the train ID
+     * @param stationIds list of station IDs in order
+     * @param freightIds list of freight IDs to assign
+     * @return true if successful, false otherwise
+     */
+    public boolean createComplexRoute(int trainId, List<Integer> stationIds, List<Integer> freightIds) {
+        // Try PL/SQL function first (as per requirements)
+        String plsqlCall = "{ ? = call CREATE_COMPLEX_ROUTE(?, ?, ?) }";
+        
+        try (Connection conn = DriverManager.getConnection(DATABASE, USERNAME, PASSWORD);
+             CallableStatement stmt = conn.prepareCall(plsqlCall)) {
+            
+            // Convert lists to comma-separated strings
+            String stationIdsStr = stationIds.stream()
+                .map(String::valueOf)
+                .reduce((a, b) -> a + "," + b)
+                .orElse("");
+            String freightIdsStr = freightIds.stream()
+                .map(String::valueOf)
+                .reduce((a, b) -> a + "," + b)
+                .orElse("");
+            
+            stmt.registerOutParameter(1, Types.INTEGER);
+            stmt.setInt(2, trainId);
+            stmt.setString(3, stationIdsStr);
+            stmt.setString(4, freightIdsStr);
+            stmt.execute();
+            
+            int result = stmt.getInt(1);
+            
+            if (result == 1) {
+                System.out.println("Complex route created successfully via PL/SQL function");
+                return true;
+            } else {
+                System.err.println("PL/SQL function returned failure code: " + result);
+                return false;
+            }
+            
+        } catch (SQLException e) {
+            // If PL/SQL function doesn't exist, fallback to direct SQL
+            System.err.println("PL/SQL function CREATE_COMPLEX_ROUTE not available, using direct SQL: " + e.getMessage());
+            return createComplexRouteFallback(trainId, stationIds, freightIds);
+        }
+    }
+    
+    /**
+     * Fallback method using direct SQL if PL/SQL function is not available.
+     */
+    private boolean createComplexRouteFallback(int trainId, List<Integer> stationIds, List<Integer> freightIds) {
+        try (Connection conn = DriverManager.getConnection(DATABASE, USERNAME, PASSWORD)) {
+            conn.setAutoCommit(false);
+            
+            try {
+                // Insert route stations
+                String insertRouteSql = "INSERT INTO TRAIN_ROUTE (TRAIN_ID, FACILITY_ID, \"ORDER\") VALUES (?, ?, ?)";
+                try (PreparedStatement stmt = conn.prepareStatement(insertRouteSql)) {
+                    for (int i = 0; i < stationIds.size(); i++) {
+                        stmt.setInt(1, trainId);
+                        stmt.setInt(2, stationIds.get(i));
+                        stmt.setInt(3, i + 1);
+                        stmt.executeUpdate();
+                    }
+                }
+                
+                // Update freights to assign them to the train
+                String updateFreightSql = "UPDATE FREIGHT SET TRAINTRAIN_ID = ? WHERE FREIGHT_ID = ?";
+                try (PreparedStatement stmt = conn.prepareStatement(updateFreightSql)) {
+                    for (int freightId : freightIds) {
+                        stmt.setInt(1, trainId);
+                        stmt.setInt(2, freightId);
+                        stmt.executeUpdate();
+                    }
+                }
+                
+                conn.commit();
+                System.out.println("Complex route created successfully via direct SQL");
+                return true;
+                
+            } catch (SQLException e) {
+                conn.rollback();
+                throw e;
+            }
+            
+        } catch (SQLException e) {
+            System.err.println("Error creating complex route: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
+    }
 }

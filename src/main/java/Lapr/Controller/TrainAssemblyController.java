@@ -61,7 +61,7 @@ public class TrainAssemblyController {
             .sorted(Comparator
                 .comparing((VehicleAOD.VehicleInfo v) -> v.getStatus().equals("IN_TRANSIT") ? 0 : 1)
                 .thenComparing((VehicleAOD.VehicleInfo v) -> v.getStatus().equals("PARKED") ? 
-                    -v.getDistanceFromStart() : 0, Comparator.reverseOrder()))
+                    v.getDistanceFromStart() : 0, Comparator.reverseOrder()))
             .collect(Collectors.toList());
     }
     
@@ -81,7 +81,7 @@ public class TrainAssemblyController {
             .sorted(Comparator
                 .comparing((VehicleAOD.VehicleInfo v) -> v.getStatus().equals("IN_TRANSIT") ? 0 : 1)
                 .thenComparing((VehicleAOD.VehicleInfo v) -> v.getStatus().equals("PARKED") ? 
-                    -v.getDistanceFromStart() : 0, Comparator.reverseOrder()))
+                    v.getDistanceFromStart() : 0, Comparator.reverseOrder()))
             .collect(Collectors.toList());
     }
     
