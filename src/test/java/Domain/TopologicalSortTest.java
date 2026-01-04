@@ -323,6 +323,8 @@ public class TopologicalSortTest {
             } catch (IllegalArgumentException e) {
                 assertTrue(e.getMessage().contains("null") || e.getMessage().contains("Graph"), 
                           "Error message mentions null or Graph");
+            } catch (TopologicalSort.CycleDetectedException e) {
+                throw new AssertionError("Null graph should throw IllegalArgumentException, not CycleDetectedException");
             }
         });
     }
@@ -335,6 +337,8 @@ public class TopologicalSortTest {
             } catch (IllegalArgumentException e) {
                 assertTrue(e.getMessage().contains("null") || e.getMessage().contains("Graph"), 
                           "Error message mentions null or Graph");
+            } catch (TopologicalSort.CycleDetectedException e) {
+                throw new AssertionError("Null graph should throw IllegalArgumentException, not CycleDetectedException");
             }
         });
     }
@@ -344,18 +348,26 @@ public class TopologicalSortTest {
     private static void testOrder_EmptyGraph() {
         test("order with empty graph returns empty list", () -> {
             RailwayGraph graph = createEmptyGraph();
-            List<Station> result = TopologicalSort.order(graph);
-            assertTrue(result != null, "Result is not null");
-            assertTrue(result.isEmpty(), "Result is empty");
+            try {
+                List<Station> result = TopologicalSort.order(graph);
+                assertTrue(result != null, "Result is not null");
+                assertTrue(result.isEmpty(), "Result is empty");
+            } catch (TopologicalSort.CycleDetectedException e) {
+                throw new AssertionError("Empty graph should not have cycles");
+            }
         });
     }
     
     private static void testOrderDFS_EmptyGraph() {
         test("orderDFS with empty graph returns empty list", () -> {
             RailwayGraph graph = createEmptyGraph();
-            List<Station> result = TopologicalSort.orderDFS(graph);
-            assertTrue(result != null, "Result is not null");
-            assertTrue(result.isEmpty(), "Result is empty");
+            try {
+                List<Station> result = TopologicalSort.orderDFS(graph);
+                assertTrue(result != null, "Result is not null");
+                assertTrue(result.isEmpty(), "Result is empty");
+            } catch (TopologicalSort.CycleDetectedException e) {
+                throw new AssertionError("Empty graph should not have cycles");
+            }
         });
     }
     
@@ -364,18 +376,26 @@ public class TopologicalSortTest {
     private static void testOrder_SingleNode() {
         test("order with single node returns that node", () -> {
             RailwayGraph graph = createSingleNodeGraph();
-            List<Station> result = TopologicalSort.order(graph);
-            assertTrue(result.size() == 1, "Result has one node");
-            assertTrue(result.get(0).getId().equals("A"), "Result contains node A");
+            try {
+                List<Station> result = TopologicalSort.order(graph);
+                assertTrue(result.size() == 1, "Result has one node");
+                assertTrue(result.get(0).getId().equals("A"), "Result contains node A");
+            } catch (TopologicalSort.CycleDetectedException e) {
+                throw new AssertionError("Single node graph should not have cycles");
+            }
         });
     }
     
     private static void testOrderDFS_SingleNode() {
         test("orderDFS with single node returns that node", () -> {
             RailwayGraph graph = createSingleNodeGraph();
-            List<Station> result = TopologicalSort.orderDFS(graph);
-            assertTrue(result.size() == 1, "Result has one node");
-            assertTrue(result.get(0).getId().equals("A"), "Result contains node A");
+            try {
+                List<Station> result = TopologicalSort.orderDFS(graph);
+                assertTrue(result.size() == 1, "Result has one node");
+                assertTrue(result.get(0).getId().equals("A"), "Result contains node A");
+            } catch (TopologicalSort.CycleDetectedException e) {
+                throw new AssertionError("Single node graph should not have cycles");
+            }
         });
     }
     
@@ -384,9 +404,13 @@ public class TopologicalSortTest {
     private static void testOrder_SimpleChain() {
         test("order with simple chain using real data", () -> {
             RailwayGraph graph = createGraphFromRealData(3);
-            List<Station> result = TopologicalSort.order(graph);
-            assertTrue(isValidTopologicalOrder(graph, result), "Order is valid");
-            assertTrue(result.size() == graph.getNodeCount(), "All nodes included");
+            try {
+                List<Station> result = TopologicalSort.order(graph);
+                assertTrue(isValidTopologicalOrder(graph, result), "Order is valid");
+                assertTrue(result.size() == graph.getNodeCount(), "All nodes included");
+            } catch (TopologicalSort.CycleDetectedException e) {
+                throw new AssertionError("Simple chain should not have cycles: " + e.getMessage());
+            }
         });
     }
     
@@ -403,9 +427,13 @@ public class TopologicalSortTest {
             graph.addEdge(new Line("C", "B", 10.0, 100, 5.0));
             graph.addEdge(new Line("B", "A", 15.0, 100, 7.0));
             
-            List<Station> result = TopologicalSort.order(graph);
-            assertTrue(isValidTopologicalOrder(graph, result), "Order is valid");
-            assertTrue(result.get(0).getId().equals("C"), "C comes first");
+            try {
+                List<Station> result = TopologicalSort.order(graph);
+                assertTrue(isValidTopologicalOrder(graph, result), "Order is valid");
+                assertTrue(result.get(0).getId().equals("C"), "C comes first");
+            } catch (TopologicalSort.CycleDetectedException e) {
+                throw new AssertionError("Reverse chain should not have cycles: " + e.getMessage());
+            }
         });
     }
     
@@ -424,9 +452,13 @@ public class TopologicalSortTest {
             graph.addEdge(new Line("A", "B", 10.0, 100, 5.0));
             graph.addEdge(new Line("C", "D", 15.0, 100, 7.0));
             
-            List<Station> result = TopologicalSort.order(graph);
-            assertTrue(isValidTopologicalOrder(graph, result), "Order is valid");
-            assertTrue(result.size() == 4, "All nodes included");
+            try {
+                List<Station> result = TopologicalSort.order(graph);
+                assertTrue(isValidTopologicalOrder(graph, result), "Order is valid");
+                assertTrue(result.size() == 4, "All nodes included");
+            } catch (TopologicalSort.CycleDetectedException e) {
+                throw new AssertionError("Two independent chains should not have cycles: " + e.getMessage());
+            }
         });
     }
     
@@ -446,9 +478,13 @@ public class TopologicalSortTest {
             graph.addEdge(new Line("A", "C", 12.0, 100, 6.0));
             graph.addEdge(new Line("A", "D", 15.0, 100, 7.0));
             
-            List<Station> result = TopologicalSort.order(graph);
-            assertTrue(isValidTopologicalOrder(graph, result), "Order is valid");
-            assertTrue(result.get(0).getId().equals("A"), "A (source) comes first");
+            try {
+                List<Station> result = TopologicalSort.order(graph);
+                assertTrue(isValidTopologicalOrder(graph, result), "Order is valid");
+                assertTrue(result.get(0).getId().equals("A"), "A (source) comes first");
+            } catch (TopologicalSort.CycleDetectedException e) {
+                throw new AssertionError("Star pattern should not have cycles: " + e.getMessage());
+            }
         });
     }
     
@@ -468,9 +504,13 @@ public class TopologicalSortTest {
             graph.addEdge(new Line("B", "D", 12.0, 100, 6.0));
             graph.addEdge(new Line("C", "D", 15.0, 100, 7.0));
             
-            List<Station> result = TopologicalSort.order(graph);
-            assertTrue(isValidTopologicalOrder(graph, result), "Order is valid");
-            assertTrue(result.get(3).getId().equals("D"), "D (sink) comes last");
+            try {
+                List<Station> result = TopologicalSort.order(graph);
+                assertTrue(isValidTopologicalOrder(graph, result), "Order is valid");
+                assertTrue(result.get(3).getId().equals("D"), "D (sink) comes last");
+            } catch (TopologicalSort.CycleDetectedException e) {
+                throw new AssertionError("Fork pattern should not have cycles: " + e.getMessage());
+            }
         });
     }
     
@@ -487,9 +527,13 @@ public class TopologicalSortTest {
             graph.addEdge(new Line("A", "C", 10.0, 100, 5.0));
             graph.addEdge(new Line("B", "C", 12.0, 100, 6.0));
             
-            List<Station> result = TopologicalSort.order(graph);
-            assertTrue(isValidTopologicalOrder(graph, result), "Order is valid");
-            assertTrue(result.get(2).getId().equals("C"), "C comes last");
+            try {
+                List<Station> result = TopologicalSort.order(graph);
+                assertTrue(isValidTopologicalOrder(graph, result), "Order is valid");
+                assertTrue(result.get(2).getId().equals("C"), "C comes last");
+            } catch (TopologicalSort.CycleDetectedException e) {
+                throw new AssertionError("Merge pattern should not have cycles: " + e.getMessage());
+            }
         });
     }
     
@@ -501,9 +545,13 @@ public class TopologicalSortTest {
             RailwayGraph graph = (realDataGraph != null && realDataGraph.getNodeCount() > 0) 
                 ? realDataGraph 
                 : createGraphFromRealData(10);
-            List<Station> result = TopologicalSort.order(graph);
-            assertTrue(isValidTopologicalOrder(graph, result), "Order is valid");
-            assertTrue(result.size() == graph.getNodeCount(), "All nodes included");
+            try {
+                List<Station> result = TopologicalSort.order(graph);
+                assertTrue(isValidTopologicalOrder(graph, result), "Order is valid");
+                assertTrue(result.size() == graph.getNodeCount(), "All nodes included");
+            } catch (TopologicalSort.CycleDetectedException e) {
+                throw new AssertionError("Complex DAG should not have cycles: " + e.getMessage());
+            }
         });
     }
     
@@ -523,13 +571,17 @@ public class TopologicalSortTest {
             graph.addEdge(new Line("B", "C", 12.0, 100, 6.0));
             graph.addEdge(new Line("C", "D", 15.0, 100, 7.0));
             
-            List<Station> result = TopologicalSort.order(graph);
-            assertTrue(isValidTopologicalOrder(graph, result), "Order is valid");
-            // A and B should come before C
-            int aPos = findPosition(result, "A");
-            int bPos = findPosition(result, "B");
-            int cPos = findPosition(result, "C");
-            assertTrue(aPos < cPos && bPos < cPos, "A and B before C");
+            try {
+                List<Station> result = TopologicalSort.order(graph);
+                assertTrue(isValidTopologicalOrder(graph, result), "Order is valid");
+                // A and B should come before C
+                int aPos = findPosition(result, "A");
+                int bPos = findPosition(result, "B");
+                int cPos = findPosition(result, "C");
+                assertTrue(aPos < cPos && bPos < cPos, "A and B before C");
+            } catch (TopologicalSort.CycleDetectedException e) {
+                throw new AssertionError("Multiple sources should not have cycles: " + e.getMessage());
+            }
         });
     }
     
@@ -549,9 +601,13 @@ public class TopologicalSortTest {
             graph.addEdge(new Line("A", "C", 12.0, 100, 6.0));
             graph.addEdge(new Line("A", "D", 15.0, 100, 7.0));
             
-            List<Station> result = TopologicalSort.order(graph);
-            assertTrue(isValidTopologicalOrder(graph, result), "Order is valid");
-            assertTrue(result.get(0).getId().equals("A"), "A (source) comes first");
+            try {
+                List<Station> result = TopologicalSort.order(graph);
+                assertTrue(isValidTopologicalOrder(graph, result), "Order is valid");
+                assertTrue(result.get(0).getId().equals("A"), "A (source) comes first");
+            } catch (TopologicalSort.CycleDetectedException e) {
+                throw new AssertionError("Multiple sinks should not have cycles: " + e.getMessage());
+            }
         });
     }
     
@@ -588,9 +644,13 @@ public class TopologicalSortTest {
                 graph.addEdge(new Line("A", "B", 10.0, 100, 5.0));
             }
             
-            List<Station> result = TopologicalSort.order(graph);
-            assertTrue(isValidTopologicalOrder(graph, result), "Order is valid");
-            assertTrue(result.size() == graph.getNodeCount(), "All nodes included");
+            try {
+                List<Station> result = TopologicalSort.order(graph);
+                assertTrue(isValidTopologicalOrder(graph, result), "Order is valid");
+                assertTrue(result.size() == graph.getNodeCount(), "All nodes included");
+            } catch (TopologicalSort.CycleDetectedException e) {
+                throw new AssertionError("Disconnected components should not have cycles: " + e.getMessage());
+            }
         });
     }
     
@@ -716,18 +776,26 @@ public class TopologicalSortTest {
     private static void testOrderDFS_SimpleChain() {
         test("orderDFS with simple chain using real data", () -> {
             RailwayGraph graph = createGraphFromRealData(3);
-            List<Station> result = TopologicalSort.orderDFS(graph);
-            assertTrue(isValidTopologicalOrder(graph, result), "Order is valid");
-            assertTrue(result.size() == graph.getNodeCount(), "All nodes included");
+            try {
+                List<Station> result = TopologicalSort.orderDFS(graph);
+                assertTrue(isValidTopologicalOrder(graph, result), "Order is valid");
+                assertTrue(result.size() == graph.getNodeCount(), "All nodes included");
+            } catch (TopologicalSort.CycleDetectedException e) {
+                throw new AssertionError("Simple chain should not have cycles: " + e.getMessage());
+            }
         });
     }
     
     private static void testOrderDFS_ComplexDAG() {
         test("orderDFS with complex DAG using real data", () -> {
             RailwayGraph graph = createGraphFromRealData(10);
-            List<Station> result = TopologicalSort.orderDFS(graph);
-            assertTrue(isValidTopologicalOrder(graph, result), "Order is valid");
-            assertTrue(result.size() == graph.getNodeCount(), "All nodes included");
+            try {
+                List<Station> result = TopologicalSort.orderDFS(graph);
+                assertTrue(isValidTopologicalOrder(graph, result), "Order is valid");
+                assertTrue(result.size() == graph.getNodeCount(), "All nodes included");
+            } catch (TopologicalSort.CycleDetectedException e) {
+                throw new AssertionError("Complex DAG should not have cycles: " + e.getMessage());
+            }
         });
     }
     
@@ -778,42 +846,58 @@ public class TopologicalSortTest {
     private static void testOrder_RespectsDependencies() {
         test("order respects all edge dependencies using real data", () -> {
             RailwayGraph graph = createGraphFromRealData(15);
-            List<Station> result = TopologicalSort.order(graph);
-            assertTrue(isValidTopologicalOrder(graph, result), "All dependencies respected");
+            try {
+                List<Station> result = TopologicalSort.order(graph);
+                assertTrue(isValidTopologicalOrder(graph, result), "All dependencies respected");
+            } catch (TopologicalSort.CycleDetectedException e) {
+                throw new AssertionError("Graph should not have cycles: " + e.getMessage());
+            }
         });
     }
     
     private static void testOrder_AllNodesIncluded() {
         test("order includes all nodes using real data", () -> {
             RailwayGraph graph = createGraphFromRealData(15);
-            List<Station> result = TopologicalSort.order(graph);
-            assertTrue(result.size() == graph.getNodeCount(), "All nodes included");
-            
-            Set<String> resultIds = new HashSet<>();
-            for (Station s : result) {
-                resultIds.add(s.getId());
+            try {
+                List<Station> result = TopologicalSort.order(graph);
+                assertTrue(result.size() == graph.getNodeCount(), "All nodes included");
+                
+                Set<String> resultIds = new HashSet<>();
+                for (Station s : result) {
+                    resultIds.add(s.getId());
+                }
+                Set<String> graphIds = new HashSet<>();
+                for (Station s : graph.getAllNodes()) {
+                    graphIds.add(s.getId());
+                }
+                assertTrue(resultIds.equals(graphIds), "Same set of nodes");
+            } catch (TopologicalSort.CycleDetectedException e) {
+                throw new AssertionError("Graph should not have cycles: " + e.getMessage());
             }
-            Set<String> graphIds = new HashSet<>();
-            for (Station s : graph.getAllNodes()) {
-                graphIds.add(s.getId());
-            }
-            assertTrue(resultIds.equals(graphIds), "Same set of nodes");
         });
     }
     
     private static void testOrderDFS_RespectsDependencies() {
         test("orderDFS respects all edge dependencies using real data", () -> {
             RailwayGraph graph = createGraphFromRealData(15);
-            List<Station> result = TopologicalSort.orderDFS(graph);
-            assertTrue(isValidTopologicalOrder(graph, result), "All dependencies respected");
+            try {
+                List<Station> result = TopologicalSort.orderDFS(graph);
+                assertTrue(isValidTopologicalOrder(graph, result), "All dependencies respected");
+            } catch (TopologicalSort.CycleDetectedException e) {
+                throw new AssertionError("Graph should not have cycles: " + e.getMessage());
+            }
         });
     }
     
     private static void testOrderDFS_AllNodesIncluded() {
         test("orderDFS includes all nodes using real data", () -> {
             RailwayGraph graph = createGraphFromRealData(15);
-            List<Station> result = TopologicalSort.orderDFS(graph);
-            assertTrue(result.size() == graph.getNodeCount(), "All nodes included");
+            try {
+                List<Station> result = TopologicalSort.orderDFS(graph);
+                assertTrue(result.size() == graph.getNodeCount(), "All nodes included");
+            } catch (TopologicalSort.CycleDetectedException e) {
+                throw new AssertionError("Graph should not have cycles: " + e.getMessage());
+            }
         });
     }
     
@@ -847,18 +931,26 @@ public class TopologicalSortTest {
     private static void testOrder_LargeGraph() {
         test("order handles large graph using real data", () -> {
             RailwayGraph graph = createGraphFromRealData(50);
-            List<Station> result = TopologicalSort.order(graph);
-            assertTrue(isValidTopologicalOrder(graph, result), "Order is valid for large graph");
-            assertTrue(result.size() == graph.getNodeCount(), "All nodes included");
+            try {
+                List<Station> result = TopologicalSort.order(graph);
+                assertTrue(isValidTopologicalOrder(graph, result), "Order is valid for large graph");
+                assertTrue(result.size() == graph.getNodeCount(), "All nodes included");
+            } catch (TopologicalSort.CycleDetectedException e) {
+                throw new AssertionError("Large graph should not have cycles: " + e.getMessage());
+            }
         });
     }
     
     private static void testOrder_LinearGraph() {
         test("order with linear graph using real data", () -> {
             RailwayGraph graph = createGraphFromRealData(10);
-            List<Station> result = TopologicalSort.order(graph);
-            assertTrue(isValidTopologicalOrder(graph, result), "Order is valid");
-            assertTrue(result.size() == graph.getNodeCount(), "All nodes included");
+            try {
+                List<Station> result = TopologicalSort.order(graph);
+                assertTrue(isValidTopologicalOrder(graph, result), "Order is valid");
+                assertTrue(result.size() == graph.getNodeCount(), "All nodes included");
+            } catch (TopologicalSort.CycleDetectedException e) {
+                throw new AssertionError("Linear graph should not have cycles: " + e.getMessage());
+            }
         });
     }
     
@@ -881,9 +973,13 @@ public class TopologicalSortTest {
             graph.addEdge(new Line("L1", "L2", 15.0, 100, 7.0));
             graph.addEdge(new Line("R1", "R2", 18.0, 100, 8.0));
             
-            List<Station> result = TopologicalSort.order(graph);
-            assertTrue(isValidTopologicalOrder(graph, result), "Order is valid");
-            assertTrue(result.get(0).getId().equals("R"), "Root comes first");
+            try {
+                List<Station> result = TopologicalSort.order(graph);
+                assertTrue(isValidTopologicalOrder(graph, result), "Order is valid");
+                assertTrue(result.get(0).getId().equals("R"), "Root comes first");
+            } catch (TopologicalSort.CycleDetectedException e) {
+                throw new AssertionError("Binary tree should not have cycles: " + e.getMessage());
+            }
         });
     }
     
