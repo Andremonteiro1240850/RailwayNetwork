@@ -9,7 +9,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Suite de testes completa para a classe Line.
- * Cobre validações de argumentos, integridade de dados e formatação.
+ * Cobre validações de argumentos, integridade de dados e formatação..
  */
 class LineTest {
 
