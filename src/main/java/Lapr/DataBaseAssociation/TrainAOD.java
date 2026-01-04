@@ -27,29 +27,220 @@ public class TrainAOD {
     private static final String DATABASE = "jdbc:oracle:thin:@vsgate-s1.dei.isep.ipp.pt:10715:XE";
 
     /**
-     * Gets all trains from database.
+     * Gets all trains that have been assembled and assigned to routes (USLP09).
+     * USLP10: These are the trains that can be dispatched.
+     * Only returns trains that have been fully assembled (train_id != 9999) and have routes assigned.
      * 
-     * NOTE: This method is not fully implemented because Train is immutable and requires
-     * route, locomotives, and wagons to be loaded from other tables.
-     * This is a placeholder that would need to be completed with proper data loading.
-     * 
-     * @return list of trains (currently returns empty list - needs implementation)
+     * @return list of trains that are ready for dispatch
      */
     public List<Train> getAllTrains() {
         List<Train> trains = new ArrayList<>();
         
-        // TODO: Implement proper train loading from database
-        // This requires:
-        // 1. Loading route from TRAIN_ROUTE table
-        // 2. Loading locomotives from LOCOMOTIVE_TRAIN table
-        // 3. Loading wagons from WAGON_IN_FREIGHT or similar table
-        // 4. Loading departure time from TRAIN table
-        // 5. Calculating total weight from wagons
+        // Get all trains that have been assembled (train_id != 9999) and have routes
+        String sql = "SELECT DISTINCT t.train_id, t.operator_id " +
+                     "FROM Train t " +
+                     "JOIN Train_route tr ON t.train_id = tr.Train_id " +
+                     "WHERE t.train_id != 9999 " + // Exclude dummy train
+                     "ORDER BY t.train_id";
         
-        // For now, return empty list as Train constructor requires all parameters
-        // and we cannot create a Train without complete data
+        try (Connection conn = DriverManager.getConnection(DATABASE, USERNAME, PASSWORD);
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+            
+            while (rs.next()) {
+                try {
+                    int trainIdInt = rs.getInt("train_id");
+                    String trainId = String.valueOf(trainIdInt);
+                    
+                    // Load route (stations) for this train
+                    List<Facility> route = loadRouteForTrain(conn, trainIdInt);
+                    if (route == null || route.size() < 2) {
+                        System.err.println("WARNING: Train " + trainId + " has invalid route (less than 2 stations), skipping");
+                        continue;
+                    }
+                    
+                    // Load locomotives for this train
+                    List<Locomotive> locomotives = loadLocomotivesForTrain(conn, trainIdInt);
+                    if (locomotives == null || locomotives.isEmpty()) {
+                        System.err.println("WARNING: Train " + trainId + " has no locomotives, skipping");
+                        continue;
+                    }
+                    
+                    // Load wagons for this train (through Freight)
+                    List<Wagon> wagons = loadWagonsForTrain(conn, trainIdInt);
+                    if (wagons == null) {
+                        wagons = new ArrayList<>(); // Empty list if no wagons
+                    }
+                    
+                    // Calculate total weight from wagons
+                    double totalWeight = wagons.stream()
+                        .mapToDouble(w -> w.getEmptyWeightKg() + w.getMaxLoadWeightKg()) // Assume fully loaded
+                        .sum();
+                    
+                    // For USLP10, departure time will be set by the user during dispatch
+                    // Use a default time (now) - this will be overridden when user sets departure time
+                    LocalDateTime defaultDepartureTime = LocalDateTime.now();
+                    
+                    // Create Train object
+                    // selectedStations is the same as route for now (user can specify path in USLP10)
+                    Train train = new Train(
+                        trainId,
+                        route,           // Full route
+                        route,           // Selected stations (same as route initially)
+                        locomotives,
+                        wagons,
+                        defaultDepartureTime,
+                        totalWeight
+                    );
+                    
+                    trains.add(train);
+                    System.out.println("Loaded train " + trainId + " with " + route.size() + " stations, " +
+                                     locomotives.size() + " locomotives, " + wagons.size() + " wagons");
+                    
+                } catch (Exception e) {
+                    System.err.println("Error creating train from database row: " + e.getMessage());
+                    e.printStackTrace();
+                }
+            }
+            
+            System.out.println("Total trains loaded from database: " + trains.size());
+            
+        } catch (SQLException e) {
+            System.err.println("Error retrieving trains from database: " + e.getMessage());
+            e.printStackTrace();
+        }
         
         return trains;
+    }
+    
+    /**
+     * Loads the route (stations) for a train from Train_route table.
+     * 
+     * @param conn the database connection
+     * @param trainId the train ID
+     * @return list of facilities (stations) in order, or null if error
+     */
+    private List<Facility> loadRouteForTrain(Connection conn, int trainId) {
+        List<Facility> route = new ArrayList<>();
+        
+        String sql = "SELECT tr.Facility_id, f.name " +
+                     "FROM Train_route tr " +
+                     "JOIN Facility f ON tr.Facility_id = f.facility_id " +
+                     "WHERE tr.Train_id = ? " +
+                     "ORDER BY tr.\"Order\"";
+        
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, trainId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    String facilityId = String.valueOf(rs.getInt("Facility_id"));
+                    String facilityName = rs.getString("name");
+                    Facility facility = new Facility(facilityId, facilityName);
+                    route.add(facility);
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Error loading route for train " + trainId + ": " + e.getMessage());
+            e.printStackTrace();
+            return null;
+        }
+        
+        return route;
+    }
+    
+    /**
+     * Loads locomotives for a train from Locomotive_Train table.
+     * 
+     * @param conn the database connection
+     * @param trainId the train ID
+     * @return list of locomotives, or null if error
+     */
+    private List<Locomotive> loadLocomotivesForTrain(Connection conn, int trainId) {
+        List<Locomotive> locomotives = new ArrayList<>();
+        LocomotiveAOD locomotiveAOD = new LocomotiveAOD();
+        
+        String sql = "SELECT lt.Locomotivelocomotive_id " +
+                     "FROM Locomotive_Train lt " +
+                     "WHERE lt.Traintrain_id = ? " +
+                     "ORDER BY lt.Adddate ASC";
+        
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, trainId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    int locomotiveIdInt = rs.getInt("Locomotivelocomotive_id");
+                    String locomotiveId = String.valueOf(locomotiveIdInt);
+                    
+                    // Get full locomotive details
+                    // We need to get all locomotives and find the one with matching ID
+                    List<Locomotive> allLocomotives = locomotiveAOD.getAllLocomotives();
+                    Locomotive locomotive = allLocomotives.stream()
+                        .filter(l -> l.getId().equals(locomotiveId))
+                        .findFirst()
+                        .orElse(null);
+                    
+                    if (locomotive != null) {
+                        locomotives.add(locomotive);
+                    } else {
+                        System.err.println("WARNING: Locomotive " + locomotiveId + " not found in database");
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Error loading locomotives for train " + trainId + ": " + e.getMessage());
+            e.printStackTrace();
+            return null;
+        }
+        
+        return locomotives;
+    }
+    
+    /**
+     * Loads wagons for a train through Freight -> Wagon_In_Freight.
+     * 
+     * @param conn the database connection
+     * @param trainId the train ID
+     * @return list of wagons, or empty list if no wagons
+     */
+    private List<Wagon> loadWagonsForTrain(Connection conn, int trainId) {
+        List<Wagon> wagons = new ArrayList<>();
+        WagonAOD wagonAOD = new WagonAOD();
+        
+        // Get wagons through Freight -> Wagon_In_Freight
+        String sql = "SELECT DISTINCT wif.Wagon_id " +
+                     "FROM Freight f " +
+                     "JOIN Wagon_In_Freight wif ON f.freight_id = wif.Freight_id " +
+                     "WHERE f.FreighTrainTraintrain_id = ?";
+        
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, trainId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    int wagonIdInt = rs.getInt("Wagon_id");
+                    String wagonId = String.valueOf(wagonIdInt);
+                    
+                    // Get full wagon details
+                    // We need to get all wagons and find the one with matching ID
+                    List<Wagon> allWagons = wagonAOD.getAllWagons();
+                    Wagon wagon = allWagons.stream()
+                        .filter(w -> w.getWagonId().equals(wagonId))
+                        .findFirst()
+                        .orElse(null);
+                    
+                    if (wagon != null) {
+                        wagons.add(wagon);
+                    } else {
+                        System.err.println("WARNING: Wagon " + wagonId + " not found in database");
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Error loading wagons for train " + trainId + ": " + e.getMessage());
+            e.printStackTrace();
+            return new ArrayList<>(); // Return empty list instead of null
+        }
+        
+        return wagons;
     }
     
     /**

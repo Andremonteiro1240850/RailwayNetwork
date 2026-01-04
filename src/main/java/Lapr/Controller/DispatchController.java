@@ -10,6 +10,7 @@ import Sprint1.Domain.TravelCalculationService;
 import Sprint1.Domain.Wagon;
 import Lapr.Domain.Train;
 import Lapr.DataBaseAssociation.LineSegmentAOD;
+import Lapr.DataBaseAssociation.TrainAOD;
 
 import java.util.Collections;
 import java.util.List;
@@ -207,6 +208,17 @@ public class DispatchController {
      */
     public Facility getStationById(String id) {
         return travelTimeController.getStationById(id);
+    }
+    
+    /**
+     * Gets all trains that have been assembled and assigned to routes (USLP09).
+     * USLP10: These are the trains available for dispatch.
+     * 
+     * @return list of trains ready for dispatch
+     */
+    public List<Train> getAvailableTrains() {
+        TrainAOD trainAOD = new TrainAOD();
+        return trainAOD.getAllTrains();
     }
 }
 
