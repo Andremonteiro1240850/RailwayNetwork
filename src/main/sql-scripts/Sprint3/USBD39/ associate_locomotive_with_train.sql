@@ -67,7 +67,7 @@ INSERT INTO Locomotive_Train (
              SYSTIMESTAMP
          );
 
-RETURN 1; -- Sucesso
+RETURN p_locomotive_id; -- Sucesso
 
 EXCEPTION
     WHEN locomotive_not_found THEN
