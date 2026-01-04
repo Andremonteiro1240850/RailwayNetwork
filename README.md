@@ -1,8 +1,8 @@
-# Train Station Management System
+# Railway Terminal Management System
 
 **G044 Team Repository** - Semester 3 Project (2025-2026)
 
-A comprehensive Java application for managing train stations, geographical searches, warehouse operations, and freight management.
+A comprehensive Java application for managing train stations, geographical searches, warehouse operations, freight management, and railway network optimization.
 
 ---
 
@@ -22,14 +22,16 @@ A comprehensive Java application for managing train stations, geographical searc
 
 ## Overview
 
-This project implements a train station management system with the following main features:
+This project implements a Railway Terminal Management System with the following main features:
 
 - **Geographical Search**: KD-tree based spatial data structures for efficient geographical queries
 - **Proximity Search**: Nearest neighbor and radius search algorithms with branch-and-bound optimization
 - **Warehouse Management**: Inventory management, picking plans, and quality control
-- **Freight Management**: Train configuration, dispatch operations, and route planning
+- **Freight Management**: Train configuration, dispatch operations, route planning, and scheduling
+- **Railway Network Optimization**: Graph algorithms for shortest paths, maximum flow, and upgrade planning
 - **Database Integration**: SQL database with comprehensive schema and SQL scripts
 - **Assembly Code**: Low-level assembly implementations for performance-critical operations
+- **Modern UI**: JavaFX-based user interface with professional styling
 
 ---
 
@@ -37,47 +39,115 @@ This project implements a train station management system with the following mai
 
 ```
 ├── doc/                           # Documentation
-│   ├── USEI01-USEI10/             # User story documentation
-│   │   ├── Class Diagram/         # PlantUML class diagrams
-│   │   └── Complexity/            # Complexity analysis
-│   ├── global-artifacts/          # Domain models, conceptual models
-│   │   ├── Conceptual Model/      # Conceptual model (VPP, SVG)
-│   │   ├── Domain Model/          # Domain model (PlantUML, SVG)
-│   │   ├── Realtional Model/      # Physical database model
-│   │   └── Glossary/              # Project glossary
-│   └── auth/                      # Authentication documentation
+│   ├── Sprint1/                    # Sprint 1 user stories (USEI01-USEI05)
+│   ├── Sprint2/                    # Sprint 2 user stories (USEI06-USEI10, USLP07)
+│   ├── Sprint3/                    # Sprint 3 user stories (USEI11-USEI15, USLP08-USLP10)
+│   │   ├── USEI11/                 # Directed Line Upgrade Plan
+│   │   ├── USEI12/                 # Graph Visualization
+│   │   ├── USEI13/                 # Maximum Flow
+│   │   ├── USEI14/                 # Backbone Network
+│   │   ├── USEI15/                 # Risk-Aware Shortest Paths
+│   │   └── Complexity_Analysis/    # Overall complexity analysis
+│   ├── global-artifacts/           # Domain models, conceptual models
+│   │   ├── Conceptual Model/       # Conceptual model (VPP, SVG)
+│   │   ├── Domain Model/           # Domain model (PlantUML, SVG)
+│   │   ├── Relational Model/       # Physical database model
+│   │   └── Glossary/               # Project glossary
+│   └── auth/                       # Authentication documentation
 ├── src/
 │   ├── main/
-│   │   ├── java/                  # Java source code
-│   │   │   ├── Controller/        # Controllers (MVC pattern)
-│   │   │   ├── Domain/            # Domain models and business logic
-│   │   │   ├── Repository/        # Data access layer
-│   │   │   ├── UI/                # User interfaces
-│   │   │   └── pt/ipp/isep/dei/   # Main application entry point
-│   │   ├── Arqcp/                 # Assembly code (RISC-V)
-│   │   │   ├── asm.h              # Assembly function declarations
-│   │   │   └── USAC01-USAC09/     # User story assembly implementations
-│   │   ├── sql-scripts/           # Database scripts
-│   │   │   ├── InitialSchema/     # Schema and initial data
-│   │   │   └── USBD08-USBD30/     # User story database scripts
-│   │   └── resources/             # Configuration files
-│   └── test/                      # Test code
-│       └── java/                  # JUnit test classes
-├── train_station_dataset/         # Sample datasets (CSV files)
-├── pom.xml                        # Maven configuration
-└── README.md                      # This file
+│   │   ├── java/                    # Java source code
+│   │   │   ├── Cargo Handling at a Railway Terminal/  # Warehouse management
+│   │   │   ├── Railway Network Optimization/         # Graph algorithms
+│   │   │   ├── Spatial & indexed queries/            # Geographical search
+│   │   │   ├── Lapr/                                 # Freight management
+│   │   │   └── pt/ipp/isep/dei/                      # Main application entry point
+│   │   ├── resources/               # Configuration files, FXML, CSS
+│   │   │   ├── layout.fxml          # Main UI layout
+│   │   │   └── styles.css           # Modern UI styling
+│   │   └── sql-scripts/             # Database scripts
+│   │       ├── InitialSchema/       # Schema and initial data
+│   │       ├── Sprint1/              # Sprint 1 database scripts
+│   │       ├── Sprint2/              # Sprint 2 database scripts
+│   │       └── Sprint3/              # Sprint 3 database scripts
+│   └── test/                        # Test code
+│       └── java/                    # JUnit 5 test classes
+├── Arqcp/                           # Assembly code (RISC-V)
+│   ├── Sprint2/                     # Sprint 2 assembly implementations
+│   └── Sprint3/                      # Sprint 3 embedded systems code
+├── train_station_dataset/           # Sample datasets (CSV files)
+│   └── Sprint3/                     # Sprint 3 specific datasets
+├── pom.xml                          # Maven configuration
+└── README.md                        # This file
 ```
 
 ---
 
+## Technologies
 
+- **Java**: 11+
+- **JavaFX**: 17.0.2 (for modern UI)
+- **JUnit**: 5.10.0 (for testing)
+- **Maven**: Build and dependency management
+- **Oracle Database**: Database backend
+- **PlantUML**: Documentation diagrams
+- **RISC-V Assembly**: Low-level optimizations
 
+---
+
+## Getting Started
+
+### Prerequisites
+
+- Java 11 or higher
+- Maven 3.6+
+- Oracle Database (for database features)
+- Git
+
+### Building the Project
+
+```bash
+# Clone the repository
+git clone <repository-url>
+cd sem3-pi-25-26-g044-repo
+
+# Build the project
+mvn clean install
+
+# Run tests
+mvn test
+
+# Run the application
+mvn javafx:run
+```
+
+### Database Setup
+
+1. Connect to Oracle Database:
+   - Host: `vsgate-s1.dei.isep.ipp.pt`
+   - Port: `10715`
+   - SID: `XE`
+   - Username: `System`
+   - Password: `G0442526BD`
+
+2. Run SQL scripts in order:
+   ```bash
+   # 1. Create schema
+   sqlplus System@vsgate-s1.dei.isep.ipp.pt:10715/XE @src/main/sql-scripts/InitialSchema/schema.sql
+   
+   # 2. Load initial data
+   sqlplus System@vsgate-s1.dei.isep.ipp.pt:10715/XE @src/main/sql-scripts/InitialSchema/initial_data.sql
+   ```
+
+See [`src/main/sql-scripts/Readme.md`](src/main/sql-scripts/Readme.md) for detailed database setup instructions.
+
+---
 
 ## Documentation
 
 ### Main Documentation
 
-- **Global Artifacts**: [`doc/global-artifacts/Readme.md`](doc/global-artifacts/Readme.md)
+- **Global Artifacts**: [`doc/global-artifacts/`](doc/global-artifacts/)
   - Conceptual Model (domain perspective)
   - Domain Model (UML diagrams)
   - Physical Database Model
@@ -85,16 +155,33 @@ This project implements a train station management system with the following mai
 
 ### User Story Documentation
 
-Each user story (USEI) has its own documentation folder in `doc/`:
+Each user story (USEI/USLP) has its own documentation folder in `doc/`:
 
+#### Sprint 1 (USEI01-USEI05)
+- Warehouse management features
+- Class diagrams
+
+#### Sprint 2 (USEI06-USEI10, USLP07)
 | User Story | Description | Documentation |
 |------------|-------------|---------------|
-| **USEI01-USEI05** | Warehouse management features | Class diagrams |
 | **USEI06** | AVL tree data structures | Class diagram, Complexity analysis |
 | **USEI07** | KD-tree construction and range queries | Class diagram, Complexity analysis |
 | **USEI08** | Geographical area search | Class diagram, Complexity analysis |
 | **USEI09** | Proximity search (nearest neighbor) | Class diagram, Complexity analysis |
 | **USEI10** | Radius search with density summary | Class diagram, Complexity analysis |
+| **USLP07** | Train Dispatch Scheduler | Class diagram |
+
+#### Sprint 3 (USEI11-USEI15, USLP08-USLP10)
+| User Story | Description | Documentation |
+|------------|-------------|---------------|
+| **USEI11** | Directed Line Upgrade Plan | Class diagram, Complexity analysis |
+| **USEI12** | Graph Visualization (DOT export) | Class diagram, Complexity analysis |
+| **USEI13** | Maximum Flow Algorithm | Class diagram, Complexity analysis |
+| **USEI14** | Backbone Network Identification | Class diagram, Complexity analysis |
+| **USEI15** | Risk-Aware Shortest Paths (Bellman-Ford) | Class diagram, Complexity analysis |
+| **USLP08** | Route Planner | Class diagram |
+| **USLP09** | Train Assembly and Assignment | Class diagram |
+| **USLP10** | Train Dispatch Scheduler (Enhanced) | Class diagram |
 
 Each USEI folder contains:
 - **Class Diagrams**: PlantUML format with SVG exports
@@ -104,9 +191,11 @@ Each USEI folder contains:
 ### Additional Documentation
 
 - **SQL Scripts**: [`src/main/sql-scripts/Readme.md`](src/main/sql-scripts/Readme.md)
-- **Assembly Code**: [`src/main/Arqcp/README.md`](src/main/Arqcp/README.md)
+- **Assembly Code**: [`Arqcp/README.md`](Arqcp/README.md)
 - **Test Documentation**: [`src/test/Readme.md`](src/test/Readme.md)
 - **Dataset Schema**: [`train_station_dataset/README.md`](train_station_dataset/README.md)
+- **Java Source**: [`src/main/java/Readme.md`](src/main/java/Readme.md)
+- **Resources**: [`src/main/resources/Readme.md`](src/main/resources/Readme.md)
 
 ---
 
@@ -144,11 +233,50 @@ Each USEI folder contains:
   - Density summary by country and city status
   - AVL tree for sorted result storage
 
-### Freight Management (USLP07)
-- Train configuration
-- Dispatch management
-- Travel time calculations
-- Wagon unloading operations
+### Railway Network Optimization (USEI11-USEI15)
+- **USEI11**: Directed Line Upgrade Plan
+  - Topological sort for upgrade dependencies
+  - Cycle detection in directed graphs
+  - O(V+E) complexity
+  
+- **USEI12**: Graph Visualization
+  - DOT format export
+  - Graphviz rendering support
+  - Visual representation of railway networks
+  
+- **USEI13**: Maximum Flow Algorithm
+  - Ford-Fulkerson algorithm implementation
+  - Capacity optimization
+  - Network flow analysis
+  
+- **USEI14**: Backbone Network Identification
+  - Critical path identification
+  - Network resilience analysis
+  
+- **USEI15**: Risk-Aware Shortest Paths
+  - Bellman-Ford algorithm
+  - Negative cycle detection
+  - Cost optimization with risk factors
+
+### Freight Management (USLP07-USLP10)
+- **USLP07**: Train Dispatch Scheduler
+  - Physics-based scheduling
+  - Conflict detection and resolution
+  - Travel time calculations
+  
+- **USLP08**: Route Planner
+  - Simple and complex route definition
+  - Route assignment to trains
+  
+- **USLP09**: Train Assembly and Assignment
+  - Locomotive and wagon selection
+  - Train assembly
+  - Route assignment
+  
+- **USLP10**: Train Dispatch Scheduler (Enhanced)
+  - Enhanced scheduling with pre-assembled trains
+  - Advanced conflict resolution
+  - Real-time dispatch management
 
 ### Assembly Code (USAC01-USAC09)
 - **USAC01**: Data encryption
@@ -170,12 +298,38 @@ Each USEI folder contains:
 
 ---
 
+## Testing
+
+The project uses **JUnit 5** for comprehensive testing:
+
+```bash
+# Run all tests
+mvn test
+
+# Run tests with coverage
+mvn test jacoco:report
+```
+
+### Test Coverage
+
+- **RailwayGraph**: 100% method and line coverage
+- **UpgradePlanController**: Comprehensive test suite with real data
+- **TopologicalSort**: Full algorithm coverage
+- **CycleDetection**: Complete cycle detection tests
+- **BellmanFord**: Risk-aware shortest path tests
+
+See [`src/test/Readme.md`](src/test/Readme.md) for detailed test documentation.
+
+---
+
 ## Datasets
 
 Sample datasets are provided in `train_station_dataset/`:
 
 ### Station Data
 - `train_stations_europe.csv`: European train stations with coordinates
+- `Sprint3/stations.csv`: Sprint 3 station data
+- `Sprint3/lines.csv`: Sprint 3 line/edge data
 
 ### Warehouse Data
 - `bays.csv`: Warehouse bay information
@@ -197,23 +351,24 @@ See [`train_station_dataset/README.md`](train_station_dataset/README.md) for com
 
 ### Documentation
 - [Project Documentation](doc/)
-- [Global Artifacts](doc/global-artifacts/Readme.md)
+- [Global Artifacts](doc/global-artifacts/)
 - [Database Scripts](src/main/sql-scripts/Readme.md)
-- [Assembly Code](src/main/Arqcp/README.md)
+- [Assembly Code](Arqcp/README.md)
 - [Test Documentation](src/test/Readme.md)
 - [Dataset Schema](train_station_dataset/README.md)
 
 ### Key Components
-- [KD-Tree Implementation](src/main/java/Domain/KDTree.java)
-- [AVL Tree Implementation](src/main/java/Domain/AVL.java)
-- [Main Application](src/main/java/pt/ipp/isep/dei/Main.java)
+- [KD-Tree Implementation](src/main/java/Spatial%20&%20indexed%20queries/Domain/KDTree.java)
+- [AVL Tree Implementation](src/main/java/Spatial%20&%20indexed%20queries/Domain/AVL.java)
+- [RailwayGraph](src/main/java/Railway%20Network%20Optimization/Domain/RailwayGraph.java)
+- [TopologicalSort](src/main/java/Railway%20Network%20Optimization/Domain/TopologicalSort.java)
+- [BellmanFord](src/main/java/Railway%20Network%20Optimization/Domain/BellmanFord.java)
+- [Main Application](src/main/java/pt/ipp/isep/dei/MainApp.java)
 
 ### User Stories
-- [USEI06 - AVL Trees](doc/Sprint2/USEI06/)
-- [USEI07 - KD-Tree Construction](doc/Sprint2/USEI07/)
-- [USEI08 - Geographical Search](doc/Sprint2/USEI08/)
-- [USEI09 - Proximity Search](doc/Sprint2/USEI09/)
-- [USEI10 - Radius Search](doc/Sprint2/USEI10/)
+- [Sprint 1 - Warehouse Management](doc/Sprint1/)
+- [Sprint 2 - Data Structures & Search](doc/Sprint2/)
+- [Sprint 3 - Network Optimization](doc/Sprint3/)
 
 ---
 
@@ -223,17 +378,22 @@ See [`train_station_dataset/README.md`](train_station_dataset/README.md) for com
 
 ---
 
-
 ## Architecture
 
 The project follows a **layered architecture**:
 
-- **UI Layer**: User interfaces for interaction
+- **UI Layer**: JavaFX user interfaces for interaction
 - **Controller Layer**: Business logic and coordination
 - **Domain Layer**: Core business models and algorithms
 - **Repository Layer**: Data access and persistence
-- **Database Layer**: SQL database
+- **Database Layer**: Oracle SQL database
 
+### Design Patterns
+
+- **MVC (Model-View-Controller)**: Separation of concerns
+- **Repository Pattern**: Data access abstraction
+- **Strategy Pattern**: Algorithm selection
+- **Factory Pattern**: Object creation
 
 ---
 
@@ -250,7 +410,20 @@ The project follows a **layered architecture**:
   - Average case: O(√N + k log k)
   - Worst case: O(N + k log k)
 - **AVL Operations**: O(log n) for all operations
+- **Topological Sort**: O(V+E) using Kahn's algorithm or DFS
+- **Bellman-Ford**: O(V×E) for shortest paths with negative weights
+- **Maximum Flow (Ford-Fulkerson)**: O(E×f) where f is maximum flow
 
 See individual USEI complexity documentation for detailed analysis.
 
+---
 
+## License
+
+This project is part of an academic course and is intended for educational purposes.
+
+---
+
+## Contributing
+
+This is a team project for academic purposes. For questions or issues, please contact the team.

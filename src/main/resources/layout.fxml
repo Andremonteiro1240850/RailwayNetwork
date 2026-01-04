@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="2.0" encoding="UTF-8"?>
 
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.*?>
@@ -885,7 +885,7 @@
                                   -fx-font-weight: 500;"/>
                     <Separator orientation="VERTICAL" prefHeight="14" 
                                style="-fx-background-color: rgba(100, 116, 139, 0.3);"/>
-                    <Label text="© 2024 - All Rights Reserved" 
+                    <Label text="© 2026 - All Rights Reserved"
                            style="-fx-font-family: 'Segoe UI Variable', 'Inter', 'Segoe UI', sans-serif;
                                   -fx-font-size: 11px; 
                                   -fx-text-fill: #64748B; 

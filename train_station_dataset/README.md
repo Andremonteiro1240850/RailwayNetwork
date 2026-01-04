@@ -2,12 +2,15 @@
 
 This directory contains sample datasets used throughout the project for testing and development.
 
+---
+
 ## Overview
 
-The datasets support various user stories and features:
+The datasets support various user stories and features across all sprints:
 - **USEI01-USEI05**: Warehouse management
 - **USEI06-USEI10**: Station management and geographical search
-- **USLP07**: Freight management
+- **USEI11-USEI15**: Railway network optimization
+- **USLP07-USLP10**: Freight management and train operations
 
 ---
 
@@ -35,6 +38,40 @@ European train stations dataset with geographical coordinates.
 - USEI08: Geographical area search
 - USEI09: Proximity search
 - USEI10: Radius search
+
+#### `Sprint3/stations.csv`
+Sprint 3 station data with additional fields for network optimization.
+
+**Schema:**
+- `Station id`: Station identifier
+- `Station`: Station name
+- `Lat`: Latitude coordinate
+- `Lon`: Longitude coordinate
+- `CoordX`: X coordinate (projected)
+- `CoordY`: Y coordinate (projected)
+
+**Usage:**
+- USEI11: Upgrade plan (topological sort)
+- USEI12: Graph visualization
+- USEI13: Maximum flow
+- USEI14: Backbone network
+- USEI15: Shortest paths
+
+#### `Sprint3/lines.csv`
+Sprint 3 railway line/edge data for graph construction.
+
+**Schema:**
+- `departure_stid`: Departure station ID
+- `arrival_stid`: Arrival station ID
+- `dist`: Distance (km)
+- `capacity`: Line capacity
+- `cost`: Travel cost
+
+**Usage:**
+- USEI11: Directed graph edges
+- USEI13: Flow capacity
+- USEI15: Edge weights/costs
+- Network analysis
 
 ---
 
@@ -147,9 +184,13 @@ Railway line information.
 Locomotive information.
 
 **Schema:**
-- (Schema details depend on implementation)
+- `locomotive_id`: Locomotive identifier
+- `operator_id`: Operator identifier
+- `entry_year`: Year of entry into service
+- `locomotive_model_id`: Model identifier
+- `Gaugecode`: Gauge code
 
-**Usage:** Freight management (USLP07)
+**Usage:** Freight management (USLP07-USLP10)
 
 ---
 
@@ -159,6 +200,7 @@ Locomotive information.
 - **Encoding**: UTF-8
 - **Header row**: First row contains column names
 - **Delimiter**: Comma (`,`)
+- **Decimal separator**: Period (`.`)
 
 ---
 
@@ -168,6 +210,36 @@ Locomotive information.
 2. **Validation**: Data validation is performed during loading
 3. **Coordinate Validation**: Station coordinates must be valid (latitude: -90 to 90, longitude: -180 to 180)
 4. **Required Fields**: Station names must be non-empty
+5. **Graph Construction**: Sprint3 datasets are used for directed graph construction
+
+---
+
+## Data Loading
+
+### In Code
+
+```java
+// Load Sprint 3 data
+RailwayGraphRepository repo = new RailwayGraphRepository();
+repo.loadData("train_station_dataset/Sprint3/stations.csv", 
+               "train_station_dataset/Sprint3/lines.csv");
+RailwayGraph graph = repo.buildGraph();
+```
+
+### For Testing
+
+Test classes load data in `@BeforeAll` methods:
+
+```java
+@BeforeAll
+static void loadRealData() {
+    realDataRepository = new RailwayGraphRepository();
+    realDataRepository.loadData(
+        "train_station_dataset/Sprint3/stations.csv", 
+        "train_station_dataset/Sprint3/lines.csv"
+    );
+}
+```
 
 ---
 
@@ -175,7 +247,8 @@ Locomotive information.
 
 - **USEI01-USEI05**: Warehouse management documentation
 - **USEI06-USEI10**: Station and geographical search documentation
-- **Database Schema**: See `src/main/sql-scripts/schema.sql`
+- **USEI11-USEI15**: Network optimization documentation
+- **Database Schema**: See `src/main/sql-scripts/InitialSchema/schema.sql`
 
 ---
 
@@ -184,3 +257,4 @@ Locomotive information.
 - This is sample data for development and testing
 - Real production data should be loaded through proper database procedures
 - Some datasets may be optional depending on which features are used
+- Sprint3 datasets are specifically designed for graph algorithms and network analysis
