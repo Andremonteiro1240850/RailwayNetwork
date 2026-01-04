@@ -1608,64 +1608,153 @@ public class SchedulerFXUI {
                 return new Task<DispatchReport>() {
                     @Override
                     protected DispatchReport call() throws Exception {
-                        System.out.println("Dispatching " + trains.size() + " train(s)...");
-                        for (Train train : trains) {
-                            System.out.println("  - Train " + train.getTrainId() + ": " + 
-                                train.getRoute().get(0).getId() + " -> " + 
-                                train.getRoute().get(train.getRoute().size() - 1).getId());
+                        try {
+                            updateMessage("Preparing to dispatch trains...");
+                            System.out.println("Dispatching " + trains.size() + " train(s)...");
+                            
+                            // Validate trains before processing
+                            for (Train train : trains) {
+                                if (train == null) {
+                                    throw new IllegalArgumentException("Train list contains null train");
+                                }
+                                if (train.getRoute() == null || train.getRoute().isEmpty()) {
+                                    throw new IllegalArgumentException("Train " + train.getTrainId() + " has empty route");
+                                }
+                                System.out.println("  - Train " + train.getTrainId() + ": " + 
+                                    train.getRoute().get(0).getId() + " -> " + 
+                                    train.getRoute().get(train.getRoute().size() - 1).getId());
+                            }
+                            
+                            updateMessage("Calculating schedules...");
+                            Platform.runLater(() -> statusLabel.setText("Calculating schedules for " + trains.size() + " train(s)..."));
+                            System.out.println("Calling controller.scheduleTrains()...");
+                            
+                            long startTime = System.currentTimeMillis();
+                            DispatchReport report = controller.scheduleTrains(new ArrayList<>(trains));
+                            long endTime = System.currentTimeMillis();
+                            
+                            System.out.println("Schedule calculation took " + (endTime - startTime) + " ms");
+                            
+                            System.out.println("Schedule calculation completed. Trains scheduled: " + 
+                                (report != null && report.getSummary() != null ? 
+                                    report.getSummary().getTotalTrainsDispatched() : 0));
+                            
+                            return report;
+                        } catch (Exception ex) {
+                            // Log full exception details
+                            System.err.println("ERROR in dispatchTrains task:");
+                            System.err.println("Exception type: " + ex.getClass().getName());
+                            System.err.println("Exception message: " + ex.getMessage());
+                            System.err.println("Stack trace:");
+                            ex.printStackTrace();
+                            
+                            // Re-throw to be caught by onFailed handler
+                            throw ex;
                         }
-                        return controller.scheduleTrains(new ArrayList<>(trains));
                     }
                 };
             }
         };
         
         service.setOnSucceeded(e -> {
-            currentReport = service.getValue();
-            updateResultsTab();
-            dispatchButton.setDisable(false);
-            progressIndicator.setVisible(false);
-            
-            // Professional success message
-            DispatchReport.Summary summary = currentReport.getSummary();
-            
-            // Check if any trains were actually scheduled
-            if (summary.getTotalTrainsDispatched() == 0) {
-                statusLabel.setText("⚠ No trains scheduled - check console for errors");
-                statusLabel.setStyle("-fx-text-fill: white; -fx-font-size: 13px; -fx-font-weight: 500;");
-                showAlert(Alert.AlertType.WARNING, "Warning", 
-                    "No trains were successfully scheduled. Check the console for error messages.\n\n" +
-                    "Common issues:\n" +
-                    "- Stations may not be directly connected\n" +
-                    "- Missing segment data in database\n" +
-                    "Total trains attempted: " + trains.size());
-            } else {
-                // Clear the dispatch queue after successful dispatch
-                trains.clear();
-                updateSummary(); // Update summary to reflect empty queue
+            try {
+                DispatchReport report = service.getValue();
+                if (report == null) {
+                    throw new IllegalStateException("Dispatch report is null");
+                }
                 
-                StringBuilder successMsg = new StringBuilder();
-                successMsg.append("✓ Dispatch completed successfully\n");
-                successMsg.append(String.format("%d train%s scheduled\n", 
-                    summary.getTotalTrainsDispatched(),
-                    summary.getTotalTrainsDispatched() != 1 ? "s" : ""));
-                successMsg.append(String.format("%d conflict%s resolved automatically",
-                    summary.getNumberOfResolvableConflicts(),
-                    summary.getNumberOfResolvableConflicts() != 1 ? "s" : ""));
+                currentReport = report;
+                updateResultsTab();
+                dispatchButton.setDisable(false);
+                progressIndicator.setVisible(false);
                 
-                statusLabel.setText(successMsg.toString());
-                statusLabel.setStyle("-fx-text-fill: white; -fx-font-size: 13px; -fx-font-weight: 500;");
-                mainTabPane.getSelectionModel().select(1); // Switch to results tab
+                // Professional success message
+                DispatchReport.Summary summary = currentReport.getSummary();
+                
+                if (summary == null) {
+                    throw new IllegalStateException("Dispatch summary is null");
+                }
+                
+                // Check if any trains were actually scheduled
+                if (summary.getTotalTrainsDispatched() == 0) {
+                    statusLabel.setText("⚠ No trains scheduled - check console for errors");
+                    statusLabel.setStyle("-fx-text-fill: white; -fx-font-size: 13px; -fx-font-weight: 500;");
+                    showAlert(Alert.AlertType.WARNING, "Warning", 
+                        "No trains were successfully scheduled. Check the console for error messages.\n\n" +
+                        "Common issues:\n" +
+                        "- Stations may not be directly connected\n" +
+                        "- Missing segment data in database\n" +
+                        "- Invalid train configuration\n" +
+                        "Total trains attempted: " + trains.size());
+                } else {
+                    // Clear the dispatch queue after successful dispatch
+                    trains.clear();
+                    updateSummary(); // Update summary to reflect empty queue
+                    
+                    StringBuilder successMsg = new StringBuilder();
+                    successMsg.append("✓ Dispatch completed successfully\n");
+                    successMsg.append(String.format("%d train%s scheduled\n", 
+                        summary.getTotalTrainsDispatched(),
+                        summary.getTotalTrainsDispatched() != 1 ? "s" : ""));
+                    successMsg.append(String.format("%d conflict%s resolved automatically",
+                        summary.getNumberOfResolvableConflicts(),
+                        summary.getNumberOfResolvableConflicts() != 1 ? "s" : ""));
+                    
+                    statusLabel.setText(successMsg.toString());
+                    statusLabel.setStyle("-fx-text-fill: white; -fx-font-size: 13px; -fx-font-weight: 500;");
+                    mainTabPane.getSelectionModel().select(1); // Switch to results tab
+                }
+            } catch (Exception ex) {
+                // Handle errors in success handler
+                System.err.println("ERROR in onSucceeded handler: " + ex.getMessage());
+                ex.printStackTrace();
+                
+                dispatchButton.setDisable(false);
+                progressIndicator.setVisible(false);
+                statusLabel.setText("✗ Error displaying results");
+                statusLabel.setStyle("-fx-text-fill: #EF4444; -fx-font-size: 13px; -fx-font-weight: 500;");
+                showAlert(Alert.AlertType.ERROR, "Error", 
+                    "Failed to process dispatch results: " + ex.getMessage());
             }
         });
         
         service.setOnFailed(e -> {
-            dispatchButton.setDisable(false);
-            progressIndicator.setVisible(false);
-            statusLabel.setText("✗ Dispatch failed!");
-            statusLabel.setStyle("-fx-text-fill: white; -fx-font-size: 13px; -fx-font-weight: 500;");
-            showAlert(Alert.AlertType.ERROR, "Error", 
-                "Failed to dispatch trains: " + service.getException().getMessage());
+            Platform.runLater(() -> {
+                try {
+                    Throwable exception = service.getException();
+                    String errorMsg = "Unknown error occurred";
+                    
+                    if (exception != null) {
+                        errorMsg = exception.getMessage();
+                        if (errorMsg == null || errorMsg.isEmpty()) {
+                            errorMsg = exception.getClass().getSimpleName();
+                        }
+                        
+                        // Log full exception details
+                        System.err.println("ERROR in dispatchTrains:");
+                        System.err.println("Exception type: " + exception.getClass().getName());
+                        System.err.println("Exception message: " + errorMsg);
+                        System.err.println("Stack trace:");
+                        exception.printStackTrace();
+                    }
+                    
+                    dispatchButton.setDisable(false);
+                    progressIndicator.setVisible(false);
+                    statusLabel.setText("✗ Dispatch failed!");
+                    statusLabel.setStyle("-fx-text-fill: #EF4444; -fx-font-size: 13px; -fx-font-weight: 500;");
+                    
+                    // Show detailed error message
+                    StringBuilder alertMsg = new StringBuilder();
+                    alertMsg.append("Failed to dispatch trains:\n\n");
+                    alertMsg.append(errorMsg);
+                    alertMsg.append("\n\nPlease check the console for more details.");
+                    
+                    showAlert(Alert.AlertType.ERROR, "Dispatch Error", alertMsg.toString());
+                } catch (Exception ex) {
+                    System.err.println("ERROR in onFailed handler: " + ex.getMessage());
+                    ex.printStackTrace();
+                }
+            });
         });
         
         service.start();
