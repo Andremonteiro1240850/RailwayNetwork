@@ -2,7 +2,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <math.h>
+#include <ctype.h>
+#include <time.h>
 
 // Arduino compatibility for dual deployment
 #ifdef ARDUINO
@@ -14,8 +15,6 @@
     #include <stdlib.h>
     #include <string.h>
     #include <time.h>
-    #include <unistd.h>
-    #include <math.h>
     
     // Arduino function stubs for Linux testing
     void Serial_begin(long baud) {
@@ -254,22 +253,29 @@ int sensors_format_response(const SensorReading *reading, char *response, int ma
     }
     
     if (!reading->valid) {
-        // Return error format or default values
-        snprintf(response, max_len, 
-                 "TEMP&unit::celsius&value::0#HUM&unit::percentage&value::0");
+        // Return error format or default values - manual string building
+        strcpy(response, "TEMP&unit::celsius&value::0#HUM&unit::percentage&value::0");
         return 0; // Invalid reading
     }
     
     // Format according to specification:
     // TEMP&unit::celsius&value::XX#HUM&unit::percentage&value::YY
-    // Units must be exactly: "celsius" and "percentage" with double colons
-    int written = snprintf(response, max_len, 
-                            "TEMP&unit::celsius::value::%d#HUM&unit::percentage::value::%d",
-                            reading->temperature, reading->humidity);
+    // Units must be exactly: "celsius" and "percentage" with single :: before value
     
-    if (written < 0 || written >= max_len) {
-        return 0; // Formatting failed or buffer too small
-    }
+    // Manual string building (no snprintf)
+    strcpy(response, "TEMP&unit::celsius&value::");
+    
+    // Convert temperature to string and append
+    char temp_str[10];
+    sprintf(temp_str, "%d", reading->temperature); // sprintf is allowed for basic conversion
+    strcat(response, temp_str);
+    
+    strcat(response, "#HUM&unit::percentage&value::");
+    
+    // Convert humidity to string and append
+    char hum_str[10];
+    sprintf(hum_str, "%d", reading->humidity);
+    strcat(response, hum_str);
     
     return 1; // Success
 }
@@ -362,10 +368,9 @@ int sensors_process_command(const char *command) {
         
         if (!raw_reading.valid) {
             printf("[Sensors] WARNING: Invalid sensor reading\n");
-            // Send error response with zero values
+            // Send error response with zero values - manual formatting
             char error_response[MAX_RESPONSE_LEN];
-            snprintf(error_response, sizeof(error_response),
-                     "TEMP&unit::celsius&value::0#HUM&unit::percentage&value::0");
+            strcpy(error_response, "TEMP&unit::celsius&value::0#HUM&unit::percentage&value::0");
             sensors_send_response(error_response);
             return 1; // Command processed (even if reading failed)
         }

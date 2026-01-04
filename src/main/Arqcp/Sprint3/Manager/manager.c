@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
+#include <time.h>
 
 
 
@@ -12,13 +14,12 @@
 #define MAX_INSTRUCTION_LEN 100
 #define MAX_DATA_LEN 500
 #define MAX_CMD_LEN 10
-
-// Serial communication constants (simulation mode only)
 #define SERIAL_BAUD_RATE 9600
 #define SERIAL_TIMEOUT_SEC 1
 #define SERIAL_READ_TIMEOUT_MS 1000
 
-// Global serial port state (simulation mode)
+// Serial communication globals
+static FILE *g_serial_file = NULL;
 static int g_serial_initialized = 0;
 
 // Function to get manager system instance
@@ -80,10 +81,106 @@ void manager_cleanup(ManagerSystem *system) {
 }
 
 
+// ==================== HELPER FUNCTIONS ====================
+
+/**
+ * Build string with integers (no snprintf)
+ * Returns number of characters written
+ */
+static int build_string_with_int(char *buffer, int buffer_size, 
+                                const char *prefix, int value, const char *suffix) {
+    if (buffer == NULL || buffer_size <= 0) return 0;
+    
+    int pos = 0;
+    int i = 0;
+    
+    // Copy prefix
+    if (prefix != NULL) {
+        while (prefix[i] != '\0' && pos < buffer_size - 1) {
+            buffer[pos++] = prefix[i++];
+        }
+    }
+    
+    // Convert integer to string
+    char int_str[20];
+    int_to_string(value, int_str, sizeof(int_str));
+    i = 0;
+    while (int_str[i] != '\0' && pos < buffer_size - 1) {
+        buffer[pos++] = int_str[i++];
+    }
+    
+    // Copy suffix
+    if (suffix != NULL) {
+        i = 0;
+        while (suffix[i] != '\0' && pos < buffer_size - 1) {
+            buffer[pos++] = suffix[i++];
+        }
+    }
+    
+    buffer[pos] = '\0';
+    return pos;
+}
+
+/**
+ * Build string with two integers (no snprintf)
+ */
+static int build_string_with_two_ints(char *buffer, int buffer_size,
+                                     const char *prefix, int value1, 
+                                     const char *middle, int value2, 
+                                     const char *suffix) {
+    if (buffer == NULL || buffer_size <= 0) return 0;
+    
+    int pos = 0;
+    int i = 0;
+    
+    // Copy prefix
+    if (prefix != NULL) {
+        while (prefix[i] != '\0' && pos < buffer_size - 1) {
+            buffer[pos++] = prefix[i++];
+        }
+    }
+    
+    // Convert first integer
+    char int_str1[20];
+    int_to_string(value1, int_str1, sizeof(int_str1));
+    i = 0;
+    while (int_str1[i] != '\0' && pos < buffer_size - 1) {
+        buffer[pos++] = int_str1[i++];
+    }
+    
+    // Copy middle
+    if (middle != NULL) {
+        i = 0;
+        while (middle[i] != '\0' && pos < buffer_size - 1) {
+            buffer[pos++] = middle[i++];
+        }
+    }
+    
+    // Convert second integer
+    char int_str2[20];
+    int_to_string(value2, int_str2, sizeof(int_str2));
+    i = 0;
+    while (int_str2[i] != '\0' && pos < buffer_size - 1) {
+        buffer[pos++] = int_str2[i++];
+    }
+    
+    // Copy suffix
+    if (suffix != NULL) {
+        i = 0;
+        while (suffix[i] != '\0' && pos < buffer_size - 1) {
+            buffer[pos++] = suffix[i++];
+        }
+    }
+    
+    buffer[pos] = '\0';
+    return pos;
+}
+
 // ==================== MANAGER ALGORITHM FUNCTIONS ====================
 
 /**
- * Login function - uses decrypt_data Assembly function
+ * Login function - uses encrypt_data Assembly function
+ * Assumes config.txt contains already encrypted passwords
  */
 User* manager_login(ManagerSystem *system, const char *username, const char *password) {
     if (system == NULL || username == NULL || password == NULL) return NULL;
@@ -91,26 +188,11 @@ User* manager_login(ManagerSystem *system, const char *username, const char *pas
     // Find user by username
     for (int i = 0; i < system->user_count; i++) {
         if (strcmp(system->users[i].username, username) == 0) {
-            // Decrypt stored password using Assembly function
-            char decrypted_password[MAX_PASSWORD_LEN];
-            // Note: Assembly function symbol is decrypt_data (without space)
-            // The asm.h declares it with space for compatibility
-            if (decrypt_data(system->users[i].password, system->users[i].key, decrypted_password)) {
-                // Convert input password to uppercase for comparison (manual implementation)
-                char upper_password[MAX_PASSWORD_LEN];
-                int j = 0;
-                while (password[j] != '\0' && j < MAX_PASSWORD_LEN - 1) {
-                    // Manual uppercase conversion (no ctype.h)
-                    if (password[j] >= 'a' && password[j] <= 'z') {
-                        upper_password[j] = password[j] - 'a' + 'A';
-                    } else {
-                        upper_password[j] = password[j];
-                    }
-                    j++;
-                }
-                upper_password[j] = '\0';
-                
-                if (strcmp(decrypted_password, upper_password) == 0) {
+            // Encrypt input password using Assembly function
+            char encrypted_password[MAX_PASSWORD_LEN];
+            if (encrypt_data(password, system->users[i].key, encrypted_password)) {
+                // Compare encrypted input with stored encrypted password
+                if (strcmp(encrypted_password, system->users[i].password) == 0) {
                     system->current_user = &system->users[i];
                     return system->current_user;
                 }
@@ -121,14 +203,22 @@ User* manager_login(ManagerSystem *system, const char *username, const char *pas
 }
 
 /**
- * Initialize serial communication with Sensors component (simulation mode)
+ * Initialize serial communication with Sensors component (file-based)
  * 
- * @param port Serial port path (ignored in simulation mode)
+ * @param port Serial port path (e.g., "/dev/ttyS0")
  * @return 1 on success, 0 on failure
  */
 int manager_init_serial(const char *port) {
-    // Simulation mode - no actual serial port communication
-    // Communication with sensors is logical, not via POSIX serial ports
+    if (port == NULL) {
+        port = "/dev/ttyS0"; // Default port
+    }
+    
+    // Open serial port as file for reading
+    g_serial_file = fopen(port, "r+");
+    if (g_serial_file == NULL) {
+        return 0; // Failed to open port
+    }
+    
     g_serial_initialized = 1;
     return 1;
 }
@@ -137,12 +227,15 @@ int manager_init_serial(const char *port) {
  * Close serial communication
  */
 void manager_close_serial(void) {
-    // Simulation mode - no actual cleanup needed
+    if (g_serial_file != NULL) {
+        fclose(g_serial_file);
+        g_serial_file = NULL;
+    }
     g_serial_initialized = 0;
 }
 
 /**
- * Send command to sensors component (simulation mode)
+ * Send command to sensors component via file-based serial
  * 
  * @param cmd Command string to send (e.g., "GTH")
  * @return 1 on success, 0 on failure
@@ -153,32 +246,38 @@ int manager_send_cmd_to_sensors(const char *cmd) {
     }
     
     // Check if serial communication is initialized
-    if (!g_serial_initialized) {
+    if (!g_serial_initialized || g_serial_file == NULL) {
         // Try to initialize serial communication
-        if (!manager_init_serial(NULL)) {
+        if (!manager_init_serial("/dev/ttyS0")) {
             return 0;
         }
     }
     
-    // Simulation mode - command is sent logically, not via POSIX serial ports
-    // No printf - command is sent internally (ARQCP requirement)
+    // Send command via fprintf (file-based communication)
+    if (fprintf(g_serial_file, "%s\n", cmd) < 0) {
+        return 0; // Failed to write command
+    }
+    
+    // Flush output to ensure command is sent immediately
+    fflush(g_serial_file);
+    
     return 1;
 }
 
 /**
- * Wait for data from sensors component via serial
+ * Wait for data from sensors component via file-based serial
  * Returns dynamically allocated string (caller must free)
  * 
  * Implementation using only basic ARQCP concepts:
  * - Dynamic memory allocation (malloc)
  * - Basic string manipulation (no snprintf)
- * - Basic I/O operations
+ * - Basic file I/O operations
  * 
  * @return Dynamically allocated string with sensor data, or NULL on error
  */
 char* manager_wait_for_data_from_sensors(void) {
     // Check if serial communication is initialized
-    if (!g_serial_initialized) {
+    if (!g_serial_initialized || g_serial_file == NULL) {
         return NULL;
     }
     
@@ -188,16 +287,24 @@ char* manager_wait_for_data_from_sensors(void) {
         return NULL;
     }
     
-    // Simulation mode - return simulated sensor data
-    // Simulated sensor data format: TEMP&unit::celsius&value::XX#HUM&unit::percentage&value::YY
-    // Build string using basic string manipulation (no snprintf)
-    const char *sensor_data = "TEMP&unit::celsius&value::25#HUM&unit::percentage&value::65";
-    int i = 0;
-    while (sensor_data[i] != '\0' && i < MAX_SENSOR_STR_LEN - 1) {
-        data[i] = sensor_data[i];
-        i++;
+    // Read data from serial port using fgets (file-based communication)
+    if (fgets(data, MAX_SENSOR_STR_LEN, g_serial_file) == NULL) {
+        free(data);
+        return NULL; // No data read or error
     }
-    data[i] = '\0';
+    
+    // Remove newline character if present
+    size_t len = strlen(data);
+    if (len > 0 && (data[len-1] == '\n' || data[len-1] == '\r')) {
+        data[len-1] = '\0';
+    }
+    
+    // Check if we received any data
+    if (strlen(data) == 0) {
+        free(data);
+        return NULL;
+    }
+    
     return data;
 }
 
@@ -300,8 +407,10 @@ int manager_init_sensor_data(SensorData *sensors, int buffer_size, int window_si
     sensors->humidity_tail = 0;
     sensors->current_temp = 0;
     sensors->current_humidity = 0;
-    strcpy(sensors->temp_unit, "Celsius");
-    strcpy(sensors->humidity_unit, "Percent");
+    strncpy(sensors->temp_unit, "Celsius", sizeof(sensors->temp_unit) - 1);
+    sensors->temp_unit[sizeof(sensors->temp_unit) - 1] = '\0';
+    strncpy(sensors->humidity_unit, "Percent", sizeof(sensors->humidity_unit) - 1);
+    sensors->humidity_unit[sizeof(sensors->humidity_unit) - 1] = '\0';
     
     // Initialize buffers to zero
     memset(sensors->temp_buffer, 0, sizeof(int) * buffer_size);
@@ -391,7 +500,14 @@ int manager_extract_data(const char *str, SensorData *sensors) {
     int parse_success = 0;
     
     // Extract TEMP data using Assembly function extract_data
-    strcpy(token, "TEMP");
+    // Safe copy of "TEMP" token
+    int j = 0;
+    while ("TEMP"[j] != '\0' && j < sizeof(token) - 1) {
+        token[j] = "TEMP"[j];
+        j++;
+    }
+    token[j] = '\0';
+    
     if (extract_data(normalized, token, unit, &value)) {
         // Error handling: Validate temperature value range
         if (value < -50 || value > 60) {
@@ -414,7 +530,14 @@ int manager_extract_data(const char *str, SensorData *sensors) {
     }
     
     // Extract HUM data using Assembly function extract_data
-    strcpy(token, "HUM");
+    // Safe copy of "HUM" token
+    j = 0;
+    while ("HUM"[j] != '\0' && j < sizeof(token) - 1) {
+        token[j] = "HUM"[j];
+        j++;
+    }
+    token[j] = '\0';
+    
     if (extract_data(normalized, token, unit, &value)) {
         // Error handling: Validate humidity value range
         if (value < 0 || value > 100) {
@@ -476,11 +599,13 @@ int manager_update_sensors_data(SensorData *sensors) {
     
     // Allocate arrays for median calculation (size = window_size)
     int *temp_array = (int*)malloc(sizeof(int) * sensors->window_size);
-    int *humidity_array = (int*)malloc(sizeof(int) * sensors->window_size);
+    if (temp_array == NULL) {
+        return 0;
+    }
     
-    if (temp_array == NULL || humidity_array == NULL) {
-        if (temp_array) free(temp_array);
-        if (humidity_array) free(humidity_array);
+    int *humidity_array = (int*)malloc(sizeof(int) * sensors->window_size);
+    if (humidity_array == NULL) {
+        free(temp_array);
         return 0;
     }
     
@@ -578,10 +703,14 @@ int manager_process_instruction(ManagerSystem *system, const char *inst, char **
     if (system == NULL || inst == NULL || data_out == NULL || cmd_out == NULL) return 0;
 
     *data_out = (char*)malloc(MAX_DATA_LEN);
+    if (*data_out == NULL) {
+        return 0;
+    }
+    
     *cmd_out = (char*)malloc(MAX_CMD_LEN);
-    if (*data_out == NULL || *cmd_out == NULL) {
-        if (*data_out) free(*data_out);
-        if (*cmd_out) free(*cmd_out);
+    if (*cmd_out == NULL) {
+        free(*data_out);
+        *data_out = NULL;
         return 0;
     }
 
@@ -733,8 +862,16 @@ int manager_process_instruction(ManagerSystem *system, const char *inst, char **
         }
     } else {
         // Unknown instruction
-        strcpy(*data_out, "Unknown instruction");
-        strcpy(*cmd_out, "");
+        // Safe string copy with size limit and null terminator
+        const char *unknown_msg = "Unknown instruction";
+        int j = 0;
+        while (unknown_msg[j] != '\0' && j < MAX_DATA_LEN - 1) {
+            (*data_out)[j] = unknown_msg[j];
+            j++;
+        }
+        (*data_out)[j] = '\0';
+        
+        (*cmd_out)[0] = '\0';
         return 0;
     }
     
@@ -985,6 +1122,7 @@ static int ensure_log_storage(void) {
     g_log_storage.logs = (Log*)malloc(sizeof(Log) * g_log_storage.capacity);
     
     if (g_log_storage.logs == NULL) {
+        g_log_storage.capacity = 0;
         return 0; // Allocation failed
     }
     
@@ -1106,6 +1244,8 @@ int query_user_actions(int user_id, const char *start_date, const char *end_date
     result->entries = (Log*)malloc(sizeof(Log) * matching_count);
     
     if (result->entries == NULL) {
+        result->capacity = 0;
+        result->count = 0;
         return 0; // Memory allocation failed
     }
     
@@ -1517,6 +1657,7 @@ int write_user_actions_to_file(const User *requesting_user, const LogQueryResult
     
     // Write log entries using pointer access to structure array
     Log *current_log = query_result->entries;
+    int i;
     for (i = 0; i < query_result->count; i++) {
         // Write Log ID
         write_string_to_file(file, "Log ID: ");
@@ -1785,7 +1926,8 @@ int assignArrivingTrain(ManagerSystem *system, int train_id, int track_id) {
     // Verificar se trem está em chegada
     if (t->state != TRAIN_ARRIVING) {
         char msg[100];
-        snprintf(msg, sizeof(msg), "Train %d not arriving (state: %d)", train_id, t->state);
+        build_string_with_two_ints(msg, sizeof(msg), 
+                                   "Train ", train_id, " not arriving (state: ", t->state, ")");
         updateBoard(msg);
         return 0;
     }
@@ -1799,13 +1941,13 @@ int assignArrivingTrain(ManagerSystem *system, int train_id, int track_id) {
 
         // Atualizar Board
         char board_msg[100];
-        snprintf(board_msg, sizeof(board_msg), "✅ Train %d assigned to Track %d (YELLOW)",
-                train_id, track_id);
+        build_string_with_two_ints(board_msg, sizeof(board_msg), 
+                                   "✅ Train ", train_id, " assigned to Track ", track_id, " (YELLOW)");
         updateBoard(board_msg);
 
         // Envia comando para LightSigns com a func. Assembly
         char cmd[20];
-        if (asm_format_command("YE", track_id, cmd) == 1) {
+        if (format_command("YE", track_id, cmd) == 1) {
             sendToLightSigns(cmd);
         } else {
             updateBoard("WARNING: Failed to format LightSigns command");
@@ -1819,16 +1961,28 @@ int assignArrivingTrain(ManagerSystem *system, int train_id, int track_id) {
     else {
         // Nenhuma track livre sinal de EMERGÊNCIA
         char emergency_msg[150];
-        snprintf(emergency_msg, sizeof(emergency_msg),
-                "🚨 EMERGENCY STOP! Train %d - Track %d busy (state: %d)",
-                train_id, track_id, tr->state);
+        build_string_with_two_ints(emergency_msg, sizeof(emergency_msg),
+                                   "🚨 EMERGENCY STOP! Train ", train_id, " - Track ", track_id, " busy (state: ");
+        // Add state value
+        char state_str[10];
+        int_to_string(tr->state, state_str, sizeof(state_str));
+        int len = strlen(emergency_msg);
+        int i = 0;
+        while (state_str[i] != '\0' && len < sizeof(emergency_msg) - 2) {
+            emergency_msg[len++] = state_str[i++];
+        }
+        emergency_msg[len++] = ')';
+        emergency_msg[len] = '\0';
         updateBoard(emergency_msg);
         showEmergencyStop();
 
         // Comando de emergência para LightSigns (Red para track atual)
         char cmd[20];
-        asm_format_command("RE", track_id, cmd);
-        sendToLightSigns(cmd);
+        if (format_command("RE", track_id, cmd) == 1) {
+            sendToLightSigns(cmd);
+        } else {
+            updateBoard("WARNING: Failed to format emergency LightSigns command");
+        }
 
         // Registar emergência no log
         logAction(system->current_user->user_id, ACTION_EMERGENCY_STOP, emergency_msg);
@@ -1849,7 +2003,7 @@ int setTrackINOP(ManagerSystem *system, int track_id) {
     // Verificar se já está inoperacional
     if (t->state == TRACK_INOP) {
         char msg[100];
-        snprintf(msg, sizeof(msg), "Track %d already INOPERATIONAL", track_id);
+        build_string_with_int(msg, sizeof(msg), "Track ", track_id, " already INOPERATIONAL");
         updateBoard(msg);
         return 1;
     }
@@ -1857,8 +2011,8 @@ int setTrackINOP(ManagerSystem *system, int track_id) {
     // Verificar se usa o trilho
     if (t->state == TRACK_BUSY || t->state == TRACK_ASSIGNED) {
         char msg[100];
-        snprintf(msg, sizeof(msg), "Cannot set INOP: Track %d in use by Train %d",
-                track_id, t->trainId);
+        build_string_with_two_ints(msg, sizeof(msg), 
+                                   "Cannot set INOP: Track ", track_id, " in use by Train ", t->trainId, "");
         updateBoard(msg);
         return 0;
     }
@@ -1869,15 +2023,16 @@ int setTrackINOP(ManagerSystem *system, int track_id) {
 
     // Atualizar Board
     char board_msg[100];
-    snprintf(board_msg, sizeof(board_msg), "🔴 Track %d set as INOPERATIONAL (RED BLINKING)",
-            track_id);
+    build_string_with_int(board_msg, sizeof(board_msg), "🔴 Track ", track_id, " set as INOPERATIONAL (RED BLINKING)");
     updateBoard(board_msg);
     trackINOP();
 
     // Enviar comando para LightSigns (Red blinking - RB)
     char cmd[20];
-    if (asm_format_command("RB", track_id, cmd) == 1) {
+    if (format_command("RB", track_id, cmd) == 1) {
         sendToLightSigns(cmd);
+    } else {
+        updateBoard("WARNING: Failed to format INOP LightSigns command");
     }
 
     // Registar no log
@@ -1897,7 +2052,7 @@ int setTrackFree(ManagerSystem *system, int track_id) {
     // Verificar se já está livre
     if (t->state == TRACK_FREE) {
         char msg[100];
-        snprintf(msg, sizeof(msg), "Track %d already FREE", track_id);
+        build_string_with_int(msg, sizeof(msg), "Track ", track_id, " already FREE");
         updateBoard(msg);
         return 1;
     }
@@ -1905,8 +2060,8 @@ int setTrackFree(ManagerSystem *system, int track_id) {
     // Não pode libertar se estiver inoperacional sem autorização prévia
     if (t->state == TRACK_INOP) {
         char msg[100];
-        snprintf(msg, sizeof(msg),
-                "Track %d is INOPERATIONAL. Requires maintenance override.", track_id);
+        build_string_with_int(msg, sizeof(msg), 
+                                   "Track ", track_id, " is INOPERATIONAL. Requires maintenance override.");
         updateBoard(msg);
         return 0;
     }
@@ -1917,13 +2072,13 @@ int setTrackFree(ManagerSystem *system, int track_id) {
 
     // Atualizar Board
     char board_msg[100];
-    snprintf(board_msg, sizeof(board_msg), "🟢 Track %d set as FREE (GREEN)", track_id);
+    build_string_with_int(board_msg, sizeof(board_msg), "🟢 Track ", track_id, " set as FREE (GREEN)");
     updateBoard(board_msg);
     freeTrack();
 
     // Enviar comando para LightSigns (Green - GE)
     char cmd[20];
-    if (asm_format_command("GE", track_id, cmd) == 1) {
+    if (format_command("GE", track_id, cmd) == 1) {
         sendToLightSigns(cmd);
     }
 
@@ -1946,21 +2101,24 @@ int departureTrain(ManagerSystem *system, int train_id, int track_id) {
     // Verificar condições: train deve estar parado na track correta
     if (t->state != TRAIN_STOPPED) {
         char msg[100];
-        snprintf(msg, sizeof(msg), "Train %d not stopped (state: %d)", train_id, t->state);
+        build_string_with_two_ints(msg, sizeof(msg), 
+                                   "Train ", train_id, " not stopped (state: ", t->state, ")");
         updateBoard(msg);
         return 0;
     }
 
     if (tr->state != TRACK_BUSY) {
         char msg[100];
-        snprintf(msg, sizeof(msg), "Track %d not busy (state: %d)", track_id, tr->state);
+        build_string_with_two_ints(msg, sizeof(msg), 
+                                   "Track ", track_id, " not busy (state: ", tr->state, ")");
         updateBoard(msg);
         return 0;
     }
 
     if (tr->trainId != train_id) {
         char msg[100];
-        snprintf(msg, sizeof(msg), "Train %d not on Track %d", train_id, track_id);
+        build_string_with_two_ints(msg, sizeof(msg), 
+                                   "Train ", train_id, " not on Track ", track_id, "");
         updateBoard(msg);
         return 0;
     }
@@ -1972,14 +2130,14 @@ int departureTrain(ManagerSystem *system, int train_id, int track_id) {
 
     // Atualizar Board
     char board_msg[100];
-    snprintf(board_msg, sizeof(board_msg), "🚂 Train %d DEPARTING from Track %d",
-            train_id, track_id);
+    build_string_with_two_ints(board_msg, sizeof(board_msg), 
+                               "🚂 Train ", train_id, " DEPARTING from Track ", track_id, "");
     updateBoard(board_msg);
     showDepartingTrain();
 
     // Enviar comando para LightSigns (Green - trilho livre)
     char cmd[20];
-    if (asm_format_command("GE", track_id, cmd) == 1) {
+    if (format_command("GE", track_id, cmd) == 1) {
         sendToLightSigns(cmd);
     }
 
@@ -2012,34 +2170,3 @@ int manageRailwayTracks(ManagerSystem *system, int operation, int train_id, int 
 
 //fim usac16
 
-/**
- * Main entry point
- */
-int main(void) {
-    ManagerSystem system;
-    
-    // Initialize system
-    if (!manager_init(&system)) {
-        // Error - send to board instead of printf (ARQCP requirement)
-        board_send_message("Error: Failed to initialize system\n");
-        return 1;
-    }
-    
-    // TODO: Add default users, tracks, trains here
-    
-    // Step 1: user = login(username, password)
-    // For now, simulate login
-    // Display using board instead of printf (ARQCP requirement)
-    board_send_message("=== Railway Station Management System ===\n");
-    board_send_message("Login required\n");
-    // In real implementation, get username/password from UI
-    // User* user = manager_login(&system, "admin", "PASSWORD");
-    
-    // Step 2: while(1) { ... }
-    // manager_main_loop(&system);
-    
-    // Cleanup
-    manager_cleanup(&system);
-    
-    return 0;
-}

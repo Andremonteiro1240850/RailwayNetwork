@@ -19,81 +19,79 @@ public class HubController {
     public Map<Station, Double> calculateBetweennessCentrality(Map<Station, Map<Station, Double>> undirectGraph) {
         Map<Station, Double> centralidades = new HashMap<>();
 
-        // Inicializar centralidades com 0
-        for (Station station : undirectGraph.keySet()) {
-            centralidades.put(station, 0.0);
+        for (Station s : undirectGraph.keySet()) {
+            centralidades.put(s, 0.0);
         }
 
-        // Para cada vértice como origem
         for (Station origem : undirectGraph.keySet()) {
-            Map<Station, Double> distancias = new HashMap<>();
-            Map<Station, Integer> numeroCaminhosCurtos = new HashMap<>();
-            Map<Station, List<Station>> predecessores = new HashMap<>();
             Stack<Station> stack = new Stack<>();
+            Map<Station, List<Station>> predecessores = new HashMap<>();
+            Map<Station, Integer> sigma = new HashMap<>();
+            Map<Station, Double> distancias = new HashMap<>();
 
-            // Inicializar estruturas
             for (Station s : undirectGraph.keySet()) {
-                distancias.put(s, Double.MAX_VALUE);
-                numeroCaminhosCurtos.put(s, 0);
                 predecessores.put(s, new ArrayList<>());
+                sigma.put(s, 0);
+                distancias.put(s, Double.MAX_VALUE);
             }
 
+            sigma.put(origem, 1);
             distancias.put(origem, 0.0);
-            numeroCaminhosCurtos.put(origem, 1);
 
-            PriorityQueue<Station> fila = new PriorityQueue<>(
-                    Comparator.comparingDouble(distancias::get)
+            // PriorityQueue com array [Station, distancia]
+            PriorityQueue<Object[]> fila = new PriorityQueue<>(
+                    Comparator.comparingDouble(arr -> (Double) arr[1])
             );
-            fila.add(origem);
+            fila.add(new Object[]{origem, 0.0});
 
-            // Dijkstra modificado para este caso
+            Set<Station> visitados = new HashSet<>();
+
             while (!fila.isEmpty()) {
-                Station atual = fila.poll();
-                stack.push(atual);
+                Object[] current = fila.poll();
+                Station v = (Station) current[0];
 
-                if (undirectGraph.containsKey(atual)) {
-                    for (Map.Entry<Station, Double> vizinho : undirectGraph.get(atual).entrySet()) {
-                        Station proxima = vizinho.getKey();
-                        double peso = vizinho.getValue();
-                        double novaDistancia = distancias.get(atual) + peso;
+                // Pular se já foi visitado
+                if (visitados.contains(v)) continue;
+                visitados.add(v);
+                stack.push(v);
 
-                        // Caminho mais curto encontrado
-                        if (novaDistancia < distancias.get(proxima)) {
-                            distancias.put(proxima, novaDistancia);
-                            fila.remove(proxima); // Remove se já estava na fila
-                            fila.add(proxima);
-                            numeroCaminhosCurtos.put(proxima, numeroCaminhosCurtos.get(atual));
-                            predecessores.get(proxima).clear();
-                            predecessores.get(proxima).add(atual);
-                        }
-                        // Outros caminso mais curtos com mesma distância
-                        else if (novaDistancia == distancias.get(proxima)) {
-                            numeroCaminhosCurtos.put(proxima,
-                                    numeroCaminhosCurtos.get(proxima) + numeroCaminhosCurtos.get(atual));
-                            predecessores.get(proxima).add(atual);
-                        }
+                if (!undirectGraph.containsKey(v)) continue;
+
+                for (Map.Entry<Station, Double> entry : undirectGraph.get(v).entrySet()) {
+                    Station w = entry.getKey();
+                    double peso = entry.getValue();
+                    double novaDistancia = distancias.get(v) + peso;
+
+                    // Caminho mais curto encontrado
+                    if (novaDistancia < distancias.get(w)) {
+                        distancias.put(w, novaDistancia);
+                        sigma.put(w, sigma.get(v));
+                        predecessores.get(w).clear();
+                        predecessores.get(w).add(v);
+                        fila.add(new Object[]{w, novaDistancia});
+                    }
+                    // Caminho alternativo com mesma distância
+                    else if (Math.abs(novaDistancia - distancias.get(w)) < 1e-9) {
+                        sigma.put(w, sigma.get(w) + sigma.get(v));
+                        predecessores.get(w).add(v);
                     }
                 }
             }
 
             // Acumulação das dependências
-            Map<Station, Double> dependencias = new HashMap<>();
+            Map<Station, Double> delta = new HashMap<>();
             for (Station s : undirectGraph.keySet()) {
-                dependencias.put(s, 0.0);
+                delta.put(s, 0.0);
             }
 
             while (!stack.isEmpty()) {
-                Station atual = stack.pop();
-
-                for (Station predecessor : predecessores.get(atual)) {
-                    double contribuicao = (numeroCaminhosCurtos.get(predecessor) /
-                            (double) numeroCaminhosCurtos.get(atual)) *
-                            (1.0 + dependencias.get(atual));
-                    dependencias.put(predecessor, dependencias.get(predecessor) + contribuicao);
+                Station w = stack.pop();
+                for (Station v : predecessores.get(w)) {
+                    double contribuicao = (sigma.get(v) / (double) sigma.get(w)) * (1.0 + delta.get(w));
+                    delta.put(v, delta.get(v) + contribuicao);
                 }
-
-                if (!atual.equals(origem)) {
-                    centralidades.put(atual, centralidades.get(atual) + dependencias.get(atual));
+                if (!w.equals(origem)) {
+                    centralidades.put(w, centralidades.get(w) + delta.get(w));
                 }
             }
         }
@@ -102,6 +100,7 @@ public class HubController {
         for (Station s : centralidades.keySet()) {
             centralidades.put(s, centralidades.get(s) / 2.0);
         }
+
         return centralidades;
     }
 

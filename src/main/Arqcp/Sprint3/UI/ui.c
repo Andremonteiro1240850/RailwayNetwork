@@ -1,4 +1,5 @@
 #include "ui.h"
+#include "../Manager/manager.h"
 #include "../Sprint2/asm.h"
 #include <limits.h>
 
