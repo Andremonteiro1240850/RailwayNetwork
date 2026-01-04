@@ -1,8 +1,9 @@
 package Lapr.JavaFX;
 
 import Lapr.Controller.TrainAssemblyController;
-import Lapr.DataBaseAssociation.VehicleAOD;
-import Lapr.Domain.Route;
+import Lapr.DataBaseAssociation.TrainAOD;
+import Lapr.Domain.RoutePlannerRoute;
+import Sprint1.Domain.Locomotive;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -14,6 +15,7 @@ import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.stage.Stage;
+import javafx.util.StringConverter;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -36,22 +38,22 @@ public class TrainAssemblyFXUI {
     private Stage stage;
     
     // Route selection
-    private ComboBox<Route> routeComboBox;
+    private ComboBox<RoutePlannerRoute> routeComboBox;
     private Label routeInfoLabel;
     
     // Locomotives
-    private ListView<VehicleAOD.VehicleInfo> locomotivesList;
+    private ListView<TrainAOD.LocomotiveWithStatus> locomotivesList;
     private Label locomotivesTitleLabel;
-    private ObservableList<VehicleAOD.VehicleInfo> locomotivesData;
+    private ObservableList<TrainAOD.LocomotiveWithStatus> locomotivesData;
     
-    // Wagons
-    private ListView<VehicleAOD.VehicleInfo> wagonsList;
+    // Wagons (from selected route)
+    private ListView<TrainAOD.WagonWithStatus> wagonsList;
     private Label wagonsTitleLabel;
-    private ObservableList<VehicleAOD.VehicleInfo> wagonsData;
+    private ObservableList<TrainAOD.WagonWithStatus> wagonsData;
     
     // Selected items
-    private ListView<String> selectedLocomotivesList;
-    private ListView<String> selectedWagonsList;
+    private ListView<Locomotive> selectedLocomotivesList;
+    private ListView<RoutePlannerRoute.RouteWagon> selectedWagonsList;
     
     // Buttons
     private Button addLocomotiveButton;
@@ -60,14 +62,15 @@ public class TrainAssemblyFXUI {
     private Button removeWagonButton;
     private Button assignButton;
     private Button closeButton;
+    private Button refreshRoutesButton;
     
     // Status
     private Label statusLabel;
     private ProgressIndicator progressIndicator;
     
     // Data
-    private List<Route> availableRoutes;
-    private String currentRouteStartStationId;
+    private List<RoutePlannerRoute> availableRoutes;
+    private List<Locomotive> availableLocomotives;
     
     public TrainAssemblyFXUI() {
         this.controller = new TrainAssemblyController();
@@ -97,8 +100,8 @@ public class TrainAssemblyFXUI {
                            "-fx-letter-spacing: 0.5px;");
         
         Label descriptionLabel = new Label(
-            "Select a route and choose locomotives and wagons to assemble a train. " +
-            "Vehicles are distinguished by status: In Transit (shows final destination) or Parked (shows station)."
+            "Select a route created in US08 and choose locomotives to assemble a train. " +
+            "The wagons from the selected route will be automatically included."
         );
         descriptionLabel.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
                                   "-fx-font-size: 13px; " +
@@ -122,11 +125,26 @@ public class TrainAssemblyFXUI {
                          "-fx-background-radius: 12px; " +
                          "-fx-padding: 15px;");
         
-        Label routeLabel = new Label("Select Route:");
+        HBox routeHeaderBox = new HBox(10);
+        routeHeaderBox.setAlignment(Pos.CENTER_LEFT);
+        
+        Label routeLabel = new Label("Select Route (from US08):");
         routeLabel.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
                            "-fx-font-size: 14px; " +
                            "-fx-font-weight: 600; " +
                            "-fx-text-fill: #E2E8F0;");
+        
+        refreshRoutesButton = new Button("Refresh");
+        refreshRoutesButton.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
+                                    "-fx-font-size: 12px; " +
+                                    "-fx-background-color: #6366F1; " +
+                                    "-fx-text-fill: #FFFFFF; " +
+                                    "-fx-background-radius: 6px; " +
+                                    "-fx-cursor: hand;");
+        refreshRoutesButton.setOnAction(e -> loadRoutes());
+        
+        HBox.setHgrow(routeLabel, Priority.ALWAYS);
+        routeHeaderBox.getChildren().addAll(routeLabel, refreshRoutesButton);
         
         routeComboBox = new ComboBox<>();
         routeComboBox.setPrefWidth(450);
@@ -139,22 +157,19 @@ public class TrainAssemblyFXUI {
             updateAssignButtonState();
         });
         
-        // Set converter to display route text in the combo box button
-        routeComboBox.setConverter(new javafx.util.StringConverter<Route>() {
+        // Set converter to display route text
+        routeComboBox.setConverter(new StringConverter<RoutePlannerRoute>() {
             @Override
-            public String toString(Route route) {
+            public String toString(RoutePlannerRoute route) {
                 if (route == null) {
                     return "Select a route...";
                 }
-                return String.format("Train ID: %d | Facility ID: %d | Order: %d", 
-                                   route.getTrainID(), 
-                                   route.getFacilityID(), 
-                                   route.getOrder());
+                return route.getRouteName() + " (ID: " + route.getRouteId() + ")";
             }
             
             @Override
-            public Route fromString(String string) {
-                return null; // Not needed for display-only combo box
+            public RoutePlannerRoute fromString(String string) {
+                return null;
             }
         });
         
@@ -164,7 +179,7 @@ public class TrainAssemblyFXUI {
                                 "-fx-text-fill: #94A3B8;");
         routeInfoLabel.setWrapText(true);
         
-        routeBox.getChildren().addAll(routeLabel, routeComboBox, routeInfoLabel);
+        routeBox.getChildren().addAll(routeHeaderBox, routeComboBox, routeInfoLabel);
         
         // Locomotives section
         VBox locomotivesBox = new VBox(10);
@@ -189,29 +204,22 @@ public class TrainAssemblyFXUI {
         locomotivesData = FXCollections.observableArrayList();
         locomotivesList.setItems(locomotivesData);
         
-        // Custom cell factory to show status
-        locomotivesList.setCellFactory(lv -> new ListCell<VehicleAOD.VehicleInfo>() {
+        // Custom cell factory for locomotives with status
+        locomotivesList.setCellFactory(lv -> new ListCell<TrainAOD.LocomotiveWithStatus>() {
             @Override
-            protected void updateItem(VehicleAOD.VehicleInfo item, boolean empty) {
+            protected void updateItem(TrainAOD.LocomotiveWithStatus item, boolean empty) {
                 super.updateItem(item, empty);
                 if (empty || item == null) {
                     setText(null);
-                    setStyle("");
                 } else {
-                    String statusText;
-                    if (item.getStatus().equals("IN_TRANSIT")) {
-                        statusText = String.format("ID: %s | IN TRANSIT → Destination: %s", 
-                                                   item.getVehicleId(), 
-                                                   item.getFinalDestination() != null ? item.getFinalDestination() : "N/A");
-                        setStyle("-fx-text-fill: #F59E0B;"); // Orange for in transit
-                    } else {
-                        statusText = String.format("ID: %s | PARKED at Station: %s (Distance: %.2f km)", 
-                                                   item.getVehicleId(), 
-                                                   item.getParkedStation() != null ? item.getParkedStation() : "N/A",
-                                                   item.getDistanceFromStart());
-                        setStyle("-fx-text-fill: #10B981;"); // Green for parked
-                    }
-                    setText(statusText);
+                    Locomotive loco = item.getLocomotive();
+                    String statusText = item.getStatus().equals("IN_TRANSIT") 
+                        ? String.format("In Transit → %s", item.getLocationInfo())
+                        : String.format("Parked at %s (%.1f km from start)", 
+                                       item.getLocationInfo(), 
+                                       item.getDistanceFromStart() != null ? item.getDistanceFromStart() : 0.0);
+                    setText(String.format("ID: %s | Type: %s | Power: %.1f kW | %s", 
+                                         loco.getId(), loco.getType(), loco.getPowerKw(), statusText));
                 }
             }
         });
@@ -241,29 +249,21 @@ public class TrainAssemblyFXUI {
         wagonsData = FXCollections.observableArrayList();
         wagonsList.setItems(wagonsData);
         
-        // Custom cell factory to show status
-        wagonsList.setCellFactory(lv -> new ListCell<VehicleAOD.VehicleInfo>() {
+        // Custom cell factory for wagons with status
+        wagonsList.setCellFactory(lv -> new ListCell<TrainAOD.WagonWithStatus>() {
             @Override
-            protected void updateItem(VehicleAOD.VehicleInfo item, boolean empty) {
+            protected void updateItem(TrainAOD.WagonWithStatus item, boolean empty) {
                 super.updateItem(item, empty);
                 if (empty || item == null) {
                     setText(null);
-                    setStyle("");
                 } else {
-                    String statusText;
-                    if (item.getStatus().equals("IN_TRANSIT")) {
-                        statusText = String.format("ID: %s | IN TRANSIT → Destination: %s", 
-                                                   item.getVehicleId(), 
-                                                   item.getFinalDestination() != null ? item.getFinalDestination() : "N/A");
-                        setStyle("-fx-text-fill: #F59E0B;"); // Orange for in transit
-                    } else {
-                        statusText = String.format("ID: %s | PARKED at Station: %s (Distance: %.2f km)", 
-                                                   item.getVehicleId(), 
-                                                   item.getParkedStation() != null ? item.getParkedStation() : "N/A",
-                                                   item.getDistanceFromStart());
-                        setStyle("-fx-text-fill: #10B981;"); // Green for parked
-                    }
-                    setText(statusText);
+                    String statusText = item.getStatus().equals("IN_TRANSIT") 
+                        ? String.format("In Transit → %s", item.getLocationInfo())
+                        : String.format("Parked at %s (%.1f km from start)", 
+                                       item.getLocationInfo(), 
+                                       item.getDistanceFromStart() != null ? item.getDistanceFromStart() : 0.0);
+                    setText(String.format("Wagon ID: %d | Cargo: %s | %s", 
+                                         item.getWagonId(), item.getCargoType(), statusText));
                 }
             }
         });
@@ -296,6 +296,20 @@ public class TrainAssemblyFXUI {
                                         "-fx-text-fill: #E2E8F0;");
         selectedLocomotivesList.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> 
             updateAssignButtonState());
+        
+        // Custom cell factory for selected locomotives
+        selectedLocomotivesList.setCellFactory(lv -> new ListCell<Locomotive>() {
+            @Override
+            protected void updateItem(Locomotive item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                } else {
+                    setText(String.format("ID: %s | Type: %s | Power: %.1f kW", 
+                                         item.getId(), item.getType(), item.getPowerKw()));
+                }
+            }
+        });
         
         addLocomotiveButton = new Button("Add Locomotive");
         addLocomotiveButton.setPrefWidth(180);
@@ -344,6 +358,20 @@ public class TrainAssemblyFXUI {
                                    "-fx-text-fill: #E2E8F0;");
         selectedWagonsList.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> 
             updateAssignButtonState());
+        
+        // Custom cell factory for selected wagons
+        selectedWagonsList.setCellFactory(lv -> new ListCell<RoutePlannerRoute.RouteWagon>() {
+            @Override
+            protected void updateItem(RoutePlannerRoute.RouteWagon item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                } else {
+                    setText(String.format("Wagon ID: %d | Cargo: %s", 
+                                         item.getWagonId(), item.getCargoType()));
+                }
+            }
+        });
         
         addWagonButton = new Button("Add Wagon");
         addWagonButton.setPrefWidth(180);
@@ -440,73 +468,105 @@ public class TrainAssemblyFXUI {
     }
     
     /**
-     * Loads routes and initializes the UI.
+     * Loads routes from US08 and locomotives, and initializes the UI.
      */
     private void loadData() {
-        statusLabel.setText("Loading routes...");
+        loadRoutes();
+        loadLocomotives();
+    }
+    
+    /**
+     * Loads routes from US08.
+     */
+    private void loadRoutes() {
+        statusLabel.setText("Loading routes from US08...");
         progressIndicator.setVisible(true);
+        if (refreshRoutesButton != null) {
+            refreshRoutesButton.setDisable(true);
+        }
         
-        Service<Void> service = new Service<Void>() {
+        Service<List<RoutePlannerRoute>> service = new Service<List<RoutePlannerRoute>>() {
             @Override
-            protected Task<Void> createTask() {
-                return new Task<Void>() {
+            protected Task<List<RoutePlannerRoute>> createTask() {
+                return new Task<List<RoutePlannerRoute>>() {
                     @Override
-                    protected Void call() throws Exception {
-                        Platform.runLater(() -> statusLabel.setText("Loading routes from database..."));
-                        
-                        try {
-                            availableRoutes = controller.getAvailableRoutes();
-                            
-                            Platform.runLater(() -> {
-                                if (availableRoutes != null && !availableRoutes.isEmpty()) {
-                                    System.out.println("Found " + availableRoutes.size() + " routes in database");
-                                    routeComboBox.setItems(FXCollections.observableArrayList(availableRoutes));
-                                    routeComboBox.setCellFactory(lv -> new ListCell<Route>() {
-                                        @Override
-                                        protected void updateItem(Route item, boolean empty) {
-                                            super.updateItem(item, empty);
-                                            if (empty || item == null) {
-                                                setText(null);
-                                                setStyle("");
-                                            } else {
-                                                setText(String.format("Train ID: %d | Facility ID: %d | Order: %d", 
-                                                                     item.getTrainID(), 
-                                                                     item.getFacilityID(), 
-                                                                     item.getOrder()));
-                                                setStyle("-fx-text-fill: #E2E8F0;");
-                                            }
-                                        }
-                                    });
-                                    statusLabel.setText("Ready - Select a route to begin (" + availableRoutes.size() + " routes available)");
-                                } else {
-                                    System.out.println("No routes found in database");
-                                    statusLabel.setText("No routes available - Please create routes first");
-                                    showError("No Routes", "No routes are available in the database. Please create routes first using USLP08.");
-                                }
-                                
-                                progressIndicator.setVisible(false);
-                            });
-                        } catch (Exception e) {
-                            Platform.runLater(() -> {
-                                System.err.println("Error loading routes: " + e.getMessage());
-                                e.printStackTrace();
-                                statusLabel.setText("Error loading routes");
-                                progressIndicator.setVisible(false);
-                                showError("Error", "Failed to load routes from database: " + e.getMessage());
-                            });
-                        }
-                        
-                        return null;
+                    protected List<RoutePlannerRoute> call() throws Exception {
+                        return controller.getAvailableRoutesFromUS08();
                     }
                 };
             }
         };
         
+        service.setOnSucceeded(e -> {
+            availableRoutes = service.getValue();
+            if (availableRoutes != null && !availableRoutes.isEmpty()) {
+                System.out.println("Found " + availableRoutes.size() + " routes from US08");
+                routeComboBox.setItems(FXCollections.observableArrayList(availableRoutes));
+                routeComboBox.setCellFactory(lv -> new ListCell<RoutePlannerRoute>() {
+                    @Override
+                    protected void updateItem(RoutePlannerRoute item, boolean empty) {
+                        super.updateItem(item, empty);
+                        if (empty || item == null) {
+                            setText(null);
+                            setStyle("");
+                        } else {
+                            setText(item.getRouteName() + " (ID: " + item.getRouteId() + ")");
+                            setStyle("-fx-text-fill: #E2E8F0;");
+                        }
+                    }
+                });
+                statusLabel.setText("Ready - Select a route to begin (" + availableRoutes.size() + " routes available)");
+            } else {
+                System.out.println("No routes found from US08");
+                statusLabel.setText("No routes available - Please create routes first in US08");
+                showError("No Routes", "No routes are available. Please create routes first using US08.");
+            }
+            
+            progressIndicator.setVisible(false);
+            if (refreshRoutesButton != null) {
+                refreshRoutesButton.setDisable(false);
+            }
+        });
+        
         service.setOnFailed(e -> {
             Platform.runLater(() -> {
                 statusLabel.setText("Error loading routes: " + service.getException().getMessage());
                 progressIndicator.setVisible(false);
+                if (refreshRoutesButton != null) {
+                    refreshRoutesButton.setDisable(false);
+                }
                 showError("Error", "Failed to load routes: " + service.getException().getMessage());
+            });
+        });
+        
+        service.start();
+    }
+    
+    /**
+     * Loads available locomotives (without status - will be loaded when route is selected).
+     */
+    private void loadLocomotives() {
+        Service<List<Locomotive>> service = new Service<List<Locomotive>>() {
+            @Override
+            protected Task<List<Locomotive>> createTask() {
+                return new Task<List<Locomotive>>() {
+                    @Override
+                    protected List<Locomotive> call() throws Exception {
+                        return controller.getAvailableLocomotives();
+                    }
+                };
+            }
+        };
+        
+        service.setOnSucceeded(e -> {
+            availableLocomotives = service.getValue();
+            // Locomotives with status will be loaded when a route is selected
+        });
+        
+        service.setOnFailed(e -> {
+            Platform.runLater(() -> {
+                System.err.println("Error loading locomotives: " + service.getException().getMessage());
+                showError("Error", "Failed to load locomotives: " + service.getException().getMessage());
             });
         });
         
@@ -517,67 +577,147 @@ public class TrainAssemblyFXUI {
      * Handles route selection.
      */
     private void onRouteSelected() {
-        Route selectedRoute = routeComboBox.getSelectionModel().getSelectedItem();
+        RoutePlannerRoute selectedRoute = routeComboBox.getSelectionModel().getSelectedItem();
         if (selectedRoute == null) {
             return;
         }
         
-        currentRouteStartStationId = String.valueOf(selectedRoute.getFacilityID());
-        routeInfoLabel.setText(String.format("Route: Train ID %d, Starting at Facility %d", 
-                                            selectedRoute.getTrainID(), 
-                                            selectedRoute.getFacilityID()));
+        // Update route info
+        StringBuilder routeInfo = new StringBuilder();
+        routeInfo.append("Route: ").append(selectedRoute.getRouteName())
+                 .append(" (ID: ").append(selectedRoute.getRouteId()).append(")\n");
+        routeInfo.append("Type: ").append(selectedRoute.isSimple() ? "Simple" : "Complex").append("\n");
+        routeInfo.append("Stations: ");
+        List<RoutePlannerRoute.RouteStation> stations = selectedRoute.getStations();
+        for (int i = 0; i < stations.size(); i++) {
+            if (i > 0) routeInfo.append(" → ");
+            routeInfo.append(stations.get(i).getFacility().getName());
+        }
+        routeInfoLabel.setText(routeInfo.toString());
         
-        // Load vehicles for this route
-        loadVehiclesForRoute(currentRouteStartStationId);
+        // Load locomotives and wagons with status for this route
+        loadLocomotivesWithStatus(selectedRoute);
+        loadWagonsWithStatus(selectedRoute);
     }
     
     /**
-     * Loads locomotives and wagons for the selected route.
+     * Loads locomotives with status information for the selected route.
      */
-    private void loadVehiclesForRoute(String routeStartStationId) {
-        statusLabel.setText("Loading vehicles...");
-        progressIndicator.setVisible(true);
-        addLocomotiveButton.setDisable(true);
-        addWagonButton.setDisable(true);
+    private void loadLocomotivesWithStatus(RoutePlannerRoute route) {
+        if (route == null || route.getStations().isEmpty()) {
+            return;
+        }
         
-        Service<Void> service = new Service<Void>() {
+        statusLabel.setText("Loading locomotives with status...");
+        progressIndicator.setVisible(true);
+        
+        Service<List<TrainAOD.LocomotiveWithStatus>> service = new Service<List<TrainAOD.LocomotiveWithStatus>>() {
             @Override
-            protected Task<Void> createTask() {
-                return new Task<Void>() {
+            protected Task<List<TrainAOD.LocomotiveWithStatus>> createTask() {
+                return new Task<List<TrainAOD.LocomotiveWithStatus>>() {
                     @Override
-                    protected Void call() throws Exception {
-                        Platform.runLater(() -> statusLabel.setText("Loading vehicles from database..."));
-                        
-                        List<VehicleAOD.VehicleInfo> locomotives = controller.getLocomotivesForRoute(routeStartStationId);
-                        List<VehicleAOD.VehicleInfo> wagons = controller.getWagonsForRoute(routeStartStationId);
-                        
-                        Platform.runLater(() -> {
-                            locomotivesData.clear();
-                            locomotivesData.addAll(locomotives);
-                            locomotivesTitleLabel.setText(String.format("Locomotives (%d available)", locomotives.size()));
-                            
-                            wagonsData.clear();
-                            wagonsData.addAll(wagons);
-                            wagonsTitleLabel.setText(String.format("Wagons (%d available)", wagons.size()));
-                            
-                            addLocomotiveButton.setDisable(false);
-                            addWagonButton.setDisable(false);
-                            
-                            progressIndicator.setVisible(false);
-                            statusLabel.setText("Ready - Select vehicles to assemble train");
-                        });
-                        
-                        return null;
+                    protected List<TrainAOD.LocomotiveWithStatus> call() throws Exception {
+                        int startFacilityId = Integer.parseInt(route.getStations().get(0).getFacility().getId());
+                        int endFacilityId = Integer.parseInt(route.getStations().get(route.getStations().size() - 1).getFacility().getId());
+                        return controller.getLocomotivesWithStatus(startFacilityId, endFacilityId);
                     }
                 };
             }
         };
         
+        service.setOnSucceeded(e -> {
+            List<TrainAOD.LocomotiveWithStatus> locomotivesWithStatus = service.getValue();
+            locomotivesData.clear();
+            if (locomotivesWithStatus != null) {
+                locomotivesData.addAll(locomotivesWithStatus);
+                locomotivesTitleLabel.setText("Locomotives (" + locomotivesWithStatus.size() + " available)");
+                addLocomotiveButton.setDisable(false);
+            }
+            progressIndicator.setVisible(false);
+            statusLabel.setText("Ready");
+        });
+        
         service.setOnFailed(e -> {
             Platform.runLater(() -> {
-                statusLabel.setText("Error loading vehicles: " + service.getException().getMessage());
                 progressIndicator.setVisible(false);
-                showError("Error", "Failed to load vehicles: " + service.getException().getMessage());
+                statusLabel.setText("Error loading locomotives");
+                showError("Error", "Failed to load locomotives: " + service.getException().getMessage());
+            });
+        });
+        
+        service.start();
+    }
+    
+    /**
+     * Loads wagons with status information for the selected route.
+     */
+    private void loadWagonsWithStatus(RoutePlannerRoute route) {
+        if (route == null || route.getStations().isEmpty()) {
+            wagonsData.clear();
+            wagonsTitleLabel.setText("Wagons from Route (0 wagons)");
+            addWagonButton.setDisable(true);
+            return;
+        }
+        
+        List<Integer> wagonIds = new ArrayList<>();
+        if (route.getWagons() != null && !route.getWagons().isEmpty()) {
+            for (RoutePlannerRoute.RouteWagon wagon : route.getWagons()) {
+                wagonIds.add(wagon.getWagonId());
+            }
+            System.out.println("Found " + wagonIds.size() + " wagons in route " + route.getRouteId());
+        } else {
+            System.out.println("Route " + route.getRouteId() + " has no wagons (getWagons() returned null or empty)");
+            wagonsData.clear();
+            wagonsTitleLabel.setText("Wagons from Route (0 wagons)");
+            addWagonButton.setDisable(true);
+            return;
+        }
+        
+        if (wagonIds.isEmpty()) {
+            System.out.println("Wagon IDs list is empty for route " + route.getRouteId());
+            wagonsData.clear();
+            wagonsTitleLabel.setText("Wagons from Route (0 wagons)");
+            addWagonButton.setDisable(true);
+            return;
+        }
+        
+        Service<List<TrainAOD.WagonWithStatus>> service = new Service<List<TrainAOD.WagonWithStatus>>() {
+            @Override
+            protected Task<List<TrainAOD.WagonWithStatus>> createTask() {
+                return new Task<List<TrainAOD.WagonWithStatus>>() {
+                    @Override
+                    protected List<TrainAOD.WagonWithStatus> call() throws Exception {
+                        int startFacilityId = Integer.parseInt(route.getStations().get(0).getFacility().getId());
+                        int endFacilityId = Integer.parseInt(route.getStations().get(route.getStations().size() - 1).getFacility().getId());
+                        return controller.getWagonsWithStatus(startFacilityId, endFacilityId, wagonIds);
+                    }
+                };
+            }
+        };
+        
+        service.setOnSucceeded(e -> {
+            List<TrainAOD.WagonWithStatus> wagonsWithStatus = service.getValue();
+            wagonsData.clear();
+            if (wagonsWithStatus != null && !wagonsWithStatus.isEmpty()) {
+                wagonsData.addAll(wagonsWithStatus);
+                wagonsTitleLabel.setText("Wagons from Route (" + wagonsWithStatus.size() + " wagons)");
+                addWagonButton.setDisable(false);
+                System.out.println("Loaded " + wagonsWithStatus.size() + " wagons with status for route " + route.getRouteId());
+            } else {
+                System.out.println("No wagons with status returned for route " + route.getRouteId());
+                wagonsTitleLabel.setText("Wagons from Route (0 wagons)");
+                addWagonButton.setDisable(true);
+            }
+        });
+        
+        service.setOnFailed(e -> {
+            Platform.runLater(() -> {
+                Throwable ex = service.getException();
+                System.err.println("Error loading wagons: " + (ex != null ? ex.getMessage() : "Unknown error"));
+                if (ex != null) {
+                    ex.printStackTrace();
+                }
+                showError("Error", "Failed to load wagons: " + (ex != null ? ex.getMessage() : "Unknown error"));
             });
         });
         
@@ -588,17 +728,22 @@ public class TrainAssemblyFXUI {
      * Adds selected locomotive to the selected list.
      */
     private void addSelectedLocomotive() {
-        VehicleAOD.VehicleInfo selected = locomotivesList.getSelectionModel().getSelectedItem();
+        TrainAOD.LocomotiveWithStatus selected = locomotivesList.getSelectionModel().getSelectedItem();
         if (selected == null) {
             return;
         }
         
-        ObservableList<String> selectedList = selectedLocomotivesList.getItems();
-        String vehicleId = selected.getVehicleId();
+        Locomotive loco = selected.getLocomotive();
+        ObservableList<Locomotive> selectedList = selectedLocomotivesList.getItems();
+        // Check if already added (by ID)
+        boolean alreadyAdded = selectedList.stream()
+            .anyMatch(l -> l.getId().equals(loco.getId()));
         
-        if (!selectedList.contains(vehicleId)) {
-            selectedList.add(vehicleId);
+        if (!alreadyAdded) {
+            selectedList.add(loco);
             updateAssignButtonState();
+        } else {
+            showError("Error", "Locomotive already selected.");
         }
     }
     
@@ -606,7 +751,7 @@ public class TrainAssemblyFXUI {
      * Removes selected locomotive from the selected list.
      */
     private void removeSelectedLocomotive() {
-        String selected = selectedLocomotivesList.getSelectionModel().getSelectedItem();
+        Locomotive selected = selectedLocomotivesList.getSelectionModel().getSelectedItem();
         if (selected != null) {
             selectedLocomotivesList.getItems().remove(selected);
             updateAssignButtonState();
@@ -617,17 +762,25 @@ public class TrainAssemblyFXUI {
      * Adds selected wagon to the selected list.
      */
     private void addSelectedWagon() {
-        VehicleAOD.VehicleInfo selected = wagonsList.getSelectionModel().getSelectedItem();
+        TrainAOD.WagonWithStatus selected = wagonsList.getSelectionModel().getSelectedItem();
         if (selected == null) {
             return;
         }
         
-        ObservableList<String> selectedList = selectedWagonsList.getItems();
-        String vehicleId = selected.getVehicleId();
+        // Convert to RouteWagon for compatibility
+        RoutePlannerRoute.RouteWagon wagon = new RoutePlannerRoute.RouteWagon(
+            selected.getWagonId(), selected.getCargoType());
         
-        if (!selectedList.contains(vehicleId)) {
-            selectedList.add(vehicleId);
+        ObservableList<RoutePlannerRoute.RouteWagon> selectedList = selectedWagonsList.getItems();
+        // Check if already added (by wagon ID)
+        boolean alreadyAdded = selectedList.stream()
+            .anyMatch(w -> w.getWagonId() == selected.getWagonId());
+        
+        if (!alreadyAdded) {
+            selectedList.add(wagon);
             updateAssignButtonState();
+        } else {
+            showError("Error", "Wagon already selected.");
         }
     }
     
@@ -635,7 +788,7 @@ public class TrainAssemblyFXUI {
      * Removes selected wagon from the selected list.
      */
     private void removeSelectedWagon() {
-        String selected = selectedWagonsList.getSelectionModel().getSelectedItem();
+        RoutePlannerRoute.RouteWagon selected = selectedWagonsList.getSelectionModel().getSelectedItem();
         if (selected != null) {
             selectedWagonsList.getItems().remove(selected);
             updateAssignButtonState();
@@ -655,59 +808,69 @@ public class TrainAssemblyFXUI {
     }
     
     /**
-     * Assigns the train to the selected route.
+     * Creates a train and assigns it to the selected route.
      */
     private void assignTrainToRoute() {
-        Route selectedRoute = routeComboBox.getSelectionModel().getSelectedItem();
+        RoutePlannerRoute selectedRoute = routeComboBox.getSelectionModel().getSelectedItem();
         if (selectedRoute == null) {
             showError("Error", "Please select a route first.");
             return;
         }
         
-        List<String> selectedLocomotives = new ArrayList<>(selectedLocomotivesList.getItems());
-        List<String> selectedWagons = new ArrayList<>(selectedWagonsList.getItems());
+        List<Locomotive> selectedLocomotives = new ArrayList<>(selectedLocomotivesList.getItems());
         
         if (selectedLocomotives.isEmpty()) {
             showError("Error", "At least one locomotive must be selected.");
             return;
         }
         
-        statusLabel.setText("Assigning train to route...");
+        // Get locomotive IDs
+        List<Integer> locomotiveIds = selectedLocomotives.stream()
+            .map(l -> Integer.parseInt(l.getId()))
+            .collect(Collectors.toList());
+        
+        statusLabel.setText("Creating train and assigning to route...");
         progressIndicator.setVisible(true);
         assignButton.setDisable(true);
         
-        Service<Boolean> service = new Service<Boolean>() {
+        Service<Integer> service = new Service<Integer>() {
             @Override
-            protected Task<Boolean> createTask() {
-                return new Task<Boolean>() {
+            protected Task<Integer> createTask() {
+                return new Task<Integer>() {
                     @Override
-                    protected Boolean call() throws Exception {
-                        return controller.assignTrainToRoute(
-                            String.valueOf(selectedRoute.getTrainID()),
-                            selectedLocomotives,
-                            selectedWagons
-                        );
+                    protected Integer call() throws Exception {
+                        String operatorId = "Medway"; // Default operator - could be made configurable
+                        double maxLength = 500.0; // Default max length - could be made configurable
+                        
+                        return controller.createTrainAndAssignToRoute(
+                            operatorId, maxLength, locomotiveIds, selectedRoute);
                     }
                 };
             }
         };
         
         service.setOnSucceeded(e -> {
-            boolean success = service.getValue();
+            int trainId = service.getValue();
             progressIndicator.setVisible(false);
             assignButton.setDisable(false);
             
-            if (success) {
-                statusLabel.setText("Train assigned successfully!");
-                showSuccess("Success", "Train has been assigned to the route successfully.");
+            if (trainId > 0) {
+                statusLabel.setText("Train created and assigned successfully!");
+                showSuccess("Success", 
+                    String.format("Train ID %d has been created and assigned to route '%s' successfully.", 
+                                trainId, selectedRoute.getRouteName()));
                 
                 // Clear selections
                 selectedLocomotivesList.getItems().clear();
                 selectedWagonsList.getItems().clear();
+                routeComboBox.getSelectionModel().clearSelection();
                 updateAssignButtonState();
+                
+                // Reload routes (the assigned route should no longer appear)
+                loadRoutes();
             } else {
-                statusLabel.setText("Failed to assign train");
-                showError("Error", "Failed to assign train to route. Please try again.");
+                statusLabel.setText("Failed to create train");
+                showError("Error", "Failed to create train. Please try again.");
             }
         });
         
@@ -716,7 +879,7 @@ public class TrainAssemblyFXUI {
                 progressIndicator.setVisible(false);
                 assignButton.setDisable(false);
                 statusLabel.setText("Error occurred");
-                showError("Error", "Failed to assign train: " + service.getException().getMessage());
+                showError("Error", "Failed to create train: " + service.getException().getMessage());
             });
         });
         

@@ -1,8 +1,9 @@
 package Lapr.JavaFX;
 
-import Lapr.Controller.RouteController;
-import Lapr.Domain.Freight;
-import Lapr.Domain.Route;
+import Lapr.DataBaseAssociation.AvailableWagonDAO;
+import Lapr.Domain.RoutePlannerRoute;
+import Lapr.Domain.RoutePlannerService;
+import Sprint1.Domain.Facility;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -19,52 +20,56 @@ import javafx.util.StringConverter;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * JavaFX UI for USLP08 - Route Planner.
  * 
  * Allows Freight Manager to:
- * - View pending freights
- * - Define/assign routes (simple or complex) to accomplish pending freights
- * - View route with sequence of stations and cargos to be loaded/unloaded
+ * - View available wagons grouped by cargo type
+ * - Define routes (simple or complex) with stations
+ * - Assign load/unload operations for wagons at stations
+ * - View route details with sequence of stations and cargos
  * 
  * @author Development Team
- * @version 1.0
+ * @version 2.0
  */
 public class RoutePlannerFXUI {
-    private RouteController controller;
+    private RoutePlannerService service;
     private Stage stage;
     
     // Tabs
     private TabPane mainTabPane;
-    private Tab pendingFreightsTab;
+    private Tab availableWagonsTab;
     private Tab createRouteTab;
     private Tab viewRouteTab;
     
-    // Pending Freights Tab
-    private TableView<Freight> pendingFreightsTable;
-    private ObservableList<Freight> pendingFreightsData;
-    private Label pendingFreightsCountLabel;
-    private Button refreshPendingButton;
+    // Available Wagons Tab
+    private TableView<AvailableWagonDAO.AvailableWagon> wagonsTable;
+    private ObservableList<AvailableWagonDAO.AvailableWagon> wagonsData;
+    private ComboBox<String> cargoTypeFilter;
+    private Label wagonsCountLabel;
+    private Button refreshWagonsButton;
     
     // Create Route Tab
     private RadioButton simpleRouteRadio;
     private RadioButton complexRouteRadio;
     private ToggleGroup routeTypeGroup;
-    private TextField trainIdField;
-    private ListView<Integer> stationIdsList;
-    private TextField stationIdField;
+    private TextField routeNameField;
+    private ComboBox<Facility> startStationCombo;
+    private ComboBox<Facility> endStationCombo;
+    private ListView<Facility> intermediateStationsList;
+    private ComboBox<Facility> stationCombo;
     private Button addStationButton;
     private Button removeStationButton;
     private Button clearStationsButton;
-    private ListView<Integer> selectedFreightsList;
-    private Button addFreightButton;
-    private Button removeFreightButton;
+    private ListView<AvailableWagonDAO.AvailableWagon> selectedWagonsList;
+    private Button addWagonButton;
+    private Button removeWagonButton;
     private Button createRouteButton;
-    private Label routeTypeLabel;
     
     // View Route Tab
-    private TextField viewTrainIdField;
+    private ComboBox<RoutePlannerRoute> routeCombo;
     private Button viewRouteButton;
     private TextArea routeDetailsArea;
     
@@ -72,8 +77,13 @@ public class RoutePlannerFXUI {
     private Label statusLabel;
     private ProgressIndicator progressIndicator;
     
+    // Data
+    private List<Facility> allFacilities;
+    private Map<String, List<AvailableWagonDAO.AvailableWagon>> wagonsByCargoType;
+    private ComboBox<AvailableWagonDAO.AvailableWagon> wagonCombo; // Reference to wagon combo in Create Route tab
+    
     public RoutePlannerFXUI() {
-        this.controller = new RouteController();
+        this.service = new RoutePlannerService();
     }
     
     /**
@@ -100,8 +110,8 @@ public class RoutePlannerFXUI {
                            "-fx-letter-spacing: 0.5px;");
         
         Label descriptionLabel = new Label(
-            "Define and assign routes (simple or complex) to accomplish a list of pending freights. " +
-            "A route includes a sequence of stations and the cargos to be loaded/unloaded."
+            "As Freight Manager, define and assign routes to accomplish a list of pending freights. " +
+            "A route can be simple or complex, with a sequence of stations and cargos to be loaded/unloaded."
         );
         descriptionLabel.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
                                   "-fx-font-size: 13px; " +
@@ -116,11 +126,11 @@ public class RoutePlannerFXUI {
         mainTabPane.setTabClosingPolicy(TabPane.TabClosingPolicy.UNAVAILABLE);
         mainTabPane.setStyle("-fx-background-color: #1B2533;");
         
-        pendingFreightsTab = createPendingFreightsTab();
+        availableWagonsTab = createAvailableWagonsTab();
         createRouteTab = createCreateRouteTab();
         viewRouteTab = createViewRouteTab();
         
-        mainTabPane.getTabs().addAll(pendingFreightsTab, createRouteTab, viewRouteTab);
+        mainTabPane.getTabs().addAll(availableWagonsTab, createRouteTab, viewRouteTab);
         root.setCenter(mainTabPane);
         
         // Bottom: Status
@@ -158,23 +168,25 @@ public class RoutePlannerFXUI {
         
         root.setBottom(bottomContainer);
         
-        Scene scene = new Scene(root, 1000, 750);
+        Scene scene = new Scene(root, 1200, 800);
         stage.setScene(scene);
         stage.setResizable(true);
-        stage.setMinWidth(1000);
-        stage.setMinHeight(750);
+        stage.setMinWidth(1200);
+        stage.setMinHeight(800);
         
         // Load initial data
-        loadPendingFreights();
+        loadAvailableWagons();
+        loadFacilities();
+        loadRoutes();
         
         stage.show();
     }
     
     /**
-     * Creates the Pending Freights tab.
+     * Creates the Available Wagons tab.
      */
-    private Tab createPendingFreightsTab() {
-        Tab tab = new Tab("Pending Freights");
+    private Tab createAvailableWagonsTab() {
+        Tab tab = new Tab("Available Wagons");
         tab.setStyle("-fx-background-color: #1B2533;");
         
         VBox content = new VBox(15);
@@ -185,61 +197,80 @@ public class RoutePlannerFXUI {
         HBox headerBox = new HBox(15);
         headerBox.setAlignment(Pos.CENTER_LEFT);
         
-        Label titleLabel = new Label("Pending Freights");
+        Label titleLabel = new Label("Available Wagons (Grouped by Cargo Type)");
         titleLabel.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
                            "-fx-font-size: 20px; " +
                            "-fx-font-weight: 600; " +
                            "-fx-text-fill: #E2E8F0;");
         
-        pendingFreightsCountLabel = new Label("Loading...");
-        pendingFreightsCountLabel.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
-                                          "-fx-font-size: 13px; " +
-                                          "-fx-text-fill: #94A3B8;");
+        wagonsCountLabel = new Label("Loading...");
+        wagonsCountLabel.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
+                                  "-fx-font-size: 13px; " +
+                                  "-fx-text-fill: #94A3B8;");
         
-        refreshPendingButton = new Button("Refresh");
-        refreshPendingButton.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
-                                     "-fx-font-size: 13px; " +
-                                     "-fx-background-color: #6366F1; " +
-                                     "-fx-text-fill: #FFFFFF; " +
-                                     "-fx-background-radius: 8px; " +
-                                     "-fx-cursor: hand;");
-        refreshPendingButton.setOnAction(e -> loadPendingFreights());
+        cargoTypeFilter = new ComboBox<>();
+        cargoTypeFilter.setPromptText("Filter by cargo type");
+        cargoTypeFilter.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
+                                "-fx-font-size: 13px; " +
+                                "-fx-background-color: #475569; " +
+                                "-fx-text-fill: #E2E8F0;");
+        cargoTypeFilter.setOnAction(e -> filterWagonsByCargoType());
         
-        HBox.setHgrow(pendingFreightsCountLabel, Priority.ALWAYS);
-        headerBox.getChildren().addAll(titleLabel, pendingFreightsCountLabel, refreshPendingButton);
+        refreshWagonsButton = new Button("Refresh");
+        refreshWagonsButton.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
+                                    "-fx-font-size: 13px; " +
+                                    "-fx-background-color: #6366F1; " +
+                                    "-fx-text-fill: #FFFFFF; " +
+                                    "-fx-background-radius: 8px; " +
+                                    "-fx-cursor: hand;");
+        refreshWagonsButton.setOnAction(e -> loadAvailableWagons());
+        
+        HBox.setHgrow(wagonsCountLabel, Priority.ALWAYS);
+        headerBox.getChildren().addAll(titleLabel, wagonsCountLabel, cargoTypeFilter, refreshWagonsButton);
         
         // Table
-        pendingFreightsTable = new TableView<>();
-        pendingFreightsTable.setStyle("-fx-background-color: #2D3748; " +
-                                     "-fx-background-radius: 12px;");
-        pendingFreightsTable.setPrefHeight(500);
+        wagonsTable = new TableView<>();
+        wagonsTable.setStyle("-fx-background-color: #2D3748; " +
+                            "-fx-background-radius: 12px;");
+        wagonsTable.setPrefHeight(550);
         
-        TableColumn<Freight, Integer> idColumn = new TableColumn<>("Freight ID");
-        idColumn.setCellValueFactory(new PropertyValueFactory<>("id"));
+        TableColumn<AvailableWagonDAO.AvailableWagon, Integer> idColumn = 
+            new TableColumn<>("Wagon ID");
+        idColumn.setCellValueFactory(new PropertyValueFactory<>("wagonId"));
         idColumn.setPrefWidth(100);
         
-        TableColumn<Freight, String> cargoColumn = new TableColumn<>("Cargo Type");
+        TableColumn<AvailableWagonDAO.AvailableWagon, String> cargoColumn = 
+            new TableColumn<>("Cargo Type");
         cargoColumn.setCellValueFactory(new PropertyValueFactory<>("cargoType"));
-        cargoColumn.setPrefWidth(200);
+        cargoColumn.setPrefWidth(150);
         
-        TableColumn<Freight, Integer> trainColumn = new TableColumn<>("Train ID");
-        trainColumn.setCellValueFactory(new PropertyValueFactory<>("trainID"));
-        trainColumn.setPrefWidth(100);
+        TableColumn<AvailableWagonDAO.AvailableWagon, Integer> modelColumn = 
+            new TableColumn<>("Model ID");
+        modelColumn.setCellValueFactory(new PropertyValueFactory<>("modelId"));
+        modelColumn.setPrefWidth(100);
         
-        TableColumn<Freight, Integer> wagonColumn = new TableColumn<>("Wagon ID");
-        wagonColumn.setCellValueFactory(new PropertyValueFactory<>("wagonID"));
-        wagonColumn.setPrefWidth(100);
+        TableColumn<AvailableWagonDAO.AvailableWagon, String> modelNameColumn = 
+            new TableColumn<>("Model Name");
+        modelNameColumn.setCellValueFactory(new PropertyValueFactory<>("modelName"));
+        modelNameColumn.setPrefWidth(200);
         
-        TableColumn<Freight, Integer> locomotiveColumn = new TableColumn<>("Locomotive ID");
-        locomotiveColumn.setCellValueFactory(new PropertyValueFactory<>("locomotiveID"));
-        locomotiveColumn.setPrefWidth(150);
+        TableColumn<AvailableWagonDAO.AvailableWagon, Double> emptyWeightColumn = 
+            new TableColumn<>("Empty Weight (kg)");
+        emptyWeightColumn.setCellValueFactory(new PropertyValueFactory<>("emptyWeightKg"));
+        emptyWeightColumn.setPrefWidth(150);
         
-        pendingFreightsTable.getColumns().addAll(idColumn, cargoColumn, trainColumn, wagonColumn, locomotiveColumn);
+        TableColumn<AvailableWagonDAO.AvailableWagon, Double> maxLoadColumn = 
+            new TableColumn<>("Max Load (kg)");
+        maxLoadColumn.setCellValueFactory(new PropertyValueFactory<>("maxLoadWeightKg"));
+        maxLoadColumn.setPrefWidth(150);
         
-        pendingFreightsData = FXCollections.observableArrayList();
-        pendingFreightsTable.setItems(pendingFreightsData);
+        wagonsTable.getColumns().addAll(idColumn, cargoColumn, modelColumn, modelNameColumn, 
+                                        emptyWeightColumn, maxLoadColumn);
         
-        content.getChildren().addAll(headerBox, pendingFreightsTable);
+        wagonsData = FXCollections.observableArrayList();
+        wagonsTable.setItems(wagonsData);
+        
+        content.getChildren().addAll(headerBox, wagonsTable);
         tab.setContent(content);
         
         return tab;
@@ -252,6 +283,10 @@ public class RoutePlannerFXUI {
         Tab tab = new Tab("Create Route");
         tab.setStyle("-fx-background-color: #1B2533;");
         
+        ScrollPane scrollPane = new ScrollPane();
+        scrollPane.setFitToWidth(true);
+        scrollPane.setStyle("-fx-background-color: #1B2533;");
+        
         VBox content = new VBox(20);
         content.setPadding(new Insets(20));
         content.setStyle("-fx-background-color: #1B2533;");
@@ -262,47 +297,47 @@ public class RoutePlannerFXUI {
                              "-fx-background-radius: 12px; " +
                              "-fx-padding: 15px;");
         
-        routeTypeLabel = new Label("Route Type:");
+        Label routeTypeLabel = new Label("Route Type:");
         routeTypeLabel.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
                                "-fx-font-size: 14px; " +
                                "-fx-font-weight: 600; " +
                                "-fx-text-fill: #E2E8F0;");
         
         routeTypeGroup = new ToggleGroup();
-        simpleRouteRadio = new RadioButton("Simple Route (single freight)");
+        simpleRouteRadio = new RadioButton("Simple Route (single wagon)");
         simpleRouteRadio.setToggleGroup(routeTypeGroup);
         simpleRouteRadio.setSelected(true);
         simpleRouteRadio.setStyle("-fx-text-fill: #E2E8F0;");
         simpleRouteRadio.setOnAction(e -> updateRouteTypeUI());
         
-        complexRouteRadio = new RadioButton("Complex Route (multiple freights)");
+        complexRouteRadio = new RadioButton("Complex Route (multiple wagons)");
         complexRouteRadio.setToggleGroup(routeTypeGroup);
         complexRouteRadio.setStyle("-fx-text-fill: #E2E8F0;");
         complexRouteRadio.setOnAction(e -> updateRouteTypeUI());
         
         routeTypeBox.getChildren().addAll(routeTypeLabel, simpleRouteRadio, complexRouteRadio);
         
-        // Train ID
-        VBox trainIdBox = new VBox(10);
-        trainIdBox.setStyle("-fx-background-color: #2D3748; " +
-                           "-fx-background-radius: 12px; " +
-                           "-fx-padding: 15px;");
+        // Route Name
+        VBox routeNameBox = new VBox(10);
+        routeNameBox.setStyle("-fx-background-color: #2D3748; " +
+                             "-fx-background-radius: 12px; " +
+                             "-fx-padding: 15px;");
         
-        Label trainIdLabel = new Label("Train ID:");
-        trainIdLabel.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
-                             "-fx-font-size: 14px; " +
-                             "-fx-font-weight: 600; " +
-                             "-fx-text-fill: #E2E8F0;");
+        Label routeNameLabel = new Label("Route Name:");
+        routeNameLabel.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
+                               "-fx-font-size: 14px; " +
+                               "-fx-font-weight: 600; " +
+                               "-fx-text-fill: #E2E8F0;");
         
-        trainIdField = new TextField();
-        trainIdField.setPromptText("Enter train ID");
-        trainIdField.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
-                             "-fx-font-size: 13px; " +
-                             "-fx-background-color: #475569; " +
-                             "-fx-text-fill: #E2E8F0; " +
-                             "-fx-background-radius: 8px;");
+        routeNameField = new TextField();
+        routeNameField.setPromptText("Enter route name");
+        routeNameField.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
+                               "-fx-font-size: 13px; " +
+                               "-fx-background-color: #475569; " +
+                               "-fx-text-fill: #E2E8F0; " +
+                               "-fx-background-radius: 8px;");
         
-        trainIdBox.getChildren().addAll(trainIdLabel, trainIdField);
+        routeNameBox.getChildren().addAll(routeNameLabel, routeNameField);
         
         // Stations Section
         VBox stationsBox = new VBox(10);
@@ -310,21 +345,43 @@ public class RoutePlannerFXUI {
                             "-fx-background-radius: 12px; " +
                             "-fx-padding: 15px;");
         
-        Label stationsLabel = new Label("Sequence of Stations:");
+        Label stationsLabel = new Label("Route Stations:");
         stationsLabel.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
                               "-fx-font-size: 14px; " +
                               "-fx-font-weight: 600; " +
                               "-fx-text-fill: #E2E8F0;");
         
+        // Start and End stations
+        HBox startEndBox = new HBox(15);
+        VBox startBox = new VBox(5);
+        Label startLabel = new Label("Start Station:");
+        startLabel.setStyle("-fx-text-fill: #E2E8F0;");
+        startStationCombo = new ComboBox<>();
+        startStationCombo.setConverter(new FacilityStringConverter());
+        startStationCombo.setStyle("-fx-background-color: #475569; -fx-text-fill: #E2E8F0;");
+        startBox.getChildren().addAll(startLabel, startStationCombo);
+        
+        VBox endBox = new VBox(5);
+        Label endLabel = new Label("End Station:");
+        endLabel.setStyle("-fx-text-fill: #E2E8F0;");
+        endStationCombo = new ComboBox<>();
+        endStationCombo.setConverter(new FacilityStringConverter());
+        endStationCombo.setStyle("-fx-background-color: #475569; -fx-text-fill: #E2E8F0;");
+        endBox.getChildren().addAll(endLabel, endStationCombo);
+        
+        HBox.setHgrow(startBox, Priority.ALWAYS);
+        HBox.setHgrow(endBox, Priority.ALWAYS);
+        startEndBox.getChildren().addAll(startBox, endBox);
+        
+        // Intermediate stations
+        Label intermediateLabel = new Label("Intermediate Stations (optional):");
+        intermediateLabel.setStyle("-fx-text-fill: #E2E8F0;");
+        
         HBox stationInputBox = new HBox(10);
-        stationIdField = new TextField();
-        stationIdField.setPromptText("Enter station ID");
-        stationIdField.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
-                               "-fx-font-size: 13px; " +
-                               "-fx-background-color: #475569; " +
-                               "-fx-text-fill: #E2E8F0; " +
-                               "-fx-background-radius: 8px;");
-        stationIdField.setPrefWidth(200);
+        stationCombo = new ComboBox<>();
+        stationCombo.setConverter(new FacilityStringConverter());
+        stationCombo.setStyle("-fx-background-color: #475569; -fx-text-fill: #E2E8F0;");
+        stationCombo.setPrefWidth(300);
         
         addStationButton = new Button("Add Station");
         addStationButton.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
@@ -333,7 +390,7 @@ public class RoutePlannerFXUI {
                                  "-fx-text-fill: #FFFFFF; " +
                                  "-fx-background-radius: 8px; " +
                                  "-fx-cursor: hand;");
-        addStationButton.setOnAction(e -> addStation());
+        addStationButton.setOnAction(e -> addIntermediateStation());
         
         removeStationButton = new Button("Remove");
         removeStationButton.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
@@ -342,7 +399,7 @@ public class RoutePlannerFXUI {
                                     "-fx-text-fill: #FFFFFF; " +
                                     "-fx-background-radius: 8px; " +
                                     "-fx-cursor: hand;");
-        removeStationButton.setOnAction(e -> removeSelectedStation());
+        removeStationButton.setOnAction(e -> removeSelectedIntermediateStation());
         
         clearStationsButton = new Button("Clear All");
         clearStationsButton.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
@@ -351,71 +408,126 @@ public class RoutePlannerFXUI {
                                     "-fx-text-fill: #E2E8F0; " +
                                     "-fx-background-radius: 8px; " +
                                     "-fx-cursor: hand;");
-        clearStationsButton.setOnAction(e -> clearStations());
+        clearStationsButton.setOnAction(e -> clearIntermediateStations());
         
-        HBox.setHgrow(stationIdField, Priority.ALWAYS);
-        stationInputBox.getChildren().addAll(stationIdField, addStationButton, removeStationButton, clearStationsButton);
+        HBox.setHgrow(stationCombo, Priority.ALWAYS);
+        stationInputBox.getChildren().addAll(stationCombo, addStationButton, removeStationButton, clearStationsButton);
         
-        stationIdsList = new ListView<>();
-        stationIdsList.setPrefHeight(150);
-        stationIdsList.setStyle("-fx-font-family: 'Consolas', 'Monaco', monospace; " +
-                               "-fx-font-size: 12px; " +
-                               "-fx-background-color: #1E293B; " +
-                               "-fx-text-fill: #E2E8F0;");
+        intermediateStationsList = new ListView<>();
+        intermediateStationsList.setPrefHeight(120);
+        intermediateStationsList.setStyle("-fx-background-color: #334155; " +
+                                         "-fx-control-inner-background: #334155; " +
+                                         "-fx-text-fill: #F1F5F9;");
+        intermediateStationsList.setCellFactory(param -> new ListCell<Facility>() {
+            @Override
+            protected void updateItem(Facility item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                    setStyle("-fx-background-color: #334155; -fx-text-fill: #F1F5F9;");
+                } else {
+                    setText(item.getName() + " (ID: " + item.getId() + ")");
+                    setStyle("-fx-background-color: #334155; " +
+                            "-fx-text-fill: #F1F5F9; " +
+                            "-fx-font-size: 13px; " +
+                            "-fx-font-weight: 500; " +
+                            "-fx-padding: 8px;");
+                }
+            }
+            
+            @Override
+            public void updateSelected(boolean selected) {
+                super.updateSelected(selected);
+                if (selected && getItem() != null) {
+                    setStyle("-fx-background-color: #475569; " +
+                            "-fx-text-fill: #FFFFFF; " +
+                            "-fx-font-size: 13px; " +
+                            "-fx-font-weight: 600; " +
+                            "-fx-padding: 8px;");
+                }
+            }
+        });
         
-        stationsBox.getChildren().addAll(stationsLabel, stationInputBox, stationIdsList);
+        stationsBox.getChildren().addAll(stationsLabel, startEndBox, intermediateLabel, 
+                                        stationInputBox, intermediateStationsList);
         
-        // Freights Section
-        VBox freightsBox = new VBox(10);
-        freightsBox.setStyle("-fx-background-color: #2D3748; " +
-                            "-fx-background-radius: 12px; " +
-                            "-fx-padding: 15px;");
+        // Wagons Section
+        VBox wagonsBox = new VBox(10);
+        wagonsBox.setStyle("-fx-background-color: #2D3748; " +
+                          "-fx-background-radius: 12px; " +
+                          "-fx-padding: 15px;");
         
-        Label freightsLabel = new Label("Selected Freights:");
-        freightsLabel.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
-                              "-fx-font-size: 14px; " +
-                              "-fx-font-weight: 600; " +
-                              "-fx-text-fill: #E2E8F0;");
+        Label wagonsLabel = new Label("Selected Wagons:");
+        wagonsLabel.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
+                           "-fx-font-size: 14px; " +
+                           "-fx-font-weight: 600; " +
+                           "-fx-text-fill: #E2E8F0;");
         
-        HBox freightInputBox = new HBox(10);
-        TextField freightIdField = new TextField();
-        freightIdField.setPromptText("Enter freight ID");
-        freightIdField.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
+        HBox wagonInputBox = new HBox(10);
+        wagonCombo = new ComboBox<>();
+        wagonCombo.setConverter(new WagonStringConverter());
+        wagonCombo.setStyle("-fx-background-color: #475569; -fx-text-fill: #E2E8F0;");
+        wagonCombo.setPrefWidth(300);
+        // Populate wagon combo from available wagons (will be updated when wagons are loaded)
+        wagonCombo.setItems(FXCollections.observableArrayList());
+        
+        addWagonButton = new Button("Add Wagon");
+        addWagonButton.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
                                "-fx-font-size: 13px; " +
-                               "-fx-background-color: #475569; " +
-                               "-fx-text-fill: #E2E8F0; " +
-                               "-fx-background-radius: 8px;");
-        freightIdField.setPrefWidth(200);
+                               "-fx-background-color: #6366F1; " +
+                               "-fx-text-fill: #FFFFFF; " +
+                               "-fx-background-radius: 8px; " +
+                               "-fx-cursor: hand;");
+        addWagonButton.setOnAction(e -> addWagon(wagonCombo));
         
-        addFreightButton = new Button("Add Freight");
-        addFreightButton.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
-                                 "-fx-font-size: 13px; " +
-                                 "-fx-background-color: #6366F1; " +
-                                 "-fx-text-fill: #FFFFFF; " +
-                                 "-fx-background-radius: 8px; " +
-                                 "-fx-cursor: hand;");
-        addFreightButton.setOnAction(e -> addFreight(freightIdField));
+        removeWagonButton = new Button("Remove");
+        removeWagonButton.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
+                                  "-fx-font-size: 13px; " +
+                                  "-fx-background-color: #EF4444; " +
+                                  "-fx-text-fill: #FFFFFF; " +
+                                  "-fx-background-radius: 8px; " +
+                                  "-fx-cursor: hand;");
+        removeWagonButton.setOnAction(e -> removeSelectedWagon());
         
-        removeFreightButton = new Button("Remove");
-        removeFreightButton.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
-                                    "-fx-font-size: 13px; " +
-                                    "-fx-background-color: #EF4444; " +
-                                    "-fx-text-fill: #FFFFFF; " +
-                                    "-fx-background-radius: 8px; " +
-                                    "-fx-cursor: hand;");
-        removeFreightButton.setOnAction(e -> removeSelectedFreight());
+        HBox.setHgrow(wagonCombo, Priority.ALWAYS);
+        wagonInputBox.getChildren().addAll(wagonCombo, addWagonButton, removeWagonButton);
         
-        HBox.setHgrow(freightIdField, Priority.ALWAYS);
-        freightInputBox.getChildren().addAll(freightIdField, addFreightButton, removeFreightButton);
+        selectedWagonsList = new ListView<>();
+        selectedWagonsList.setPrefHeight(150);
+        selectedWagonsList.setStyle("-fx-background-color: #334155; " +
+                                   "-fx-control-inner-background: #334155; " +
+                                   "-fx-text-fill: #F1F5F9;");
+        selectedWagonsList.setCellFactory(param -> new ListCell<AvailableWagonDAO.AvailableWagon>() {
+            @Override
+            protected void updateItem(AvailableWagonDAO.AvailableWagon item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                    setStyle("-fx-background-color: #334155; -fx-text-fill: #F1F5F9;");
+                } else {
+                    setText("Wagon ID: " + item.getWagonId() + " | Cargo: " + item.getCargoType());
+                    setStyle("-fx-background-color: #334155; " +
+                            "-fx-text-fill: #F1F5F9; " +
+                            "-fx-font-size: 13px; " +
+                            "-fx-font-weight: 500; " +
+                            "-fx-padding: 8px;");
+                }
+            }
+            
+            @Override
+            public void updateSelected(boolean selected) {
+                super.updateSelected(selected);
+                if (selected && getItem() != null) {
+                    setStyle("-fx-background-color: #475569; " +
+                            "-fx-text-fill: #FFFFFF; " +
+                            "-fx-font-size: 13px; " +
+                            "-fx-font-weight: 600; " +
+                            "-fx-padding: 8px;");
+                }
+            }
+        });
         
-        selectedFreightsList = new ListView<>();
-        selectedFreightsList.setPrefHeight(150);
-        selectedFreightsList.setStyle("-fx-font-family: 'Consolas', 'Monaco', monospace; " +
-                                     "-fx-font-size: 12px; " +
-                                     "-fx-background-color: #1E293B; " +
-                                     "-fx-text-fill: #E2E8F0;");
-        
-        freightsBox.getChildren().addAll(freightsLabel, freightInputBox, selectedFreightsList);
+        wagonsBox.getChildren().addAll(wagonsLabel, wagonInputBox, selectedWagonsList);
         
         // Create Button
         createRouteButton = new Button("Create Route");
@@ -431,8 +543,9 @@ public class RoutePlannerFXUI {
                                   "-fx-effect: dropshadow(gaussian, rgba(16, 185, 129, 0.4), 8, 0, 0, 2);");
         createRouteButton.setOnAction(e -> createRoute());
         
-        content.getChildren().addAll(routeTypeBox, trainIdBox, stationsBox, freightsBox, createRouteButton);
-        tab.setContent(content);
+        content.getChildren().addAll(routeTypeBox, routeNameBox, stationsBox, wagonsBox, createRouteButton);
+        scrollPane.setContent(content);
+        tab.setContent(scrollPane);
         
         updateRouteTypeUI();
         
@@ -450,26 +563,22 @@ public class RoutePlannerFXUI {
         content.setPadding(new Insets(20));
         content.setStyle("-fx-background-color: #1B2533;");
         
-        // Train ID Input
+        // Route Selection
         VBox inputBox = new VBox(10);
         inputBox.setStyle("-fx-background-color: #2D3748; " +
                          "-fx-background-radius: 12px; " +
                          "-fx-padding: 15px;");
         
-        Label trainIdLabel = new Label("Train ID:");
-        trainIdLabel.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
-                             "-fx-font-size: 14px; " +
-                             "-fx-font-weight: 600; " +
-                             "-fx-text-fill: #E2E8F0;");
+        Label routeLabel = new Label("Select Route:");
+        routeLabel.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
+                           "-fx-font-size: 14px; " +
+                           "-fx-font-weight: 600; " +
+                           "-fx-text-fill: #E2E8F0;");
         
         HBox inputRow = new HBox(10);
-        viewTrainIdField = new TextField();
-        viewTrainIdField.setPromptText("Enter train ID");
-        viewTrainIdField.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
-                                 "-fx-font-size: 13px; " +
-                                 "-fx-background-color: #475569; " +
-                                 "-fx-text-fill: #E2E8F0; " +
-                                 "-fx-background-radius: 8px;");
+        routeCombo = new ComboBox<>();
+        routeCombo.setConverter(new RouteStringConverter());
+        routeCombo.setStyle("-fx-background-color: #475569; -fx-text-fill: #E2E8F0;");
         
         viewRouteButton = new Button("View Route");
         viewRouteButton.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
@@ -480,9 +589,9 @@ public class RoutePlannerFXUI {
                                 "-fx-cursor: hand;");
         viewRouteButton.setOnAction(e -> viewRoute());
         
-        HBox.setHgrow(viewTrainIdField, Priority.ALWAYS);
-        inputRow.getChildren().addAll(viewTrainIdField, viewRouteButton);
-        inputBox.getChildren().addAll(trainIdLabel, inputRow);
+        HBox.setHgrow(routeCombo, Priority.ALWAYS);
+        inputRow.getChildren().addAll(routeCombo, viewRouteButton);
+        inputBox.getChildren().addAll(routeLabel, inputRow);
         
         // Route Details
         VBox detailsBox = new VBox(10);
@@ -504,7 +613,7 @@ public class RoutePlannerFXUI {
                                  "-fx-background-color: #1E293B; " +
                                  "-fx-text-fill: #E2E8F0; " +
                                  "-fx-background-radius: 8px;");
-        routeDetailsArea.setPromptText("Enter a train ID and click 'View Route' to see route details...");
+        routeDetailsArea.setPromptText("Select a route and click 'View Route' to see details...");
         
         detailsBox.getChildren().addAll(detailsLabel, routeDetailsArea);
         
@@ -514,225 +623,271 @@ public class RoutePlannerFXUI {
         return tab;
     }
     
-    /**
-     * Updates the UI based on selected route type.
-     */
-    private void updateRouteTypeUI() {
-        boolean isSimple = simpleRouteRadio.isSelected();
-        // Both route types allow freight selection, but simple route should only have 1
-        // The validation happens in createRoute()
-    }
+    // Helper methods
     
-    /**
-     * Loads pending freights from the database.
-     */
-    private void loadPendingFreights() {
-        statusLabel.setText("Loading pending freights...");
+    private void loadAvailableWagons() {
+        statusLabel.setText("Loading available wagons...");
         progressIndicator.setVisible(true);
-        refreshPendingButton.setDisable(true);
+        if (refreshWagonsButton != null) {
+            refreshWagonsButton.setDisable(true);
+        }
         
-        Service<List<Freight>> service = new Service<List<Freight>>() {
+        Service<Map<String, List<AvailableWagonDAO.AvailableWagon>>> service = 
+            new Service<Map<String, List<AvailableWagonDAO.AvailableWagon>>>() {
             @Override
-            protected Task<List<Freight>> createTask() {
-                return new Task<List<Freight>>() {
+            protected Task<Map<String, List<AvailableWagonDAO.AvailableWagon>>> createTask() {
+                return new Task<Map<String, List<AvailableWagonDAO.AvailableWagon>>>() {
                     @Override
-                    protected List<Freight> call() throws Exception {
-                        return controller.getPendingFreights();
+                    protected Map<String, List<AvailableWagonDAO.AvailableWagon>> call() throws Exception {
+                        return RoutePlannerFXUI.this.service.getAvailableWagonsByCargoType();
                     }
                 };
             }
         };
         
         service.setOnSucceeded(e -> {
-            List<Freight> freights = service.getValue();
-            pendingFreightsData.clear();
-            pendingFreightsData.addAll(freights);
-            pendingFreightsCountLabel.setText("Total: " + freights.size() + " pending freights");
+            wagonsByCargoType = service.getValue();
+            wagonsData.clear();
+            int total = 0;
+            for (List<AvailableWagonDAO.AvailableWagon> wagonList : wagonsByCargoType.values()) {
+                wagonsData.addAll(wagonList);
+                total += wagonList.size();
+            }
+            wagonsCountLabel.setText("Total: " + total + " available wagons");
+            
+            // Update cargo type filter
+            ObservableList<String> cargoTypes = FXCollections.observableArrayList();
+            cargoTypes.add("All");
+            cargoTypes.addAll(wagonsByCargoType.keySet());
+            cargoTypeFilter.setItems(cargoTypes);
+            cargoTypeFilter.getSelectionModel().select("All");
+            
+            // Update wagon combo in Create Route tab
+            updateWagonCombo();
+            
             progressIndicator.setVisible(false);
-            refreshPendingButton.setDisable(false);
+            if (refreshWagonsButton != null) {
+                refreshWagonsButton.setDisable(false);
+            }
             statusLabel.setText("Ready");
         });
         
         service.setOnFailed(e -> {
             Platform.runLater(() -> {
                 progressIndicator.setVisible(false);
-                refreshPendingButton.setDisable(false);
-                statusLabel.setText("Error loading freights");
-                showError("Error", "Failed to load pending freights: " + service.getException().getMessage());
+                if (refreshWagonsButton != null) {
+                    refreshWagonsButton.setDisable(false);
+                }
+                statusLabel.setText("Error loading wagons");
+                showError("Error", "Failed to load available wagons: " + service.getException().getMessage());
             });
         });
         
         service.start();
     }
     
-    /**
-     * Adds a station to the list.
-     */
-    private void addStation() {
-        String text = stationIdField.getText().trim();
-        if (text.isEmpty()) {
-            showError("Error", "Please enter a station ID.");
-            return;
-        }
-        
-        try {
-            int stationId = Integer.parseInt(text);
-            ObservableList<Integer> stations = stationIdsList.getItems();
-            if (!stations.contains(stationId)) {
-                stations.add(stationId);
-                stationIdField.clear();
-            } else {
-                showError("Error", "Station ID already in the list.");
+    private void updateWagonCombo() {
+        // Update the wagon combo in Create Route tab
+        if (wagonsByCargoType != null && wagonCombo != null) {
+            ObservableList<AvailableWagonDAO.AvailableWagon> allWagons = FXCollections.observableArrayList();
+            for (List<AvailableWagonDAO.AvailableWagon> wagonList : wagonsByCargoType.values()) {
+                allWagons.addAll(wagonList);
             }
-        } catch (NumberFormatException e) {
-            showError("Error", "Invalid station ID. Please enter a number.");
+            wagonCombo.setItems(allWagons);
         }
     }
     
-    /**
-     * Removes the selected station from the list.
-     */
-    private void removeSelectedStation() {
-        Integer selected = stationIdsList.getSelectionModel().getSelectedItem();
-        if (selected != null) {
-            stationIdsList.getItems().remove(selected);
-        }
-    }
-    
-    /**
-     * Clears all stations from the list.
-     */
-    private void clearStations() {
-        stationIdsList.getItems().clear();
-    }
-    
-    /**
-     * Adds a freight to the list.
-     */
-    private void addFreight(TextField freightIdField) {
-        String text = freightIdField.getText().trim();
-        if (text.isEmpty()) {
-            showError("Error", "Please enter a freight ID.");
-            return;
-        }
-        
-        try {
-            int freightId = Integer.parseInt(text);
-            
-            // Check if freight exists in pending freights
-            boolean exists = false;
-            for (Freight f : pendingFreightsData) {
-                if (f.getId() == freightId) {
-                    exists = true;
-                    break;
-                }
-            }
-            
-            if (!exists) {
-                showError("Error", "Freight ID not found in pending freights.");
-                return;
-            }
-            
-            ObservableList<Integer> freights = selectedFreightsList.getItems();
-            if (!freights.contains(freightId)) {
-                freights.add(freightId);
-                freightIdField.clear();
-            } else {
-                showError("Error", "Freight ID already in the list.");
-            }
-        } catch (NumberFormatException e) {
-            showError("Error", "Invalid freight ID. Please enter a number.");
-        }
-    }
-    
-    /**
-     * Removes the selected freight from the list.
-     */
-    private void removeSelectedFreight() {
-        Integer selected = selectedFreightsList.getSelectionModel().getSelectedItem();
-        if (selected != null) {
-            selectedFreightsList.getItems().remove(selected);
-        }
-    }
-    
-    /**
-     * Creates a route (simple or complex).
-     */
-    private void createRoute() {
-        // Validate train ID
-        String trainIdText = trainIdField.getText().trim();
-        if (trainIdText.isEmpty()) {
-            showError("Error", "Please enter a train ID.");
-            return;
-        }
-        
-        int trainId;
-        try {
-            trainId = Integer.parseInt(trainIdText);
-        } catch (NumberFormatException e) {
-            showError("Error", "Invalid train ID. Please enter a number.");
-            return;
-        }
-        
-        // Validate stations
-        List<Integer> stationIds = new ArrayList<>(stationIdsList.getItems());
-        if (stationIds.size() < 2) {
-            showError("Error", "At least 2 stations are required for a route.");
-            return;
-        }
-        
-        // Validate freights
-        List<Integer> freightIds = new ArrayList<>(selectedFreightsList.getItems());
-        boolean isSimple = simpleRouteRadio.isSelected();
-        
-        if (isSimple) {
-            if (freightIds.size() != 1) {
-                showError("Error", "Simple route requires exactly 1 freight.");
-                return;
-            }
-        } else {
-            if (freightIds.isEmpty()) {
-                showError("Error", "Complex route requires at least 1 freight.");
-                return;
-            }
-        }
-        
-        statusLabel.setText("Creating route...");
-        progressIndicator.setVisible(true);
-        createRouteButton.setDisable(true);
-        
-        Service<Boolean> service = new Service<Boolean>() {
+    private void loadFacilities() {
+        Service<List<Facility>> service = new Service<List<Facility>>() {
             @Override
-            protected Task<Boolean> createTask() {
-                return new Task<Boolean>() {
+            protected Task<List<Facility>> createTask() {
+                return new Task<List<Facility>>() {
                     @Override
-                    protected Boolean call() throws Exception {
-                        if (isSimple) {
-                            return controller.createSimpleRoute(trainId, stationIds, freightIds.get(0));
-                        } else {
-                            return controller.createComplexRoute(trainId, stationIds, freightIds);
-                        }
+                    protected List<Facility> call() throws Exception {
+                        return RoutePlannerFXUI.this.service.getAllFacilities();
                     }
                 };
             }
         };
         
         service.setOnSucceeded(e -> {
-            boolean success = service.getValue();
+            allFacilities = service.getValue();
+            ObservableList<Facility> facilityList = FXCollections.observableArrayList(allFacilities);
+            startStationCombo.setItems(facilityList);
+            endStationCombo.setItems(facilityList);
+            stationCombo.setItems(facilityList);
+        });
+        
+        service.start();
+    }
+    
+    private void loadRoutes() {
+        Service<List<RoutePlannerRoute>> service = new Service<List<RoutePlannerRoute>>() {
+            @Override
+            protected Task<List<RoutePlannerRoute>> createTask() {
+                return new Task<List<RoutePlannerRoute>>() {
+                    @Override
+                    protected List<RoutePlannerRoute> call() throws Exception {
+                        return RoutePlannerFXUI.this.service.getAllRoutes();
+                    }
+                };
+            }
+        };
+        
+        service.setOnSucceeded(e -> {
+            List<RoutePlannerRoute> routes = service.getValue();
+            ObservableList<RoutePlannerRoute> routeList = FXCollections.observableArrayList(routes);
+            routeCombo.setItems(routeList);
+        });
+        
+        service.start();
+    }
+    
+    private void filterWagonsByCargoType() {
+        String selected = cargoTypeFilter.getSelectionModel().getSelectedItem();
+        if (selected == null || "All".equals(selected)) {
+            wagonsData.clear();
+            for (List<AvailableWagonDAO.AvailableWagon> wagonList : wagonsByCargoType.values()) {
+                wagonsData.addAll(wagonList);
+            }
+        } else {
+            wagonsData.clear();
+            List<AvailableWagonDAO.AvailableWagon> wagons = wagonsByCargoType.get(selected);
+            if (wagons != null) {
+                wagonsData.addAll(wagons);
+            }
+        }
+    }
+    
+    private void updateRouteTypeUI() {
+        // Simple route should only allow 1 wagon
+        // Validation happens in createRoute()
+    }
+    
+    private void addIntermediateStation() {
+        Facility selected = stationCombo.getSelectionModel().getSelectedItem();
+        if (selected != null) {
+            ObservableList<Facility> stations = intermediateStationsList.getItems();
+            if (!stations.contains(selected)) {
+                stations.add(selected);
+                stationCombo.getSelectionModel().clearSelection();
+            } else {
+                showError("Error", "Station already in the list.");
+            }
+        }
+    }
+    
+    private void removeSelectedIntermediateStation() {
+        Facility selected = intermediateStationsList.getSelectionModel().getSelectedItem();
+        if (selected != null) {
+            intermediateStationsList.getItems().remove(selected);
+        }
+    }
+    
+    private void clearIntermediateStations() {
+        intermediateStationsList.getItems().clear();
+    }
+    
+    private void addWagon(ComboBox<AvailableWagonDAO.AvailableWagon> wagonCombo) {
+        AvailableWagonDAO.AvailableWagon selected = wagonCombo.getSelectionModel().getSelectedItem();
+        if (selected != null) {
+            ObservableList<AvailableWagonDAO.AvailableWagon> wagons = selectedWagonsList.getItems();
+            if (!wagons.contains(selected)) {
+                wagons.add(selected);
+                wagonCombo.getSelectionModel().clearSelection();
+            } else {
+                showError("Error", "Wagon already in the list.");
+            }
+        }
+    }
+    
+    private void removeSelectedWagon() {
+        AvailableWagonDAO.AvailableWagon selected = selectedWagonsList.getSelectionModel().getSelectedItem();
+        if (selected != null) {
+            selectedWagonsList.getItems().remove(selected);
+        }
+    }
+    
+    private void createRoute() {
+        // Validate route name
+        String routeName = routeNameField.getText().trim();
+        if (routeName.isEmpty()) {
+            showError("Error", "Please enter a route name.");
+            return;
+        }
+        
+        // Validate stations
+        Facility startStation = startStationCombo.getSelectionModel().getSelectedItem();
+        Facility endStation = endStationCombo.getSelectionModel().getSelectedItem();
+        if (startStation == null || endStation == null) {
+            showError("Error", "Please select both start and end stations.");
+            return;
+        }
+        if (startStation.equals(endStation)) {
+            showError("Error", "Start and end stations must be different.");
+            return;
+        }
+        
+        // Build station list
+        List<Integer> stationIds = new ArrayList<>();
+        stationIds.add(Integer.parseInt(startStation.getId()));
+        for (Facility f : intermediateStationsList.getItems()) {
+            stationIds.add(Integer.parseInt(f.getId()));
+        }
+        stationIds.add(Integer.parseInt(endStation.getId()));
+        
+        // Validate wagons
+        List<Integer> wagonIds = new ArrayList<>();
+        for (AvailableWagonDAO.AvailableWagon w : selectedWagonsList.getItems()) {
+            wagonIds.add(w.getWagonId());
+        }
+        
+        if (simpleRouteRadio.isSelected() && wagonIds.size() != 1) {
+            showError("Error", "Simple route requires exactly 1 wagon.");
+            return;
+        }
+        if (wagonIds.isEmpty()) {
+            showError("Error", "Please select at least 1 wagon.");
+            return;
+        }
+        
+        statusLabel.setText("Creating route...");
+        progressIndicator.setVisible(true);
+        createRouteButton.setDisable(true);
+        
+        // For now, create route without load/unload info (can be added later)
+        boolean isSimpleRoute = simpleRouteRadio.isSelected();
+        Service<RoutePlannerRoute> service = new Service<RoutePlannerRoute>() {
+            @Override
+            protected Task<RoutePlannerRoute> createTask() {
+                return new Task<RoutePlannerRoute>() {
+                    @Override
+                    protected RoutePlannerRoute call() throws Exception {
+                        return RoutePlannerFXUI.this.service.createRoute(
+                            routeName, isSimpleRoute, stationIds, wagonIds, null);
+                    }
+                };
+            }
+        };
+        
+        service.setOnSucceeded(e -> {
+            RoutePlannerRoute route = service.getValue();
             progressIndicator.setVisible(false);
             createRouteButton.setDisable(false);
             
-            if (success) {
+            if (route != null) {
                 statusLabel.setText("Route created successfully!");
-                showSuccess("Success", "Route has been created successfully.");
+                showSuccess("Success", "Route has been created successfully with ID: " + route.getRouteId());
                 
                 // Clear form
-                trainIdField.clear();
-                stationIdsList.getItems().clear();
-                selectedFreightsList.getItems().clear();
+                routeNameField.clear();
+                startStationCombo.getSelectionModel().clearSelection();
+                endStationCombo.getSelectionModel().clearSelection();
+                intermediateStationsList.getItems().clear();
+                selectedWagonsList.getItems().clear();
                 
-                // Refresh pending freights
-                loadPendingFreights();
+                // Reload routes
+                loadRoutes();
             } else {
                 statusLabel.setText("Failed to create route");
                 showError("Error", "Failed to create route. Please try again.");
@@ -743,29 +898,52 @@ public class RoutePlannerFXUI {
             Platform.runLater(() -> {
                 progressIndicator.setVisible(false);
                 createRouteButton.setDisable(false);
-                statusLabel.setText("Error occurred");
-                showError("Error", "Failed to create route: " + service.getException().getMessage());
+                statusLabel.setText("Failed to create route");
+                
+                Throwable exception = service.getException();
+                StringBuilder errorMessage = new StringBuilder("Failed to create route.");
+                
+                if (exception != null) {
+                    // Log full exception details to console
+                    System.err.println("=== ERROR CREATING ROUTE ===");
+                    System.err.println("Exception type: " + exception.getClass().getName());
+                    System.err.println("Exception message: " + exception.getMessage());
+                    exception.printStackTrace();
+                    
+                    errorMessage.append("\n\nError: ").append(exception.getMessage());
+                    
+                    // Check for SQLException
+                    Throwable cause = exception;
+                    while (cause != null) {
+                        if (cause instanceof java.sql.SQLException) {
+                            java.sql.SQLException sqlEx = (java.sql.SQLException) cause;
+                            errorMessage.append("\n\nSQL Error Code: ").append(sqlEx.getErrorCode());
+                            errorMessage.append("\nSQL State: ").append(sqlEx.getSQLState());
+                            String sqlMessage = sqlEx.getMessage();
+                            if (sqlMessage != null && !sqlMessage.isEmpty()) {
+                                errorMessage.append("\nSQL Message: ").append(sqlMessage);
+                            }
+                            break;
+                        }
+                        cause = cause.getCause();
+                    }
+                    
+                    if (exception.getCause() != null && !(exception.getCause() instanceof java.sql.SQLException)) {
+                        errorMessage.append("\nCause: ").append(exception.getCause().getMessage());
+                    }
+                }
+                
+                showError("Error", errorMessage.toString());
             });
         });
         
         service.start();
     }
     
-    /**
-     * Views route details for a given train ID.
-     */
     private void viewRoute() {
-        String trainIdText = viewTrainIdField.getText().trim();
-        if (trainIdText.isEmpty()) {
-            showError("Error", "Please enter a train ID.");
-            return;
-        }
-        
-        int trainId;
-        try {
-            trainId = Integer.parseInt(trainIdText);
-        } catch (NumberFormatException e) {
-            showError("Error", "Invalid train ID. Please enter a number.");
+        RoutePlannerRoute selected = routeCombo.getSelectionModel().getSelectedItem();
+        if (selected == null) {
+            showError("Error", "Please select a route.");
             return;
         }
         
@@ -779,55 +957,7 @@ public class RoutePlannerFXUI {
                 return new Task<String>() {
                     @Override
                     protected String call() throws Exception {
-                        // Get routes for this train
-                        List<Route> allRoutes = controller.getAllRoutes();
-                        List<Route> trainRoutes = new ArrayList<>();
-                        
-                        for (Route route : allRoutes) {
-                            if (route.getTrainID() == trainId) {
-                                trainRoutes.add(route);
-                            }
-                        }
-                        
-                        if (trainRoutes.isEmpty()) {
-                            return "No routes found for Train ID: " + trainId;
-                        }
-                        
-                        // Sort by order
-                        trainRoutes.sort((r1, r2) -> Integer.compare(r1.getOrder(), r2.getOrder()));
-                        
-                        // Get freights for this train
-                        List<Freight> allFreights = controller.verifyFreighAssigned();
-                        List<Freight> trainFreights = new ArrayList<>();
-                        for (Freight f : allFreights) {
-                            if (f.getTrainID() == trainId && f.getTrainID() != 0) {
-                                trainFreights.add(f);
-                            }
-                        }
-                        
-                        // Build details string
-                        StringBuilder sb = new StringBuilder();
-                        sb.append("=== Route Summary for Train ID: ").append(trainId).append(" ===\n\n");
-                        sb.append("Sequence of Stations:\n");
-                        for (int i = 0; i < trainRoutes.size(); i++) {
-                            Route route = trainRoutes.get(i);
-                            sb.append("  ").append(i + 1).append(". Station ID: ")
-                              .append(route.getFacilityID()).append(" (Order: ")
-                              .append(route.getOrder()).append(")\n");
-                        }
-                        
-                        sb.append("\nCargos to be Loaded/Unloaded:\n");
-                        if (trainFreights.isEmpty()) {
-                            sb.append("  No cargos assigned to this route.\n");
-                        } else {
-                            for (Freight f : trainFreights) {
-                                sb.append("  Freight ID: ").append(f.getId())
-                                  .append(" | Cargo Type: ").append(f.getCargoType())
-                                  .append(" | Wagon ID: ").append(f.getWagonID()).append("\n");
-                            }
-                        }
-                        
-                        return sb.toString();
+                        return RoutePlannerFXUI.this.service.formatRouteDetails(selected);
                     }
                 };
             }
@@ -853,9 +983,6 @@ public class RoutePlannerFXUI {
         service.start();
     }
     
-    /**
-     * Shows an error dialog.
-     */
     private void showError(String title, String message) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
         alert.setTitle(title);
@@ -864,9 +991,6 @@ public class RoutePlannerFXUI {
         alert.showAndWait();
     }
     
-    /**
-     * Shows a success dialog.
-     */
     private void showSuccess(String title, String message) {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle(title);
@@ -874,5 +998,43 @@ public class RoutePlannerFXUI {
         alert.setContentText(message);
         alert.showAndWait();
     }
+    
+    // String converters for ComboBoxes
+    private static class FacilityStringConverter extends StringConverter<Facility> {
+        @Override
+        public String toString(Facility facility) {
+            return facility == null ? null : facility.getName() + " (ID: " + facility.getId() + ")";
+        }
+        
+        @Override
+        public Facility fromString(String string) {
+            return null; // Not needed for display only
+        }
+    }
+    
+    private static class WagonStringConverter extends StringConverter<AvailableWagonDAO.AvailableWagon> {
+        @Override
+        public String toString(AvailableWagonDAO.AvailableWagon wagon) {
+            return wagon == null ? null : 
+                "Wagon ID: " + wagon.getWagonId() + " | " + wagon.getCargoType();
+        }
+        
+        @Override
+        public AvailableWagonDAO.AvailableWagon fromString(String string) {
+            return null;
+        }
+    }
+    
+    private static class RouteStringConverter extends StringConverter<RoutePlannerRoute> {
+        @Override
+        public String toString(RoutePlannerRoute route) {
+            return route == null ? null : 
+                route.getRouteName() + " (ID: " + route.getRouteId() + ")";
+        }
+        
+        @Override
+        public RoutePlannerRoute fromString(String string) {
+            return null;
+        }
+    }
 }
-

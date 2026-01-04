@@ -2,7 +2,10 @@ package Lapr.Controller;
 
 import Lapr.DataBaseAssociation.VehicleAOD;
 import Lapr.DataBaseAssociation.RouteAOD;
+import Lapr.DataBaseAssociation.TrainAOD;
+import Lapr.DataBaseAssociation.RoutePlannerDAO;
 import Lapr.Domain.Route;
+import Lapr.Domain.RoutePlannerRoute;
 import Sprint1.Domain.Facility;
 import Sprint1.Domain.Locomotive;
 import Sprint1.Domain.Wagon;
@@ -18,71 +21,118 @@ import java.util.stream.Collectors;
  * Controller for USLP09 - Assemble and Assign Train to Route.
  * 
  * Manages the selection of locomotives and wagons for train assembly,
- * distinguishing between vehicles in transit and parked vehicles.
+ * and assigns trains to routes created in US08.
  * 
  * @author Development Team
- * @version 1.0
+ * @version 2.0
  */
 public class TrainAssemblyController {
     private VehicleAOD vehicleAOD;
     private RouteAOD routeAOD;
+    private TrainAOD trainAOD;
+    private RoutePlannerDAO routePlannerDAO;
     private LocomotiveAOD locomotiveAOD;
     private WagonAOD wagonAOD;
     
     public TrainAssemblyController() {
         this.vehicleAOD = new VehicleAOD();
         this.routeAOD = new RouteAOD();
+        this.trainAOD = new TrainAOD();
+        this.routePlannerDAO = new RoutePlannerDAO();
         this.locomotiveAOD = new LocomotiveAOD();
         this.wagonAOD = new WagonAOD();
     }
     
     /**
-     * Gets all available routes from the database.
+     * Gets all available routes from US08 (RoutePlannerRoute).
+     * These are routes created in US08 that are not yet assigned to a train.
      * 
-     * @return list of routes
+     * @return list of routes from US08
      */
-    public List<Route> getAvailableRoutes() {
-        return routeAOD.getAllRoutes();
+    public List<RoutePlannerRoute> getAvailableRoutesFromUS08() {
+        return routePlannerDAO.getAllRoutes();
     }
     
     /**
-     * Gets locomotives with their status for a given route.
-     * Distinguishes between in transit (shows final destination) and parked (shows station).
-     * For parked locomotives, orders by distance from route start (descending).
+     * Gets all available locomotives from the database.
      * 
-     * @param routeStartStationId the starting station ID of the route
-     * @return list of locomotive information, ordered appropriately
+     * @return list of all locomotives
      */
-    public List<VehicleAOD.VehicleInfo> getLocomotivesForRoute(String routeStartStationId) {
-        List<VehicleAOD.VehicleInfo> locomotives = vehicleAOD.getLocomotivesWithStatus(routeStartStationId);
-        
-        // Sort: in transit first, then parked by distance (descending)
-        return locomotives.stream()
-            .sorted(Comparator
-                .comparing((VehicleAOD.VehicleInfo v) -> v.getStatus().equals("IN_TRANSIT") ? 0 : 1)
-                .thenComparing((VehicleAOD.VehicleInfo v) -> v.getStatus().equals("PARKED") ? 
-                    v.getDistanceFromStart() : 0, Comparator.reverseOrder()))
-            .collect(Collectors.toList());
+    public List<Locomotive> getAvailableLocomotives() {
+        return locomotiveAOD.getAllLocomotives();
     }
     
     /**
-     * Gets wagons with their status for a given route.
-     * Distinguishes between in transit (shows final destination) and parked (shows station).
-     * For parked wagons, orders by distance from route start (descending).
+     * Gets locomotives with status information for a given route.
      * 
-     * @param routeStartStationId the starting station ID of the route
-     * @return list of wagon information, ordered appropriately
+     * @param routeStartFacilityId the starting facility ID of the route
+     * @param routeEndFacilityId the ending facility ID of the route
+     * @return list of locomotives with status (in transit or parked)
      */
-    public List<VehicleAOD.VehicleInfo> getWagonsForRoute(String routeStartStationId) {
-        List<VehicleAOD.VehicleInfo> wagons = vehicleAOD.getWagonsWithStatus(routeStartStationId);
+    public List<TrainAOD.LocomotiveWithStatus> getLocomotivesWithStatus(int routeStartFacilityId, int routeEndFacilityId) {
+        List<Locomotive> allLocomotives = locomotiveAOD.getAllLocomotives();
+        return trainAOD.getLocomotivesWithStatus(routeStartFacilityId, routeEndFacilityId, allLocomotives);
+    }
+    
+    /**
+     * Gets wagons with status information for a given route.
+     * 
+     * @param routeStartFacilityId the starting facility ID of the route
+     * @param routeEndFacilityId the ending facility ID of the route
+     * @param wagonIds list of wagon IDs
+     * @return list of wagons with status (in transit or parked)
+     */
+    public List<TrainAOD.WagonWithStatus> getWagonsWithStatus(int routeStartFacilityId, int routeEndFacilityId, 
+                                                              List<Integer> wagonIds) {
+        return trainAOD.getWagonsWithStatus(routeStartFacilityId, routeEndFacilityId, wagonIds);
+    }
+    
+    /**
+     * Gets wagons from a selected route.
+     * 
+     * @param route the route to get wagons from
+     * @return list of wagon IDs
+     */
+    public List<Integer> getWagonsFromRoute(RoutePlannerRoute route) {
+        List<Integer> wagonIds = new ArrayList<>();
+        if (route != null && route.getWagons() != null) {
+            for (RoutePlannerRoute.RouteWagon wagon : route.getWagons()) {
+                wagonIds.add(wagon.getWagonId());
+            }
+        }
+        return wagonIds;
+    }
+    
+    /**
+     * Creates a train and assigns it to a route.
+     * Uses a single transaction to ensure all operations are committed together.
+     * 
+     * @param operatorId the operator ID
+     * @param maxLength the maximum train length
+     * @param locomotiveIds list of locomotive IDs to add
+     * @param route the route to assign
+     * @return the created train ID, or -1 if failed
+     */
+    public int createTrainAndAssignToRoute(String operatorId, double maxLength, 
+                                          List<Integer> locomotiveIds, RoutePlannerRoute route) {
+        if (locomotiveIds == null || locomotiveIds.isEmpty()) {
+            System.err.println("ERROR: At least one locomotive is required");
+            return -1;
+        }
+        if (route == null) {
+            System.err.println("ERROR: Route cannot be null");
+            return -1;
+        }
         
-        // Sort: in transit first, then parked by distance (descending)
-        return wagons.stream()
-            .sorted(Comparator
-                .comparing((VehicleAOD.VehicleInfo v) -> v.getStatus().equals("IN_TRANSIT") ? 0 : 1)
-                .thenComparing((VehicleAOD.VehicleInfo v) -> v.getStatus().equals("PARKED") ? 
-                    v.getDistanceFromStart() : 0, Comparator.reverseOrder()))
-            .collect(Collectors.toList());
+        // Get station IDs from route
+        List<Integer> stationIds = new ArrayList<>();
+        for (RoutePlannerRoute.RouteStation station : route.getStations()) {
+            stationIds.add(Integer.parseInt(station.getFacility().getId()));
+        }
+        
+        // Use single transaction method to ensure all operations are committed together
+        return trainAOD.createTrainAndAssignRouteInTransaction(
+            operatorId, maxLength, locomotiveIds, route.getRouteId(), stationIds);
     }
     
     /**
@@ -111,28 +161,6 @@ public class TrainAssemblyController {
             .filter(w -> w.getWagonId().equals(wagonId))
             .findFirst()
             .orElse(null);
-    }
-    
-    /**
-     * Assembles a train by assigning selected locomotives and wagons to a route.
-     * 
-     * @param routeId the route ID
-     * @param selectedLocomotiveIds list of selected locomotive IDs
-     * @param selectedWagonIds list of selected wagon IDs
-     * @return true if successful, false otherwise
-     */
-    public boolean assignTrainToRoute(String routeId, List<String> selectedLocomotiveIds, 
-                                      List<String> selectedWagonIds) {
-        // TODO: Implement assignment logic via PL/SQL function
-        // This would call a PL/SQL function to assign the train to the route
-        try {
-            // Placeholder for PL/SQL function call
-            // routeAOD.assignTrainToRoute(routeId, selectedLocomotiveIds, selectedWagonIds);
-            return true;
-        } catch (Exception e) {
-            System.err.println("Error assigning train to route: " + e.getMessage());
-            return false;
-        }
     }
 }
 
