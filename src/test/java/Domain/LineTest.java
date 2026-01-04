@@ -8,7 +8,7 @@ import org.junit.jupiter.params.provider.CsvSource;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Suite de testes completa para a classe Line.
+ * Suite de testes completa para a classe Lin.e.
  * Cobre validações de argumentos, integridade de dados e formatação..
  */
 class LineTest {
