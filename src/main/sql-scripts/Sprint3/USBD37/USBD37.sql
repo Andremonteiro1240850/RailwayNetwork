@@ -5,7 +5,7 @@ CREATE OR REPLACE FUNCTION fn_register_wagon(
     p_wagon_model_id  IN Wagon.WagonModelmodelID%TYPE,
     p_gauge_codes     IN SYS.ODCINUMBERLIST
 ) RETURN NUMBER
-IS
+    IS
     v_wagon_id     Wagon.wagon_id%TYPE;
     v_operator_db  Operator.operator_id%TYPE;  -- operator_id canónico da BD
     v_count        NUMBER;
@@ -102,35 +102,35 @@ INSERT INTO Wagon (wagon_id, operator_id, service_year, WagonModelmodelID)
 VALUES (v_wagon_id, v_operator_db, p_service_year, p_wagon_model_id);
 
 FOR i IN 1 .. p_gauge_codes.COUNT LOOP
-        IF p_gauge_codes(i) IS NULL THEN
-            RAISE ex_null_gauge;
+            IF p_gauge_codes(i) IS NULL THEN
+                RAISE ex_null_gauge;
 END IF;
 
-        /* detetar repetidas no próprio input */
-        IF v_seen.EXISTS(TO_CHAR(p_gauge_codes(i))) THEN
-            v_bad_gauge := p_gauge_codes(i);
-            RAISE ex_duplicate_gauge_input;
+            /* detetar repetidas no próprio input */
+            IF v_seen.EXISTS(TO_CHAR(p_gauge_codes(i))) THEN
+                v_bad_gauge := p_gauge_codes(i);
+                RAISE ex_duplicate_gauge_input;
 END IF;
-        v_seen(TO_CHAR(p_gauge_codes(i))) := 1;
+            v_seen(TO_CHAR(p_gauge_codes(i))) := 1;
 
-        /* validar gauge existe */
+            /* validar gauge existe */
 SELECT COUNT(*)
 INTO v_count
 FROM Gauge
 WHERE code = p_gauge_codes(i);
 
 IF v_count = 0 THEN
-            v_bad_gauge := p_gauge_codes(i);
-            RAISE ex_gauge_not_found;
+                v_bad_gauge := p_gauge_codes(i);
+                RAISE ex_gauge_not_found;
 END IF;
 
-        /* criar ligação */
+            /* criar ligação */
 BEGIN
 INSERT INTO Gauge_Wagon (Gaugecode, Wagonwagon_id)
 VALUES (p_gauge_codes(i), v_wagon_id);
 EXCEPTION
-            WHEN DUP_VAL_ON_INDEX THEN
-                NULL; -- se por algum motivo já existir, ignorar
+                WHEN DUP_VAL_ON_INDEX THEN
+                    NULL; -- se por algum motivo já existir, ignorar
 END;
 END LOOP;
 
@@ -140,49 +140,52 @@ EXCEPTION
     WHEN ex_missing_params THEN
         ROLLBACK TO sp_fn_register_wagon;
         RAISE_APPLICATION_ERROR(-20001, 'Missing required parameters.');
+RETURN NULL;
 
 WHEN ex_invalid_year THEN
         ROLLBACK TO sp_fn_register_wagon;
         RAISE_APPLICATION_ERROR(-20017, 'Invalid service year: ' || p_service_year || '.');
+RETURN NULL;
 
 WHEN ex_missing_gauges THEN
         ROLLBACK TO sp_fn_register_wagon;
         RAISE_APPLICATION_ERROR(-20013, 'At least one gauge must be provided.');
+RETURN NULL;
 
 WHEN ex_operator_not_found THEN
         ROLLBACK TO sp_fn_register_wagon;
         RAISE_APPLICATION_ERROR(-20011, 'Operator does not exist: ' || p_operator_id);
-
-WHEN ex_operator_ambiguous THEN
-        ROLLBACK TO sp_fn_register_wagon;
-        RAISE_APPLICATION_ERROR(-20018, 'Operator is ambiguous under case/space-insensitive match: ' || p_operator_id);
+RETURN NULL;
 
 WHEN ex_model_not_found THEN
         ROLLBACK TO sp_fn_register_wagon;
         RAISE_APPLICATION_ERROR(-20010, 'Wagon model does not exist: ' || p_wagon_model_id);
-
-WHEN ex_invalid_wagon_id THEN
-        ROLLBACK TO sp_fn_register_wagon;
-        RAISE_APPLICATION_ERROR(-20019, 'Invalid wagon_id: must be > 0.');
+RETURN NULL;
 
 WHEN ex_wagon_exists THEN
         ROLLBACK TO sp_fn_register_wagon;
         RAISE_APPLICATION_ERROR(-20012, 'Wagon already exists with ID: ' || p_wagon_id);
+RETURN NULL;
 
 WHEN ex_null_gauge THEN
         ROLLBACK TO sp_fn_register_wagon;
         RAISE_APPLICATION_ERROR(-20014, 'Gauge code cannot be NULL.');
+RETURN Null;
 
 WHEN ex_gauge_not_found THEN
         ROLLBACK TO sp_fn_register_wagon;
         RAISE_APPLICATION_ERROR(-20015, 'Gauge does not exist: ' || v_bad_gauge);
+RETURN NULL;
 
 WHEN ex_duplicate_gauge_input THEN
         ROLLBACK TO sp_fn_register_wagon;
         RAISE_APPLICATION_ERROR(-20016, 'Duplicate gauge code in input list: ' || v_bad_gauge);
+RETURN NULL;
 
 WHEN OTHERS THEN
         ROLLBACK TO sp_fn_register_wagon;
         RAISE_APPLICATION_ERROR(-20999, 'Unexpected error in fn_register_wagon: ' || SQLERRM);
-END fn_register_wagon;
+RETURN NULL;
+END;
 /
+
