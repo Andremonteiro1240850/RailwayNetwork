@@ -55,4 +55,4 @@
 | Voltage | Voltagem | Electric supply voltage required by an electric locomotive, measured in volts. |
 | Wagon (Freight Car) | Vagão de Carga | Non-powered rail vehicle used to transport freight. |
 | Warehouse | Armazém | Storage building used for handling and storing freight goods. |
-.
+..
