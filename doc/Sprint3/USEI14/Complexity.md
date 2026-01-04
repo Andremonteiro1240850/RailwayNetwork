@@ -181,6 +181,101 @@ Esta função orquestra o cálculo do fluxo máximo, validando entradas e chaman
 
 ---
 
+## 8. Análise da Função `MaximumFlowFXUI.extractStationId`
+Esta função extrai o ID da estação a partir de uma string no formato "Nome (ID)".
+
+### Complexidade 
+
+| Código                                                                                         | Complexidade Worst Case | Complexidade Average Case | Complexidade Better Case | Explicação                                                                                                                                                           |
+|------------------------------------------------------------------------------------------------|-------------------------|---------------------------|--------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `if (displayText == null) return "";`                                                         | O(1)                    | O(1)                      | O(1)                     | Verificação de null. Tempo constante.                                                                                                                                |
+| `int start = displayText.lastIndexOf('(');`                                                    | O(S)                    | O(S)                      | O(S)                     | Busca do último '(' na string. S é o comprimento da string. No pior caso, percorre toda a string.                                                                 |
+| `int end = displayText.lastIndexOf(')');`                                                      | O(S)                    | O(S)                      | O(S)                     | Busca do último ')' na string. S é o comprimento da string. No pior caso, percorre toda a string.                                                                 |
+| `if (start >= 0 && end > start) { ... }`                                                       | O(1)                    | O(1)                      | O(1)                     | Comparações. Tempo constante.                                                                                                                                      |
+| `return displayText.substring(start + 1, end).trim();`                                        | O(S)                    | O(S)                      | O(S)                     | Criação de substring e trim. O(S) onde S é o comprimento da substring.                                                                                             |
+| `return displayText.trim();`                                                                    | O(S)                    | O(S)                      | O(S)                     | Operação trim. O(S) onde S é o comprimento da string.                                                                                                             |
+
+### Complexidade Total
+- **Pior Caso (Worst Case):** $\mathbf{O(S)}$ onde $S$ é o comprimento da string de entrada
+- **Caso Médio (Average Case):** $\mathbf{O(S)}$
+- **Melhor Caso (Better Case):** $\mathbf{O(S)}$
+
+**Nota:** A complexidade é linear no comprimento da string de entrada, pois as operações `lastIndexOf`, `substring` e `trim` requerem percorrer a string.
+
+---
+
+## 9. Análise da Função `MaximumFlowFXUI.findStationId`
+Esta função encontra o ID da estação a partir de uma entrada que pode ser um ID, nome, ou formato "Nome (ID)".
+
+### Complexidade 
+
+| Código                                                                                         | Complexidade Worst Case | Complexidade Average Case | Complexidade Better Case | Explicação                                                                                                                                                           |
+|------------------------------------------------------------------------------------------------|-------------------------|---------------------------|--------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `if (allStations == null || input == null || input.isEmpty()) return null;`                  | O(1)                    | O(1)                      | O(1)                     | Validações. Tempo constante.                                                                                                                                        |
+| `String trimmedInput = input.trim();`                                                           | O(S)                    | O(S)                      | O(S)                     | Operação trim. O(S) onde S é o comprimento da string.                                                                                                             |
+| `String extractedId = extractStationId(trimmedInput);`                                         | O(S)                    | O(S)                      | O(S)                     | Chamada a extractStationId. Complexidade conforme análise anterior.                                                                                                |
+| `if (!extractedId.equals(trimmedInput)) { for (Station station : allStations) { ... } }`      | O(N)                    | O(N)                      | O(1)                     | Loop sobre todas as estações. No pior caso, percorre todas as N estações. No melhor caso, encontra na primeira iteração.                                           |
+| `if (station.getId().equals(extractedId)) { return station.getId(); }`                         | O(1)                    | O(1)                      | O(1)                     | Comparação de strings. Tempo constante por iteração.                                                                                                               |
+| `for (Station station : allStations) { if (station.getId().equalsIgnoreCase(...)) { ... } }` | O(N)                    | O(N)                      | O(1)                     | Loop sobre todas as estações para match exato de ID. No pior caso, percorre todas as N estações. No melhor caso, encontra na primeira.                              |
+| `for (Station station : allStations) { if (station.getName().equalsIgnoreCase(...)) { ... } }` | O(N×S)                  | O(N×S)                    | O(S)                     | Loop sobre todas as estações para match exato de nome. Cada comparação equalsIgnoreCase é O(S) onde S é o comprimento médio do nome.                                |
+| `for (Station station : allStations) { if (station.getName().toLowerCase().contains(...)) { ... } }` | O(N×S)                  | O(N×S)                    | O(S)                     | Loop sobre todas as estações para match parcial de nome. Cada toLowerCase() e contains() é O(S).                                                                  |
+
+### Complexidade Total
+- **Pior Caso (Worst Case):** $\mathbf{O(N \cdot S)}$ onde $N$ é o número de estações e $S$ é o comprimento médio dos nomes
+- **Caso Médio (Average Case):** $\mathbf{O(N \cdot S)}$
+- **Melhor Caso (Better Case):** $\mathbf{O(S)}$ quando o ID é extraído do formato "Nome (ID)" e encontrado imediatamente
+
+**Nota:** A complexidade é dominada pela busca linear nas estações. No melhor caso, quando o ID é extraído do formato "Nome (ID)" e a estação é encontrada na primeira iteração, a complexidade é O(S). No pior caso, quando é necessário fazer match parcial de nomes, a complexidade é O(N×S).
+
+---
+
+## 10. Análise da Função `MaximumFlowFXUI.handleCalculate`
+Esta função orquestra o cálculo do fluxo máximo na UI, validando entradas e executando o cálculo em background.
+
+### Complexidade 
+
+| Código                                                                                         | Complexidade Worst Case | Complexidade Average Case | Complexidade Better Case | Explicação                                                                                                                                                           |
+|------------------------------------------------------------------------------------------------|-------------------------|---------------------------|--------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `if (controller == null) { ... }`                                                              | O(1)                    | O(1)                      | O(1)                     | Verificação. Tempo constante.                                                                                                                                       |
+| `if (selectedSourceId == null || selectedSourceId.isEmpty()) { ... }`                          | O(1)                    | O(1)                      | O(1)                     | Verificação. Tempo constante.                                                                                                                                       |
+| `selectedSourceId = findStationId(sourceText);`                                                 | O(N×S)                  | O(N×S)                    | O(S)                     | Chamada a findStationId. Complexidade conforme análise anterior.                                                                                                   |
+| `if (selectedSinkId == null || selectedSinkId.isEmpty()) { ... }`                             | O(1)                    | O(1)                      | O(1)                     | Verificação. Tempo constante.                                                                                                                                       |
+| `selectedSinkId = findStationId(sinkText);`                                                    | O(N×S)                  | O(N×S)                    | O(S)                     | Chamada a findStationId. Complexidade conforme análise anterior.                                                                                                   |
+| Validações de entrada                                                                          | O(1)                    | O(1)                      | O(1)                     | Comparações e verificações. Tempo constante.                                                                                                                       |
+| `Service<MaximumFlowController.MaximumFlowResult> service = new Service<...>() { ... }`      | O(1)                    | O(1)                      | O(1)                     | Criação de objeto Service. Tempo constante.                                                                                                                        |
+| `controller.computeMaximumFlow(sourceId, sinkId)` (executado em background)                   | O(N×M²)                 | O(N×M)                    | O(N×M)                   | Chamada ao cálculo do fluxo máximo. Complexidade conforme análise de MaximumFlowController.computeMaximumFlow.                                                     |
+| Handlers de sucesso/erro                                                                       | O(1)                    | O(1)                      | O(1)                     | Operações de atualização da UI. Tempo constante.                                                                                                                   |
+
+### Complexidade Total
+- **Pior Caso (Worst Case):** $\mathbf{O(N \times S + N \cdot M^2)}$ onde $N$ é o número de estações, $S$ é o comprimento médio dos nomes, e $M$ é o número de arestas
+- **Caso Médio (Average Case):** $\mathbf{O(N \times S + N \cdot M)}$
+- **Melhor Caso (Better Case):** $\mathbf{O(S + N \cdot M)}$ quando os IDs já estão definidos
+
+**Nota:** A complexidade é dominada pelo cálculo do fluxo máximo (O(N×M²) no pior caso). A extração de IDs das estações adiciona O(N×S) no pior caso, mas é geralmente dominada pelo cálculo do fluxo.
+
+---
+
+## 11. Análise da Função `MaximumFlowFXUI.updateCalculateButtonState`
+Esta função atualiza o estado do botão de cálculo baseado na seleção de estações.
+
+### Complexidade 
+
+| Código                                                                                         | Complexidade Worst Case | Complexidade Average Case | Complexidade Better Case | Explicação                                                                                                                                                           |
+|------------------------------------------------------------------------------------------------|-------------------------|---------------------------|--------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Verificação e extração de ID do campo source                                                  | O(N×S)                  | O(N×S)                    | O(S)                     | Chamada a findStationId se necessário. Complexidade conforme análise anterior.                                                                                      |
+| Verificação e extração de ID do campo sink                                                    | O(N×S)                  | O(N×S)                    | O(S)                     | Chamada a findStationId se necessário. Complexidade conforme análise anterior.                                                                                      |
+| `boolean canCalculate = controller != null && ...`                                             | O(1)                    | O(1)                      | O(1)                     | Verificações booleanas. Tempo constante.                                                                                                                            |
+| `calculateButton.setDisable(!canCalculate);`                                                   | O(1)                    | O(1)                      | O(1)                     | Atualização de propriedade da UI. Tempo constante.                                                                                                                 |
+
+### Complexidade Total
+- **Pior Caso (Worst Case):** $\mathbf{O(N \times S)}$ onde $N$ é o número de estações e $S$ é o comprimento médio dos nomes
+- **Caso Médio (Average Case):** $\mathbf{O(N \times S)}$
+- **Melhor Caso (Better Case):** $\mathbf{O(1)}$ quando os IDs já estão definidos e não é necessário extrair dos campos de texto
+
+**Nota:** A complexidade é dominada pela busca de IDs nas estações quando necessário. No melhor caso, quando os IDs já estão definidos, a função é O(1).
+
+---
+
 ## Resumo da Complexidade Temporal da USEI14
 
 | Função                                                                 | Pior Caso                    | Caso Médio           |
@@ -192,14 +287,21 @@ Esta função orquestra o cálculo do fluxo máximo, validando entradas e chaman
 | `findMinResidualCapacity`                                             | $\mathbf{O(N)}$              | $\mathbf{O(L)}$      |
 | `updateResidualGraph`                                                  | $\mathbf{O(N)}$              | $\mathbf{O(L)}$      |
 | `MaximumFlowController.computeMaximumFlow`                             | $\mathbf{O(N \cdot M^2)}$    | $\mathbf{O(N \cdot M)}$ |
+| `MaximumFlowFXUI.extractStationId`                                     | $\mathbf{O(S)}$              | $\mathbf{O(S)}$      |
+| `MaximumFlowFXUI.findStationId`                                        | $\mathbf{O(N \cdot S)}$      | $\mathbf{O(N \cdot S)}$ |
+| `MaximumFlowFXUI.handleCalculate`                                      | $\mathbf{O(N \cdot S + N \cdot M^2)}$ | $\mathbf{O(N \cdot S + N \cdot M)}$ |
+| `MaximumFlowFXUI.updateCalculateButtonState`                            | $\mathbf{O(N \cdot S)}$      | $\mathbf{O(N \cdot S)}$ |
 
 Onde:
 - $N$ = número de vértices (estações)
 - $M$ = número de arestas (linhas direcionadas)
 - $L$ = comprimento do caminho aumentante (geralmente $L \leq N$)
+- $S$ = comprimento médio das strings (nomes de estações)
 - $F$ = valor do fluxo máximo
 
 **Observação:** A complexidade dominante é do algoritmo Ford-Fulkerson com BFS (Edmonds-Karp). No caso médio, o número de iterações é O(N×M) e cada BFS tem complexidade O(N+M), resultando em O(N×M×(N+M)) = O(N×M²) quando M >> N. No caso médio prático, a complexidade tende a ser melhor devido a caminhos mais curtos e menos iterações.
 
 **Nota sobre complexidade do Ford-Fulkerson:** Com BFS (Edmonds-Karp), o número de iterações é limitado a O(N×M), e cada BFS tem complexidade O(N+M). A complexidade total é O(N×M×(N+M)). Quando M >> N, isso simplifica para O(N×M²). Quando N >> M, simplifica para O(N²×M). No caso médio, devido a caminhos mais curtos e menos iterações, a complexidade prática é frequentemente melhor que o pior caso teórico.
+
+**Nota sobre complexidade da UI:** As funções da UI (`extractStationId`, `findStationId`, `updateCalculateButtonState`) têm complexidade O(N×S) no pior caso, onde N é o número de estações e S é o comprimento médio dos nomes. Esta complexidade é geralmente dominada pelo cálculo do fluxo máximo (O(N×M²)), mas pode ser relevante quando o número de estações é muito grande. No entanto, estas operações são executadas apenas quando o utilizador interage com a interface, não durante o cálculo do fluxo máximo em si.
 
