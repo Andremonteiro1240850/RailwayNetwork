@@ -175,6 +175,33 @@ public class RoutePlannerService {
     }
     
     /**
+     * Gets all routes available for train assignment (USLP09).
+     * These routes have train_id = 9999 (dummy train), meaning they are planned
+     * but not yet assigned to a real train.
+     * 
+     * Each route has a unique route_id (freight_id), but all share train_id = 9999
+     * as a marker to indicate "not yet assigned to train".
+     * 
+     * @return list of all available routes (each with unique route_id)
+     */
+    public List<RoutePlannerRoute> getAvailableRoutesForAssignment() {
+        return routePlannerDAO.getAvailableRoutesForAssignment();
+    }
+    
+    /**
+     * Assigns a real train to a route (USLP09).
+     * Updates the route's train_id from 9999 (dummy) to the actual train_id.
+     * 
+     * @param routeId the route ID (freight_id)
+     * @param trainId the real train ID to assign
+     * @param operatorId the train operator ID
+     * @return true if successful
+     */
+    public boolean assignTrainToRoute(int routeId, int trainId, String operatorId) {
+        return routePlannerDAO.assignTrainToRoute(routeId, trainId, operatorId);
+    }
+    
+    /**
      * Gets a route by ID.
      * 
      * @param routeId the route ID

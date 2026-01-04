@@ -268,9 +268,24 @@ public class RoutePlannerDAO {
      * @return list of all routes
      */
     public List<RoutePlannerRoute> getAllRoutes() {
+        return getAvailableRoutesForAssignment();
+    }
+    
+    /**
+     * Gets all routes available for train assignment (USLP09).
+     * These are routes with train_id = 9999 (dummy train), meaning they are planned
+     * but not yet assigned to a real train.
+     * 
+     * Each route has a unique freight_id (route_id), but all share train_id = 9999
+     * as a marker to indicate "not yet assigned to train".
+     * 
+     * @return list of all available routes (each with unique route_id)
+     */
+    public List<RoutePlannerRoute> getAvailableRoutesForAssignment() {
         List<RoutePlannerRoute> routes = new ArrayList<>();
         
-        // Get freights that are not assigned to real trains (train_id = -1 or not in FreighTrain with real train)
+        // Get freights that are not assigned to real trains (train_id = 9999 = dummy train)
+        // Each freight_id is unique, but train_id = 9999 is just a marker
         String sql = "SELECT f.freight_id, f.Originfacility_id, f.Destinationfacility_id, " +
                     "f.createDate, o.name AS origin_name, d.name AS destination_name " +
                     "FROM Freight f " +
@@ -286,7 +301,7 @@ public class RoutePlannerDAO {
             
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
-                    int routeId = rs.getInt("freight_id");
+                    int routeId = rs.getInt("freight_id"); // Unique ID for each route
                     int originId = rs.getInt("Originfacility_id");
                     int destId = rs.getInt("Destinationfacility_id");
                     String originName = rs.getString("origin_name");
@@ -316,11 +331,107 @@ public class RoutePlannerDAO {
             }
             
         } catch (SQLException e) {
-            System.err.println("Error retrieving all routes: " + e.getMessage());
+            System.err.println("Error retrieving available routes: " + e.getMessage());
             e.printStackTrace();
         }
         
         return routes;
+    }
+    
+    /**
+     * Assigns a real train to a route (USLP09).
+     * Updates the route's train_id from 9999 (dummy) to the actual train_id.
+     * 
+     * @param routeId the route ID (freight_id)
+     * @param trainId the real train ID to assign
+     * @param operatorId the train operator ID
+     * @return true if successful
+     */
+    public boolean assignTrainToRoute(int routeId, int trainId, String operatorId) {
+        try (Connection conn = DriverManager.getConnection(DATABASE, USERNAME, PASSWORD)) {
+            conn.setAutoCommit(false);
+            
+            try {
+                // Update Freight table
+                String updateFreightSql = "UPDATE Freight SET FreighTrainTraintrain_id = ? WHERE freight_id = ?";
+                try (PreparedStatement stmt = conn.prepareStatement(updateFreightSql)) {
+                    stmt.setInt(1, trainId);
+                    stmt.setInt(2, routeId);
+                    int rowsAffected = stmt.executeUpdate();
+                    
+                    if (rowsAffected == 0) {
+                        conn.rollback();
+                        System.err.println("Route " + routeId + " not found");
+                        return false;
+                    }
+                }
+                
+                // Update or insert FreighTrain entry
+                // First, try to delete old entry with dummy train
+                String deleteFreighTrainSql = "DELETE FROM FreighTrain WHERE Freightfreight_id = ? AND Traintrain_id = ?";
+                try (PreparedStatement stmt = conn.prepareStatement(deleteFreighTrainSql)) {
+                    stmt.setInt(1, routeId);
+                    stmt.setInt(2, DUMMY_TRAIN_ID);
+                    stmt.executeUpdate();
+                }
+                
+                // Insert new FreighTrain entry with real train
+                // Note: locomotive_id might need to be set based on train configuration
+                String insertFreighTrainSql = "INSERT INTO FreighTrain (Freightfreight_id, Traintrain_id, " +
+                                             "TrainLocomotivelocomotive_id, Trainoperator_id) " +
+                                             "VALUES (?, ?, ?, ?)";
+                try (PreparedStatement stmt = conn.prepareStatement(insertFreighTrainSql)) {
+                    stmt.setInt(1, routeId);
+                    stmt.setInt(2, trainId);
+                    // Get locomotive_id from Locomotive_Train for this train (first one if multiple)
+                    int locomotiveId = getLocomotiveIdForTrain(conn, trainId, operatorId);
+                    stmt.setInt(3, locomotiveId);
+                    stmt.setString(4, operatorId);
+                    stmt.executeUpdate();
+                }
+                
+                conn.commit();
+                System.out.println("Train " + trainId + " assigned to route " + routeId);
+                return true;
+                
+            } catch (SQLException e) {
+                conn.rollback();
+                System.err.println("Error assigning train to route: " + e.getMessage());
+                e.printStackTrace();
+                return false;
+            }
+            
+        } catch (SQLException e) {
+            System.err.println("Error connecting to database: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
+    }
+    
+    /**
+     * Gets the locomotive ID for a train (first locomotive if multiple).
+     * 
+     * @param conn the database connection
+     * @param trainId the train ID
+     * @param operatorId the operator ID
+     * @return locomotive ID, or -1 if not found
+     */
+    private int getLocomotiveIdForTrain(Connection conn, int trainId, String operatorId) throws SQLException {
+        String sql = "SELECT Locomotivelocomotive_id FROM Locomotive_Train " +
+                    "WHERE Traintrain_id = ? AND Trainoperator_id = ? " +
+                    "ORDER BY Adddate ASC " +
+                    "FETCH FIRST 1 ROWS ONLY";
+        
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, trainId);
+            stmt.setString(2, operatorId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1);
+                }
+            }
+        }
+        return -1; // Default if no locomotive found
     }
 
     /**
