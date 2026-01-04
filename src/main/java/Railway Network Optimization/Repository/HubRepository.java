@@ -31,9 +31,10 @@ public class HubRepository {
         return estacoesLigadas;
     }
     public Set<Station> getUndirectedStations() {
-        Set<Station> stations = new HashSet<>();
-        for (Station s : loader.buildGraph().keySet()) {
-            stations.add(s);
+        Map<Station, Map<Station, Double>> graph = loader.buildGraph();
+        Set<Station> stations = new HashSet<>(graph.keySet());
+        for (Map<Station, Double> dests : graph.values()) {
+            stations.addAll(dests.keySet());
         }
         return stations;
     }
