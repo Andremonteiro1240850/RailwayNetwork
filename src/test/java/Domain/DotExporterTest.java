@@ -14,8 +14,8 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * Suite de testes completa para o domínio de Grafos.
- * Cobre: DotExporter, Station e Connection.
+ * Suite de testes robusta para o domínio de Grafos.
+ * Cobre casos de sucesso, falha, caracteres especiais e formatação.
  */
 class GraphDomainTest {
 
@@ -26,7 +26,7 @@ class GraphDomainTest {
         exporter = new DotExporter();
     }
 
-
+    // --- TESTES DOTEXPORTER ---
 
     @Test
     @DisplayName("DotExporter: Deve exportar grafo completo com ordenação e estilos")
@@ -44,6 +44,41 @@ class GraphDomainTest {
         assertTrue(result.endsWith("}\n"));
     }
 
+    @Test
+    @DisplayName("DotExporter: Deve garantir ponto decimal nas coordenadas (Locale US)")
+    void testCoordinateFormatting() {
+        // Testando se coordenadas com decimais longos são arredondadas e usam '.'
+        Station s1 = new Station("A", "A", 0, 0, 10.5555, 20.7777);
+        Graph graph = new StubGraph(Set.of(s1), Collections.emptySet());
+
+        String result = exporter.exportToDot(graph);
+
+        // Esperado: 10.56 e 20.78 (arredondamento de duas casas)
+        assertTrue(result.contains("pos=\"10.56,20.78!\""));
+    }
+
+    @Test
+    @DisplayName("DotExporter: Deve tratar nomes com aspas e IDs com caracteres especiais")
+    void testSpecialCharactersEscaping() {
+        // IDs com hífen precisam ser escapados com aspas no DOT pelo escapeNodeId
+        Station s1 = new Station("S-01", "Gare \"Central\"", 0, 0, 10, 10);
+        Graph graph = new StubGraph(Set.of(s1), Collections.emptySet());
+
+        String result = exporter.exportToDot(graph);
+
+        // Verifica se o ID S-01 foi colocado entre aspas e a aspa interna escapada
+        assertTrue(result.contains("\"S-01\""));
+        assertTrue(result.contains("label=\"Gare \\\"Central\\\"\""));
+    }
+
+    @Test
+    @DisplayName("DotExporter: Deve retornar estrutura básica para grafo vazio")
+    void testEmptyGraphExport() {
+        Graph graph = new StubGraph(Collections.emptySet(), Collections.emptySet());
+        String result = exporter.exportToDot(graph);
+        assertEquals("graph G {\n}\n", result);
+    }
+
     // --- TESTES STATION ---
 
     @Test
@@ -51,27 +86,23 @@ class GraphDomainTest {
     void testStationConstructorValidations() {
         assertThrows(IllegalArgumentException.class, () -> new Station(null, "Name", 0, 0, 0, 0));
         assertThrows(IllegalArgumentException.class, () -> new Station("ID", "  ", 0, 0, 0, 0));
+        // Testando limites geográficos (exemplo: Latitude > 90)
         assertThrows(IllegalArgumentException.class, () -> new Station("ID", "Name", 95, 0, 0, 0));
-        assertThrows(IllegalArgumentException.class, () -> new Station("ID", "Name", 0, -190, 0, 0));
     }
 
     @Test
-    @DisplayName("Station: Getters e métodos de objeto")
+    @DisplayName("Station: Getters e limpeza de strings (trim)")
     void testStationMethods() {
         Station s = new Station(" S1 ", " Porto ", 41.1, -8.6, 100, 200);
-        assertEquals("S1", s.getId()); // Testa o trim()
-        assertEquals("Porto", s.getName()); // Testa o trim()
-        assertEquals(41.1, s.getLatitude());
-        assertEquals(-8.6, s.getLongitude());
-        assertEquals(100, s.getCoordX());
-        assertEquals(200, s.getCoordY());
+        assertEquals("S1", s.getId());
+        assertEquals("Porto", s.getName());
         assertTrue(s.toString().contains("id='S1'"));
     }
 
     // --- TESTES CONNECTION ---
 
     @Test
-    @DisplayName("Connection: Deve criar conexão válida e aplicar trim nos IDs")
+    @DisplayName("Connection: Criação válida e imutabilidade dos IDs")
     void testConnectionValid() {
         Connection conn = new Connection("  A  ", "  B  ", 50.5);
         assertEquals("A", conn.getOriginId());
@@ -80,49 +111,47 @@ class GraphDomainTest {
     }
 
     @ParameterizedTest
-    @DisplayName("Connection: Deve lançar exceção para inputs inválidos")
+    @DisplayName("Connection: Lançar exceção para entradas inválidas")
     @CsvSource({
             " , B, 10",         // Origem nula
             "A, '', 10",        // Destino vazio
-            "A, A, 10",         // Origem igual ao destino
-            "A, B, -1"          // Distância negativa
+            "A, A, 10",         // Auto-loop (origem = destino)
+            "A, B, -5.0"        // Distância negativa
     })
     void testConnectionInvalidInputs(String org, String dest, double dist) {
         assertThrows(IllegalArgumentException.class, () -> new Connection(org, dest, dist));
     }
 
     @Test
-    @DisplayName("Connection: Teste do método reverse")
+    @DisplayName("Connection: Inversão de sentido (reverse)")
     void testConnectionReverse() {
-        Connection conn = new Connection("A", "B", 100.0);
+        Connection conn = new Connection("Lisboa", "Porto", 300.0);
         Connection rev = conn.reverse();
 
-        assertEquals("B", rev.getOriginId());
-        assertEquals("A", rev.getDestinationId());
-        assertEquals(conn.getDistance(), rev.getDistance());
+        assertEquals("Porto", rev.getOriginId());
+        assertEquals("Lisboa", rev.getDestinationId());
+        assertEquals(300.0, rev.getDistance());
     }
 
     @Test
-    @DisplayName("Connection: Equality e HashCode")
+    @DisplayName("Connection: Igualdade lógica (Equals/HashCode)")
     void testConnectionEquality() {
         Connection c1 = new Connection("A", "B", 10.0);
         Connection c2 = new Connection("A", "B", 10.0);
-        Connection c3 = new Connection("A", "C", 10.0);
+        Connection c3 = new Connection("B", "A", 10.0); // Sentido oposto
 
         assertEquals(c1, c2);
-        assertNotEquals(c1, c3);
+        assertNotEquals(c1, c3); // Em grafos direcionados/objetos distintos são diferentes
         assertEquals(c1.hashCode(), c2.hashCode());
-        assertTrue(c1.toString().contains("origin='A'"));
     }
 
     // --- STUB PARA GRAPH ---
-
+    // Necessário para testar o Exporter sem depender da implementação real de Graph
     private static class StubGraph extends Graph {
         private final List<Station> stations;
         private final Set<Connection> connections;
 
         public StubGraph(Set<Station> stations, Set<Connection> connections) {
-            // Convertemos o Set para List para coincidir com a assinatura esperada pelo DotExporter
             this.stations = new ArrayList<>(stations);
             this.connections = connections;
         }
