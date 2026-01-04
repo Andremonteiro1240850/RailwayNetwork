@@ -90,10 +90,11 @@ public class Line {
     public double getCost() {
         return cost;
     }
-    
+
     @Override
     public String toString() {
-        return String.format("Line{departure='%s', arrival='%s', dist=%.2f km, capacity=%d, cost=%.2f}",
+        // Importa java.util.Locale no topo da classe
+        return String.format(java.util.Locale.US, "Line{departure='%s', arrival='%s', dist=%.2f km, capacity=%d, cost=%.2f}",
                 departureStationId, arrivalStationId, distance, capacity, cost);
     }
 }
