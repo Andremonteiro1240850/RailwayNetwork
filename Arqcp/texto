@@ -1,0 +1,30 @@
+
+
+========================================
+
+Welcome, Administrador do Sistema
+Role: Administrator
+----------------------------------------
+
+ADMINISTRATOR MENU
+----------------------------------------
+1. Assign track to arriving train
+2. Set track as free
+3. Set track as inoperational
+4. Give departure order to train
+5. View sensor data
+6. View track status
+7. View train status
+8. Export user action logs
+9. View all logs
+10. System status
+0. Logout
+
+Select option: 8
+DEBUG: is_administrator returned FALSE
+DEBUG: User role = 1
+
+>>> ERROR: Only administrators can export logs <<<
+
+
+Press Enter to continue...
