@@ -49,30 +49,19 @@ public class SchedulerFXUI {
     private ProgressIndicator progressIndicator;
     private Label statusLabel;
     
-    // Train creation tab - Left column (60%)
-    private VBox trainCreationTab;
-    private TextField trainIdField;
-    private ComboBox<Facility> startStationCombo;
-    private ComboBox<Facility> endStationCombo;
+    // Train selection tab - Left column (60%)
+    private VBox trainSelectionTab;
+    private ComboBox<Train> availableTrainsCombo; // Comboios já montados na USLP09
     private DatePicker departureDatePicker;
     private TextField departureTimeField;
-    private CheckBox wagonsLoadedCheckBox;
     private CheckBox specifyIntermediateStationsCheckBox;
     private VBox intermediateStationsBox;
     private ListView<Facility> intermediateStationsList;
     private ComboBox<Facility> intermediateStationCombo;
     private Button addIntermediateStationButton;
     private Button removeIntermediateStationButton;
-    private TableView<Locomotive> availableLocomotivesTable;
-    private TableView<Locomotive> selectedLocomotivesTable;
-    private TableView<Wagon> availableWagonsTable;
-    private TableView<Wagon> selectedWagonsTable;
-    private Button addLocomotiveButton;
-    private Button removeLocomotiveButton;
-    private Button addWagonButton;
-    private Button removeWagonButton;
-    private Button addTrainButton;
-    private ListView<Train> trainsList;
+    private Button addTrainToDispatchButton; // Adiciona comboio à fila de dispatch
+    private ListView<Train> trainsList; // Lista de comboios para dispatch
     private Button removeTrainButton;
     
     // Train creation tab - Right column (40%) - Real-time summary
@@ -87,9 +76,8 @@ public class SchedulerFXUI {
     
     // Data
     private ObservableList<Facility> facilities;
-    private ObservableList<Locomotive> locomotives;
-    private ObservableList<Wagon> wagons;
-    private ObservableList<Train> trains;
+    private ObservableList<Train> availableTrains; // Comboios já montados na USLP09
+    private ObservableList<Train> trains; // Comboios na fila de dispatch
     private DispatchReport currentReport;
     
     /**
@@ -114,29 +102,25 @@ public class SchedulerFXUI {
     /**
      * Initializes data from controller and database.
      * USLP10: All data must come from database, not CSV files.
+     * USLP10: Loads trains that were already assembled in USLP09.
      */
     private void initializeData() {
         facilities = FXCollections.observableArrayList(controller.getStations());
 
-        // Load locomotives and wagons from database (USLP10 requirement)
-        LocomotiveAOD locomotiveAOD = new LocomotiveAOD();
-        WagonAOD wagonAOD = new WagonAOD();
-
+        // Load trains that were already assembled and assigned to routes in USLP09
         try {
-            locomotives = FXCollections.observableArrayList(locomotiveAOD.getAllLocomotives());
-            wagons = FXCollections.observableArrayList(wagonAOD.getAllWagons());
-
-            if (locomotives.isEmpty()) {
-                System.err.println("WARNING: No locomotives loaded from database");
-            }
-            if (wagons.isEmpty()) {
-                System.err.println("WARNING: No wagons loaded from database");
+            List<Train> trainsFromDB = controller.getAvailableTrains();
+            availableTrains = FXCollections.observableArrayList(trainsFromDB);
+            
+            if (availableTrains.isEmpty()) {
+                System.err.println("WARNING: No trains available for dispatch. Please create trains in USLP09 first.");
+            } else {
+                System.out.println("Loaded " + availableTrains.size() + " trains from USLP09 for dispatch");
             }
         } catch (Exception e) {
-            System.err.println("Error loading data from database: " + e.getMessage());
+            System.err.println("Error loading trains from database: " + e.getMessage());
             e.printStackTrace();
-            locomotives = FXCollections.observableArrayList();
-            wagons = FXCollections.observableArrayList();
+            availableTrains = FXCollections.observableArrayList();
         }
 
         trains = FXCollections.observableArrayList();
@@ -161,6 +145,9 @@ public class SchedulerFXUI {
         root.setCenter(mainTabPane);
 
         BorderPane.setMargin(mainTabPane, Insets.EMPTY);
+        
+        VBox bottomBox = createBottomBox();
+        root.setBottom(bottomBox);
 
         Scene scene = new Scene(root, 1400, 900);
         
@@ -184,6 +171,25 @@ public class SchedulerFXUI {
     }
 
 
+    /**
+     * Creates the bottom box with status information.
+     */
+    private VBox createBottomBox() {
+        VBox box = new VBox(5);
+        box.setPadding(new Insets(10, 20, 10, 20));
+        box.setStyle("-fx-background-color: white;");
+        box.setPrefHeight(60);
+        box.setMinHeight(60);
+        box.setMaxHeight(60);
+        
+        Label statusInfo = new Label("Ready to dispatch trains");
+        statusInfo.setStyle("-fx-text-fill: #0D1117; -fx-font-size: 13px;");
+        
+        box.getChildren().add(statusInfo);
+        
+        return box;
+    }
+    
     /**
      * Creates the top box with title and dispatch button.
      */
@@ -257,12 +263,10 @@ public class SchedulerFXUI {
         HBox.setHgrow(leftColumn, Priority.ALWAYS);
 
         VBox trainConfigBox = createCompactTrainConfigSection();
-        VBox resourcesBox = createResourcesSection();
         VBox dispatchQueueBox = createDispatchQueueSection();
 
         leftColumn.getChildren().addAll(
                 trainConfigBox,
-                resourcesBox,
                 dispatchQueueBox
         );
 
@@ -288,6 +292,7 @@ public class SchedulerFXUI {
 
     /**
      * Creates compact train configuration section with 2-column form.
+     * USLP10: Only allows selection of trains already assembled in USLP09.
      */
     private VBox createCompactTrainConfigSection() {
         VBox box = new VBox(12);
@@ -295,99 +300,62 @@ public class SchedulerFXUI {
         box.setStyle("-fx-background-color: #161B22; -fx-background-radius: 12; " +
                     "-fx-border-color: rgba(99, 102, 241, 0.15); -fx-border-radius: 12; -fx-border-width: 1;");
         
-        Label sectionLabel = new Label("Train Configuration");
+        Label sectionLabel = new Label("Train Selection & Dispatch Configuration");
         sectionLabel.setStyle("-fx-font-size: 18px; -fx-font-weight: 600; -fx-text-fill: white;");
         
-        GridPane grid = new GridPane();
-        grid.setHgap(20);
-        grid.setVgap(12);
-        grid.setPadding(new Insets(15, 0, 0, 0));
+        VBox formBox = new VBox(12);
+        formBox.setPadding(new Insets(15, 0, 0, 0));
         
-        // Column 1
-        // Train ID
-        Label trainIdLabel = new Label("Train ID:");
-        trainIdLabel.setStyle("-fx-text-fill: white; -fx-font-size: 13px;");
-        trainIdField = new TextField();
-        trainIdField.setPrefWidth(250);
-        trainIdField.setStyle("-fx-background-color: #0D1117; -fx-text-fill: white; -fx-border-color: #27272A; -fx-border-radius: 6;");
-        grid.add(trainIdLabel, 0, 0);
-        grid.add(trainIdField, 1, 0);
-        
-        // End Station
-        Label endStationLabel = new Label("End Station:");
-        endStationLabel.setStyle("-fx-text-fill: white; -fx-font-size: 13px;");
-        endStationCombo = new ComboBox<>(facilities);
-        endStationCombo.setConverter(new FacilityStringConverter());
-        endStationCombo.setPrefWidth(250);
-        endStationCombo.setStyle("-fx-background-color: #0D1117; -fx-text-fill: white; " +
-                                 "-fx-control-inner-background: #0D1117;");
-        endStationCombo.setCellFactory(list -> new ListCell<Facility>() {
+        // Select Train (already assembled in USLP09)
+        VBox trainBox = new VBox(5);
+        Label trainLabel = new Label("Select Train:");
+        trainLabel.setStyle("-fx-text-fill: white; -fx-font-size: 13px;");
+        availableTrainsCombo = new ComboBox<>(availableTrains);
+        availableTrainsCombo.setPrefWidth(250);
+        availableTrainsCombo.setStyle("-fx-background-color: #0D1117; -fx-text-fill: white; " +
+                                      "-fx-control-inner-background: #0D1117;");
+        availableTrainsCombo.setCellFactory(list -> new ListCell<Train>() {
             @Override
-            protected void updateItem(Facility item, boolean empty) {
+            protected void updateItem(Train item, boolean empty) {
                 super.updateItem(item, empty);
                 if (empty || item == null) {
                     setText(null);
                 } else {
-                    setText(item.getId() + " - " + item.getName());
+                    List<Facility> route = item.getRoute();
+                    String routeStr = route.size() >= 2 ? 
+                        route.get(0).getId() + " -> " + route.get(route.size() - 1).getId() : 
+                        "Route";
+                    setText("Train " + item.getTrainId() + " (" + routeStr + ")");
                     setStyle("-fx-text-fill: white; -fx-background-color: #0D1117;");
                 }
             }
         });
-        grid.add(endStationLabel, 0, 1);
-        grid.add(endStationCombo, 1, 1);
+        trainBox.getChildren().addAll(trainLabel, availableTrainsCombo);
         
         // Departure Time
+        VBox timeBox = new VBox(5);
         Label departureTimeLabel = new Label("Departure Time:");
         departureTimeLabel.setStyle("-fx-text-fill: white; -fx-font-size: 13px;");
         departureTimeField = new TextField();
         departureTimeField.setPrefWidth(250);
         departureTimeField.setPromptText("HH:mm");
         departureTimeField.setStyle("-fx-background-color: #0D1117; -fx-text-fill: white; -fx-border-color: #27272A; -fx-border-radius: 6;");
-        grid.add(departureTimeLabel, 0, 2);
-        grid.add(departureTimeField, 1, 2);
-        
-        // Column 2
-        // Start Station
-        Label startStationLabel = new Label("Start Station:");
-        startStationLabel.setStyle("-fx-text-fill: white; -fx-font-size: 13px;");
-        startStationCombo = new ComboBox<>(facilities);
-        startStationCombo.setConverter(new FacilityStringConverter());
-        startStationCombo.setPrefWidth(250);
-        startStationCombo.setStyle("-fx-background-color: #0D1117; -fx-text-fill: white; " +
-                                   "-fx-control-inner-background: #0D1117;");
-        startStationCombo.setCellFactory(list -> new ListCell<Facility>() {
-            @Override
-            protected void updateItem(Facility item, boolean empty) {
-                super.updateItem(item, empty);
-                if (empty || item == null) {
-                    setText(null);
-                } else {
-                    setText(item.getId() + " - " + item.getName());
-                    setStyle("-fx-text-fill: white; -fx-background-color: #0D1117;");
-                }
-            }
-        });
-        grid.add(startStationLabel, 2, 0);
-        grid.add(startStationCombo, 3, 0);
+        timeBox.getChildren().addAll(departureTimeLabel, departureTimeField);
         
         // Departure Date
+        VBox dateBox = new VBox(5);
         Label departureDateLabel = new Label("Departure Date:");
         departureDateLabel.setStyle("-fx-text-fill: white; -fx-font-size: 13px;");
         departureDatePicker = new DatePicker();
         departureDatePicker.setPrefWidth(250);
         departureDatePicker.setStyle("-fx-background-color: #0D1117; -fx-text-fill: white;");
-        grid.add(departureDateLabel, 2, 1);
-        grid.add(departureDatePicker, 3, 1);
+        dateBox.getChildren().addAll(departureDateLabel, departureDatePicker);
         
-        // Cargo status
-        wagonsLoadedCheckBox = new CheckBox("Cargo status: Loaded");
-        wagonsLoadedCheckBox.setStyle("-fx-text-fill: white; -fx-font-size: 13px;");
-        grid.add(wagonsLoadedCheckBox, 2, 2);
-        
-        // Option to specify intermediate stations
+        // Option to specify intermediate stations (path manual)
         specifyIntermediateStationsCheckBox = new CheckBox("Choose path manually (intermediate stations)");
         specifyIntermediateStationsCheckBox.setStyle("-fx-text-fill: white; -fx-font-size: 13px;");
-        grid.add(specifyIntermediateStationsCheckBox, 0, 3, 2, 1);
+        
+        formBox.getChildren().addAll(trainBox, timeBox, dateBox, specifyIntermediateStationsCheckBox);
         
         // Intermediate stations section (initially hidden)
         intermediateStationsBox = createIntermediateStationsSection();
@@ -401,7 +369,7 @@ public class SchedulerFXUI {
             intermediateStationsBox.setManaged(show);
         });
         
-        box.getChildren().addAll(sectionLabel, grid, intermediateStationsBox);
+        box.getChildren().addAll(sectionLabel, formBox, intermediateStationsBox);
         
         return box;
     }
@@ -420,7 +388,7 @@ public class SchedulerFXUI {
         sectionLabel.setStyle("-fx-text-fill: white; -fx-font-size: 14px; -fx-font-weight: 500;");
         
         // Instructions
-        Label instructionsLabel = new Label("Add stations in order between start and end stations:");
+        Label instructionsLabel = new Label("Add intermediate stations in order:");
         instructionsLabel.setStyle("-fx-text-fill: #94A3B8; -fx-font-size: 12px;");
         
         // Combo box for selecting intermediate station
@@ -481,18 +449,22 @@ public class SchedulerFXUI {
             return;
         }
         
-        // Validate that the station is not the start or end station
-        Facility startStation = startStationCombo.getSelectionModel().getSelectedItem();
-        Facility endStation = endStationCombo.getSelectionModel().getSelectedItem();
-        
-        if (startStation != null && selected.equals(startStation)) {
-            showAlert(Alert.AlertType.WARNING, "Warning", "This station is already selected as the start station.");
-            return;
-        }
-        
-        if (endStation != null && selected.equals(endStation)) {
-            showAlert(Alert.AlertType.WARNING, "Warning", "This station is already selected as the end station.");
-            return;
+        // Validate that the station is not the start or end station of the selected train
+        Train selectedTrain = availableTrainsCombo.getSelectionModel().getSelectedItem();
+        if (selectedTrain != null && selectedTrain.getRoute().size() >= 2) {
+            List<Facility> route = selectedTrain.getRoute();
+            Facility startStation = route.get(0);
+            Facility endStation = route.get(route.size() - 1);
+            
+            if (selected.equals(startStation)) {
+                showAlert(Alert.AlertType.WARNING, "Warning", "This station is already the start station of the selected train.");
+                return;
+            }
+            
+            if (selected.equals(endStation)) {
+                showAlert(Alert.AlertType.WARNING, "Warning", "This station is already the end station of the selected train.");
+                return;
+            }
         }
         
         ObservableList<Facility> intermediateList = intermediateStationsList.getItems();
@@ -528,672 +500,51 @@ public class SchedulerFXUI {
     
     /**
      * Creates the resources section (locomotives and wagons).
+     * USLP10: This section is no longer needed - trains are already assembled in USLP09.
+     * Method kept for compatibility but returns empty VBox.
      */
     private VBox createResourcesSection() {
+        // USLP10: Resources section removed - trains come pre-assembled from USLP09
         VBox box = new VBox(15);
-        
-        // Locomotives section
-        VBox locomotivesBox = createLocomotivesSection();
-        
-        // Wagons section
-        VBox wagonsBox = createWagonsSection();
-        
-        box.getChildren().addAll(locomotivesBox, wagonsBox);
-        VBox.setVgrow(locomotivesBox, Priority.ALWAYS);
-        VBox.setVgrow(wagonsBox, Priority.ALWAYS);
-        
         return box;
     }
     
     /**
      * Creates the locomotives section with professional formatting.
+     * USLP10: This method is no longer needed - trains come pre-assembled from USLP09.
      */
     private VBox createLocomotivesSection() {
-        VBox box = new VBox(15);
-        box.setPadding(new Insets(20));
-        box.setStyle("-fx-background-color: #161B22; -fx-background-radius: 12; " +
-                    "-fx-border-color: rgba(99, 102, 241, 0.15); -fx-border-radius: 12; -fx-border-width: 1;");
-        
-        Label sectionLabel = new Label("Locomotives");
-        sectionLabel.setStyle("-fx-font-size: 18px; -fx-font-weight: 700; -fx-text-fill: #FFFFFF; " +
-                             "-fx-font-family: 'Segoe UI', 'Roboto', sans-serif;");
-        
-        Separator separator = new Separator();
-        separator.setStyle("-fx-background-color: rgba(99, 102, 241, 0.3); -fx-pref-height: 1;");
-        
-        HBox tablesBox = new HBox(15);
-        
-        // Available locomotives table
-        VBox availableBox = new VBox(8);
-        Label availableLabel = new Label("Available");
-        availableLabel.setStyle("-fx-text-fill: #E2E8F0; -fx-font-size: 13px; -fx-font-weight: 600; " +
-                               "-fx-font-family: 'Segoe UI', 'Roboto', sans-serif;");
-        availableLocomotivesTable = createLocomotiveTable();
-        availableLocomotivesTable.setItems(locomotives);
-        availableLocomotivesTable.setPrefHeight(200);
-        availableLocomotivesTable.setPrefWidth(900);
-        availableBox.getChildren().addAll(availableLabel, availableLocomotivesTable);
-        VBox.setVgrow(availableLocomotivesTable, Priority.ALWAYS);
-        
-        // Buttons
-        VBox buttonsBox = new VBox(12);
-        buttonsBox.setAlignment(Pos.CENTER);
-        buttonsBox.setPadding(new Insets(0, 5, 0, 5));
-        addLocomotiveButton = new Button("→");
-        addLocomotiveButton.setStyle("-fx-background-color: #10B981; -fx-text-fill: white; " +
-                                   "-fx-font-size: 16px; -fx-font-weight: bold; " +
-                                   "-fx-min-width: 45; -fx-pref-height: 45; " +
-                                   "-fx-background-radius: 8; -fx-cursor: hand; " +
-                                   "-fx-effect: dropshadow(gaussian, rgba(16, 185, 129, 0.4), 6, 0, 0, 2);");
-        addLocomotiveButton.setOnAction(e -> addLocomotive());
-        addLocomotiveButton.setOnMouseEntered(e -> addLocomotiveButton.setStyle(
-            "-fx-background-color: #059669; -fx-text-fill: white; " +
-            "-fx-font-size: 16px; -fx-font-weight: bold; " +
-            "-fx-min-width: 45; -fx-pref-height: 45; " +
-            "-fx-background-radius: 8; -fx-cursor: hand; " +
-            "-fx-effect: dropshadow(gaussian, rgba(16, 185, 129, 0.6), 8, 0, 0, 3);"));
-        addLocomotiveButton.setOnMouseExited(e -> addLocomotiveButton.setStyle(
-            "-fx-background-color: #10B981; -fx-text-fill: white; " +
-            "-fx-font-size: 16px; -fx-font-weight: bold; " +
-            "-fx-min-width: 45; -fx-pref-height: 45; " +
-            "-fx-background-radius: 8; -fx-cursor: hand; " +
-            "-fx-effect: dropshadow(gaussian, rgba(16, 185, 129, 0.4), 6, 0, 0, 2);"));
-        removeLocomotiveButton = new Button("←");
-        removeLocomotiveButton.setStyle("-fx-background-color: #EF4444; -fx-text-fill: white; " +
-                                      "-fx-font-size: 16px; -fx-font-weight: bold; " +
-                                      "-fx-min-width: 45; -fx-pref-height: 45; " +
-                                      "-fx-background-radius: 8; -fx-cursor: hand; " +
-                                      "-fx-effect: dropshadow(gaussian, rgba(239, 68, 68, 0.4), 6, 0, 0, 2);");
-        removeLocomotiveButton.setOnAction(e -> removeLocomotive());
-        removeLocomotiveButton.setOnMouseEntered(e -> removeLocomotiveButton.setStyle(
-            "-fx-background-color: #DC2626; -fx-text-fill: white; " +
-            "-fx-font-size: 16px; -fx-font-weight: bold; " +
-            "-fx-min-width: 45; -fx-pref-height: 45; " +
-            "-fx-background-radius: 8; -fx-cursor: hand; " +
-            "-fx-effect: dropshadow(gaussian, rgba(239, 68, 68, 0.6), 8, 0, 0, 3);"));
-        removeLocomotiveButton.setOnMouseExited(e -> removeLocomotiveButton.setStyle(
-            "-fx-background-color: #EF4444; -fx-text-fill: white; " +
-            "-fx-font-size: 16px; -fx-font-weight: bold; " +
-            "-fx-min-width: 45; -fx-pref-height: 45; " +
-            "-fx-background-radius: 8; -fx-cursor: hand; " +
-            "-fx-effect: dropshadow(gaussian, rgba(239, 68, 68, 0.4), 6, 0, 0, 2);"));
-        buttonsBox.getChildren().addAll(addLocomotiveButton, removeLocomotiveButton);
-        
-        // Selected locomotives table
-        VBox selectedBox = new VBox(8);
-        Label selectedLabel = new Label("Selected");
-        selectedLabel.setStyle("-fx-text-fill: #E2E8F0; -fx-font-size: 8px; -fx-font-weight: 600; " +
-                             "-fx-font-family: 'Segoe UI', 'Roboto', sans-serif;");
-        selectedLocomotivesTable = createLocomotiveTable();
-        selectedLocomotivesTable.getItems().addListener((javafx.collections.ListChangeListener.Change<? extends Locomotive> c) -> updateSummary());
-        selectedLocomotivesTable.setPrefHeight(150);
-        selectedLocomotivesTable.setPrefWidth(900);
-        selectedBox.getChildren().addAll(selectedLabel, selectedLocomotivesTable);
-        VBox.setVgrow(selectedLocomotivesTable, Priority.ALWAYS);
-        
-        tablesBox.getChildren().addAll(availableBox, buttonsBox, selectedBox);
-        HBox.setHgrow(availableBox, Priority.ALWAYS);
-        HBox.setHgrow(selectedBox, Priority.ALWAYS);
-        
-        box.getChildren().addAll(sectionLabel, separator, tablesBox);
-        
-        return box;
+        // USLP10: Method disabled - trains are already assembled in USLP09
+        return new VBox();
     }
     
     /**
      * Creates a modern TableView for locomotives with dark theme styling.
+     * USLP10: This method is no longer needed.
      */
     private TableView<Locomotive> createLocomotiveTable() {
-        TableView<Locomotive> table = new TableView<>();
-        table.setStyle("-fx-background-color: #1E293B; " +
-                      "-fx-background-radius: 8; " +
-                      "-fx-border-color: rgba(99, 102, 241, 0.2); " +
-                      "-fx-border-radius: 8; " +
-                      "-fx-border-width: 1; " +
-                      "-fx-table-header-border-color: transparent; " +
-                      "-fx-table-cell-border-color: transparent;");
-        // Ajuste automático de colunas - usar FLEX_LAST_COLUMN para melhor distribuição
-        table.setColumnResizePolicy(TableView.UNCONSTRAINED_RESIZE_POLICY);
-        table.setFixedCellSize(35); // Altura menor para ver mais linhas
-        
-        // Aplicar estilos aos headers após a tabela ser renderizada
-        table.sceneProperty().addListener((obs, oldScene, newScene) -> {
-            if (newScene != null) {
-                Platform.runLater(() -> {
-                    applyTableHeaderStyles(table);
-                });
-            }
-        });
-        
-        // Também aplicar imediatamente se já estiver na cena
-        if (table.getScene() != null) {
-            Platform.runLater(() -> {
-                applyTableHeaderStyles(table);
-            });
-        }
-        
-        // ID Column
-        TableColumn<Locomotive, String> idCol = new TableColumn<>("ID");
-        idCol.setCellValueFactory(loco -> new javafx.beans.property.SimpleStringProperty(loco.getValue().getId()));
-        idCol.setMinWidth(70);
-        idCol.setPrefWidth(80);
-        idCol.setMaxWidth(100);
-        idCol.setSortable(true);
-        idCol.setResizable(true);
-        idCol.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
-                      "-fx-font-size: 11px; " +
-                      "-fx-font-weight: 700; " +
-                      "-fx-text-fill: #FFFFFF; " +
-                      "-fx-background-color: #2D3748; " +
-                      "-fx-padding: 8 10; " +
-                      "-fx-alignment: CENTER;");
-        idCol.setCellFactory(col -> new TableCell<Locomotive, String>() {
-            @Override
-            protected void updateItem(String item, boolean empty) {
-                super.updateItem(item, empty);
-                if (empty || item == null) {
-                    setText(null);
-                    setStyle("");
-                } else {
-                    setText(item);
-                    setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
-                            "-fx-font-size: 11px; " +
-                            "-fx-font-weight: 700; " +
-                            "-fx-text-fill: #60A5FA; " +
-                            "-fx-padding: 8 10; " +
-                            "-fx-alignment: CENTER;");
-                }
-            }
-        });
-        
-        // Type Column - texto completo (Diesel/Electric)
-        TableColumn<Locomotive, String> typeCol = new TableColumn<>("Type");
-        typeCol.setCellValueFactory(loco -> {
-            String type = loco.getValue().getType();
-            // Garantir texto completo
-            if (type != null) {
-                type = type.substring(0, 1).toUpperCase() + type.substring(1).toLowerCase();
-            }
-            return new javafx.beans.property.SimpleStringProperty(type);
-        });
-        typeCol.setMinWidth(100);
-        typeCol.setPrefWidth(120);
-        typeCol.setMaxWidth(150);
-        typeCol.setSortable(true);
-        typeCol.setResizable(true);
-        typeCol.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
-                        "-fx-font-size: 11px; " +
-                        "-fx-font-weight: 700; " +
-                        "-fx-text-fill: #FFFFFF; " +
-                        "-fx-background-color: #2D3748; " +
-                        "-fx-padding: 8 10; " +
-                        "-fx-alignment: CENTER;");
-        typeCol.setCellFactory(col -> new TableCell<Locomotive, String>() {
-            @Override
-            protected void updateItem(String item, boolean empty) {
-                super.updateItem(item, empty);
-                if (empty || item == null) {
-                    setText(null);
-                    setStyle("");
-                } else {
-                    setText(item); // Texto completo sempre visível
-                    String color = "Electric".equalsIgnoreCase(item) ? "#A78BFA" : "#F59E0B";
-                    setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
-                            "-fx-font-size: 11px; " +
-                            "-fx-font-weight: 600; " +
-                            "-fx-text-fill: " + color + "; " +
-                            "-fx-padding: 8 10; " +
-                            "-fx-alignment: CENTER;");
-                }
-            }
-        });
-        
-        // Power Column
-        TableColumn<Locomotive, Double> powerCol = new TableColumn<>("Power (kW)");
-        powerCol.setCellValueFactory(loco -> new javafx.beans.property.SimpleDoubleProperty(loco.getValue().getPowerKw()).asObject());
-        powerCol.setMinWidth(110);
-        powerCol.setPrefWidth(130);
-        powerCol.setMaxWidth(150);
-        powerCol.setSortable(true);
-        powerCol.setResizable(true);
-        powerCol.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
-                         "-fx-font-size: 11px; " +
-                         "-fx-font-weight: 700; " +
-                         "-fx-text-fill: #FFFFFF; " +
-                         "-fx-background-color: #2D3748; " +
-                         "-fx-padding: 8 10; " +
-                         "-fx-alignment: CENTER;");
-        powerCol.setCellFactory(col -> new TableCell<Locomotive, Double>() {
-            @Override
-            protected void updateItem(Double item, boolean empty) {
-                super.updateItem(item, empty);
-                if (empty || item == null) {
-                    setText(null);
-                    setStyle("");
-                } else {
-                    setText(String.format("%.0f kW", item)); // Texto completo com unidade
-                    setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
-                            "-fx-font-size: 11px; " +
-                            "-fx-text-fill: #E2E8F0; " +
-                            "-fx-padding: 8 10; " +
-                            "-fx-alignment: CENTER;");
-                }
-            }
-        });
-        
-        // Max Speed Column
-        TableColumn<Locomotive, Double> speedCol = new TableColumn<>("Max Speed (km/h)");
-        speedCol.setCellValueFactory(loco -> new javafx.beans.property.SimpleDoubleProperty(loco.getValue().getMaxSpeedKmH()).asObject());
-        speedCol.setMinWidth(140);
-        speedCol.setPrefWidth(160);
-        speedCol.setMaxWidth(180);
-        speedCol.setSortable(true);
-        speedCol.setResizable(true);
-        speedCol.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
-                         "-fx-font-size: 11px; " +
-                         "-fx-font-weight: 700; " +
-                         "-fx-text-fill: #FFFFFF; " +
-                         "-fx-background-color: #2D3748; " +
-                         "-fx-padding: 8 10; " +
-                         "-fx-alignment: CENTER;");
-        speedCol.setCellFactory(col -> new TableCell<Locomotive, Double>() {
-            @Override
-            protected void updateItem(Double item, boolean empty) {
-                super.updateItem(item, empty);
-                if (empty || item == null) {
-                    setText(null);
-                    setStyle("");
-                } else {
-                    setText(String.format("%.0f km/h", item)); // Texto completo com unidade
-                    setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
-                            "-fx-font-size: 11px; " +
-                            "-fx-text-fill: #E2E8F0; " +
-                            "-fx-padding: 8 10; " +
-                            "-fx-alignment: CENTER;");
-                }
-            }
-        });
-        
-        table.getColumns().add(idCol);
-        table.getColumns().add(typeCol);
-        table.getColumns().add(powerCol);
-        table.getColumns().add(speedCol);
-        
-        // Ajustar larguras das colunas automaticamente após carregar dados
-        Platform.runLater(() -> {
-            table.getItems().addListener((javafx.collections.ListChangeListener.Change<? extends Locomotive> c) -> {
-                Platform.runLater(() -> {
-                    idCol.setPrefWidth(Math.max(70, idCol.getPrefWidth()));
-                    typeCol.setPrefWidth(Math.max(90, typeCol.getPrefWidth()));
-                    powerCol.setPrefWidth(Math.max(100, powerCol.getPrefWidth()));
-                    speedCol.setPrefWidth(Math.max(120, speedCol.getPrefWidth()));
-                });
-            });
-        });
-        
-        // Row styling with hover effects
-        table.setRowFactory(tv -> {
-            TableRow<Locomotive> row = new TableRow<Locomotive>() {
-                @Override
-                protected void updateItem(Locomotive item, boolean empty) {
-                    super.updateItem(item, empty);
-                    if (empty || item == null) {
-                        setStyle("");
-                    } else {
-                        int index = getIndex();
-                        String bgColor = (index % 2 == 0) ? "#1E293B" : "#243447";
-                        setStyle("-fx-background-color: " + bgColor + "; " +
-                                "-fx-border-color: transparent transparent rgba(99, 102, 241, 0.1) transparent; " +
-                                "-fx-border-width: 0 0 1 0;");
-                    }
-                }
-            };
-            
-            row.setOnMouseEntered(e -> {
-                if (!row.isEmpty()) {
-                    row.setStyle("-fx-background-color: #334155; " +
-                                "-fx-border-color: transparent transparent rgba(99, 102, 241, 0.3) transparent; " +
-                                "-fx-border-width: 0 0 1 0; " +
-                                "-fx-cursor: hand;");
-                }
-            });
-            
-            row.setOnMouseExited(e -> {
-                if (!row.isEmpty()) {
-                    int index = row.getIndex();
-                    String bgColor = (index % 2 == 0) ? "#1E293B" : "#243447";
-                    row.setStyle("-fx-background-color: " + bgColor + "; " +
-                                "-fx-border-color: transparent transparent rgba(99, 102, 241, 0.1) transparent; " +
-                                "-fx-border-width: 0 0 1 0;");
-                }
-            });
-            
-            return row;
-        });
-        
-        return table;
+        // USLP10: Method disabled - trains are already assembled in USLP09
+        return new TableView<>();
     }
+    
     
     /**
      * Creates the wagons section with professional formatting.
+     * USLP10: This method is no longer needed - trains come pre-assembled from USLP09.
      */
+    /* USLP10: Method disabled - trains are already assembled
     private VBox createWagonsSection() {
-        VBox box = new VBox(15);
-        box.setPadding(new Insets(20));
-        box.setStyle("-fx-background-color: #161B22; -fx-background-radius: 12; " +
-                    "-fx-border-color: rgba(99, 102, 241, 0.15); -fx-border-radius: 12; -fx-border-width: 1;");
-        
-        Label sectionLabel = new Label("Wagons");
-        sectionLabel.setStyle("-fx-font-size: 18px; -fx-font-weight: 700; -fx-text-fill: #FFFFFF; " +
-                            "-fx-font-family: 'Segoe UI', 'Roboto', sans-serif;");
-        
-        Separator separator = new Separator();
-        separator.setStyle("-fx-background-color: rgba(99, 102, 241, 0.3); -fx-pref-height: 1;");
-        
-        HBox tablesBox = new HBox(15);
-        
-        // Available wagons table
-        VBox availableBox = new VBox(8);
-        Label availableLabel = new Label("Available");
-        availableLabel.setStyle("-fx-text-fill: #E2E8F0; -fx-font-size: 13px; -fx-font-weight: 600; " +
-                              "-fx-font-family: 'Segoe UI', 'Roboto', sans-serif;");
-        availableWagonsTable = createWagonTable();
-        availableWagonsTable.setItems(wagons);
-        availableWagonsTable.setPrefHeight(200);
-        availableWagonsTable.setPrefWidth(900);
-        availableBox.getChildren().addAll(availableLabel, availableWagonsTable);
-        VBox.setVgrow(availableWagonsTable, Priority.ALWAYS);
-        
-        // Buttons
-        VBox buttonsBox = new VBox(12);
-        buttonsBox.setAlignment(Pos.CENTER);
-        buttonsBox.setPadding(new Insets(0, 5, 0, 5));
-        addWagonButton = new Button("→");
-        addWagonButton.setStyle("-fx-background-color: #10B981; -fx-text-fill: white; " +
-                              "-fx-font-size: 16px; -fx-font-weight: bold; " +
-                              "-fx-min-width: 45; -fx-pref-height: 45; " +
-                              "-fx-background-radius: 8; -fx-cursor: hand; " +
-                              "-fx-effect: dropshadow(gaussian, rgba(16, 185, 129, 0.4), 6, 0, 0, 2);");
-        addWagonButton.setOnAction(e -> addWagon());
-        addWagonButton.setOnMouseEntered(e -> addWagonButton.setStyle(
-            "-fx-background-color: #059669; -fx-text-fill: white; " +
-            "-fx-font-size: 16px; -fx-font-weight: bold; " +
-            "-fx-min-width: 45; -fx-pref-height: 45; " +
-            "-fx-background-radius: 8; -fx-cursor: hand; " +
-            "-fx-effect: dropshadow(gaussian, rgba(16, 185, 129, 0.6), 8, 0, 0, 3);"));
-        addWagonButton.setOnMouseExited(e -> addWagonButton.setStyle(
-            "-fx-background-color: #10B981; -fx-text-fill: white; " +
-            "-fx-font-size: 16px; -fx-font-weight: bold; " +
-            "-fx-min-width: 45; -fx-pref-height: 45; " +
-            "-fx-background-radius: 8; -fx-cursor: hand; " +
-            "-fx-effect: dropshadow(gaussian, rgba(16, 185, 129, 0.4), 6, 0, 0, 2);"));
-        removeWagonButton = new Button("←");
-        removeWagonButton.setStyle("-fx-background-color: #EF4444; -fx-text-fill: white; " +
-                                 "-fx-font-size: 16px; -fx-font-weight: bold; " +
-                                 "-fx-min-width: 45; -fx-pref-height: 45; " +
-                                 "-fx-background-radius: 8; -fx-cursor: hand; " +
-                                 "-fx-effect: dropshadow(gaussian, rgba(239, 68, 68, 0.4), 6, 0, 0, 2);");
-        removeWagonButton.setOnAction(e -> removeWagon());
-        removeWagonButton.setOnMouseEntered(e -> removeWagonButton.setStyle(
-            "-fx-background-color: #DC2626; -fx-text-fill: white; " +
-            "-fx-font-size: 16px; -fx-font-weight: bold; " +
-            "-fx-min-width: 45; -fx-pref-height: 45; " +
-            "-fx-background-radius: 8; -fx-cursor: hand; " +
-            "-fx-effect: dropshadow(gaussian, rgba(239, 68, 68, 0.6), 8, 0, 0, 3);"));
-        removeWagonButton.setOnMouseExited(e -> removeWagonButton.setStyle(
-            "-fx-background-color: #EF4444; -fx-text-fill: white; " +
-            "-fx-font-size: 16px; -fx-font-weight: bold; " +
-            "-fx-min-width: 45; -fx-pref-height: 45; " +
-            "-fx-background-radius: 8; -fx-cursor: hand; " +
-            "-fx-effect: dropshadow(gaussian, rgba(239, 68, 68, 0.4), 6, 0, 0, 2);"));
-        buttonsBox.getChildren().addAll(addWagonButton, removeWagonButton);
-        
-        // Selected wagons table
-        VBox selectedBox = new VBox(8);
-        Label selectedLabel = new Label("Selected");
-        selectedLabel.setStyle("-fx-text-fill: #E2E8F0; -fx-font-size: 13px; -fx-font-weight: 600; " +
-                             "-fx-font-family: 'Segoe UI', 'Roboto', sans-serif;");
-        selectedWagonsTable = createWagonTable();
-        selectedWagonsTable.getItems().addListener((javafx.collections.ListChangeListener.Change<? extends Wagon> c) -> updateSummary());
-        selectedWagonsTable.setPrefHeight(150);
-        selectedWagonsTable.setPrefWidth(900);
-        selectedBox.getChildren().addAll(selectedLabel, selectedWagonsTable);
-        VBox.setVgrow(selectedWagonsTable, Priority.ALWAYS);
-        
-        tablesBox.getChildren().addAll(availableBox, buttonsBox, selectedBox);
-        HBox.setHgrow(availableBox, Priority.ALWAYS);
-        HBox.setHgrow(selectedBox, Priority.ALWAYS);
-        
-        box.getChildren().addAll(sectionLabel, separator, tablesBox);
-        
-        return box;
+        return new VBox(); // Placeholder - method disabled
     }
     
-    /**
-     * Creates a modern TableView for wagons with dark theme styling.
-     */
     private TableView<Wagon> createWagonTable() {
-        TableView<Wagon> table = new TableView<>();
-        table.setStyle("-fx-background-color: #1E293B; " +
-                      "-fx-background-radius: 8; " +
-                      "-fx-border-color: rgba(99, 102, 241, 0.2); " +
-                      "-fx-border-radius: 8; " +
-                      "-fx-border-width: 1; " +
-                      "-fx-table-header-border-color: transparent; " +
-                      "-fx-table-cell-border-color: transparent;");
-        // Ajuste automático de colunas - usar FLEX_LAST_COLUMN para melhor distribuição
-        table.setColumnResizePolicy(TableView.UNCONSTRAINED_RESIZE_POLICY);
-        table.setFixedCellSize(35); // Altura menor para ver mais linhas
-        
-        // Aplicar estilos aos headers após a tabela ser renderizada
-        table.sceneProperty().addListener((obs, oldScene, newScene) -> {
-            if (newScene != null) {
-                Platform.runLater(() -> {
-                    applyTableHeaderStyles(table);
-                });
-            }
-        });
-        
-        // Também aplicar imediatamente se já estiver na cena
-        if (table.getScene() != null) {
-            Platform.runLater(() -> {
-                applyTableHeaderStyles(table);
-            });
-        }
-        
-        // ID Column
-        TableColumn<Wagon, String> idCol = new TableColumn<>("ID");
-        idCol.setCellValueFactory(wagon -> new javafx.beans.property.SimpleStringProperty(wagon.getValue().getWagonId()));
-        idCol.setMinWidth(70);
-        idCol.setPrefWidth(80);
-        idCol.setMaxWidth(100);
-        idCol.setSortable(true);
-        idCol.setResizable(true);
-        idCol.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
-                      "-fx-font-size: 11px; " +
-                      "-fx-font-weight: 700; " +
-                      "-fx-text-fill: #FFFFFF; " +
-                      "-fx-background-color: #2D3748; " +
-                      "-fx-padding: 8 10; " +
-                      "-fx-alignment: CENTER;");
-        idCol.setCellFactory(col -> new TableCell<Wagon, String>() {
-            @Override
-            protected void updateItem(String item, boolean empty) {
-                super.updateItem(item, empty);
-                if (empty || item == null) {
-                    setText(null);
-                    setStyle("");
-                } else {
-                    setText(item);
-                    setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
-                            "-fx-font-size: 11px; " +
-                            "-fx-font-weight: 700; " +
-                            "-fx-text-fill: #60A5FA; " +
-                            "-fx-padding: 8 10; " +
-                            "-fx-alignment: CENTER;");
-                }
-            }
-        });
-        
-        // Type Column - texto completo sempre visível
-        TableColumn<Wagon, String> typeCol = new TableColumn<>("Cargo Type");
-        typeCol.setCellValueFactory(wagon -> new javafx.beans.property.SimpleStringProperty(wagon.getValue().getType()));
-        typeCol.setMinWidth(140);
-        typeCol.setPrefWidth(180);
-        typeCol.setMaxWidth(220);
-        typeCol.setSortable(true);
-        typeCol.setResizable(true);
-        typeCol.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
-                        "-fx-font-size: 11px; " +
-                        "-fx-font-weight: 700; " +
-                        "-fx-text-fill: #FFFFFF; " +
-                        "-fx-background-color: #2D3748; " +
-                        "-fx-padding: 8 10; " +
-                        "-fx-alignment: CENTER;");
-        typeCol.setCellFactory(col -> new TableCell<Wagon, String>() {
-            @Override
-            protected void updateItem(String item, boolean empty) {
-                super.updateItem(item, empty);
-                if (empty || item == null) {
-                    setText(null);
-                    setStyle("");
-                } else {
-                    setText(item); // Texto completo sempre visível
-                    setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
-                            "-fx-font-size: 11px; " +
-                            "-fx-font-weight: 500; " +
-                            "-fx-text-fill: #E2E8F0; " +
-                            "-fx-padding: 8 10; " +
-                            "-fx-alignment: CENTER;");
-                }
-            }
-        });
-        
-        // Empty Weight Column
-        TableColumn<Wagon, Double> emptyWeightCol = new TableColumn<>("Empty (kg)");
-        emptyWeightCol.setCellValueFactory(wagon -> new javafx.beans.property.SimpleDoubleProperty(wagon.getValue().getEmptyWeightKg()).asObject());
-        emptyWeightCol.setMinWidth(110);
-        emptyWeightCol.setPrefWidth(130);
-        emptyWeightCol.setMaxWidth(150);
-        emptyWeightCol.setSortable(true);
-        emptyWeightCol.setResizable(true);
-        emptyWeightCol.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
-                               "-fx-font-size: 11px; " +
-                               "-fx-font-weight: 700; " +
-                               "-fx-text-fill: #FFFFFF; " +
-                               "-fx-background-color: #2D3748; " +
-                               "-fx-padding: 8 10; " +
-                               "-fx-alignment: CENTER;");
-        emptyWeightCol.setCellFactory(col -> new TableCell<Wagon, Double>() {
-            @Override
-            protected void updateItem(Double item, boolean empty) {
-                super.updateItem(item, empty);
-                if (empty || item == null) {
-                    setText(null);
-                    setStyle("");
-                } else {
-                    setText(String.format("%.0f kg", item)); // Texto completo com unidade
-                    setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
-                            "-fx-font-size: 11px; " +
-                            "-fx-text-fill: #E2E8F0; " +
-                            "-fx-padding: 8 10; " +
-                            "-fx-alignment: CENTER;");
-                }
-            }
-        });
-        
-        // Loaded Weight Column
-        TableColumn<Wagon, Double> loadedWeightCol = new TableColumn<>("Loaded (kg)");
-        loadedWeightCol.setCellValueFactory(wagon -> new javafx.beans.property.SimpleDoubleProperty(wagon.getValue().getFullyLoadedWeightKg()).asObject());
-        loadedWeightCol.setMinWidth(110);
-        loadedWeightCol.setPrefWidth(130);
-        loadedWeightCol.setMaxWidth(150);
-        loadedWeightCol.setSortable(true);
-        loadedWeightCol.setResizable(true);
-        loadedWeightCol.setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
-                                 "-fx-font-size: 11px; " +
-                                 "-fx-font-weight: 700; " +
-                                 "-fx-text-fill: #FFFFFF; " +
-                                 "-fx-background-color: #2D3748; " +
-                                 "-fx-padding: 8 10; " +
-                                 "-fx-alignment: CENTER;");
-        loadedWeightCol.setCellFactory(col -> new TableCell<Wagon, Double>() {
-            @Override
-            protected void updateItem(Double item, boolean empty) {
-                super.updateItem(item, empty);
-                if (empty || item == null) {
-                    setText(null);
-                    setStyle("");
-                } else {
-                    setText(String.format("%.0f kg", item)); // Texto completo com unidade
-                    setStyle("-fx-font-family: 'Segoe UI', 'Roboto', sans-serif; " +
-                            "-fx-font-size: 11px; " +
-                            "-fx-text-fill: #E2E8F0; " +
-                            "-fx-padding: 8 10; " +
-                            "-fx-alignment: CENTER;");
-                }
-            }
-        });
-        
-        table.getColumns().add(idCol);
-        table.getColumns().add(typeCol);
-        table.getColumns().add(emptyWeightCol);
-        table.getColumns().add(loadedWeightCol);
-        
-        // Ajustar larguras das colunas automaticamente após carregar dados
-        Platform.runLater(() -> {
-            table.getItems().addListener((javafx.collections.ListChangeListener.Change<? extends Wagon> c) -> {
-                Platform.runLater(() -> {
-                    idCol.setPrefWidth(Math.max(70, idCol.getPrefWidth()));
-                    typeCol.setPrefWidth(Math.max(150, typeCol.getPrefWidth()));
-                    emptyWeightCol.setPrefWidth(Math.max(100, emptyWeightCol.getPrefWidth()));
-                    loadedWeightCol.setPrefWidth(Math.max(100, loadedWeightCol.getPrefWidth()));
-                });
-            });
-        });
-        
-        // Row styling with hover effects
-        table.setRowFactory(tv -> {
-            TableRow<Wagon> row = new TableRow<Wagon>() {
-                @Override
-                protected void updateItem(Wagon item, boolean empty) {
-                    super.updateItem(item, empty);
-                    if (empty || item == null) {
-                        setStyle("");
-                    } else {
-                        int index = getIndex();
-                        String bgColor = (index % 2 == 0) ? "#1E293B" : "#243447";
-                        setStyle("-fx-background-color: " + bgColor + "; " +
-                                "-fx-border-color: transparent transparent rgba(99, 102, 241, 0.1) transparent; " +
-                                "-fx-border-width: 0 0 1 0;");
-                    }
-                }
-            };
-            
-            row.setOnMouseEntered(e -> {
-                if (!row.isEmpty()) {
-                    row.setStyle("-fx-background-color: #334155; " +
-                                "-fx-border-color: transparent transparent rgba(99, 102, 241, 0.3) transparent; " +
-                                "-fx-border-width: 0 0 1 0; " +
-                                "-fx-cursor: hand;");
-                }
-            });
-            
-            row.setOnMouseExited(e -> {
-                if (!row.isEmpty()) {
-                    int index = row.getIndex();
-                    String bgColor = (index % 2 == 0) ? "#1E293B" : "#243447";
-                    row.setStyle("-fx-background-color: " + bgColor + "; " +
-                                "-fx-border-color: transparent transparent rgba(99, 102, 241, 0.1) transparent; " +
-                                "-fx-border-width: 0 0 1 0;");
-                }
-            });
-            
-            return row;
-        });
-        
-        return table;
+        return new TableView<>(); // Placeholder - method disabled
     }
+    */
+    
+    // USLP10: Original implementation removed - trains are pre-assembled in USLP09
+    // Removed code that referenced: availableWagonsTable, selectedWagonsTable, 
+    // addWagonButton, removeWagonButton, wagons, etc.
     
     /**
      * Creates the dispatch queue section.
@@ -1210,10 +561,10 @@ public class SchedulerFXUI {
         Label sectionLabel = new Label("Dispatch Queue");
         sectionLabel.setStyle("-fx-font-size: 16px; -fx-font-weight: 600; -fx-text-fill: white;");
         
-        addTrainButton = new Button("Add Train");
-        addTrainButton.setStyle("-fx-background-color: #6366F1; -fx-text-fill: white; -fx-font-size: 13px; " +
+        addTrainToDispatchButton = new Button("Add to Dispatch Queue");
+        addTrainToDispatchButton.setStyle("-fx-background-color: #6366F1; -fx-text-fill: white; -fx-font-size: 13px; " +
                               "-fx-padding: 8 16; -fx-background-radius: 6; -fx-cursor: hand;");
-        addTrainButton.setOnAction(e -> {
+        addTrainToDispatchButton.setOnAction(e -> {
             System.out.println("Add Train button action triggered");
             try {
                 addTrain();
@@ -1231,7 +582,7 @@ public class SchedulerFXUI {
         removeTrainButton.setOnAction(e -> removeTrain());
         
         HBox.setHgrow(sectionLabel, Priority.ALWAYS);
-        headerBox.getChildren().addAll(sectionLabel, addTrainButton, removeTrainButton);
+        headerBox.getChildren().addAll(sectionLabel, addTrainToDispatchButton, removeTrainButton);
         
         trainsList = new ListView<>(trains);
         trainsList.setCellFactory(list -> new TrainListCell());
@@ -1271,85 +622,61 @@ public class SchedulerFXUI {
     /**
      * Updates the real-time train summary panel.
      */
+    /**
+     * Updates the summary panel with information about selected train and dispatch queue.
+     * USLP10: Shows information about trains in dispatch queue.
+     */
     private void updateSummary() {
         Platform.runLater(() -> {
             summaryContent.getChildren().clear();
             
-            if (trainIdField.getText().trim().isEmpty() && 
-                selectedLocomotivesTable.getItems().isEmpty() && 
-                selectedWagonsTable.getItems().isEmpty()) {
-                Label emptyLabel = new Label("Configure a train to see summary");
+            // Show dispatch queue summary
+            if (trains.isEmpty()) {
+                Label emptyLabel = new Label("No trains in dispatch queue.\nSelect a train and add it to the queue.");
                 emptyLabel.setStyle("-fx-text-fill: white; -fx-font-size: 13px; -fx-font-style: italic;");
                 summaryContent.getChildren().add(emptyLabel);
                 return;
             }
             
-            // Train ID
-            String trainId = trainIdField.getText().trim();
-            if (!trainId.isEmpty()) {
-                addSummaryItem("Train ID:", trainId);
+            // Show selected train info
+            Train selectedTrain = availableTrainsCombo != null ? 
+                availableTrainsCombo.getSelectionModel().getSelectedItem() : null;
+            
+            if (selectedTrain != null) {
+                addSummaryItem("Selected Train:", selectedTrain.getTrainId());
+                
+                // Route
+                List<Facility> route = selectedTrain.getRoute();
+                if (route.size() >= 2) {
+                    addSummaryItem("Route:", route.get(0).getId() + " → " + route.get(route.size() - 1).getId());
+                }
+                
+                // Locomotives count
+                addSummaryItem("Locomotives:", String.valueOf(selectedTrain.getLocomotives().size()));
+                
+                // Wagons count
+                addSummaryItem("Wagons:", String.valueOf(selectedTrain.getWagons().size()));
+                
+                // Total weight
+                addSummaryItem("Total Weight:", String.format("%.1f t", selectedTrain.getTotalWeight() / 1000.0));
             }
             
-            // Route
-            Facility start = startStationCombo.getSelectionModel().getSelectedItem();
-            Facility end = endStationCombo.getSelectionModel().getSelectedItem();
-            if (start != null && end != null) {
-                addSummaryItem("Route:", start.getId() + " → " + end.getId());
-            }
-            
-            // Departure
-            if (departureDatePicker.getValue() != null && !departureTimeField.getText().trim().isEmpty()) {
+            // Departure info
+            if (departureDatePicker != null && departureDatePicker.getValue() != null && 
+                departureTimeField != null && !departureTimeField.getText().trim().isEmpty()) {
                 String departure = departureDatePicker.getValue().toString() + " " + departureTimeField.getText().trim();
                 addSummaryItem("Departure:", departure);
             }
             
-            // Locomotives
-            ObservableList<Locomotive> selectedLocos = selectedLocomotivesTable.getItems();
-            if (!selectedLocos.isEmpty()) {
-                VBox locosBox = new VBox(5);
-                Label locosLabel = new Label("Locomotives:");
-                locosLabel.setStyle("-fx-text-fill: white; -fx-font-size: 13px; -fx-font-weight: 500;");
-                locosBox.getChildren().add(locosLabel);
-                
-                double totalPower = 0;
-                for (Locomotive loco : selectedLocos) {
-                    double power = loco.getPowerKw();
-                    totalPower += power;
-                    Label locoLabel = new Label(String.format("• %s — %s\n  Power: %.0f kW | Max speed: %.0f km/h", 
-                        loco.getId(), loco.getType(), power, loco.getMaxSpeedKmH()));
-                    locoLabel.setStyle("-fx-text-fill: white; -fx-font-size: 12px;");
-                    locosBox.getChildren().add(locoLabel);
-                }
-                Label totalPowerLabel = new Label(String.format("Total power: %.0f kW", totalPower));
-                totalPowerLabel.setStyle("-fx-text-fill: white; -fx-font-size: 12px; -fx-font-weight: 500;");
-                locosBox.getChildren().add(totalPowerLabel);
-                summaryContent.getChildren().add(locosBox);
-            }
+            // Dispatch queue summary
+            Label queueLabel = new Label("Dispatch Queue:");
+            queueLabel.setStyle("-fx-text-fill: white; -fx-font-size: 13px; -fx-font-weight: 600; -fx-padding: 10 0 5 0;");
+            summaryContent.getChildren().add(queueLabel);
             
-            // Wagons
-            ObservableList<Wagon> selectedWags = selectedWagonsTable.getItems();
-            if (!selectedWags.isEmpty()) {
-                VBox wagonsBox = new VBox(5);
-                Label wagonsLabel = new Label("Wagons:");
-                wagonsLabel.setStyle("-fx-text-fill: white; -fx-font-size: 13px; -fx-font-weight: 500;");
-                wagonsBox.getChildren().add(wagonsLabel);
-                
-                double totalMass = 0;
-                boolean loaded = wagonsLoadedCheckBox.isSelected();
-                for (Wagon wagon : selectedWags) {
-                    double mass = loaded ? wagon.getFullyLoadedWeightKg() : wagon.getEmptyWeightKg();
-                    totalMass += mass;
-                }
-                
-                Label countLabel = new Label(String.format("%d wagons (%s)", 
-                    selectedWags.size(), loaded ? "loaded" : "empty"));
-                countLabel.setStyle("-fx-text-fill: white; -fx-font-size: 12px;");
-                wagonsBox.getChildren().add(countLabel);
-                
-                Label totalMassLabel = new Label(String.format("Total mass: %.1f t", totalMass / 1000.0));
-                totalMassLabel.setStyle("-fx-text-fill: white; -fx-font-size: 12px; -fx-font-weight: 500;");
-                wagonsBox.getChildren().add(totalMassLabel);
-                summaryContent.getChildren().add(wagonsBox);
+            for (Train train : trains) {
+                Label trainLabel = new Label(String.format("• Train %s", train.getTrainId()));
+                trainLabel.setStyle("-fx-text-fill: white; -fx-font-size: 12px;");
+                summaryContent.getChildren().add(trainLabel);
             }
         });
     }
@@ -1397,75 +724,37 @@ public class SchedulerFXUI {
     
     /**
      * Adds a locomotive to the selected list.
+     * USLP10: This method is no longer needed - trains come pre-assembled from USLP09.
      */
+    /* USLP10: Method disabled
     private void addLocomotive() {
-        Locomotive selected = availableLocomotivesTable.getSelectionModel().getSelectedItem();
-        if (selected != null) {
-            ObservableList<Locomotive> selectedList = selectedLocomotivesTable.getItems();
-            if (!selectedList.contains(selected)) {
-                selectedList.add(selected);
-            }
-        }
+        // Method removed - trains are already assembled
     }
     
-    /**
-     * Removes a locomotive from the selected list.
-     */
     private void removeLocomotive() {
-        Locomotive selected = selectedLocomotivesTable.getSelectionModel().getSelectedItem();
-        if (selected != null) {
-            selectedLocomotivesTable.getItems().remove(selected);
-        }
+        // Method removed - trains are already assembled
     }
     
-    /**
-     * Adds a wagon to the selected list.
-     */
     private void addWagon() {
-        Wagon selected = availableWagonsTable.getSelectionModel().getSelectedItem();
-        if (selected != null) {
-            ObservableList<Wagon> selectedList = selectedWagonsTable.getItems();
-            if (!selectedList.contains(selected)) {
-                selectedList.add(selected);
-            }
-        }
+        // Method removed - trains are already assembled
     }
     
-    /**
-     * Removes a wagon from the selected list.
-     */
     private void removeWagon() {
-        Wagon selected = selectedWagonsTable.getSelectionModel().getSelectedItem();
-        if (selected != null) {
-            selectedWagonsTable.getItems().remove(selected);
-        }
+        // Method removed - trains are already assembled
     }
+    */
     
     /**
-     * Adds a train to the trains list.
+     * Adds a train to the dispatch queue.
+     * USLP10: Uses train already assembled in USLP09, only sets path and departure time.
      */
     private void addTrain() {
-        System.out.println("Add Train button clicked");
+        System.out.println("Add Train to Dispatch button clicked");
         
         // Validate inputs
-        if (trainIdField == null || trainIdField.getText() == null || trainIdField.getText().trim().isEmpty()) {
-            showAlert(Alert.AlertType.ERROR, "Error", "Train ID is required.");
-            System.out.println("Validation failed: Train ID is empty");
-            return;
-        }
-        
-        if (startStationCombo == null || endStationCombo == null ||
-            startStationCombo.getSelectionModel().getSelectedItem() == null ||
-            endStationCombo.getSelectionModel().getSelectedItem() == null) {
-            showAlert(Alert.AlertType.ERROR, "Error", "Start and end stations are required.");
-            System.out.println("Validation failed: Stations not selected");
-            return;
-        }
-        
-        if (selectedLocomotivesTable == null || selectedLocomotivesTable.getItems() == null ||
-            selectedLocomotivesTable.getItems().isEmpty()) {
-            showAlert(Alert.AlertType.ERROR, "Error", "At least one locomotive is required.");
-            System.out.println("Validation failed: No locomotives selected");
+        if (availableTrainsCombo == null || availableTrainsCombo.getSelectionModel().getSelectedItem() == null) {
+            showAlert(Alert.AlertType.ERROR, "Error", "Please select a train from the list.");
+            System.out.println("Validation failed: No train selected");
             return;
         }
         
@@ -1477,9 +766,12 @@ public class SchedulerFXUI {
             return;
         }
         
-        System.out.println("All validations passed, creating train...");
+        System.out.println("All validations passed, adding train to dispatch queue...");
         
         try {
+            // Get selected train (already assembled in USLP09)
+            Train selectedTrain = availableTrainsCombo.getSelectionModel().getSelectedItem();
+            
             // Parse departure time
             String timeText = departureTimeField.getText().trim();
             System.out.println("Parsing departure time: " + timeText);
@@ -1489,11 +781,8 @@ public class SchedulerFXUI {
             );
             System.out.println("Departure time parsed: " + departureTime);
             
-            // Create route based on user selection
-            Facility startStation = startStationCombo.getSelectionModel().getSelectedItem();
-            Facility endStation = endStationCombo.getSelectionModel().getSelectedItem();
-            
-            List<Facility> route;
+            // Get route from selected train
+            List<Facility> route = selectedTrain.getRoute();
             List<Facility> selectedStations;
             
             if (specifyIntermediateStationsCheckBox.isSelected() && 
@@ -1501,55 +790,41 @@ public class SchedulerFXUI {
                 !intermediateStationsList.getItems().isEmpty()) {
                 // User specified intermediate stations - use them in order
                 List<Facility> intermediateStations = new ArrayList<>(intermediateStationsList.getItems());
-                route = new ArrayList<>();
-                route.add(startStation);
-                route.addAll(intermediateStations);
-                route.add(endStation);
+                List<Facility> newRoute = new ArrayList<>();
+                newRoute.add(route.get(0)); // Start station
+                newRoute.addAll(intermediateStations);
+                newRoute.add(route.get(route.size() - 1)); // End station
                 
                 // Selected stations include start, intermediates, and end
-                selectedStations = new ArrayList<>(route);
+                selectedStations = new ArrayList<>(newRoute);
+                route = newRoute;
             } else {
-                // Automatic calculation - only start and end
-                // The SchedulerService will automatically find the fastest path if stations are not directly connected
-                route = Arrays.asList(startStation, endStation);
-                selectedStations = Arrays.asList(startStation, endStation); // User-selected stations
+                // Automatic calculation - use start and end from train route
+                selectedStations = Arrays.asList(route.get(0), route.get(route.size() - 1));
             }
             
-            // Calculate total weight
-            double totalWeight = selectedWagonsTable.getItems().stream()
-                .mapToDouble(wagon -> wagonsLoadedCheckBox.isSelected() 
-                    ? wagon.getFullyLoadedWeightKg() 
-                    : wagon.getEmptyWeightKg())
-                .sum();
-            
-            // Create train
-            // Note: route will be expanded automatically by SchedulerService if stations are not directly connected
-            Train train = new Train(
-                trainIdField.getText().trim(),
-                route,                    // Full route (will be expanded if needed)
-                selectedStations,         // User-selected stations (start and end only)
-                new ArrayList<>(selectedLocomotivesTable.getItems()),
-                new ArrayList<>(selectedWagonsTable.getItems()),
-                departureTime,
-                totalWeight
+            // Create new Train with updated departure time and path
+            // USLP10: Do not create new Train, Route, Locomotive or Wagon - reuse from USLP09
+            Train trainForDispatch = new Train(
+                selectedTrain.getTrainId(),
+                route,                    // Full route (with or without intermediates)
+                selectedStations,        // User-selected stations
+                selectedTrain.getLocomotives(),  // Reuse locomotives from USLP09
+                selectedTrain.getWagons(),        // Reuse wagons from USLP09
+                departureTime,          // New departure time set by user
+                selectedTrain.getTotalWeight()   // Reuse weight from USLP09
             );
             
-            System.out.println("Adding train to list: " + train.getTrainId());
-            trains.add(train);
-            System.out.println("Train added. Total trains: " + trains.size());
+            System.out.println("Adding train to dispatch queue: " + trainForDispatch.getTrainId());
+            trains.add(trainForDispatch);
+            System.out.println("Train added. Total trains in queue: " + trains.size());
             
             // Update summary
             updateSummary();
             
-            // Clear form
-            trainIdField.clear();
-            startStationCombo.getSelectionModel().clearSelection();
-            endStationCombo.getSelectionModel().clearSelection();
+            // Clear form (but keep train selected)
             departureDatePicker.setValue(null);
             departureTimeField.clear();
-            selectedLocomotivesTable.getItems().clear();
-            selectedWagonsTable.getItems().clear();
-            wagonsLoadedCheckBox.setSelected(false);
             specifyIntermediateStationsCheckBox.setSelected(false);
             if (intermediateStationsList != null) {
                 intermediateStationsList.getItems().clear();
@@ -1560,7 +835,7 @@ public class SchedulerFXUI {
             
             // Show success message
             showAlert(Alert.AlertType.INFORMATION, "Success", 
-                "Train " + train.getTrainId() + " added successfully to dispatch queue.\n\n" +
+                "Train " + trainForDispatch.getTrainId() + " added successfully to dispatch queue.\n\n" +
                 "Total trains in queue: " + trains.size());
             
         } catch (java.time.format.DateTimeParseException e) {
@@ -1573,7 +848,7 @@ public class SchedulerFXUI {
             e.printStackTrace();
         } catch (Exception e) {
             showAlert(Alert.AlertType.ERROR, "Error", 
-                "Failed to create train: " + e.getMessage());
+                "Failed to add train to dispatch queue: " + e.getMessage());
             e.printStackTrace();
         }
     }
