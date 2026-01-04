@@ -8,37 +8,59 @@
 
 ---
 
-## 1. Análise da Função `calculateBetweennessCentrality`
+# Análise de Complexidade - Betweenness Centrality 
+
+## Análise da Função `calculateBetweennessCentrality`
 Esta função implementa o **Algoritmo de Brandes**, que calcula a Betweenness Centrality executando um algoritmo de **Single-Source Shortest Path (SSSP)**, neste caso, um Dijkstra modificado, a partir de cada um dos $N$ vértices.
 
-### Complexidade 
+## Complexidade por Operação
 
-| Código                                                                                         | Complexidade Worst Case | Complexidade Average Case | Complexidade Better Case | Explicação                                                                                                                                                           |
-|------------------------------------------------------------------------------------------------|-------------------------|---------------------------|--------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `Map<Station, Double> centralidades = new HashMap<>();`                                        | O(1)                    | O(1)                      | O(1)                     | Inicialização de um HashMap. É uma operação de tempo constante.                                                                                                      |
-| `for (Station station : undirectGraph.keySet()) {`                                             | O(N)                    | O(N)                      | O(N)                     | O ciclo itera N vezes, onde N é o número de estações.                                                                                                                |
-| `centralidades.put(station, 0.0);`                                                             | O(N²)                   | O(N)                      | O(N)                     | Operação put em HashMap. O(1) no caso médio e melhor caso. No pior caso (colisões), é O(N). Complexidade acumulada: N×O(N)=O(N²) (pior), N×O(1)=O(N) (médio/melhor). |
-| `for (Station origem : undirectGraph.keySet()) {`                                              | O(N)                    | O(N)                      | O(N)                     | Ciclo principal (Origem): repete N vezes. O corpo deste ciclo domina a complexidade total: TTotal = O(N × Tcorpo).                                                   |
-| `Map<Station, Double> distancias = new HashMap<>(); ... Stack<Station> stack = new Stack<>();` | O(1)                    | O(1)                      | O(1)                     | Inicialização das estruturas de dados. Tempo constante.                                                                                                              |
-| `for (Station s : undirectGraph.keySet()) {`                                                   | O(N)                    | O(N)                      | O(N)                     | Ciclo de inicialização. Repete N vezes.                                                                                                                              |
-| `distancias.put(s, Double.MAX_VALUE); ... predecessores.put(s, new ArrayList<>());`            | O(N²)                   | O(N)                      | O(N)                     | Quatro operações put em HashMap dentro de um ciclo O(N). Complexidade acumulada: O(N²) (pior), O(N) (médio).                                                         |
-| `PriorityQueue<Station> fila = new PriorityQueue<>(...);`                                      | O(1)                    | O(1)                      | O(1)                     | Inicialização da PriorityQueue. Tempo constante.                                                                                                                     |
-| `fila.add(origem);`                                                                            | O(logN)                 | O(logN)                   | O(1)                     | Inserção numa Min-Heap. O(logN) no pior e caso médio, O(1) no melhor caso.                                                                                           |
-| `while (!fila.isEmpty()) {`                                                                    | O(N+M)                  | O(N+M)                    | O(N+M)                   | O loop executa N extrações (poll) e M iterações nos vizinhos (total).                                                                                                |
-| `Station atual = fila.poll();`                                                                 | O(logN)                 | O(logN)                   | O(1)                     | Extração do elemento de menor prioridade. O(logN) (pior/médio). N chamadas acumulam O(NlogN).                                                                        |
-| `for (Map.Entry<Station, Double> vizinho : undirectGraph.get(atual).entrySet()) {`             | O(M) (total)            | O(M) (total)              | O(M) (total)             | O número total de iterações do ciclo de vizinhos, em todas as execuções do while, é M.                                                                               |
-| `double novaDistancia = distancias.get(atual) + peso;`                                         | O(N)                    | O(1)                      | O(1)                     | Operação get em HashMap. O(1) (médio), O(N) (pior). M chamadas acumulam O(M×N) (pior), O(M) (médio).                                                                 |
-| `fila.remove(proxima);`                                                                        | O(N)                    | O(N)                      | O(logN)                  | PriorityQueue.remove(Object) requer O(N) para pesquisa + O(logN) para reequilíbrio. M chamadas acumulam O(M×N) (pior/médio).                                         |
-| `fila.add(proxima);`                                                                           | O(logN)                 | O(logN)                   | O(1)                     | Inserção/atualização. O(logN) (pior/médio). M chamadas acumulam O(MlogN).                                                                                            |
-| `while (!stack.isEmpty()) {`                                                                   | O(N+M)                  | O(N+M)                    | O(N+M)                   | Fase de acumulação: o loop executa N vezes, e o loop interno executa um total de O(M) vezes (retrocesso das arestas).                                                |
-| `for (Station predecessor : predecessores.get(atual)) {`                                       | O(M) (total)            | O(M) (total)              | O(M) (total)             | O número total de iterações sobre os predecessores é M.                                                                                                              |
-| `double contribuicao = (...);`                                                                 | O(N)                    | O(1)                      | O(1)                     | Quatro operações get em HashMap. O(1) (médio), O(N) (pior). M chamadas acumulam O(M×N) (pior), O(M) (médio).                                                         |
-| `centralidades.put(atual, centralidades.get(atual) + dependencias.get(atual));`                | O(N²)                   | O(N)                      | O(N)                     | Três operações get/put em HashMap. N chamadas acumulam O(N²) (pior), O(N) (médio).                                                                                   |
-| `for (Station s : centralidades.keySet()) { ... }`                                             | O(N²)                   | O(N)                      | O(N)                     | Normalização: itera N vezes. Operação put em HashMap. O(N²) (pior), O(N) (médio).                                                                                    |
+| Código                                                                   | Complexidade Worst Case | Complexidade Average Case | Complexidade Best Case | Explicação                                                      |
+|--------------------------------------------------------------------------|-------------------------|---------------------------|------------------------|-----------------------------------------------------------------|
+| `Map<Station, Double> centralidades = new HashMap<>();`                  | O(1)                    | O(1)                      | O(1)                   | Inicialização de HashMap vazio                                  |
+| `for (Station s : undirectGraph.keySet())` (inicialização centralidades) | O(N)                    | O(N)                      | O(N)                   | Itera N estações                                                |
+| `centralidades.put(s, 0.0);`                                             | O(1)                    | O(1)                      | O(1)                   | Operação put em HashMap (análise amortizada padrão)             |
+| `for (Station origem : undirectGraph.keySet())`                          | O(N)                    | O(N)                      | O(N)                   | Loop externo: N iterações (uma por vértice origem)              |
+| Inicialização de estruturas (Stack, Maps)                                | O(1)                    | O(1)                      | O(1)                   | Tempo constante                                                 |
+| `for (Station s : undirectGraph.keySet())` (loop inicialização)          | O(N)                    | O(N)                      | O(N)                   | Inicializa estruturas para N estações                           |
+| `predecessores.put(s, new ArrayList<>());` etc.                          | O(1)                    | O(1)                      | O(1)                   | 4 operações put em HashMap (análise amortizada)                 |
+| `sigma.put(origem, 1);` etc.                                             | O(1)                    | O(1)                      | O(1)                   | 2 operações put                                                 |
+| `PriorityQueue<Object[]> fila = new PriorityQueue<>(...)`                | O(1)                    | O(1)                      | O(1)                   | Criação da heap vazia                                           |
+| `fila.add(new Object[]{origem, 0.0});`                                   | O(log N)                | O(log N)                  | O(1)                   | Inserção em heap. Best case quando heap está vazia              |
+| `Set<Station> visitados = new HashSet<>();`                              | O(1)                    | O(1)                      | O(1)                   | Criação do Set                                                  |
+| `while (!fila.isEmpty())`                                                | O(N + M)                | O(N + M)                  | O(N + M)               | Processa cada vértice e cada aresta. Total de iterações fixo    |
+| `Object[] current = fila.poll();`                                        | O(log N)                | O(log N)                  | O(log N)               | Extração da heap: até N extrações = O(N log N) total            |
+| `if (visitados.contains(v)) continue;`                                   | O(1)                    | O(1)                      | O(1)                   | Verificação em HashSet (análise amortizada)                     |
+| `visitados.add(v);`                                                      | O(1)                    | O(1)                      | O(1)                   | Inserção em HashSet (análise amortizada)                        |
+| `stack.push(v);`                                                         | O(1)                    | O(1)                      | O(1)                   | Push em Stack                                                   |
+| `for (Map.Entry<Station, Double> entry : ...)`                           | O(M)                    | O(M)                      | O(M)                   | Itera sobre todas as arestas (M total no somatório)             |
+| `double novaDistancia = distancias.get(v) + peso;`                       | O(1)                    | O(1)                      | O(1)                   | Get em HashMap (análise amortizada)                             |
+| `if (novaDistancia < distancias.get(w))`                                 | O(1)                    | O(1)                      | O(1)                   | Get em HashMap                                                  |
+| `distancias.put(w, novaDistancia);`                                      | O(1)                    | O(1)                      | O(1)                   | Put em HashMap (análise amortizada)                             |
+| `sigma.put(w, sigma.get(v));`                                            | O(1)                    | O(1)                      | O(1)                   | Get + Put em HashMap                                            |
+| `predecessores.get(w).clear();`                                          | O(k)                    | O(k)                      | O(1)                   | k = número atual de predecessores. Best case quando lista vazia |
+| `predecessores.get(w).add(v);`                                           | O(1)                    | O(1)                      | O(1)                   | Add em ArrayList (análise amortizada)                           |
+| `fila.add(new Object[]{w, novaDistancia});`                              | O(log N)                | O(log N)                  | O(log N)               | Inserção em heap: até M inserções = O(M log N) total            |
+| `Math.abs(novaDistancia - distancias.get(w)) < 1e-9`                     | O(1)                    | O(1)                      | O(1)                   | Get + comparação aritmética                                     |
+| `sigma.put(w, sigma.get(w) + sigma.get(v));`                             | O(1)                    | O(1)                      | O(1)                   | 2 Gets + 1 Put (análise amortizada)                             |
+| `while (!stack.isEmpty())` (acumulação)                                  | O(N + M)                | O(N + M)                  | O(N + M)               | N pops + M iterações sobre predecessores (total fixo)           |
+| `Station w = stack.pop();`                                               | O(1)                    | O(1)                      | O(1)                   | Pop de Stack                                                    |
+| `for (Station v : predecessores.get(w))`                                 | O(M)                    | O(M)                      | O(M)                   | Total de iterações = M (soma de todos os predecessores)         |
+| `double contribuicao = (...)`                                            | O(1)                    | O(1)                      | O(1)                   | Gets em HashMap (análise amortizada)                            |
+| `delta.put(v, delta.get(v) + contribuicao);`                             | O(1)                    | O(1)                      | O(1)                   | Get + Put (análise amortizada)                                  |
+| `if (!w.equals(origem))`                                                 | O(1)                    | O(1)                      | O(1)                   | Comparação de referência                                        |
+| `centralidades.put(w, centralidades.get(w) + delta.get(w));`             | O(1)                    | O(1)                      | O(1)                   | Gets + Put (análise amortizada)                                 |
+| `for (Station s : centralidades.keySet())` (normalização)                | O(N)                    | O(N)                      | O(N)                   | Itera N estações                                                |
+| `centralidades.put(s, centralidades.get(s) / 2.0);`                      | O(1)                    | O(1)                      | O(1)                   | Get + Put (análise amortizada)                                  |
 
-### Complexidade Total
-- **Pior Caso (Worst Case):** $\mathbf{O(N^2 \cdot M)}$
-- **Caso Médio (Average Case):** $\mathbf{O(N^2 \cdot M)}$
+## Complexidade Total do Algoritmo
+
+Como executamos **N origens** (uma para cada vértice):
+
+| Caso             | Complexidade             | Justificação                                                                                                                   |
+|------------------|--------------------------|--------------------------------------------------------------------------------------------------------------------------------|
+| **Worst Case**   | **O(N · (N + M) log N)** | Assume heap balanceada e operações HashMap O(1) amortizado. No pior caso teórico com adversário forçando colisões: O(N³ + N²M) |
+| **Average Case** | **O(N · (N + M) log N)** | Análise esperada com funções hash uniformes. Comportamento típico em grafos reais                                              |
 
 ---
 

@@ -45,6 +45,14 @@ public class Station {
         this.coordX = coordX;
         this.coordY = coordY;
     }
+    private Station st(String id) {
+        return new Station(
+                id,
+                "Station " + id,
+                0.0, 0.0,   // latitude, longitude
+                0.0, 0.0    // coordX, coordY
+        );
+    }
     
     /**
      * Gets the station ID.

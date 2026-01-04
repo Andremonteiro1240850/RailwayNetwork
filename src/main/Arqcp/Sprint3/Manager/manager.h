@@ -1,3 +1,11 @@
+#ifndef MANAGER_H
+#define MANAGER_H
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+
 #define TRACK_FREE 0
 #define TRACK_BUSY 1
 #define TRACK_ASSIGNED 2
@@ -160,3 +168,5 @@ int manageRailwayTracks(ManagerSystem *system, int operation, int train_id, int 
 // Função Assembly do Sprint 2
 int asm_format_command(const char* op, int n, char* cmd);
 //fim usac16
+
+#endif // MANAGER_H

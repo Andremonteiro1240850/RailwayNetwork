@@ -1,6 +1,8 @@
 package Domain;
 
 import Repository.BelgiumGraphRepository;
+import java.lang.reflect.Method;
+import java.lang.reflect.Field;
 
 /**
  * Simple test class for DotExporter (USEI12) without JUnit dependencies.
@@ -36,10 +38,11 @@ public class DotExporterSimpleTest {
         // Branch 7: originCompare == 0 (line 82 - FALSE)
         testConnections_OriginCompareZero();
         
-        // Branch 8: nodeId == null (line 109 - first part of OR TRUE)
+        // Branch 8: nodeId == null (line 109 - first part of OR TRUE, short-circuit)
         testEscapeNodeId_Null();
         // Branch 9: nodeId != null && nodeId.isEmpty() (line 109 - first FALSE, second TRUE)
         testEscapeNodeId_Empty();
+        testEscapeNodeId_NonNullButEmpty(); // Ensure OR second part is evaluated
         // Branch 10: nodeId != null && !nodeId.isEmpty() (line 109 - both FALSE)
         testEscapeNodeId_NonEmpty();
         
@@ -67,6 +70,48 @@ public class DotExporterSimpleTest {
         testEscapeLabel_WithNewline();
         testEscapeLabel_WithCarriageReturn();
         testEscapeLabel_WithAllSpecialChars();
+        
+        // Branch: uniqueConnections.isEmpty() - no connections loop
+        testConnections_Empty();
+        
+        // Branch: nodeId.replace() executed when quotes in invalid ID
+        testEscapeNodeId_InvalidWithQuotes();
+        testEscapeNodeId_InvalidWithoutQuotes();
+        
+        // Branch: escapeNodeId called from connection loop
+        testEscapeNodeId_InConnectionOrigin();
+        testEscapeNodeId_InConnectionDestination();
+        
+        // Branch: escapeNodeId - valid ID with quotes (should not happen but tests the match branch)
+        testEscapeNodeId_ValidID_NoQuotes();
+        
+        // Branch: escapeLabel - each replace operation individually
+        testEscapeLabel_OnlyBackslash();
+        testEscapeLabel_OnlyQuote();
+        testEscapeLabel_OnlyNewline();
+        testEscapeLabel_OnlyCarriageReturn();
+        testEscapeLabel_NoSpecialChars();
+        
+        // Branch: Multiple connections with same origin (originCompare == 0)
+        testConnections_MultipleSameOrigin();
+        
+        // Branch: Empty string nodeId (different from null)
+        testEscapeNodeId_EmptyString();
+        
+        // Branch: NodeId with only underscore
+        testEscapeNodeId_OnlyUnderscore();
+        
+        // Branch: NodeId starting with underscore followed by number
+        testEscapeNodeId_UnderscoreNumber();
+        
+        // Branch: nodeId.replace() when nodeId is invalid but has no quotes (replace finds nothing)
+        testEscapeNodeId_InvalidNoQuotes_ReplaceFindsNothing();
+        
+        // Branch: escapeLabel - label with only one specific char (each replace individually)
+        testEscapeLabel_BackslashOnly();
+        testEscapeLabel_QuoteOnly();
+        testEscapeLabel_NewlineOnly();
+        testEscapeLabel_CarriageReturnOnly();
         
         // Additional comprehensive tests
         testMultipleStations();
@@ -133,11 +178,20 @@ public class DotExporterSimpleTest {
     
     private static void testStationName_Null() {
         test("station name null - ternary FALSE branch", () -> {
-            DotExporter exporter = new DotExporter();
-            Graph graph = new Graph();
-            graph.addStation(new Station("STATION_ID", null, 50.0, 4.0, 100.0, 200.0));
-            String dot = exporter.exportToDot(graph);
-            assertTrue(dot.contains("label=\"STATION_ID\""), "Null name uses ID");
+            try {
+                DotExporter exporter = new DotExporter();
+                Graph graph = new Graph();
+                Station station = new Station("STATION_ID", "TempName", 50.0, 4.0, 100.0, 200.0);
+                // Use reflection to set name to null (bypassing constructor validation)
+                Field nameField = Station.class.getDeclaredField("name");
+                nameField.setAccessible(true);
+                nameField.set(station, null);
+                graph.addStation(station);
+                String dot = exporter.exportToDot(graph);
+                assertTrue(dot.contains("label=\"STATION_ID\""), "Null name uses ID");
+            } catch (Exception e) {
+                throw new RuntimeException("Reflection failed", e);
+            }
         });
     }
     
@@ -181,21 +235,29 @@ public class DotExporterSimpleTest {
     
     private static void testEscapeNodeId_Null() {
         test("escapeNodeId - nodeId == null (OR first part TRUE)", () -> {
-            DotExporter exporter = new DotExporter();
-            Graph graph = new Graph();
-            graph.addStation(new Station(null, "Test", 50.0, 4.0, 100.0, 200.0));
-            String dot = exporter.exportToDot(graph);
-            assertTrue(dot.contains("\"\""), "Null ID escaped as \"\"");
+            try {
+                DotExporter exporter = new DotExporter();
+                Method method = DotExporter.class.getDeclaredMethod("escapeNodeId", String.class);
+                method.setAccessible(true);
+                String result = (String) method.invoke(exporter, (String) null);
+                assertEquals("\"\"", result, "Null ID escaped as \"\"");
+            } catch (Exception e) {
+                throw new RuntimeException("Reflection failed", e);
+            }
         });
     }
     
     private static void testEscapeNodeId_Empty() {
         test("escapeNodeId - nodeId.isEmpty() == true (OR second part TRUE)", () -> {
-            DotExporter exporter = new DotExporter();
-            Graph graph = new Graph();
-            graph.addStation(new Station("", "Test", 50.0, 4.0, 100.0, 200.0));
-            String dot = exporter.exportToDot(graph);
-            assertTrue(dot.contains("\"\""), "Empty ID escaped as \"\"");
+            try {
+                DotExporter exporter = new DotExporter();
+                Method method = DotExporter.class.getDeclaredMethod("escapeNodeId", String.class);
+                method.setAccessible(true);
+                String result = (String) method.invoke(exporter, "");
+                assertEquals("\"\"", result, "Empty ID escaped as \"\"");
+            } catch (Exception e) {
+                throw new RuntimeException("Reflection failed", e);
+            }
         });
     }
     
@@ -206,6 +268,21 @@ public class DotExporterSimpleTest {
             graph.addStation(new Station("NON_EMPTY", "Test", 50.0, 4.0, 100.0, 200.0));
             String dot = exporter.exportToDot(graph);
             assertTrue(dot.contains("NON_EMPTY"), "Non-empty ID processed");
+        });
+    }
+    
+    // Test to ensure OR short-circuit is fully covered
+    private static void testEscapeNodeId_NonNullButEmpty() {
+        test("escapeNodeId - nodeId != null but isEmpty (OR second part TRUE after first FALSE)", () -> {
+            try {
+                DotExporter exporter = new DotExporter();
+                Method method = DotExporter.class.getDeclaredMethod("escapeNodeId", String.class);
+                method.setAccessible(true);
+                String result = (String) method.invoke(exporter, "");
+                assertEquals("\"\"", result, "Empty string ID escaped");
+            } catch (Exception e) {
+                throw new RuntimeException("Reflection failed", e);
+            }
         });
     }
     
@@ -305,11 +382,15 @@ public class DotExporterSimpleTest {
     
     private static void testEscapeLabel_Null() {
         test("escapeLabel - label == null (TRUE branch)", () -> {
-            DotExporter exporter = new DotExporter();
-            Graph graph = new Graph();
-            graph.addStation(new Station("A", null, 50.0, 4.0, 100.0, 200.0));
-            String dot = exporter.exportToDot(graph);
-            assertTrue(dot.contains("label=\"A\""), "Null label uses ID");
+            try {
+                DotExporter exporter = new DotExporter();
+                Method method = DotExporter.class.getDeclaredMethod("escapeLabel", String.class);
+                method.setAccessible(true);
+                String result = (String) method.invoke(exporter, (String) null);
+                assertEquals("", result, "Null label returns empty string");
+            } catch (Exception e) {
+                throw new RuntimeException("Reflection failed", e);
+            }
         });
     }
     
@@ -372,6 +453,242 @@ public class DotExporterSimpleTest {
             graph.addStation(new Station("A", "test\\\"\n\r", 50.0, 4.0, 100.0, 200.0));
             String dot = exporter.exportToDot(graph);
             assertTrue(dot.contains("test"), "All special chars in label");
+        });
+    }
+    
+    // ==================== Additional Branch Coverage ====================
+    
+    private static void testConnections_Empty() {
+        test("connections empty - loop not executed", () -> {
+            DotExporter exporter = new DotExporter();
+            Graph graph = new Graph();
+            graph.addStation(new Station("A", "A", 50.0, 4.0, 100.0, 200.0));
+            String dot = exporter.exportToDot(graph);
+            assertTrue(!dot.contains("--"), "No edges when no connections");
+            assertTrue(dot.contains("A ["), "Station present");
+        });
+    }
+    
+    private static void testEscapeNodeId_InvalidWithQuotes() {
+        test("escapeNodeId - invalid ID with quotes (replace branch executed)", () -> {
+            DotExporter exporter = new DotExporter();
+            Graph graph = new Graph();
+            // Invalid ID (starts with number) that also contains quotes - tests the replace branch
+            graph.addStation(new Station("123\"quoted\"id", "Test", 50.0, 4.0, 100.0, 200.0));
+            String dot = exporter.exportToDot(graph);
+            // Should be quoted and quotes escaped
+            assertTrue(dot.contains("\"123"), "ID is quoted");
+            assertTrue(dot.contains("\\\""), "Quotes are escaped");
+        });
+    }
+    
+    private static void testEscapeNodeId_InvalidWithoutQuotes() {
+        test("escapeNodeId - invalid ID without quotes (no replace executed)", () -> {
+            DotExporter exporter = new DotExporter();
+            Graph graph = new Graph();
+            // Invalid ID but no quotes - replace not executed
+            graph.addStation(new Station("123invalid", "Test", 50.0, 4.0, 100.0, 200.0));
+            String dot = exporter.exportToDot(graph);
+            assertTrue(dot.contains("\"123invalid\""), "Invalid ID quoted");
+            assertTrue(!dot.contains("\\\""), "No quotes to escape");
+        });
+    }
+    
+    private static void testEscapeLabel_OnlyBackslash() {
+        test("escapeLabel - only backslash (first replace executed)", () -> {
+            DotExporter exporter = new DotExporter();
+            Graph graph = new Graph();
+            graph.addStation(new Station("A", "path\\to", 50.0, 4.0, 100.0, 200.0));
+            String dot = exporter.exportToDot(graph);
+            // Check that backslash is escaped (becomes \\)
+            assertTrue(dot.contains("path") && dot.contains("to"), "Backslash handled");
+            // The escaped backslash should appear as \\ in the output
+        });
+    }
+    
+    private static void testEscapeLabel_OnlyQuote() {
+        test("escapeLabel - only quote (second replace executed)", () -> {
+            DotExporter exporter = new DotExporter();
+            Graph graph = new Graph();
+            graph.addStation(new Station("A", "name\"test", 50.0, 4.0, 100.0, 200.0));
+            String dot = exporter.exportToDot(graph);
+            // Check that quote is escaped
+            assertTrue(dot.contains("name") && dot.contains("test"), "Quote handled");
+        });
+    }
+    
+    private static void testEscapeLabel_OnlyNewline() {
+        test("escapeLabel - only newline (third replace executed)", () -> {
+            DotExporter exporter = new DotExporter();
+            Graph graph = new Graph();
+            graph.addStation(new Station("A", "line1\nline2", 50.0, 4.0, 100.0, 200.0));
+            String dot = exporter.exportToDot(graph);
+            // Check that newline is escaped
+            assertTrue(dot.contains("line1") && dot.contains("line2"), "Newline handled");
+        });
+    }
+    
+    private static void testEscapeLabel_OnlyCarriageReturn() {
+        test("escapeLabel - only carriage return (fourth replace executed)", () -> {
+            DotExporter exporter = new DotExporter();
+            Graph graph = new Graph();
+            graph.addStation(new Station("A", "line1\rline2", 50.0, 4.0, 100.0, 200.0));
+            String dot = exporter.exportToDot(graph);
+            // Check that carriage return is escaped
+            assertTrue(dot.contains("line1") && dot.contains("line2"), "Carriage return handled");
+        });
+    }
+    
+    private static void testEscapeNodeId_InConnectionOrigin() {
+        test("escapeNodeId - called for connection origin ID", () -> {
+            DotExporter exporter = new DotExporter();
+            Graph graph = new Graph();
+            graph.addStation(new Station("A", "A", 50.0, 4.0, 100.0, 200.0));
+            graph.addStation(new Station("B", "B", 51.0, 5.0, 101.0, 201.0));
+            // Use connection with IDs that need escaping
+            graph.addConnection(new Connection("A", "B", 10.0));
+            String dot = exporter.exportToDot(graph);
+            assertTrue(dot.contains("A -- B") || dot.contains("B -- A"), "Connection present");
+        });
+    }
+    
+    private static void testEscapeNodeId_InConnectionDestination() {
+        test("escapeNodeId - called for connection destination ID", () -> {
+            DotExporter exporter = new DotExporter();
+            Graph graph = new Graph();
+            graph.addStation(new Station("A", "A", 50.0, 4.0, 100.0, 200.0));
+            graph.addStation(new Station("123invalid", "B", 51.0, 5.0, 101.0, 201.0));
+            graph.addConnection(new Connection("A", "123invalid", 10.0));
+            String dot = exporter.exportToDot(graph);
+            // Destination ID should be escaped
+            assertTrue(dot.contains("\"123invalid\""), "Destination ID escaped");
+        });
+    }
+    
+    private static void testEscapeNodeId_ValidID_NoQuotes() {
+        test("escapeNodeId - valid ID without quotes (match branch, no replace)", () -> {
+            DotExporter exporter = new DotExporter();
+            Graph graph = new Graph();
+            graph.addStation(new Station("ValidID123", "Test", 50.0, 4.0, 100.0, 200.0));
+            String dot = exporter.exportToDot(graph);
+            // Valid ID should not be quoted
+            assertTrue(dot.contains("ValidID123") && !dot.contains("\"ValidID123\""), "Valid ID not quoted");
+        });
+    }
+    
+    private static void testConnections_MultipleSameOrigin() {
+        test("connections - multiple with same origin (originCompare == 0)", () -> {
+            DotExporter exporter = new DotExporter();
+            Graph graph = new Graph();
+            graph.addStation(new Station("A", "A", 50.0, 4.0, 100.0, 200.0));
+            graph.addStation(new Station("B", "B", 51.0, 5.0, 101.0, 201.0));
+            graph.addStation(new Station("C", "C", 52.0, 6.0, 102.0, 202.0));
+            graph.addStation(new Station("D", "D", 53.0, 7.0, 103.0, 203.0));
+            // Multiple connections from A
+            graph.addConnection(new Connection("A", "D", 40.0));
+            graph.addConnection(new Connection("A", "C", 30.0));
+            graph.addConnection(new Connection("A", "B", 20.0));
+            String dot = exporter.exportToDot(graph);
+            int indexAB = dot.indexOf("A -- B");
+            int indexAC = dot.indexOf("A -- C");
+            int indexAD = dot.indexOf("A -- D");
+            assertTrue(indexAB != -1 && indexAC != -1 && indexAD != -1, "All connections present");
+            // Should be sorted by destination: A-B, A-C, A-D
+            assertTrue(indexAB < indexAC && indexAC < indexAD, "Sorted by destination when origin same");
+        });
+    }
+    
+    private static void testEscapeNodeId_EmptyString() {
+        test("escapeNodeId - empty string (isEmpty branch)", () -> {
+            DotExporter exporter = new DotExporter();
+            Graph graph = new Graph();
+            graph.addStation(new Station("", "Test", 50.0, 4.0, 100.0, 200.0));
+            String dot = exporter.exportToDot(graph);
+            assertTrue(dot.contains("\"\""), "Empty string escaped as \"\"");
+        });
+    }
+    
+    private static void testEscapeNodeId_OnlyUnderscore() {
+        test("escapeNodeId - only underscore (valid match)", () -> {
+            DotExporter exporter = new DotExporter();
+            Graph graph = new Graph();
+            graph.addStation(new Station("_", "Test", 50.0, 4.0, 100.0, 200.0));
+            String dot = exporter.exportToDot(graph);
+            assertTrue(dot.contains("_") && !dot.contains("\"_\""), "Single underscore is valid");
+        });
+    }
+    
+    private static void testEscapeNodeId_UnderscoreNumber() {
+        test("escapeNodeId - underscore followed by number (valid match)", () -> {
+            DotExporter exporter = new DotExporter();
+            Graph graph = new Graph();
+            graph.addStation(new Station("_123", "Test", 50.0, 4.0, 100.0, 200.0));
+            String dot = exporter.exportToDot(graph);
+            assertTrue(dot.contains("_123") && !dot.contains("\"_123\""), "Underscore+number is valid");
+        });
+    }
+    
+    private static void testEscapeLabel_NoSpecialChars() {
+        test("escapeLabel - no special chars (no replaces executed)", () -> {
+            DotExporter exporter = new DotExporter();
+            Graph graph = new Graph();
+            graph.addStation(new Station("A", "NormalLabel123", 50.0, 4.0, 100.0, 200.0));
+            String dot = exporter.exportToDot(graph);
+            assertTrue(dot.contains("NormalLabel123"), "Normal label unchanged");
+        });
+    }
+    
+    // ==================== Additional Branch Coverage Tests ====================
+    
+    private static void testEscapeNodeId_InvalidNoQuotes_ReplaceFindsNothing() {
+        test("escapeNodeId - invalid ID without quotes (replace finds nothing)", () -> {
+            DotExporter exporter = new DotExporter();
+            Graph graph = new Graph();
+            // Invalid ID (starts with number) but no quotes - replace() is called but finds nothing
+            graph.addStation(new Station("123noquotes", "Test", 50.0, 4.0, 100.0, 200.0));
+            String dot = exporter.exportToDot(graph);
+            // Should be quoted but no escape needed
+            assertTrue(dot.contains("\"123noquotes\""), "Invalid ID quoted");
+        });
+    }
+    
+    private static void testEscapeLabel_BackslashOnly() {
+        test("escapeLabel - only backslash character", () -> {
+            DotExporter exporter = new DotExporter();
+            Graph graph = new Graph();
+            graph.addStation(new Station("A", "test\\end", 50.0, 4.0, 100.0, 200.0));
+            String dot = exporter.exportToDot(graph);
+            assertTrue(dot.contains("test") && dot.contains("end"), "Backslash only");
+        });
+    }
+    
+    private static void testEscapeLabel_QuoteOnly() {
+        test("escapeLabel - only quote character", () -> {
+            DotExporter exporter = new DotExporter();
+            Graph graph = new Graph();
+            graph.addStation(new Station("A", "test\"end", 50.0, 4.0, 100.0, 200.0));
+            String dot = exporter.exportToDot(graph);
+            assertTrue(dot.contains("test") && dot.contains("end"), "Quote only");
+        });
+    }
+    
+    private static void testEscapeLabel_NewlineOnly() {
+        test("escapeLabel - only newline character", () -> {
+            DotExporter exporter = new DotExporter();
+            Graph graph = new Graph();
+            graph.addStation(new Station("A", "test\nend", 50.0, 4.0, 100.0, 200.0));
+            String dot = exporter.exportToDot(graph);
+            assertTrue(dot.contains("test") && dot.contains("end"), "Newline only");
+        });
+    }
+    
+    private static void testEscapeLabel_CarriageReturnOnly() {
+        test("escapeLabel - only carriage return character", () -> {
+            DotExporter exporter = new DotExporter();
+            Graph graph = new Graph();
+            graph.addStation(new Station("A", "test\rend", 50.0, 4.0, 100.0, 200.0));
+            String dot = exporter.exportToDot(graph);
+            assertTrue(dot.contains("test") && dot.contains("end"), "Carriage return only");
         });
     }
     

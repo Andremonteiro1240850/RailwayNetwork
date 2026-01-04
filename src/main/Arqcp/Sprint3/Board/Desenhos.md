@@ -357,3 +357,4 @@ A implementação segue as melhores práticas de engenharia de software:
 - **Performance** - Sem alocação dinâmica desnecessária
 
 O Board está pronto para integração no sistema completo! 🎉
+
